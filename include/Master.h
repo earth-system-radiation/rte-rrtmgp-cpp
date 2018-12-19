@@ -23,6 +23,8 @@
 #ifndef MASTER_H
 #define MASTER_H
 
+#include <cstdarg>
+#include <sstream>
 #include <string>
 #include <sys/time.h>
 

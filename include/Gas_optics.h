@@ -3,6 +3,7 @@
 
 #include "Optical_props.h"
 #include "Array.h"
+#include <cmath>
 
 template<typename TF> class Gas_concs;
 
