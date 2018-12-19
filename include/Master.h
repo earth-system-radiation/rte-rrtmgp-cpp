@@ -45,9 +45,6 @@ class Master
         void start();
         void init();
 
-        double get_wall_clock_time();
-        bool at_wall_clock_limit();
-
         // Overload the broadcast function.
         void broadcast(char*, int);
         void broadcast(int*, int);
@@ -86,9 +83,6 @@ class Master
         bool initialized;
         bool allocated;
 
-        double wall_clock_start;
-        double wall_clock_end;
-
         MPI_data md;
 };
 
@@ -113,9 +107,6 @@ void Master::start()
     // Set the number of processes to 1.
     md.nprocs = 1;
 
-    // Set the wall clock time at start.
-    wall_clock_start = get_wall_clock_time();
-
     print_message("Starting run on %d processes\n", md.nprocs);
 }
 
@@ -129,13 +120,6 @@ void Master::init()
     md.mpicoordy = 0;
 
     allocated = true;
-}
-
-double Master::get_wall_clock_time()
-{
-    timeval timestruct;
-    gettimeofday(&timestruct, NULL);
-    return (double)timestruct.tv_sec + (double)timestruct.tv_usec*1.e-6;
 }
 
 // All broadcasts return directly, because there is nothing to broadcast.
@@ -217,16 +201,5 @@ void Master::print_error(const char *format, ...)
         std::vfprintf(stdout, errorformat, args);
         va_end(args);
     }
-}
-
-bool Master::at_wall_clock_limit()
-{
-    const double wall_clock_time_left = wall_clock_end - get_wall_clock_time();
-    const double ten_minutes = 10.*60.;
-
-    if (wall_clock_time_left < ten_minutes)
-        return true;
-    else
-        return false;
 }
 #endif
