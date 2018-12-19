@@ -87,7 +87,7 @@ class Gas_optics : public Optical_props<TF>
         Array<int,1> is_key;
         Array<int,2> flavor;
 
-        int get_ngas() const { return this->gas_names.dim(0); }
+        int get_ngas() const { return this->gas_names.dim(1); }
 
         void init_abs_coeffs(
                 std::vector<Gas_concs<TF>>& available_gases,
