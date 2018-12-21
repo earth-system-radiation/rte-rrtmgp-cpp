@@ -43,10 +43,7 @@ inline std::array<int, N> calc_indices(
     indices[0] = index;
 
     for (int i=0; i<N; ++i)
-    {
         indices[i] += offsets[i] + 1;
-        std::cout << "CvH: " << indices[i] << std::endl;
-    }
 
     return indices;
 }
