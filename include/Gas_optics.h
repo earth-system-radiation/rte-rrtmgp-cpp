@@ -126,17 +126,18 @@ namespace
 {
     template<typename TF>
     void reduce_minor_arrays(
-                std::vector<Gas_concs<TF>>& available_gases,
-                Array<std::string,1>& gas_names,
-                Array<std::string,1>& gas_minor,
-                Array<std::string,1>& identifier_minor,
-                Array<TF,3>& kminor_atm,
-                Array<std::string,1>& minor_gases_atm,
-                Array<int,2>& minor_limits_gpt_atm,
-                Array<int,1>& minor_scales_with_density_atm, // CvH: logical bool or int?
-                Array<std::string,1>& scaling_gas_atm,
-                Array<int,1>& scale_by_complement_atm, // CvH: bool or int
-                Array<int,1>& kminor_start_atm,
+                const std::vector<Gas_concs<TF>>& available_gases,
+                const Array<std::string,1>& gas_names,
+                const Array<std::string,1>& gas_minor,
+                const Array<std::string,1>& identifier_minor,
+                const Array<TF,3>& kminor_atm,
+                const Array<std::string,1>& minor_gases_atm,
+                const Array<int,2>& minor_limits_gpt_atm,
+                const Array<int,1>& minor_scales_with_density_atm, // CvH: logical bool or int?
+                const Array<std::string,1>& scaling_gas_atm,
+                const Array<int,1>& scale_by_complement_atm, // CvH: bool or int
+                const Array<int,1>& kminor_start_atm,
+
                 Array<TF,3>& kminor_atm_red,
                 Array<std::string,1>& minor_gases_atm_red,
                 Array<int,2>& minor_limits_gpt_atm_red,
@@ -144,65 +145,83 @@ namespace
                 Array<std::string,1>& scaling_gas_atm_red,
                 Array<int,1>& scale_by_complement_atm_red,
                 Array<int,1>& kminor_start_atm_red)
-    {}
-            /*
-    ! Local variables
-    integer :: i, j
-    integer :: idx_mnr, nm, tot_g, red_nm
-    integer :: icnt, n_elim, ng
-    logical, dimension(:), allocatable :: gas_is_present
+    {
+        int nm = minor_gases_atm.dim(1);
+        int tot_g = 0;
 
-    nm = size(minor_gases_atm)
-    tot_g=0
-    allocate(gas_is_present(nm))
-    do i = 1, size(minor_gases_atm)
-      idx_mnr = string_loc_in_array(minor_gases_atm(i), identifier_minor)
-      gas_is_present(i) = string_in_array(gas_minor(idx_mnr),available_gases%gas_name)
-      if(gas_is_present(i)) then
-        tot_g = tot_g + (minor_limits_gpt_atm(2,i)-minor_limits_gpt_atm(1,i)+1)
-      endif
-    enddo
-    red_nm = count(gas_is_present)
+        Array<int,1> gas_is_present({nm});
 
-    if ((red_nm .eq. nm)) then
-      kminor_atm_red = kminor_atm
-      minor_gases_atm_red = minor_gases_atm
-      minor_limits_gpt_atm_red = minor_limits_gpt_atm
-      minor_scales_with_density_atm_red = minor_scales_with_density_atm
-      scaling_gas_atm_red = scaling_gas_atm
-      scale_by_complement_atm_red = scale_by_complement_atm
-      kminor_start_atm_red = kminor_start_atm
-    else
-      minor_gases_atm_red= pack(minor_gases_atm, mask=gas_is_present)
-      minor_scales_with_density_atm_red = pack(minor_scales_with_density_atm, &
-        mask=gas_is_present)
-      scaling_gas_atm_red = pack(scaling_gas_atm, &
-        mask=gas_is_present)
-      scale_by_complement_atm_red = pack(scale_by_complement_atm, &
-        mask=gas_is_present)
-      kminor_start_atm_red = pack(kminor_start_atm, &
-        mask=gas_is_present)
+        for (int i=1; i<=nm; ++i)
+        {
+            const int idx_mnr = identifier_minor.find_indices(minor_gases_atm({i}))[0];
 
-      allocate(minor_limits_gpt_atm_red(2, red_nm))
-      allocate(kminor_atm_red(tot_g, size(kminor_atm,2), size(kminor_atm,3)))
+            // Search for
+            gas_is_present({i}) =
+                    std::find_if(
+                            available_gases.begin(),
+                            available_gases.end(),
+                            [&gas_minor,idx_mnr](const auto& a)
+                            {
+                                std::string gas_minor_trimmed = gas_minor({idx_mnr});
+                                boost::trim(gas_minor_trimmed);
+                                return a.get_name() == gas_minor_trimmed;
+                            }
+                            ) != available_gases.end();
+            if (gas_is_present({i}))
+                tot_g += minor_limits_gpt_atm({2,i}) - minor_limits_gpt_atm({1,i}) + 1;
+        }
 
-      icnt = 0
-      n_elim = 0
-      do i = 1, nm
-        ng = minor_limits_gpt_atm(2,i)-minor_limits_gpt_atm(1,i)+1
-        if(gas_is_present(i)) then
-          icnt = icnt + 1
-          minor_limits_gpt_atm_red(1:2,icnt) = minor_limits_gpt_atm(1:2,i)
-          kminor_start_atm_red(icnt) = kminor_start_atm(i)-n_elim
-          do j = 1, ng
-            kminor_atm_red(kminor_start_atm_red(icnt)+j-1,:,:) = &
-              kminor_atm(kminor_start_atm(i)+j-1,:,:)
-          enddo
+        const int red_nm = std::accumulate(gas_is_present.v().begin(), gas_is_present.v().end(), 0);
+
+        if (red_nm == nm)
+        {
+            kminor_atm_red = kminor_atm;
+            minor_gases_atm_red = minor_gases_atm;
+            minor_limits_gpt_atm_red = minor_limits_gpt_atm;
+            minor_scales_with_density_atm_red = minor_scales_with_density_atm;
+            scaling_gas_atm_red = scaling_gas_atm;
+            scale_by_complement_atm_red = scale_by_complement_atm;
+            kminor_start_atm_red = kminor_start_atm;
+        }
         else
-          n_elim = n_elim + ng
-        endif
-      enddo
-    endif*/
+        {
+            // CvH: THIS NEEDS IMPLEMENTATION, BUT RFMIP RUNS WITHOUT
+            throw std::runtime_error("Gas_optics: situation with red_nm != nm not implemented");
+            /*
+            else
+              minor_gases_atm_red= pack(minor_gases_atm, mask=gas_is_present)
+              minor_scales_with_density_atm_red = pack(minor_scales_with_density_atm, &
+                mask=gas_is_present)
+              scaling_gas_atm_red = pack(scaling_gas_atm, &
+                mask=gas_is_present)
+              scale_by_complement_atm_red = pack(scale_by_complement_atm, &
+                mask=gas_is_present)
+              kminor_start_atm_red = pack(kminor_start_atm, &
+                mask=gas_is_present)
+
+              allocate(minor_limits_gpt_atm_red(2, red_nm))
+              allocate(kminor_atm_red(tot_g, size(kminor_atm,2), size(kminor_atm,3)))
+
+              icnt = 0
+              n_elim = 0
+              do i = 1, nm
+                ng = minor_limits_gpt_atm(2,i)-minor_limits_gpt_atm(1,i)+1
+                if(gas_is_present(i)) then
+                  icnt = icnt + 1
+                  minor_limits_gpt_atm_red(1:2,icnt) = minor_limits_gpt_atm(1:2,i)
+                  kminor_start_atm_red(icnt) = kminor_start_atm(i)-n_elim
+                  do j = 1, ng
+                    kminor_atm_red(kminor_start_atm_red(icnt)+j-1,:,:) = &
+                      kminor_atm(kminor_start_atm(i)+j-1,:,:)
+                  enddo
+                else
+                  n_elim = n_elim + ng
+                endif
+              enddo
+            endif
+            */
+        }
+    }
 
     void create_idx_minor(
             const Array<std::string,1>& gas_names,
