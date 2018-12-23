@@ -123,7 +123,19 @@ class Array
 
         inline void set_offsets(const std::array<int, N>& offsets)
         {
-           this->offsets = offsets;
+            this->offsets = offsets;
+        }
+
+        inline void set_dims(const std::array<int, N>& dims)
+        {
+            if (this->ncells != 0)
+                throw std::runtime_error("Only arrays of size 0 can be resized");
+
+            this->dims = dims;
+            ncells = product<N>(dims);
+            data.resize(ncells);
+            strides = calc_strides<N>(dims);
+            offsets = {};
         }
 
         inline std::vector<T>& v() { return data; }

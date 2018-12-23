@@ -256,6 +256,54 @@ namespace
 
         idx_minor_scaling_atm = idx_minor_scaling_atm_out;
     }
+
+    void create_key_species_reduce(
+            const Array<std::string,1>& gas_names,
+            const Array<std::string,1>& gas_names_red,
+            const Array<int,3>& key_species,
+            Array<int,3>& key_species_red,
+            Array<int,1>& key_species_present_init)
+    {
+        const int np = key_species.dim(1);
+        const int na = key_species.dim(2);
+        const int nt = key_species.dim(3);
+
+        key_species_red.set_dims({key_species.dim(1), key_species.dim(2), key_species.dim(3)});
+        key_species_present_init.set_dims({gas_names.dim(1)});
+
+        for (int i=1; i<=key_species_present_init.dim(1); ++i)
+            key_species_present_init({i}) = 1;
+
+        for (int ip=1; ip<=np; ++ip)
+            for (int ia=1; ia<=na; ++ia)
+                for (int it=1; it<=nt; ++it)
+                {
+                    const int ks = key_species({ip, ia, it});
+                    if (ks != 0)
+                    {
+                        key_species_red({ip, ia, it}) = gas_names_red.find_indices(gas_names({ks}))[0];
+                        if (ks == -1)
+                            key_species_present_init({ks}) = 0;
+                    }
+                    else
+                        key_species_red({ip, ia, it}) = ks;
+                }
+    }
+
+    void check_key_species_present_init(
+            const Array<std::string,1>& gas_names,
+            const Array<int,1>& key_species_present_init
+            )
+    {
+        for (int i=1; i<=key_species_present_init.dim(1); ++i)
+        {
+            if (key_species_present_init({i}) == 0)
+            {
+                std::string error_message = "Gas optics: required gas " + gas_names({i}) + " is missing";
+                throw std::runtime_error(error_message);
+            }
+        }
+    }
 }
 
 template<typename TF>
@@ -479,11 +527,17 @@ void Gas_optics<TF>::init_abs_coeffs(
     create_idx_minor_scaling(
             this->gas_names, scaling_gas_upper_red, this->idx_minor_scaling_upper);
 
+    // Create flavor list.
+    // Reduce (remap) key_species list; checks that all key gases are present in incoming
+    Array<int,3> key_species_red;
+    Array<int,1> key_species_present_init; // CvH bool or int?
+
+    create_key_species_reduce(
+            gas_names, this->gas_names, key_species, key_species_red, key_species_present_init);
+
+    check_key_species_present_init(gas_names, key_species_present_init);
+
     /*
-    ! create flavor list
-    ! Reduce (remap) key_species list; checks that all key gases are present in incoming
-    call create_key_species_reduce(gas_names,this%gas_names, &
-      key_species,key_species_red,key_species_present_init)
     err_message = check_key_species_present_init(gas_names,key_species_present_init)
     if(len_trim(err_message) /= 0) return
     ! create flavor list
