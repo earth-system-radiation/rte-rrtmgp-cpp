@@ -132,8 +132,9 @@ int main()
 
     if (coef_lw_nc.variable_exists("rayl_lower"))
     {
-        // rayl_lower = read_field(ncid, 'rayl_lower',   ngpts, nmixingfracs,            ntemps)
-        // rayl_upper = read_field(ncid, 'rayl_upper',   ngpts, nmixingfracs,            ntemps)
+        throw std::runtime_error("rayl reading not implemented!");
+        // rayl_lower = read_field(ncid, 'rayl_lower', ngpts, nmixingfracs, ntemps)
+        // rayl_upper = read_field(ncid, 'rayl_upper', ngpts, nmixingfracs, ntemps)
     }
 
     // Is it really LW if so read these variables as well.
