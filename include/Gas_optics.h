@@ -278,15 +278,15 @@ namespace
             for (int ia=1; ia<=na; ++ia)
                 for (int it=1; it<=nt; ++it)
                 {
-                    const int ks = key_species({ip, ia, it});
+                    const int ks = key_species({ip,ia,it});
                     if (ks != 0)
                     {
-                        key_species_red({ip, ia, it}) = gas_names_red.find_indices(gas_names({ks}))[0];
+                        key_species_red({ip,ia,it}) = gas_names_red.find_indices(gas_names({ks}))[0];
                         if (ks == -1)
                             key_species_present_init({ks}) = 0;
                     }
                     else
-                        key_species_red({ip, ia, it}) = ks;
+                        key_species_red({ip,ia,it}) = ks;
                 }
     }
 
@@ -301,6 +301,68 @@ namespace
             {
                 std::string error_message = "Gas optics: required gas " + gas_names({i}) + " is missing";
                 throw std::runtime_error(error_message);
+            }
+        }
+    }
+
+    void create_flavor(
+            Array<int,3>& key_species,
+            Array<int,2>& flavor)
+    {
+        Array<int,2> key_species_list({2, key_species.dim(3)*2});
+
+        // Prepare list of key species.
+        int i = 1;
+        for (int ibnd=1; ibnd<=key_species.dim(3); ++ibnd)
+            for (int iatm=1; iatm<=key_species.dim(1); ++iatm)
+            {
+                key_species_list({1,i}) = key_species({1,iatm,ibnd});
+                key_species_list({2,i}) = key_species({2,iatm,ibnd});
+                ++i;
+            }
+
+        // Rewrite single key_species pairs.
+        for (int i=1; i<=key_species_list.dim(2); ++i)
+        {
+            if ( !(key_species_list({1,i}) == 0 && key_species_list({2,i}) == 0) )
+                continue;
+
+            key_species_list({1,i}) = 2;
+            key_species_list({2,i}) = 2;
+        }
+
+        // Count unique key species pairs.
+        int iflavor = 0;
+        for (int i=1; i<=key_species_list.dim(2); ++i)
+        {
+            bool pair_does_not_exists = false;
+            for (int ii=1; ii<=i-1; ++ii)
+            {
+                if ( (key_species_list({1,i}) != key_species_list({1,ii})) ||
+                     (key_species_list({2,i}) != key_species_list({2,ii})) )
+                    pair_does_not_exists = true;
+            }
+            if (pair_does_not_exists)
+                ++iflavor;
+        }
+
+        // Fill flavors.
+        flavor.set_dims({2,iflavor});
+        iflavor = 0;
+        for (int i=1; i<=key_species_list.dim(2); ++i)
+        {
+            bool pair_does_not_exists = false;
+            for (int ii=1; ii<=i-1; ++ii)
+            {
+                if ( (key_species_list({1,i}) != key_species_list({1,ii})) ||
+                     (key_species_list({2,i}) != key_species_list({2,ii})) )
+                    pair_does_not_exists = true;
+            }
+            if (pair_does_not_exists)
+            {
+                ++iflavor;
+                flavor({1,iflavor}) = key_species_list({1,i});
+                flavor({2,iflavor}) = key_species_list({2,i});
             }
         }
     }
@@ -537,11 +599,9 @@ void Gas_optics<TF>::init_abs_coeffs(
 
     check_key_species_present_init(gas_names, key_species_present_init);
 
+    // create flavor list
+    create_flavor(key_species_red, this->flavor);
     /*
-    err_message = check_key_species_present_init(gas_names,key_species_present_init)
-    if(len_trim(err_message) /= 0) return
-    ! create flavor list
-    call create_flavor(key_species_red, this%flavor)
     ! create gpoint_flavor list
     call create_gpoint_flavor(key_species_red, this%get_gpoint_bands(), this%flavor, this%gpoint_flavor)
     */
