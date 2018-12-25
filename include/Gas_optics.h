@@ -45,6 +45,9 @@ class Gas_optics : public Optical_props<TF>
                 Array<TF,3>& rayl_lower,
                 Array<TF,3>& rayl_upper);
 
+        bool source_is_internal() const { return (totplnk.size() > 0) && (planck_frac.size() > 0); }
+        TF get_press_ref_min() const { return press_ref_min; }
+
     private:
         Array<TF,2> totplnk;
         Array<TF,4> planck_frac;
@@ -366,6 +369,58 @@ namespace
             }
         }
     }
+
+    void create_gpoint_flavor(
+            const Array<int,3>& key_species,
+            const Array<int,1>& gpt2band,
+            const Array<int,2>& flavor,
+            Array<int,2>& gpoint_flavor)
+    {
+        const int ngpt = gpt2band.dim(1);
+        gpoint_flavor.set_dims({2,ngpt});
+
+        for (int igpt=1; igpt<=ngpt; ++igpt)
+            for (int iatm=1; iatm<=2; ++iatm)
+            {
+                // gpoint_flavor({iatm,igpt}) =
+            }
+    }
+
+    /*
+     * ! ---------------------------------------------------------------------------------------
+     ! returns flavor index; -1 if not found
+     pure function key_species_pair2flavor(flavor, key_species_pair)
+       integer :: key_species_pair2flavor
+       integer, dimension(:,:), intent(in) :: flavor
+       integer, dimension(2), intent(in) :: key_species_pair
+       integer :: iflav
+       do iflav=1,size(flavor,2)
+         if (all(key_species_pair(:).eq.flavor(:,iflav))) then
+           key_species_pair2flavor = iflav
+           return
+         end if
+       end do
+       key_species_pair2flavor = -1
+     end function key_species_pair2flavor
+
+      subroutine create_gpoint_flavor(key_species, gpt2band, flavor, gpoint_flavor)
+          integer, dimension(:,:,:), intent(in) :: key_species
+          integer, dimension(:), intent(in) :: gpt2band
+          integer, dimension(:,:), intent(in) :: flavor
+          integer, dimension(:,:), intent(out), allocatable :: gpoint_flavor
+          integer :: ngpt, igpt, iatm
+          ngpt = size(gpt2band)
+          allocate(gpoint_flavor(2,ngpt))
+          do igpt=1,ngpt
+            do iatm=1,2
+              gpoint_flavor(iatm,igpt) = key_species_pair2flavor( &
+                flavor, &
+                rewrite_key_species_pair(key_species(:,iatm,gpt2band(igpt))) &
+              )
+            end do
+          end do
+    end subroutine create_gpoint_flavor
+     */
 }
 
 template<typename TF>

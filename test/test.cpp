@@ -201,5 +201,14 @@ int main()
             rayl_lower,
             rayl_upper);
 
+    if (!kdist.source_is_internal())
+        throw std::runtime_error("RRTMGP-RFMIP: k-distribution isn't LW");
+
+    // Avoid the top pressure level to be zero.
+    const int p_index = top_at_1 ? 1 : n_lay+1;
+    for (int icol=1; icol<=n_col; ++icol)
+        pres_layer({icol,p_index}) = kdist.get_press_ref_min()
+                + std::nextafter(kdist.get_press_ref_min(), kdist.get_press_ref_min()+1);
+
     return 0;
 }
