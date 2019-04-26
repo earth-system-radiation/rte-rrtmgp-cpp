@@ -170,6 +170,7 @@ namespace
                                 return a.get_name() == gas_minor_trimmed;
                             }
                             ) != available_gases.end();
+
             if (gas_is_present({i}))
                 tot_g += minor_limits_gpt_atm({2,i}) - minor_limits_gpt_atm({1,i}) + 1;
         }

@@ -44,4 +44,7 @@ if(USECUDA)
 else()
   add_executable(test_rrtmgp test.cpp)
   target_link_libraries(test_rrtmgp ${LIBS} m)
+
+  add_executable(test_gas_optics test_gas_optics.cpp)
+  target_link_libraries(test_gas_optics ${LIBS} m)
 endif()

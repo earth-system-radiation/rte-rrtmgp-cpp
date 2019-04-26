@@ -26,7 +26,6 @@
 #include <cstdarg>
 #include <sstream>
 #include <string>
-#include <sys/time.h>
 
 struct MPI_data
 {
@@ -48,12 +47,12 @@ class Master
         void init();
 
         // Overload the broadcast function.
-        void broadcast(char*, int);
-        void broadcast(int*, int);
-        void broadcast(bool*, int);
-        void broadcast(double*, int);
-        void broadcast(float*, int);
-        void broadcast(unsigned long*, int);
+        void broadcast(char*, int, int=0);
+        void broadcast(int*, int, int=0);
+        void broadcast(bool*, int, int=0);
+        void broadcast(double*, int, int=0);
+        void broadcast(float*, int, int=0);
+        void broadcast(unsigned long*, int, int=0);
 
         // Overload the sum function.
         void sum(int*, int);
@@ -125,11 +124,11 @@ void Master::init()
 }
 
 // All broadcasts return directly, because there is nothing to broadcast.
-void Master::broadcast(char* data, int datasize) {}
-void Master::broadcast(int* data, int datasize) {}
-void Master::broadcast(unsigned long* data, int datasize) {}
-void Master::broadcast(double* data, int datasize) {}
-void Master::broadcast(float* data, int datasize) {}
+void Master::broadcast(char* data, int datasize, int mpiid_to_write) {}
+void Master::broadcast(int* data, int datasize, int mpiid_to_write) {}
+void Master::broadcast(unsigned long* data, int datasize, int mpiid_to_write) {}
+void Master::broadcast(double* data, int datasize, int mpiid_to_write) {}
+void Master::broadcast(float* data, int datasize, int mpiid_to_write) {}
 void Master::sum(int* var, int datasize) {}
 void Master::sum(double* var, int datasize) {}
 void Master::sum(float* var, int datasize) {}

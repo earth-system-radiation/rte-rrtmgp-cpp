@@ -1,4 +1,3 @@
-#include <numeric>
 #include <boost/algorithm/string.hpp>
 #include "Netcdf_interface.h"
 #include "Array.h"
@@ -47,15 +46,14 @@ int main()
     master.start();
     master.init();
 
-    Netcdf_file input_nc(master, "rfmip_input.nc", Netcdf_mode::Read);
+    Netcdf_file input_nc(master, "rrtmgp_inputs_outputs.nc", Netcdf_mode::Read);
 
-    Netcdf_group group_nc = input_nc.get_group("radiation");
+    /*
+    // Netcdf_file coef_lw_nc(master, "coefficients_lw.nc", Netcdf_mode::Read);
 
-    Netcdf_file coef_lw_nc(master, "coefficients_lw.nc", Netcdf_mode::Read);
-
-    int n_lay = group_nc.get_variable_dimensions("pres_layer").at("layer");
-    int n_lev = group_nc.get_variable_dimensions("pres_level").at("level");
-    int n_col = 1;
+    int n_lay = group_nc.get_variable_dimensions("p_layer").at("layer");
+    int n_lev = group_nc.get_variable_dimensions("p_level").at("level");
+    int n_col = group_nc.get_variable_dimensions("p_level").at("level");
 
     Array<double,2> pres_layer(group_nc.get_variable<double>("pres_layer", {n_lay, n_col}), {n_col, n_lay});
     Array<double,2> pres_level(group_nc.get_variable<double>("pres_level", {n_lev, n_col}), {n_col, n_lev});
@@ -211,6 +209,7 @@ int main()
     for (int icol=1; icol<=n_col; ++icol)
         pres_layer({icol,p_index}) = kdist.get_press_ref_min()
                 + std::nextafter(kdist.get_press_ref_min(), kdist.get_press_ref_min()+1);
+    */
 
     return 0;
 }
