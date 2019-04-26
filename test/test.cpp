@@ -204,7 +204,8 @@ int main()
     if (!kdist.source_is_internal())
         throw std::runtime_error("RRTMGP-RFMIP: k-distribution isn't LW");
 
-    // Avoid the top pressure level to be zero.
+    // Avoid the top pressure level to be zero. std::nextafter finds the first representable
+    // non-zero floating point number.
     const int p_index = top_at_1 ? 1 : n_lay+1;
     for (int icol=1; icol<=n_col; ++icol)
         pres_layer({icol,p_index}) = kdist.get_press_ref_min()
