@@ -65,10 +65,16 @@ class Optical_props
 
         virtual ~Optical_props() {};
 
+        Array<int,1> get_gpoint_bands() const
+        {
+            Array<int,1> gpoint_bands(this->gpt2band);
+            return gpoint_bands;
+        }
+
     private:
-        // Array<int,2> band2gpt;     // (begin g-point, end g-point) = band2gpt(2,band)
-        // Array<int,1> gpt2band;     // band = gpt2band(g-point)
-        // Array<TF,2> band_lims_wvn; // (upper and lower wavenumber by band) = band_lims_wvn(2,band)
+        Array<int,2> band2gpt;     // (begin g-point, end g-point) = band2gpt(2,band)
+        Array<int,1> gpt2band;     // band = gpt2band(g-point)
+        Array<TF,2> band_lims_wvn; // (upper and lower wavenumber by band) = band_lims_wvn(2,band)
 };
 
 /*

@@ -64,6 +64,10 @@ class Gas_optics : public Optical_props<TF>
         Array<std::string,1> gas_names;
 
         Array<TF,3> vmr_ref;
+
+        Array<int,2> flavor;
+        Array<int,2> gpoint_flavor;
+
         Array<TF,4> kmajor;
 
         Array<TF,3> kminor_lower;
@@ -88,7 +92,6 @@ class Gas_optics : public Optical_props<TF>
         Array<int,1> idx_minor_scaling_upper;
 
         Array<int,1> is_key;
-        Array<int,2> flavor;
 
         int get_ngas() const { return this->gas_names.dim(1); }
 
@@ -647,6 +650,9 @@ void Gas_optics<TF>::init_abs_coeffs(
 
     // create flavor list
     create_flavor(key_species_red, this->flavor);
+
+    create_gpoint_flavor(
+            key_species_red, this->get_gpoint_bands(), this->flavor, this->gpoint_flavor);
     /*
     ! create gpoint_flavor list
     call create_gpoint_flavor(key_species_red, this%get_gpoint_bands(), this%flavor, this%gpoint_flavor)

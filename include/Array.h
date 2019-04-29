@@ -82,6 +82,7 @@ class Array
 {
     public:
         Array() :
+            dims({}),
             ncells(0)
         {}
 
