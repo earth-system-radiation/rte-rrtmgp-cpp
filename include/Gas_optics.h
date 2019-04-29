@@ -93,36 +93,36 @@ class Gas_optics : public Optical_props<TF>
         int get_ngas() const { return this->gas_names.dim(1); }
 
         void init_abs_coeffs(
-                Gas_concs<TF>& available_gases,
-                Array<std::string,1>& gas_names,
-                Array<int,3>& key_species,
-                Array<int,2>& band2gpt,
-                Array<TF,2>& band_lims_wavenum,
-                Array<TF,1>& press_ref,
-                Array<TF,1>& temp_ref,
-                TF press_ref_trop,
-                TF temp_ref_p,
-                TF temp_ref_t,
-                Array<TF,3>& vmr_ref,
-                Array<TF,4>& kmajor,
-                Array<TF,3>& kminor_lower,
-                Array<TF,3>& kminor_upper,
-                Array<std::string,1>& gas_minor,
-                Array<std::string,1>& identifier_minor,
-                Array<std::string,1>& minor_gases_lower,
-                Array<std::string,1>& minor_gases_upper,
-                Array<int,2>& minor_limits_gpt_lower,
-                Array<int,2>& minor_limits_gpt_upper,
-                Array<int,1>& minor_scales_with_density_lower,
-                Array<int,1>& minor_scales_with_density_upper,
-                Array<std::string,1>& scaling_gas_lower,
-                Array<std::string,1>& scaling_gas_upper,
-                Array<int,1>& scale_by_complement_lower,
-                Array<int,1>& scale_by_complement_upper,
-                Array<int,1>& kminor_start_lower,
-                Array<int,1>& kminor_start_upper,
-                Array<TF,3>& rayl_lower,
-                Array<TF,3>& rayl_upper);
+                const Gas_concs<TF>& available_gases,
+                const Array<std::string,1>& gas_names,
+                const Array<int,3>& key_species,
+                const Array<int,2>& band2gpt,
+                const Array<TF,2>& band_lims_wavenum,
+                const Array<TF,1>& press_ref,
+                const Array<TF,1>& temp_ref,
+                const TF press_ref_trop,
+                const TF temp_ref_p,
+                const TF temp_ref_t,
+                const Array<TF,3>& vmr_ref,
+                const Array<TF,4>& kmajor,
+                const Array<TF,3>& kminor_lower,
+                const Array<TF,3>& kminor_upper,
+                const Array<std::string,1>& gas_minor,
+                const Array<std::string,1>& identifier_minor,
+                const Array<std::string,1>& minor_gases_lower,
+                const Array<std::string,1>& minor_gases_upper,
+                const Array<int,2>& minor_limits_gpt_lower,
+                const Array<int,2>& minor_limits_gpt_upper,
+                const Array<int,1>& minor_scales_with_density_lower,
+                const Array<int,1>& minor_scales_with_density_upper,
+                const Array<std::string,1>& scaling_gas_lower,
+                const Array<std::string,1>& scaling_gas_upper,
+                const Array<int,1>& scale_by_complement_lower,
+                const Array<int,1>& scale_by_complement_upper,
+                const Array<int,1>& kminor_start_lower,
+                const Array<int,1>& kminor_start_upper,
+                const Array<TF,3>& rayl_lower,
+                const Array<TF,3>& rayl_upper);
 };
 
 namespace
@@ -181,7 +181,7 @@ namespace
         }
         else
         {
-            // CvH: THIS NEEDS IMPLEMENTATION, BUT RFMIP RUNS WITHOUT
+            // CvH: THIS NEEDS IMPLEMENTATION, BUT TESTS RUNS WITHOUT
             throw std::runtime_error("Gas_optics: situation with red_nm != nm not implemented");
             /*
             else
@@ -363,6 +363,23 @@ namespace
         }
     }
 
+    int key_species_pair2flavor(
+            const Array<int,2>& flavor,
+            const Array<int,1>& key_species_pair
+            )
+    {
+        // Search for match.
+        for (int iflav=1; iflav<=flavor.dim(2); ++iflav)
+        {
+            if ( (key_species_pair({1}) == flavor({1, iflav})) &&
+                 (key_species_pair({2}) == flavor({2, iflav})) )
+                return iflav;
+        }
+
+        // No match found.
+        return -1;
+    }
+
     void create_gpoint_flavor(
             const Array<int,3>& key_species,
             const Array<int,1>& gpt2band,
@@ -375,45 +392,27 @@ namespace
         for (int igpt=1; igpt<=ngpt; ++igpt)
             for (int iatm=1; iatm<=2; ++iatm)
             {
-                // gpoint_flavor({iatm,igpt}) =
+                int pair_1 = key_species( {1, iatm, gpt2band({igpt})} );
+                int pair_2 = key_species( {2, iatm, gpt2band({igpt})} );
+
+                // Rewrite species pair.
+                Array<int,1> rewritten_pair({2});
+                if ( pair_1 == 0 && pair_2 == 0)
+                {
+                    rewritten_pair({1}) = 2;
+                    rewritten_pair({2}) = 2;
+                }
+                else
+                {
+                    rewritten_pair({1}) = pair_1;
+                    rewritten_pair({2}) = pair_2;
+                }
+
+                // Write the output.
+                gpoint_flavor({iatm,igpt}) = key_species_pair2flavor(
+                        flavor, rewritten_pair);
             }
     }
-
-    /*
-     * ! ---------------------------------------------------------------------------------------
-     ! returns flavor index; -1 if not found
-     pure function key_species_pair2flavor(flavor, key_species_pair)
-       integer :: key_species_pair2flavor
-       integer, dimension(:,:), intent(in) :: flavor
-       integer, dimension(2), intent(in) :: key_species_pair
-       integer :: iflav
-       do iflav=1,size(flavor,2)
-         if (all(key_species_pair(:).eq.flavor(:,iflav))) then
-           key_species_pair2flavor = iflav
-           return
-         end if
-       end do
-       key_species_pair2flavor = -1
-     end function key_species_pair2flavor
-
-      subroutine create_gpoint_flavor(key_species, gpt2band, flavor, gpoint_flavor)
-          integer, dimension(:,:,:), intent(in) :: key_species
-          integer, dimension(:), intent(in) :: gpt2band
-          integer, dimension(:,:), intent(in) :: flavor
-          integer, dimension(:,:), intent(out), allocatable :: gpoint_flavor
-          integer :: ngpt, igpt, iatm
-          ngpt = size(gpt2band)
-          allocate(gpoint_flavor(2,ngpt))
-          do igpt=1,ngpt
-            do iatm=1,2
-              gpoint_flavor(iatm,igpt) = key_species_pair2flavor( &
-                flavor, &
-                rewrite_key_species_pair(key_species(:,iatm,gpt2band(igpt))) &
-              )
-            end do
-          end do
-    end subroutine create_gpoint_flavor
-     */
 }
 
 template<typename TF>
@@ -459,6 +458,8 @@ Gas_optics<TF>::Gas_optics(
     // Planck grid and the Planck grid is equally spaced.
     totplnk_delta = (temp_ref_max - temp_ref_min) / (totplnk.dim(1)-1);
 
+    // Initialize the absorption coefficient array, including Rayleigh scattering
+    // tables if provided.
     init_abs_coeffs(
             available_gases,
             gas_names, key_species,
@@ -483,36 +484,36 @@ Gas_optics<TF>::Gas_optics(
 
 template<typename TF>
 void Gas_optics<TF>::init_abs_coeffs(
-        Gas_concs<TF>& available_gases,
-        Array<std::string,1>& gas_names,
-        Array<int,3>& key_species,
-        Array<int,2>& band2gpt,
-        Array<TF,2>& band_lims_wavenum,
-        Array<TF,1>& press_ref,
-        Array<TF,1>& temp_ref,
-        TF press_ref_trop,
-        TF temp_ref_p,
-        TF temp_ref_t,
-        Array<TF,3>& vmr_ref,
-        Array<TF,4>& kmajor,
-        Array<TF,3>& kminor_lower,
-        Array<TF,3>& kminor_upper,
-        Array<std::string,1>& gas_minor,
-        Array<std::string,1>& identifier_minor,
-        Array<std::string,1>& minor_gases_lower,
-        Array<std::string,1>& minor_gases_upper,
-        Array<int,2>& minor_limits_gpt_lower,
-        Array<int,2>& minor_limits_gpt_upper,
-        Array<int,1>& minor_scales_with_density_lower,
-        Array<int,1>& minor_scales_with_density_upper,
-        Array<std::string,1>& scaling_gas_lower,
-        Array<std::string,1>& scaling_gas_upper,
-        Array<int,1>& scale_by_complement_lower,
-        Array<int,1>& scale_by_complement_upper,
-        Array<int,1>& kminor_start_lower,
-        Array<int,1>& kminor_start_upper,
-        Array<TF,3>& rayl_lower,
-        Array<TF,3>& rayl_upper)
+        const Gas_concs<TF>& available_gases,
+        const Array<std::string,1>& gas_names,
+        const Array<int,3>& key_species,
+        const Array<int,2>& band2gpt,
+        const Array<TF,2>& band_lims_wavenum,
+        const Array<TF,1>& press_ref,
+        const Array<TF,1>& temp_ref,
+        const TF press_ref_trop,
+        const TF temp_ref_p,
+        const TF temp_ref_t,
+        const Array<TF,3>& vmr_ref,
+        const Array<TF,4>& kmajor,
+        const Array<TF,3>& kminor_lower,
+        const Array<TF,3>& kminor_upper,
+        const Array<std::string,1>& gas_minor,
+        const Array<std::string,1>& identifier_minor,
+        const Array<std::string,1>& minor_gases_lower,
+        const Array<std::string,1>& minor_gases_upper,
+        const Array<int,2>& minor_limits_gpt_lower,
+        const Array<int,2>& minor_limits_gpt_upper,
+        const Array<int,1>& minor_scales_with_density_lower,
+        const Array<int,1>& minor_scales_with_density_upper,
+        const Array<std::string,1>& scaling_gas_lower,
+        const Array<std::string,1>& scaling_gas_upper,
+        const Array<int,1>& scale_by_complement_lower,
+        const Array<int,1>& scale_by_complement_upper,
+        const Array<int,1>& kminor_start_lower,
+        const Array<int,1>& kminor_start_upper,
+        const Array<TF,3>& rayl_lower,
+        const Array<TF,3>& rayl_upper)
 {
     // Which gases known to the gas optics are present in the host model (available_gases)?
     std::vector<std::string> gas_names_to_use;

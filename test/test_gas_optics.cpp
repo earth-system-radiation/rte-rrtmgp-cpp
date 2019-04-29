@@ -83,17 +83,17 @@ int main()
     // Array<double,1> surface_temperature(group_nc.get_variable<double>("surface_temperature", {n_col}), {n_col});
 
     // Read k-distribution information.
-    int n_temps          = coef_lw_nc.get_dimension_size("temperature");
-    int n_press          = coef_lw_nc.get_dimension_size("pressure");
-    int n_absorbers      = coef_lw_nc.get_dimension_size("absorber");
-    int n_char           = coef_lw_nc.get_dimension_size("string_len");
+    int n_temps = coef_lw_nc.get_dimension_size("temperature");
+    int n_press = coef_lw_nc.get_dimension_size("pressure");
+    int n_absorbers = coef_lw_nc.get_dimension_size("absorber");
+    int n_char = coef_lw_nc.get_dimension_size("string_len");
     int n_minorabsorbers = coef_lw_nc.get_dimension_size("minor_absorber");
-    int n_extabsorbers   = coef_lw_nc.get_dimension_size("absorber_ext");
-    int n_mixingfracs    = coef_lw_nc.get_dimension_size("mixing_fraction");
-    int n_layers         = coef_lw_nc.get_dimension_size("atmos_layer");
-    int n_bnds           = coef_lw_nc.get_dimension_size("bnd");
-    int n_gpts           = coef_lw_nc.get_dimension_size("gpt");
-    int n_pairs          = coef_lw_nc.get_dimension_size("pair");
+    int n_extabsorbers = coef_lw_nc.get_dimension_size("absorber_ext");
+    int n_mixingfracs = coef_lw_nc.get_dimension_size("mixing_fraction");
+    int n_layers = coef_lw_nc.get_dimension_size("atmos_layer");
+    int n_bnds = coef_lw_nc.get_dimension_size("bnd");
+    int n_gpts = coef_lw_nc.get_dimension_size("gpt");
+    int n_pairs = coef_lw_nc.get_dimension_size("pair");
     int n_minor_absorber_intervals_lower = coef_lw_nc.get_dimension_size("minor_absorber_intervals_lower");
     int n_minor_absorber_intervals_upper = coef_lw_nc.get_dimension_size("minor_absorber_intervals_upper");
     int n_internal_sourcetemps = coef_lw_nc.get_dimension_size("temperature_Planck");
@@ -160,27 +160,11 @@ int main()
         totplnk = coef_lw_nc.get_variable<double>("totplnk", {n_bnds, n_internal_sourcetemps});
         planck_frac = coef_lw_nc.get_variable<double>("plank_fraction", {n_temps, n_press+1, n_mixingfracs, n_gpts});
     }
-    // End reading of k-distribution.
-
-    /*
-    // Read the gas concentrations.
-    std::vector<Gas_concs<double>> available_gases;
-
-    for (int i=1; i<=gas_names.dim(1); ++i)
+    else
     {
-        const std::string& gas_name = gas_names({i});
-        if (gas_name == "h2o" || gas_name == "o3")
-        {
-            Array<double,2> conc(input_nc.get_variable<double>(gas_name, {n_lay, n_col}), {n_col, n_lay});
-            available_gases.emplace_back(gas_name, conc.v(), n_lay, n_col);
-        }
-        else
-        {
-            double conc = input_nc.get_variable<double>(gas_name);
-            available_gases.emplace_back(gas_name, conc);
-        }
+        throw std::runtime_error("short wave not implemented!");
     }
-    */
+    // End reading of k-distribution.
 
     // Construct the k-distribution.
     Gas_optics<double> kdist(
@@ -217,10 +201,12 @@ int main()
             rayl_lower,
             rayl_upper);
 
-    /*
-    if (!kdist.source_is_internal())
-        throw std::runtime_error("RRTMGP-RFMIP: k-distribution isn't LW");
+    if (kdist.source_is_internal())
+        master.print_message("Computing optical depths for longwave radiation\n");
+    else
+        master.print_message("Computing optical depths for shortwave radiation\n");
 
+    /*
     // Avoid the top pressure level to be zero. std::nextafter finds the first representable
     // non-zero floating point number.
     const int p_index = top_at_1 ? 1 : n_lay+1;
