@@ -61,6 +61,18 @@ class Optical_props
               this%gpt2band(band_lims_gpt_lcl(1,iband):band_lims_gpt_lcl(2,iband)) = iband
             end do
             */
+
+            Array<int,2> band_lims_gpt_lcl(band_lims_gpt);
+            this->band2gpt = band_lims_gpt;
+            this->band_lims_wvn = band_lims_wvn;
+
+            // Make a map between g-points and bands.
+            this->gpt2band.set_dims({band_lims_gpt_lcl.max()});
+            for (int iband=1; iband<=band_lims_gpt_lcl.dim(2); ++iband)
+            {
+                this->gpt2band({ band_lims_gpt_lcl({1,iband}) }) = iband;
+                this->gpt2band({ band_lims_gpt_lcl({2,iband}) }) = iband;
+            }
         }
 
         virtual ~Optical_props() {};

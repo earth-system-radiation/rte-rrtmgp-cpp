@@ -150,6 +150,11 @@ class Array
             return calc_indices<N>(pos, strides, offsets);
         }
 
+        inline T max()
+        {
+            return *std::max_element(data.begin(), data.end());
+        }
+
         inline void operator=(std::vector<T>&& data)
         {
             // CvH check size.
