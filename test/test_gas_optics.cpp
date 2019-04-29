@@ -46,27 +46,42 @@ int main()
     master.start();
     master.init();
 
-    Netcdf_file input_nc(master, "rrtmgp_inputs_outputs.nc", Netcdf_mode::Read);
+    Netcdf_file input_nc(master, "rrtmgp-inputs-outputs.nc", Netcdf_mode::Read);
 
-    /*
-    // Netcdf_file coef_lw_nc(master, "coefficients_lw.nc", Netcdf_mode::Read);
+    // READ THE ATMOSPHERIC DATA.
+    int n_lay = input_nc.get_dimension_size("lay");
+    int n_lev = input_nc.get_dimension_size("lev");
+    int n_col = input_nc.get_dimension_size("col");
 
-    int n_lay = group_nc.get_variable_dimensions("p_layer").at("layer");
-    int n_lev = group_nc.get_variable_dimensions("p_level").at("level");
-    int n_col = group_nc.get_variable_dimensions("p_level").at("level");
+    Array<double,2> p_lay(input_nc.get_variable<double>("p_lay", {n_lay, n_col}), {n_col, n_lay});
+    Array<double,2> t_lay(input_nc.get_variable<double>("t_lay", {n_lay, n_col}), {n_col, n_lay});
+    Array<double,2> p_lev(input_nc.get_variable<double>("p_lev", {n_lev, n_col}), {n_col, n_lev});
+    Array<double,2> t_lev(input_nc.get_variable<double>("t_lev", {n_lev, n_col}), {n_col, n_lev});
 
-    Array<double,2> pres_layer(group_nc.get_variable<double>("pres_layer", {n_lay, n_col}), {n_col, n_lay});
-    Array<double,2> pres_level(group_nc.get_variable<double>("pres_level", {n_lev, n_col}), {n_col, n_lev});
-    Array<double,2> temp_layer(group_nc.get_variable<double>("temp_layer", {n_lay, n_col}), {n_col, n_lay});
-    Array<double,2> temp_level(group_nc.get_variable<double>("temp_level", {n_lev, n_col}), {n_col, n_lev});
+    Gas_concs<double> gas_concs;
 
-    const int top_at_1 = pres_layer({1, 1}) < pres_layer({1, n_lay});
+    gas_concs.set_vmr("h2o", Array<double,2>(input_nc.get_variable<double>("vmr_h2o", {n_lay, n_col}), {n_col, n_lay}));
+    gas_concs.set_vmr("co2", Array<double,2>(input_nc.get_variable<double>("vmr_co2", {n_lay, n_col}), {n_col, n_lay}));
+    gas_concs.set_vmr("o3" , Array<double,2>(input_nc.get_variable<double>("vmr_o3" , {n_lay, n_col}), {n_col, n_lay}));
+    gas_concs.set_vmr("n2o", Array<double,2>(input_nc.get_variable<double>("vmr_n2o", {n_lay, n_col}), {n_col, n_lay}));
+    gas_concs.set_vmr("co" , Array<double,2>(input_nc.get_variable<double>("vmr_co" , {n_lay, n_col}), {n_col, n_lay}));
+    gas_concs.set_vmr("ch4", Array<double,2>(input_nc.get_variable<double>("vmr_ch4", {n_lay, n_col}), {n_col, n_lay}));
+    gas_concs.set_vmr("o2" , Array<double,2>(input_nc.get_variable<double>("vmr_o2" , {n_lay, n_col}), {n_col, n_lay}));
+    gas_concs.set_vmr("n2" , Array<double,2>(input_nc.get_variable<double>("vmr_n2" , {n_lay, n_col}), {n_col, n_lay}));
+
+    // CvH: does this one need to be present?
+    // Array<double,2> col_dry(input_nc.get_variable<double>("col_dry", {n_lay, n_col}), {n_col, n_lay});
+
+
+    // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
+    Netcdf_file coef_lw_nc(master, "coefficients_lw.nc", Netcdf_mode::Read);
+
+    // const int top_at_1 = pres_layer({1, 1}) < pres_layer({1, n_lay});
 
     // Download surface boundary conditions for long wave.
-    Array<double,1> surface_emissivity (group_nc.get_variable<double>("surface_emissivity" , {n_col}), {n_col});
-    Array<double,1> surface_temperature(group_nc.get_variable<double>("surface_temperature", {n_col}), {n_col});
+    // Array<double,1> surface_emissivity (group_nc.get_variable<double>("surface_emissivity" , {n_col}), {n_col});
+    // Array<double,1> surface_temperature(group_nc.get_variable<double>("surface_temperature", {n_col}), {n_col});
 
-    // READ K-DISTRIBUTION MOVE TO SEPARATE FUNCTION LATER...
     // Read k-distribution information.
     int n_temps          = coef_lw_nc.get_dimension_size("temperature");
     int n_press          = coef_lw_nc.get_dimension_size("pressure");
@@ -145,8 +160,9 @@ int main()
         totplnk = coef_lw_nc.get_variable<double>("totplnk", {n_bnds, n_internal_sourcetemps});
         planck_frac = coef_lw_nc.get_variable<double>("plank_fraction", {n_temps, n_press+1, n_mixingfracs, n_gpts});
     }
-    // END READ K-DISTRIBUTION
+    // End reading of k-distribution.
 
+    /*
     // Read the gas concentrations.
     std::vector<Gas_concs<double>> available_gases;
 
@@ -155,19 +171,20 @@ int main()
         const std::string& gas_name = gas_names({i});
         if (gas_name == "h2o" || gas_name == "o3")
         {
-            Array<double,2> conc(group_nc.get_variable<double>(gas_name, {n_lay, n_col}), {n_col, n_lay});
+            Array<double,2> conc(input_nc.get_variable<double>(gas_name, {n_lay, n_col}), {n_col, n_lay});
             available_gases.emplace_back(gas_name, conc.v(), n_lay, n_col);
         }
         else
         {
-            double conc = group_nc.get_variable<double>(gas_name);
+            double conc = input_nc.get_variable<double>(gas_name);
             available_gases.emplace_back(gas_name, conc);
         }
     }
+    */
 
     // Construct the k-distribution.
     Gas_optics<double> kdist(
-            available_gases,
+            gas_concs,
             gas_names,
             key_species,
             band2gpt,
@@ -200,6 +217,7 @@ int main()
             rayl_lower,
             rayl_upper);
 
+    /*
     if (!kdist.source_is_internal())
         throw std::runtime_error("RRTMGP-RFMIP: k-distribution isn't LW");
 

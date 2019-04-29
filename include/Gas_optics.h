@@ -12,7 +12,7 @@ class Gas_optics : public Optical_props<TF>
 {
     public:
         Gas_optics(
-                std::vector<Gas_concs<TF>>& available_gases,
+                Gas_concs<TF>& available_gases,
                 Array<std::string,1>& gas_names,
                 Array<int,3>& key_species,
                 Array<int,2>& band2gpt,
@@ -93,7 +93,7 @@ class Gas_optics : public Optical_props<TF>
         int get_ngas() const { return this->gas_names.dim(1); }
 
         void init_abs_coeffs(
-                std::vector<Gas_concs<TF>>& available_gases,
+                Gas_concs<TF>& available_gases,
                 Array<std::string,1>& gas_names,
                 Array<int,3>& key_species,
                 Array<int,2>& band2gpt,
@@ -129,7 +129,7 @@ namespace
 {
     template<typename TF>
     void reduce_minor_arrays(
-                const std::vector<Gas_concs<TF>>& available_gases,
+                const Gas_concs<TF>& available_gases,
                 const Array<std::string,1>& gas_names,
                 const Array<std::string,1>& gas_minor,
                 const Array<std::string,1>& identifier_minor,
@@ -159,18 +159,10 @@ namespace
             const int idx_mnr = identifier_minor.find_indices(minor_gases_atm({i}))[0];
 
             // Search for
-            gas_is_present({i}) =
-                    std::find_if(
-                            available_gases.begin(),
-                            available_gases.end(),
-                            [&gas_minor,idx_mnr](const auto& a)
-                            {
-                                std::string gas_minor_trimmed = gas_minor({idx_mnr});
-                                boost::trim(gas_minor_trimmed);
-                                return a.get_name() == gas_minor_trimmed;
-                            }
-                            ) != available_gases.end();
+            std::string gas_minor_trimmed = gas_minor({idx_mnr});
+            boost::trim(gas_minor_trimmed);
 
+            gas_is_present({i}) = available_gases.exists(gas_minor_trimmed);
             if (gas_is_present({i}))
                 tot_g += minor_limits_gpt_atm({2,i}) - minor_limits_gpt_atm({1,i}) + 1;
         }
@@ -426,7 +418,7 @@ namespace
 
 template<typename TF>
 Gas_optics<TF>::Gas_optics(
-        std::vector<Gas_concs<TF>>& available_gases,
+        Gas_concs<TF>& available_gases,
         Array<std::string,1>& gas_names,
         Array<int,3>& key_species,
         Array<int,2>& band2gpt,
@@ -491,7 +483,7 @@ Gas_optics<TF>::Gas_optics(
 
 template<typename TF>
 void Gas_optics<TF>::init_abs_coeffs(
-        std::vector<Gas_concs<TF>>& available_gases,
+        Gas_concs<TF>& available_gases,
         Array<std::string,1>& gas_names,
         Array<int,3>& key_species,
         Array<int,2>& band2gpt,
@@ -527,10 +519,7 @@ void Gas_optics<TF>::init_abs_coeffs(
 
     for (const std::string& s : gas_names.v())
     {
-        auto it = std::find_if(
-                available_gases.begin(), available_gases.end(),
-                [&s](const auto& a){ return a.get_name() == s; } );
-        if (it != available_gases.end())
+        if (available_gases.exists(s))
             gas_names_to_use.push_back(s);
     }
 

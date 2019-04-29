@@ -7,24 +7,16 @@ template<typename TF>
 class Gas_concs
 {
     public:
-        Gas_concs(const std::string& name, std::vector<TF> values, const int nlay, const int ncol) :
-                name(name), ncol(ncol), nlay(nlay), w(values) {}
-        Gas_concs(const std::string& name, const TF value) :
-                name(name), ncol(1), nlay(1), w(1, value) {}
-
-        void print_w() const
+        // Insert new gas into the map.
+        void set_vmr(const std::string& name, const Array<TF,2>& data)
         {
-            std::cout << name << ": ncol, nlay = (" << ncol << "," << nlay << ")" << std::endl;
-            for (TF v : w)
-                std::cout << v << std::endl;
+            gas_concs_map.emplace(name, data);
         }
 
-        std::string get_name() const { return name; }
+        // Check if gas exists in map.
+        bool exists(const std::string& name) const { return gas_concs_map.count(name) != 0; }
 
     private:
-        const std::string name;
-        const int ncol;
-        const int nlay;
-        std::vector<TF> w; 
+        std::map<std::string, Array<TF,2>> gas_concs_map;
 };
 #endif

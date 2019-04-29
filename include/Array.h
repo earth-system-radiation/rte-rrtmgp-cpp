@@ -110,7 +110,7 @@ class Array
         {} // CvH Do we need to size check data?
 
         // Define the default copy constructor and assignment operator.
-        Array(Array<T,N>&) = default;
+        Array(const Array<T,N>&) = default;
         Array<T,N>& operator=(const Array<T,N>&) = default; // CvH does this one need empty checking?
 
         Array(Array<T,N>&& array) :
