@@ -184,8 +184,30 @@ namespace
         }
         else
         {
-            // CvH: THIS NEEDS IMPLEMENTATION, BUT TESTS RUNS WITHOUT
-            throw std::runtime_error("Gas_optics: situation with red_nm != nm not implemented");
+            // Use a lambda function as the operation has to be repeated many times.
+            auto resize_and_set = [=](auto& a_red, const auto& a)
+            {
+                a_red.set_dims({red_nm});
+                int counter = 1;
+                for (int i=1; i<=gas_is_present.dim(1); ++i)
+                {
+                    if (gas_is_present({i}))
+                    {
+                       a_red({counter}) = a({i});
+                       ++counter;
+                    }
+                }
+            };
+
+            resize_and_set(minor_gases_atm_red, minor_gases_atm);
+            resize_and_set(minor_scales_with_density_atm_red, minor_scales_with_density_atm);
+            resize_and_set(scaling_gas_atm_red, scaling_gas_atm);
+            resize_and_set(scale_by_complement_atm_red, scale_by_complement_atm);
+            resize_and_set(kminor_start_atm_red, kminor_start_atm);
+
+            minor_limits_gpt_atm_red.set_dims({2, red_nm});
+            kminor_atm_red.set_dims({tot_g, kminor_atm.dim(2), kminor_atm.dim(3)});
+
             /*
             else
               minor_gases_atm_red= pack(minor_gases_atm, mask=gas_is_present)
