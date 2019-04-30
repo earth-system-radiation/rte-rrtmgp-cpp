@@ -208,39 +208,27 @@ namespace
             minor_limits_gpt_atm_red.set_dims({2, red_nm});
             kminor_atm_red.set_dims({tot_g, kminor_atm.dim(2), kminor_atm.dim(3)});
 
-            /*
-            else
-              minor_gases_atm_red= pack(minor_gases_atm, mask=gas_is_present)
-              minor_scales_with_density_atm_red = pack(minor_scales_with_density_atm, &
-                mask=gas_is_present)
-              scaling_gas_atm_red = pack(scaling_gas_atm, &
-                mask=gas_is_present)
-              scale_by_complement_atm_red = pack(scale_by_complement_atm, &
-                mask=gas_is_present)
-              kminor_start_atm_red = pack(kminor_start_atm, &
-                mask=gas_is_present)
+            int icnt = 0;
+            int n_elim = 0;
+            for (int i=1; i<=nm; ++i)
+            {
+                int ng = minor_limits_gpt_atm({2,i}) - minor_limits_gpt_atm({1,i}) + 1;
+                if (gas_is_present({i}))
+                {
+                    ++icnt;
+                    minor_limits_gpt_atm_red({1,icnt}) = minor_limits_gpt_atm({1,i});
+                    minor_limits_gpt_atm_red({2,icnt}) = minor_limits_gpt_atm({2,i});
+                    kminor_start_atm_red({icnt}) = kminor_start_atm({i}) - n_elim;
 
-              allocate(minor_limits_gpt_atm_red(2, red_nm))
-              allocate(kminor_atm_red(tot_g, size(kminor_atm,2), size(kminor_atm,3)))
-
-              icnt = 0
-              n_elim = 0
-              do i = 1, nm
-                ng = minor_limits_gpt_atm(2,i)-minor_limits_gpt_atm(1,i)+1
-                if(gas_is_present(i)) then
-                  icnt = icnt + 1
-                  minor_limits_gpt_atm_red(1:2,icnt) = minor_limits_gpt_atm(1:2,i)
-                  kminor_start_atm_red(icnt) = kminor_start_atm(i)-n_elim
-                  do j = 1, ng
-                    kminor_atm_red(kminor_start_atm_red(icnt)+j-1,:,:) = &
-                      kminor_atm(kminor_start_atm(i)+j-1,:,:)
-                  enddo
+                    for (int j=1; j<=ng; ++j)
+                        for (int i2=1; i2<=kminor_atm.dim(2); ++i2)
+                            for (int i3=1; i3<=kminor_atm.dim(3); ++i3)
+                                kminor_atm_red({kminor_start_atm_red({icnt})+j-1,i2,i3}) =
+                                        kminor_atm({kminor_start_atm({i})+j-1,i2,i3});
+                }
                 else
-                  n_elim = n_elim + ng
-                endif
-              enddo
-            endif
-            */
+                    n_elim += ng;
+            }
         }
     }
 
