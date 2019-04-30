@@ -651,12 +651,9 @@ void Gas_optics<TF>::init_abs_coeffs(
     // create flavor list
     create_flavor(key_species_red, this->flavor);
 
+    // create gpoint flavor list
     create_gpoint_flavor(
             key_species_red, this->get_gpoint_bands(), this->flavor, this->gpoint_flavor);
-    /*
-    ! create gpoint_flavor list
-    call create_gpoint_flavor(key_species_red, this%get_gpoint_bands(), this%flavor, this%gpoint_flavor)
-    */
 
     // minimum, maximum reference temperature, pressure -- assumes low-to-high ordering
     // for T, high-to-low ordering for p
