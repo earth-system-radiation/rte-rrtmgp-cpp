@@ -71,7 +71,7 @@ class Optical_props
             for (int iband=1; iband<=band_lims_gpt_lcl.dim(2); ++iband)
             {
                 for (int i=band_lims_gpt_lcl({1,iband}); i<=band_lims_gpt_lcl({2,iband}); ++i)
-                this->gpt2band({i}) = iband;
+                    this->gpt2band({i}) = iband;
             }
         }
 

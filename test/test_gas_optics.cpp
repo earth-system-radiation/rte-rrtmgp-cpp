@@ -3,6 +3,7 @@
 #include "Array.h"
 #include "Gas_concs.h"
 #include "Gas_optics.h"
+#include "Source_functions.h"
 
 namespace
 {
@@ -207,14 +208,16 @@ int main()
     Array<double,2> surface_emissivity;
     Array<double,1> surface_temperature;
 
+    const int n_col_block = 4;
+
     if (kdist.source_is_internal())
     {
         master.print_message("Computing optical depths for longwave radiation\n");
 
-        call stop_on_err(       sources%alloc(ncol,      nlay, kdist))
-        call stop_on_err(sources_subset%alloc(blockSize, nlay, kdist))
-        allocate(ty_optical_props_1scl::optical_props)
-        allocate(ty_optical_props_1scl::optical_props_subset)
+        Source_func_lw<double> sources       (n_col      , n_lay, kdist);
+        Source_func_lw<double> sources_subset(n_col_block, n_lay, kdist);
+        // allocate(ty_optical_props_1scl::optical_props)
+        // allocate(ty_optical_props_1scl::optical_props_subset)
 
         // Download surface boundary conditions for long wave.
         Array<double,2> surface_emissivity_tmp (input_nc.get_variable<double>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
