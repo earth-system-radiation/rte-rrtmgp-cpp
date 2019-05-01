@@ -220,8 +220,6 @@ int main()
         std::unique_ptr<Optical_props<double>> optical_props_subset;
         optical_props = std::make_unique<Optical_props_1scl<double>>(n_col, n_lay, kdist);
         optical_props_subset = std::make_unique<Optical_props_1scl<double>>(n_col_block, n_lay, kdist);
-        // allocate(ty_optical_props_1scl::optical_props)
-        // allocate(ty_optical_props_1scl::optical_props_subset)
 
         // Download surface boundary conditions for long wave.
         Array<double,2> surface_emissivity_tmp (input_nc.get_variable<double>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
