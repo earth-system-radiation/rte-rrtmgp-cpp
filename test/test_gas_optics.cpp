@@ -201,19 +201,33 @@ int main()
             rayl_lower,
             rayl_upper);
 
-    if (kdist.source_is_internal())
-        master.print_message("Computing optical depths for longwave radiation\n");
-    else
-        master.print_message("Computing optical depths for shortwave radiation\n");
+    int n_gpt = kdist.get_ngpt();
+    int n_bnd = kdist.get_nband();
 
-    /*
-    // Avoid the top pressure level to be zero. std::nextafter finds the first representable
-    // non-zero floating point number.
-    const int p_index = top_at_1 ? 1 : n_lay+1;
-    for (int icol=1; icol<=n_col; ++icol)
-        pres_layer({icol,p_index}) = kdist.get_press_ref_min()
-                + std::nextafter(kdist.get_press_ref_min(), kdist.get_press_ref_min()+1);
-    */
+    Array<double,2> surface_emissivity;
+    Array<double,1> surface_temperature;
+
+    if (kdist.source_is_internal())
+    {
+        master.print_message("Computing optical depths for longwave radiation\n");
+
+        call stop_on_err(       sources%alloc(ncol,      nlay, kdist))
+        call stop_on_err(sources_subset%alloc(blockSize, nlay, kdist))
+        allocate(ty_optical_props_1scl::optical_props)
+        allocate(ty_optical_props_1scl::optical_props_subset)
+
+        // Download surface boundary conditions for long wave.
+        Array<double,2> surface_emissivity_tmp (input_nc.get_variable<double>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
+        Array<double,1> surface_temperature_tmp(input_nc.get_variable<double>("t_sfc", {n_col}), {n_col});
+
+        surface_emissivity = surface_emissivity_tmp;
+        surface_temperature = surface_temperature_tmp;
+    }
+    else
+    {
+        master.print_message("Computing optical depths for shortwave radiation\n");
+        throw std::runtime_error("Shortwave radiation not implemented");
+    }
 
     return 0;
 }

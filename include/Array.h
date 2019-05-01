@@ -150,7 +150,7 @@ class Array
             return calc_indices<N>(pos, strides, offsets);
         }
 
-        inline T max()
+        inline T max() const
         {
             return *std::max_element(data.begin(), data.end());
         }
