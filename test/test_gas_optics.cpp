@@ -216,6 +216,10 @@ int main()
 
         Source_func_lw<double> sources       (n_col      , n_lay, kdist);
         Source_func_lw<double> sources_subset(n_col_block, n_lay, kdist);
+        std::unique_ptr<Optical_props<double>> optical_props;
+        std::unique_ptr<Optical_props<double>> optical_props_subset;
+        optical_props = std::make_unique<Optical_props_1scl<double>>(n_col, n_lay, kdist);
+        optical_props_subset = std::make_unique<Optical_props_1scl<double>>(n_col_block, n_lay, kdist);
         // allocate(ty_optical_props_1scl::optical_props)
         // allocate(ty_optical_props_1scl::optical_props_subset)
 

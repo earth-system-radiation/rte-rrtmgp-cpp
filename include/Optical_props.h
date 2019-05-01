@@ -77,6 +77,8 @@ class Optical_props
 
         virtual ~Optical_props() {};
 
+        Optical_props(const Optical_props&) = default;
+
         Array<int,1> get_gpoint_bands() const
         {
             Array<int,1> gpoint_bands(this->gpt2band);
@@ -92,20 +94,22 @@ class Optical_props
         Array<TF,2> band_lims_wvn; // (upper and lower wavenumber by band) = band_lims_wvn(2,band)
 };
 
-/*
 template<typename TF>
-class Optical_props_arry : public Optical_props
+class Optical_props_arry : public Optical_props<TF>
 {
     public:
-        Optical_props_arry() {};
+        Optical_props_arry(const Optical_props<TF>& optical_props) :
+            Optical_props<TF>(optical_props)
+        {}
         virtual ~Optical_props_arry() {};
-        virtual Array<TF,3>& get_tau() = 0;
-        virtual Array<TF,3>& get_ssa() = 0;
-        virtual Array<TF,3>& get_g() = 0;
+        // virtual Array<TF,3>& get_tau() = 0;
+        // virtual Array<TF,3>& get_ssa() = 0;
+        // virtual Array<TF,3>& get_g() = 0;
 
         // virtual void get_subset(const int, const int, std::unique_ptr<Optical_props_arry>&) = 0;
 };
 
+/*
 template<typename TF>
 class Optical_props_2str : public Optical_props
 {
@@ -128,6 +132,7 @@ class Optical_props_2str : public Optical_props
         Array_3d<TF> g_;
         const std::string name_;
 };
+*/
 
 template<typename TF>
 class Optical_props_1scl : public Optical_props_arry<TF>
@@ -135,13 +140,22 @@ class Optical_props_1scl : public Optical_props_arry<TF>
     public:
         // Initializer constructor.
         Optical_props_1scl(
-                const int ncol, const int nlay, const int ngpt,
-                Array<TF,3>&& tau,
-                const std::string name="") :
-            tau_(std::move(tau)),
-            name_(name)
-        {};
+                const int ncol,
+                const int nlay,
+                const Optical_props<TF>& optical_props) :
+            Optical_props_arry<TF>(optical_props),
+            tau({ncol, nlay, this->get_ngpt()})
+        {}
 
+        // Optical_props_1scl(
+        //         const int ncol, const int nlay, const int ngpt,
+        //         Array<TF,3>&& tau,
+        //         const std::string name="") :
+        //     tau_(std::move(tau)),
+        //     name_(name)
+        // {};
+
+        /*
         // Subset constructor.
         Optical_props_1scl(
                 std::unique_ptr<Optical_props_arry<TF>>& full,
@@ -179,11 +193,10 @@ class Optical_props_1scl : public Optical_props_arry<TF>
         Array<TF,3>& get_tau() { return tau_; }
         Array<TF,3>& get_ssa() { throw std::runtime_error("Not available in this class"); }
         Array<TF,3>& get_g  () { throw std::runtime_error("Not available in this class"); }
+         */
 
     private:
-        Array<TF,3> tau_;
-        const std::string name_;
+        Array<TF,3> tau;
+        // const std::string name_;
 };
-
-*/
 #endif
