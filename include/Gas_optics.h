@@ -315,7 +315,7 @@ namespace
     }
 
     void create_flavor(
-            Array<int,3>& key_species,
+            const Array<int,3>& key_species,
             Array<int,2>& flavor)
     {
         Array<int,2> key_species_list({2, key_species.dim(3)*2});
@@ -333,25 +333,28 @@ namespace
         // Rewrite single key_species pairs.
         for (int i=1; i<=key_species_list.dim(2); ++i)
         {
-            if ( !(key_species_list({1,i}) == 0 && key_species_list({2,i}) == 0) )
-                continue;
-
-            key_species_list({1,i}) = 2;
-            key_species_list({2,i}) = 2;
+            if ( key_species_list({1,i}) == 0 && key_species_list({2,i}) == 0 )
+            {
+                key_species_list({1,i}) = 2;
+                key_species_list({2,i}) = 2;
+            }
         }
 
         // Count unique key species pairs.
         int iflavor = 0;
         for (int i=1; i<=key_species_list.dim(2); ++i)
         {
-            bool pair_does_not_exists = false;
+            bool pair_exists = false;
             for (int ii=1; ii<=i-1; ++ii)
             {
-                if ( (key_species_list({1,i}) != key_species_list({1,ii})) ||
-                     (key_species_list({2,i}) != key_species_list({2,ii})) )
-                    pair_does_not_exists = true;
+                if ( (key_species_list({1,i}) == key_species_list({1,ii})) &&
+                     (key_species_list({2,i}) == key_species_list({2,ii})) )
+                {
+                    pair_exists = true;
+                    break;
+                }
             }
-            if (pair_does_not_exists)
+            if (!pair_exists)
                 ++iflavor;
         }
 
@@ -360,14 +363,17 @@ namespace
         iflavor = 0;
         for (int i=1; i<=key_species_list.dim(2); ++i)
         {
-            bool pair_does_not_exists = false;
+            bool pair_exists = false;
             for (int ii=1; ii<=i-1; ++ii)
             {
-                if ( (key_species_list({1,i}) != key_species_list({1,ii})) ||
-                     (key_species_list({2,i}) != key_species_list({2,ii})) )
-                    pair_does_not_exists = true;
+                if ( (key_species_list({1,i}) == key_species_list({1,ii})) &&
+                     (key_species_list({2,i}) == key_species_list({2,ii})) )
+                {
+                    pair_exists = true;
+                    break;
+                }
             }
-            if (pair_does_not_exists)
+            if (!pair_exists)
             {
                 ++iflavor;
                 flavor({1,iflavor}) = key_species_list({1,i});
