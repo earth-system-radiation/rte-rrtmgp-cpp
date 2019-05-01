@@ -54,7 +54,7 @@ class Gas_optics : public Optical_props<TF>
         TF totplnk_delta;
         TF temp_ref_min, temp_ref_max;
         TF press_ref_min, press_ref_max;
-        TF press_ref_trop, press_ref_trop_log;
+        TF press_ref_trop_log;
 
         TF press_ref_log_delta;
         TF temp_ref_delta;
@@ -384,14 +384,13 @@ namespace
 
     int key_species_pair2flavor(
             const Array<int,2>& flavor,
-            const Array<int,1>& key_species_pair
-            )
+            const Array<int,1>& key_species_pair)
     {
         // Search for match.
         for (int iflav=1; iflav<=flavor.dim(2); ++iflav)
         {
-            if ( (key_species_pair({1}) == flavor({1, iflav})) &&
-                 (key_species_pair({2}) == flavor({2, iflav})) )
+            if ( key_species_pair({1}) == flavor({1, iflav}) &&
+                 key_species_pair({2}) == flavor({2, iflav}) )
                 return iflav;
         }
 
