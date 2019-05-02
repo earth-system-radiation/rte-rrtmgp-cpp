@@ -58,6 +58,7 @@ inline int product(const std::array<int, N>& array)
     return product;
 }
 
+/*
 template<typename T>
 class Array_iterator
 {
@@ -76,6 +77,7 @@ class Array_iterator
 
     friend bool operator!=(const Array_iterator<T>& left, const Array_iterator<T>& right) { return left.n != right.n; }
 };
+*/
 
 template<typename T, int N>
 class Array
@@ -111,10 +113,10 @@ class Array
         {} // CvH Do we need to size check data?
 
         // Define the default copy constructor and assignment operator.
-        Array(const Array<T,N>&) = default;
-        Array<T,N>& operator=(const Array<T,N>&) = default; // CvH does this one need empty checking?
+        Array(const Array<T, N>&) = default;
+        Array<T,N>& operator=(const Array<T, N>&) = default; // CvH does this one need empty checking?
 
-        Array(Array<T,N>&& array) :
+        Array(Array<T, N>&& array) :
             dims(std::exchange(array.dims, {})),
             ncells(std::exchange(array.ncells, 0)),
             data(std::move(array.data)),
@@ -173,10 +175,37 @@ class Array
             return data[index];
         }
 
-        inline Array_iterator<T> begin() { return Array_iterator<T>(data, 0); }
-        inline Array_iterator<T> end()   { return Array_iterator<T>(data, ncells); }
+        // inline Array_iterator<T> begin() { return Array_iterator<T>(data, 0); }
+        // inline Array_iterator<T> end()   { return Array_iterator<T>(data, ncells); }
 
         inline int dim(const int i) const { return dims[i-1]; }
+        inline bool is_empty() const { return ncells == 0; }
+
+        inline Array<T, N> subset(
+                const std::array<std::pair<int, int>, N> ranges)
+        {
+            // Calculate the dimension sizes based on the range.
+            std::array<int, N> subdims;
+            for (int i=0; i<N; ++i)
+                subdims[i] = ranges[i].second - ranges[i].first + 1;
+
+            // Create the array and fill it with the subset.
+            Array<T, N> a_sub(subdims);
+            for (int i=0; i<a_sub.ncells; ++i)
+            {
+                std::array<int, N> index;
+                int ic = i;
+                for (int n=N-1; n>0; --n)
+                {
+                    index[n] = ic / subdims[n] + ranges[n].first;
+                    ic %= subdims[n];
+                }
+                index[0] = ic + ranges[0].first;
+                a_sub.data[i] = (*this)(index);
+            }
+
+            return a_sub;
+        }
 
     private:
         std::array<int, N> dims;

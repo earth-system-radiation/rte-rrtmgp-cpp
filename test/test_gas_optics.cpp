@@ -60,6 +60,7 @@ int main()
     Array<double,2> t_lev(input_nc.get_variable<double>("t_lev", {n_lev, n_col}), {n_col, n_lev});
 
     Gas_concs<double> gas_concs;
+    Gas_concs<double> gas_concs_subset;
 
     gas_concs.set_vmr("h2o", Array<double,2>(input_nc.get_variable<double>("vmr_h2o", {n_lay, n_col}), {n_col, n_lay}));
     gas_concs.set_vmr("co2", Array<double,2>(input_nc.get_variable<double>("vmr_co2", {n_lay, n_col}), {n_col, n_lay}));
@@ -71,8 +72,7 @@ int main()
     gas_concs.set_vmr("n2" , Array<double,2>(input_nc.get_variable<double>("vmr_n2" , {n_lay, n_col}), {n_col, n_lay}));
 
     // CvH: does this one need to be present?
-    // Array<double,2> col_dry(input_nc.get_variable<double>("col_dry", {n_lay, n_col}), {n_col, n_lay});
-
+    Array<double,2> col_dry(input_nc.get_variable<double>("col_dry", {n_lay, n_col}), {n_col, n_lay});
 
     // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
     Netcdf_file coef_lw_nc(master, "coefficients_lw.nc", Netcdf_mode::Read);
@@ -205,10 +205,13 @@ int main()
     int n_gpt = kdist.get_ngpt();
     int n_bnd = kdist.get_nband();
 
-    Array<double,2> surface_emissivity;
-    Array<double,1> surface_temperature;
+    Array<double,2> emis_sfc;
+    Array<double,1> t_sfc;
 
     const int n_col_block = 4;
+
+    std::unique_ptr<Optical_props_arry<double>> optical_props;
+    std::unique_ptr<Optical_props_arry<double>> optical_props_subset;
 
     if (kdist.source_is_internal())
     {
@@ -216,17 +219,33 @@ int main()
 
         Source_func_lw<double> sources       (n_col      , n_lay, kdist);
         Source_func_lw<double> sources_subset(n_col_block, n_lay, kdist);
-        std::unique_ptr<Optical_props<double>> optical_props;
-        std::unique_ptr<Optical_props<double>> optical_props_subset;
         optical_props = std::make_unique<Optical_props_1scl<double>>(n_col, n_lay, kdist);
         optical_props_subset = std::make_unique<Optical_props_1scl<double>>(n_col_block, n_lay, kdist);
 
         // Download surface boundary conditions for long wave.
-        Array<double,2> surface_emissivity_tmp (input_nc.get_variable<double>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
-        Array<double,1> surface_temperature_tmp(input_nc.get_variable<double>("t_sfc", {n_col}), {n_col});
+        Array<double,2> emis_sfc_tmp(input_nc.get_variable<double>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
+        Array<double,1> t_sfc_tmp(input_nc.get_variable<double>("t_sfc", {n_col}), {n_col});
 
-        surface_emissivity = surface_emissivity_tmp;
-        surface_temperature = surface_temperature_tmp;
+        emis_sfc = emis_sfc_tmp;
+        t_sfc = t_sfc_tmp;
+
+        int n_blocks = n_col / n_col_block;
+        for (int b=1; b<=n_col_block; ++b)
+        {
+            const int col_s = (b-1) * n_col_block + 1;
+            const int col_e = b     * n_col_block;
+            kdist.gas_optics(
+                    p_lay.subset({{ {col_s, col_e}, {1, n_lay} }}),
+                    p_lev.subset({{ {col_s, col_e}, {1, n_lev} }}),
+                    t_lay.subset({{ {col_s, col_e}, {1, n_lay} }}),
+                    t_sfc.subset({{ {col_s, col_e} }}),
+                    gas_concs_subset,
+                    optical_props_subset,
+                    sources_subset,
+                    col_dry.subset({{ {col_s, col_e}, {1, n_lay} }}),
+                    t_lev.subset  ({{ {col_s, col_e}, {1, n_lev} }})
+                    );
+        }
     }
     else
     {

@@ -1,9 +1,10 @@
 #ifndef GAS_OPTICS_H
 #define GAS_OPTICS_H
 
+#include <cmath>
 #include "Optical_props.h"
 #include "Array.h"
-#include <cmath>
+#include "Source_functions.h"
 
 template<typename TF> class Gas_concs;
 
@@ -47,6 +48,17 @@ class Gas_optics : public Optical_props<TF>
 
         bool source_is_internal() const { return (totplnk.size() > 0) && (planck_frac.size() > 0); }
         TF get_press_ref_min() const { return press_ref_min; }
+
+        void gas_optics(
+                const Array<TF,2>& play,
+                const Array<TF,2>& plev,
+                const Array<TF,2>& tlay,
+                const Array<TF,1>& tsfc,
+                const Gas_concs<TF>& gas_desc,
+                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                Source_func_lw<TF>& sources,
+                const Array<TF,2>& col_dry,
+                const Array<TF,2>& tlev);
 
     private:
         Array<TF,2> totplnk;
@@ -536,7 +548,7 @@ void Gas_optics<TF>::init_abs_coeffs(
     // Which gases known to the gas optics are present in the host model (available_gases)?
     std::vector<std::string> gas_names_to_use;
 
-    for (const std::string& s : gas_names.v())
+    for (const std::string &s : gas_names.v())
     {
         if (available_gases.exists(s))
             gas_names_to_use.push_back(s);
@@ -545,41 +557,41 @@ void Gas_optics<TF>::init_abs_coeffs(
     // Now the number of gases is the union of those known to the k-distribution and provided
     // by the host model.
     const int n_gas = gas_names_to_use.size();
-    Array<std::string,1> gas_names_this(std::move(gas_names_to_use), {n_gas});
+    Array<std::string, 1> gas_names_this(std::move(gas_names_to_use), {n_gas});
     this->gas_names = gas_names_this;
 
     // Initialize the gas optics object, keeping only those gases known to the
     // gas optics and also present in the host model.
     // Add an offset to the indexing to interface the negative ranging of fortran.
-    Array<TF,3> vmr_ref_red({vmr_ref.dim(1), n_gas+1, vmr_ref.dim(3)});
+    Array<TF, 3> vmr_ref_red({vmr_ref.dim(1), n_gas + 1, vmr_ref.dim(3)});
     vmr_ref_red.set_offsets({0, -1, 0});
 
     // Gas 0 is used in single-key species method, set to 1.0 (col_dry)
-    for (int i1=1; i1<=vmr_ref_red.dim(1); ++i1)
-        for (int i3=1; i3<=vmr_ref_red.dim(3); ++i3)
-            vmr_ref_red({i1,0,i3}) = vmr_ref({i1,1,i3});
+    for (int i1 = 1; i1 <= vmr_ref_red.dim(1); ++i1)
+        for (int i3 = 1; i3 <= vmr_ref_red.dim(3); ++i3)
+            vmr_ref_red({i1, 0, i3}) = vmr_ref({i1, 1, i3});
 
-    for (int i=1; i<=n_gas; ++i)
+    for (int i = 1; i <= n_gas; ++i)
     {
         int idx = gas_names.find_indices(this->gas_names({i}))[0];
-        for (int i1=1; i1<=vmr_ref_red.dim(1); ++i1)
-            for (int i3=1; i3<=vmr_ref_red.dim(3); ++i3)
-                vmr_ref_red({i1,i,i3}) = vmr_ref({i1,idx+1,i3}); // CvH: why +1?
+        for (int i1 = 1; i1 <= vmr_ref_red.dim(1); ++i1)
+            for (int i3 = 1; i3 <= vmr_ref_red.dim(3); ++i3)
+                vmr_ref_red({i1, i, i3}) = vmr_ref({i1, idx + 1, i3}); // CvH: why +1?
     }
 
     this->vmr_ref = std::move(vmr_ref_red);
 
     // Reduce minor arrays so variables only contain minor gases that are available.
     // Reduce size of minor Arrays.
-    Array<std::string,1> minor_gases_lower_red;
-    Array<std::string,1> scaling_gas_lower_red;
-    Array<std::string,1> minor_gases_upper_red;
-    Array<std::string,1> scaling_gas_upper_red;
+    Array<std::string, 1> minor_gases_lower_red;
+    Array<std::string, 1> scaling_gas_lower_red;
+    Array<std::string, 1> minor_gases_upper_red;
+    Array<std::string, 1> scaling_gas_upper_red;
 
     reduce_minor_arrays(
             available_gases,
             gas_names,
-            gas_minor,identifier_minor,
+            gas_minor, identifier_minor,
             kminor_lower,
             minor_gases_lower,
             minor_limits_gpt_lower,
@@ -635,7 +647,7 @@ void Gas_optics<TF>::init_abs_coeffs(
     // ---- post processing ----
     //  creates log reference pressure
     this->press_ref_log = this->press_ref;
-    for (int i1=1; i1<=this->press_ref_log.dim(1); ++i1)
+    for (int i1 = 1; i1 <= this->press_ref_log.dim(1); ++i1)
         this->press_ref_log({i1}) = std::log(this->press_ref_log({i1}));
 
     // log scale of reference pressure
@@ -655,8 +667,8 @@ void Gas_optics<TF>::init_abs_coeffs(
 
     // Create flavor list.
     // Reduce (remap) key_species list; checks that all key gases are present in incoming
-    Array<int,3> key_species_red;
-    Array<int,1> key_species_present_init; // CvH bool or int?
+    Array<int, 3> key_species_red;
+    Array<int, 1> key_species_present_init; // CvH bool or int?
 
     create_key_species_reduce(
             gas_names, this->gas_names, key_species, key_species_red, key_species_present_init);
@@ -678,21 +690,35 @@ void Gas_optics<TF>::init_abs_coeffs(
     this->press_ref_max = this->press_ref({1});
 
     // creates press_ref_log, temp_ref_delta
-    this->press_ref_log_delta = (std::log(this->press_ref_min) - std::log(this->press_ref_max)) / (this->press_ref.dim(1)-1);
-    this->temp_ref_delta = (this->temp_ref_max - this->temp_ref_min) / (this->temp_ref.dim(1)-1);
+    this->press_ref_log_delta =
+            (std::log(this->press_ref_min) - std::log(this->press_ref_max)) / (this->press_ref.dim(1) - 1);
+    this->temp_ref_delta = (this->temp_ref_max - this->temp_ref_min) / (this->temp_ref.dim(1) - 1);
 
     // Which species are key in one or more bands?
     // this->flavor is an index into this->gas_names
     // if (allocated(this%is_key)) deallocate(this%is_key) ! Shouldn't ever happen...
-    Array<int,1> is_key({get_ngas()}); // CvH bool, defaults to 0.?
+    Array<int, 1> is_key({get_ngas()}); // CvH bool, defaults to 0.?
 
-    for (int j=1; j<=this->flavor.dim(2); ++j)
-        for (int i=1; i<=this->flavor.dim(1); ++i)
+    for (int j = 1; j <= this->flavor.dim(2); ++j)
+        for (int i = 1; i <= this->flavor.dim(1); ++i)
         {
-            if (this->flavor({i,j}) != 0)
-                is_key({this->flavor({i,j})}) = true;
+            if (this->flavor({i, j}) != 0)
+                is_key({this->flavor({i, j})}) = true;
         }
 
     this->is_key = is_key;
 }
+
+template<typename TF>
+void Gas_optics<TF>::gas_optics(
+        const Array<TF,2>& play,
+        const Array<TF,2>& plev,
+        const Array<TF,2>& tlay,
+        const Array<TF,1>& tsfc,
+        const Gas_concs<TF>& gas_desc,
+        std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+        Source_func_lw<TF>& sources,
+        const Array<TF,2>& col_dry,
+        const Array<TF,2>& tlev)
+{}
 #endif
