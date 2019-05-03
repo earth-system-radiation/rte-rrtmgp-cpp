@@ -153,7 +153,7 @@ class Gas_optics : public Optical_props<TF>
                 std::unique_ptr<Optical_props_arry<TF>>& optical_props,
                 Array<int,2>& jtemp, Array<int,2>& jpress,
                 Array<int,4>& jeta,
-                Array<int,2>& tropo,
+                Array<char,2>& tropo,
                 Array<TF,6>& fmajor,
                 const Array<TF,2>& col_dry);
 };
@@ -746,7 +746,7 @@ void Gas_optics<TF>::gas_optics(
 
     Array<int,2> jtemp({play.dim(1), play.dim(2)});
     Array<int,2> jpress({play.dim(1), play.dim(2)});
-    Array<int,2> tropo({play.dim(1), play.dim(2)});
+    Array<char,2> tropo({play.dim(1), play.dim(2)});
     Array<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
     Array<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
 
@@ -784,7 +784,7 @@ namespace rrtmgp_kernels
                 int* jtemp,
                 double* fmajor, double* fminor,
                 double* col_mix,
-                int* tropo,
+                bool* tropo,
                 int* jeta,
                 int* jpress);
 
@@ -817,7 +817,7 @@ namespace rrtmgp_kernels
             Array<int,2>& jtemp,
             Array<TF,6>& fmajor, Array<TF,5>& fminor,
             Array<TF,4>& col_mix,
-            Array<int,2>& tropo,
+            Array<char,2>& tropo,
             Array<int,4>& jeta,
             Array<int,2>& jpress)
     {
@@ -838,7 +838,7 @@ namespace rrtmgp_kernels
                 jtemp.v().data(),
                 fmajor.v().data(), fminor.v().data(),
                 col_mix.v().data(),
-                tropo.v().data(),
+                reinterpret_cast<bool*>(tropo.v().data()),
                 jeta.v().data(),
                 jpress.v().data());
     }
@@ -854,7 +854,7 @@ void Gas_optics<TF>::compute_gas_taus(
         std::unique_ptr<Optical_props_arry<TF>>& optical_props,
         Array<int,2>& jtemp, Array<int,2>& jpress,
         Array<int,4>& jeta,
-        Array<int,2>& tropo,
+        Array<char,2>& tropo,
         Array<TF,6>& fmajor,
         const Array<TF,2>& col_dry)
 {
