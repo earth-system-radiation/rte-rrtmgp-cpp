@@ -182,7 +182,7 @@ class Array
         inline bool is_empty() const { return ncells == 0; }
 
         inline Array<T, N> subset(
-                const std::array<std::pair<int, int>, N> ranges)
+                const std::array<std::pair<int, int>, N> ranges) const
         {
             // Calculate the dimension sizes based on the range.
             std::array<int, N> subdims;

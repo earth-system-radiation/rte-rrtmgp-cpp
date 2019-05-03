@@ -234,6 +234,7 @@ int main()
         {
             const int col_s = (b-1) * n_col_block + 1;
             const int col_e = b     * n_col_block;
+            Gas_concs<double> gas_concs_subset(gas_concs, col_s, n_col_block);
             kdist.gas_optics(
                     p_lay.subset({{ {col_s, col_e}, {1, n_lay} }}),
                     p_lev.subset({{ {col_s, col_e}, {1, n_lev} }}),

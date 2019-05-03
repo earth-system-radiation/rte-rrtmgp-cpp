@@ -49,6 +49,11 @@ class Gas_optics : public Optical_props<TF>
         bool source_is_internal() const { return (totplnk.size() > 0) && (planck_frac.size() > 0); }
         TF get_press_ref_min() const { return press_ref_min; }
 
+        int get_nflav() const { return flavor.dim(2); }
+        int get_neta() const { return kmajor.dim(2); }
+        int get_npres() const { return kmajor.dim(3)-1; }
+        int get_ntemp() const { return kmajor.dim(4); }
+
         void gas_optics(
                 const Array<TF,2>& play,
                 const Array<TF,2>& plev,
@@ -138,6 +143,19 @@ class Gas_optics : public Optical_props<TF>
                 const Array<int,1>& kminor_start_upper,
                 const Array<TF,3>& rayl_lower,
                 const Array<TF,3>& rayl_upper);
+
+        void compute_gas_taus(
+                const int ncol, const int nlay, const int ngpt, const int nband,
+                const Array<TF,2>& play,
+                const Array<TF,2>& plev,
+                const Array<TF,2>& tlay,
+                const Gas_concs<TF>& gas_desc,
+                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                Array<int,2>& jtemp, Array<int,2>& jpress,
+                Array<int,4>& jeta,
+                Array<int,2>& tropo,
+                Array<TF,6>& fmajor,
+                const Array<TF,2>& col_dry);
 };
 
 namespace
@@ -720,5 +738,62 @@ void Gas_optics<TF>::gas_optics(
         Source_func_lw<TF>& sources,
         const Array<TF,2>& col_dry,
         const Array<TF,2>& tlev)
-{}
+{
+    const int ncol = play.dim(1);
+    const int nlay = play.dim(2);
+    const int ngpt = this->get_ngpt();
+    const int nband = this->get_nband();
+
+    Array<int,2> jtemp({play.dim(1), play.dim(2)});
+    Array<int,2> jpress({play.dim(1), play.dim(2)});
+    Array<int,2> tropo({play.dim(1), play.dim(2)});
+    Array<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
+    Array<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
+
+    // Gas optics.
+    compute_gas_taus(
+            ncol, nlay, ngpt, nband,
+            play, plev, tlay, gas_desc,
+            optical_props,
+            jtemp, jpress, jeta, tropo, fmajor,
+            col_dry);
+}
+
+template<typename TF>
+void Gas_optics<TF>::compute_gas_taus(
+        const int ncol, const int nlay, const int ngpt, const int nband,
+        const Array<TF,2>& play,
+        const Array<TF,2>& plev,
+        const Array<TF,2>& tlay,
+        const Gas_concs<TF>& gas_desc,
+        std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+        Array<int,2>& jtemp, Array<int,2>& jpress,
+        Array<int,4>& jeta,
+        Array<int,2>& tropo,
+        Array<TF,6>& fmajor,
+        const Array<TF,2>& col_dry)
+{
+    Array<TF,3> vmr({ncol, nlay, this->get_ngas()});
+    Array<TF,3> col_gas({ncol, nlay, this->get_ngas()+1});
+    Array<TF,4> col_mix({2, this->get_nflav(), ncol, nlay});
+    Array<TF,5> fminor({2, 2, this->get_nflav(), ncol, nlay});
+
+    // CvH add all the checking...
+    const int ngas = this->get_ngas();
+    const int nflav = this->get_nflav();
+    const int neta = this->get_neta();
+    const int npres = this->get_npres();
+    const int ntemp = this->get_ntemp();
+
+    const int nminorlower = this->minor_scales_with_density_lower.dim(1);
+    const int nminorklower = this->kminor_lower.dim(1);
+    const int nminorupper = this->minor_scales_with_density_upper.dim(1);
+    const int nminorkupper = this->kminor_upper.dim(1);
+
+    for (int igas=1; igas<=ngas; ++igas)
+    {
+        Array<TF,2> vmr_2d({ncol, nlay});
+        gas_desc.get_vmr(this->gas_names({igas}), vmr_2d);
+    }
+}
 #endif
