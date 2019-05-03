@@ -85,8 +85,9 @@ class Optical_props
             return gpoint_bands;
         }
 
-        int get_nband() const { return band2gpt.dim(2); }
-        int get_ngpt() const { return band2gpt.max(); }
+        int get_nband() const { return this->band2gpt.dim(2); }
+        int get_ngpt() const { return this->band2gpt.max(); }
+        Array<int,2> get_band_lims_gpoint() const { return this->band2gpt; }
 
     private:
         Array<int,2> band2gpt;     // (begin g-point, end g-point) = band2gpt(2,band)

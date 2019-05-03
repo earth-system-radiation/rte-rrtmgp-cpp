@@ -788,6 +788,35 @@ namespace rrtmgp_kernels
                 int* jeta,
                 int* jpress);
 
+    extern "C" void compute_tau_absorption(
+            int* ncol, int* nlay, int* nband, int* ngpt,
+            int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
+            int* nminorlower, int* nminorklower,
+            int* nminorupper, int* nminorkupper,
+            int* idx_h2o,
+            int* gpoint_flavor,
+            int* band_lims_gpt,
+            double* kmajor,
+            double* kminor_lower,
+            double* kminor_upper,
+            int* minor_limits_gpt_lower,
+            int* minor_limits_gpt_upper,
+            bool* minor_scales_with_density_lower,
+            bool* minor_scales_with_density_upper,
+            bool* scale_by_complement_lower,
+            bool* scale_by_complement_upper,
+            int* idx_minor_lower,
+            int* idx_minor_upper,
+            int* idx_minor_scaling_lower,
+            int* idx_minor_scaling_upper,
+            int* kminor_start_lower,
+            int* kminor_start_upper,
+            bool* tropo,
+            double* col_mix, double* fmajor, double* fminor,
+            double* play, double* tlay, double* col_gas,
+            int* jeta, int* jtemp, int* jpress,
+            double* tau);
+
     template<typename TF> void zero_array(
             int ni, int nj, int nk, Array<TF,3>& array)
     {
@@ -841,6 +870,66 @@ namespace rrtmgp_kernels
                 reinterpret_cast<bool*>(tropo.v().data()),
                 jeta.v().data(),
                 jpress.v().data());
+    }
+
+    template<typename TF>
+    void compute_tau_absorption(
+            int ncol, int nlay, int nband, int ngpt,
+            int ngas, int nflav, int neta, int npres, int ntemp,
+            int nminorlower, int nminorklower,
+            int nminorupper, int nminorkupper,
+            int idx_h2o,
+            Array<int,2>& gpoint_flavor,
+            Array<int,2>& band_lims_gpt,
+            Array<TF,4>& kmajor,
+            Array<TF,3>& kminor_lower,
+            Array<TF,3>& kminor_upper,
+            Array<int,2>& minor_limits_gpt_lower,
+            Array<int,2>& minor_limits_gpt_upper,
+            Array<char,1>& minor_scales_with_density_lower,
+            Array<char,1>& minor_scales_with_density_upper,
+            Array<char,1>& scale_by_complement_lower,
+            Array<char,1>& scale_by_complement_upper,
+            Array<int,1>& idx_minor_lower,
+            Array<int,1>& idx_minor_upper,
+            Array<int,1>& idx_minor_scaling_lower,
+            Array<int,1>& idx_minor_scaling_upper,
+            Array<int,1>& kminor_start_lower,
+            Array<int,1>& kminor_start_upper,
+            Array<char,2>& tropo,
+            Array<TF,4>& col_mix, Array<TF,6>& fmajor, Array<TF,5>& fminor,
+            Array<TF,2>& play, Array<TF,2>& tlay, Array<TF,3>& col_gas,
+            Array<int,1>& jeta, Array<int,1>& jtemp, Array<int,1>& jpress,
+            Array<TF,3>& tau)
+    {
+        compute_tau_absorption(
+            &ncol, &nlay, &nband, &ngpt,
+            &ngas, &nflav, &neta, &npres, &ntemp,
+            &nminorlower, &nminorklower,
+            &nminorupper, &nminorkupper,
+            &idx_h2o,
+            gpoint_flavor.v().data(),
+            band_lims_gpt.v().data(),
+            kmajor.v().data(),
+            kminor_lower.v().data(),
+            kminor_upper.v().data(),
+            minor_limits_gpt_lower.v().data(),
+            minor_limits_gpt_upper.v().data(),
+            minor_scales_with_density_lower.v().data(),
+            minor_scales_with_density_upper.v().data(),
+            scale_by_complement_lower.v().data(),
+            scale_by_complement_upper.v().data(),
+            idx_minor_lower.v().data(),
+            idx_minor_upper.v().data(),
+            idx_minor_scaling_lower.v().data(),
+            idx_minor_scaling_upper.v().data(),
+            kminor_start_lower.v().data(),
+            kminor_start_upper.v().data(),
+            tropo.v().data(),
+            col_mix.v().data(), fmajor.v().data(), fminor.v().data(),
+            play.v().data(), tlay.v().data(), col_gas.v().data(),
+            jeta.v().data(), jtemp.v().data(), jpress.v().data(),
+            tau.v().data());
     }
 }
 
@@ -922,15 +1011,26 @@ void Gas_optics<TF>::compute_gas_taus(
             tropo,
             jeta, jpress);
 
-    /*
-    compute_tau_absorption(
+    int idx_h2o = -1;
+    for (int i=1; i<=this->gas_names.dim(1); ++i)
+        if (gas_names({i}) == "h2o")
+        {
+            idx_h2o = i;
+            break;
+        }
+
+    if (idx_h2o == -1)
+        throw std::runtime_error("idx_h2o cannot be found");
+
+    auto band_lims_gpoint = this->get_band_lims_gpoint();
+    rrtmgp_kernels::compute_tau_absorption(
             ncol, nlay, nband, ngpt,
             ngas, nflav, neta, npres, ntemp,
             nminorlower, nminorklower,
             nminorupper, nminorkupper,
             idx_h2o,
             this->gpoint_flavor,
-            this->get_band_lims_gpoint(),
+            band_lims_gpoint,
             this->kmajor,
             this->kminor_lower,
             this->kminor_upper,
@@ -950,6 +1050,6 @@ void Gas_optics<TF>::compute_gas_taus(
             col_mix, fmajor, fminor,
             play, tlay, col_gas,
             jeta, jtemp, jpress,
-            tau);*/
+            tau);
 }
 #endif
