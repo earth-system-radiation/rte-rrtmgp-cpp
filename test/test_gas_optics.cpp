@@ -12,7 +12,7 @@ namespace
             std::vector<int> i_count,
             Netcdf_handle& input_nc,
             const int string_len,
-            bool trim=false)
+            bool trim=true)
     {
         // Multiply all elements in i_count.
         int total_count = std::accumulate(i_count.begin(), i_count.end(), 1, std::multiplies<>());
@@ -117,11 +117,11 @@ int main()
     Array<double,3> kminor_lower(coef_lw_nc.get_variable<double>("kminor_lower", {n_temps, n_mixingfracs, n_contributors_lower}), {n_contributors_lower, n_mixingfracs, n_temps});
     Array<double,3> kminor_upper(coef_lw_nc.get_variable<double>("kminor_upper", {n_temps, n_mixingfracs, n_contributors_upper}), {n_contributors_upper, n_mixingfracs, n_temps});
 
-    Array<std::string,1> gas_minor(get_variable_string("gas_minor", {n_minorabsorbers}, coef_lw_nc, n_char, false), {n_minorabsorbers});
-    Array<std::string,1> identifier_minor(get_variable_string("identifier_minor", {n_minorabsorbers}, coef_lw_nc, n_char, false), {n_minorabsorbers});
+    Array<std::string,1> gas_minor(get_variable_string("gas_minor", {n_minorabsorbers}, coef_lw_nc, n_char), {n_minorabsorbers});
+    Array<std::string,1> identifier_minor(get_variable_string("identifier_minor", {n_minorabsorbers}, coef_lw_nc, n_char), {n_minorabsorbers});
 
-    Array<std::string,1> minor_gases_lower(get_variable_string("minor_gases_lower", {n_minor_absorber_intervals_lower}, coef_lw_nc, n_char, false), {n_minor_absorber_intervals_lower});
-    Array<std::string,1> minor_gases_upper(get_variable_string("minor_gases_upper", {n_minor_absorber_intervals_upper}, coef_lw_nc, n_char, false), {n_minor_absorber_intervals_upper});
+    Array<std::string,1> minor_gases_lower(get_variable_string("minor_gases_lower", {n_minor_absorber_intervals_lower}, coef_lw_nc, n_char), {n_minor_absorber_intervals_lower});
+    Array<std::string,1> minor_gases_upper(get_variable_string("minor_gases_upper", {n_minor_absorber_intervals_upper}, coef_lw_nc, n_char), {n_minor_absorber_intervals_upper});
 
     Array<int,2> minor_limits_gpt_lower(coef_lw_nc.get_variable<int>("minor_limits_gpt_lower", {n_minor_absorber_intervals_lower, n_pairs}), {n_pairs, n_minor_absorber_intervals_lower});
     Array<int,2> minor_limits_gpt_upper(coef_lw_nc.get_variable<int>("minor_limits_gpt_upper", {n_minor_absorber_intervals_upper, n_pairs}), {n_pairs, n_minor_absorber_intervals_upper});
@@ -132,8 +132,8 @@ int main()
     Array<int,1> scale_by_complement_lower(coef_lw_nc.get_variable<int>("scale_by_complement_lower", {n_minor_absorber_intervals_lower}), {n_minor_absorber_intervals_lower});
     Array<int,1> scale_by_complement_upper(coef_lw_nc.get_variable<int>("scale_by_complement_upper", {n_minor_absorber_intervals_upper}), {n_minor_absorber_intervals_upper});
 
-    Array<std::string,1> scaling_gas_lower(get_variable_string("scaling_gas_lower", {n_minor_absorber_intervals_lower}, coef_lw_nc, n_char, false), {n_minor_absorber_intervals_lower});
-    Array<std::string,1> scaling_gas_upper(get_variable_string("scaling_gas_upper", {n_minor_absorber_intervals_upper}, coef_lw_nc, n_char, false), {n_minor_absorber_intervals_upper});
+    Array<std::string,1> scaling_gas_lower(get_variable_string("scaling_gas_lower", {n_minor_absorber_intervals_lower}, coef_lw_nc, n_char), {n_minor_absorber_intervals_lower});
+    Array<std::string,1> scaling_gas_upper(get_variable_string("scaling_gas_upper", {n_minor_absorber_intervals_upper}, coef_lw_nc, n_char), {n_minor_absorber_intervals_upper});
 
     Array<int,1> kminor_start_lower(coef_lw_nc.get_variable<int>("kminor_start_lower", {n_minor_absorber_intervals_lower}), {n_minor_absorber_intervals_lower});
     Array<int,1> kminor_start_upper(coef_lw_nc.get_variable<int>("kminor_start_upper", {n_minor_absorber_intervals_upper}), {n_minor_absorber_intervals_upper});

@@ -160,6 +160,16 @@ class Gas_optics : public Optical_props<TF>
 
 namespace
 {
+    int find_index(
+            const Array<std::string,1>& data, const std::string& value)
+    {
+        auto it = std::find(data.v().begin(), data.v().end(), value);
+        if (it == data.v().end())
+            return -1;
+        else
+            return it - data.v().begin() + 1;
+    }
+
     template<typename TF>
     void reduce_minor_arrays(
                 const Gas_concs<TF>& available_gases,
@@ -189,7 +199,7 @@ namespace
 
         for (int i=1; i<=nm; ++i)
         {
-            const int idx_mnr = identifier_minor.find_indices(minor_gases_atm({i}))[0];
+            const int idx_mnr = find_index(identifier_minor, minor_gases_atm({i}));
 
             // Search for
             std::string gas_minor_trimmed = gas_minor({idx_mnr});
@@ -274,10 +284,10 @@ namespace
         for (int imnr=1; imnr<=minor_gases_atm.dim(1); ++imnr)
         {
             // Find identifying string for minor species in list of possible identifiers (e.g. h2o_slf)
-            const int idx_mnr = identifier_minor.find_indices(minor_gases_atm({imnr}))[0];
+            const int idx_mnr = find_index(identifier_minor, minor_gases_atm({imnr}));
 
             // Find name of gas associated with minor species identifier (e.g. h2o)
-            idx_minor_atm_out({imnr}) = gas_names.find_indices(gas_minor({idx_mnr}))[0];
+            idx_minor_atm_out({imnr}) = find_index(gas_names, gas_minor({idx_mnr}));
         }
 
         idx_minor_atm = idx_minor_atm_out;
@@ -291,7 +301,7 @@ namespace
         Array<int,1> idx_minor_scaling_atm_out({scaling_gas_atm.dim(1)});
 
         for (int imnr=1; imnr<=scaling_gas_atm.dim(1); ++imnr)
-            idx_minor_scaling_atm_out({imnr}) = gas_names.find_indices(scaling_gas_atm({imnr}))[0];
+            idx_minor_scaling_atm_out({imnr}) = find_index(gas_names, scaling_gas_atm({imnr}));
 
         idx_minor_scaling_atm = idx_minor_scaling_atm_out;
     }
@@ -320,7 +330,7 @@ namespace
                     const int ks = key_species({ip,ia,it});
                     if (ks != 0)
                     {
-                        key_species_red({ip,ia,it}) = gas_names_red.find_indices(gas_names({ks}))[0];
+                        key_species_red({ip,ia,it}) = find_index(gas_names_red, gas_names({ks}));
                         if (ks == -1)
                             key_species_present_init({ks}) = 0;
                     }
@@ -591,7 +601,7 @@ void Gas_optics<TF>::init_abs_coeffs(
 
     for (int i = 1; i <= n_gas; ++i)
     {
-        int idx = gas_names.find_indices(this->gas_names({i}))[0];
+        int idx = find_index(gas_names, this->gas_names({i}));
         for (int i1 = 1; i1 <= vmr_ref_red.dim(1); ++i1)
             for (int i3 = 1; i3 <= vmr_ref_red.dim(3); ++i3)
                 vmr_ref_red({i1, i, i3}) = vmr_ref({i1, idx + 1, i3}); // CvH: why +1?

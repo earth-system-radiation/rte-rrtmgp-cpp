@@ -146,11 +146,11 @@ class Array
 
         inline int size() const { return ncells; }
 
-        inline std::array<int, N> find_indices(const T& value) const
-        {
-            int pos = std::find(data.begin(), data.end(), value) - data.begin();
-            return calc_indices<N>(pos, strides, offsets);
-        }
+        // inline std::array<int, N> find_indices(const T& value) const
+        // {
+        //     int pos = std::find(data.begin(), data.end(), value) - data.begin();
+        //     return calc_indices<N>(pos, strides, offsets);
+        // }
 
         inline T max() const
         {
