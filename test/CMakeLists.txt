@@ -46,5 +46,5 @@ else()
   target_link_libraries(test_rrtmgp ${LIBS} m)
 
   add_executable(test_gas_optics test_gas_optics.cpp)
-  target_link_libraries(test_gas_optics ${LIBS} m)
+  target_link_libraries(test_gas_optics rrtmgp_kernels ${LIBS} m)
 endif()

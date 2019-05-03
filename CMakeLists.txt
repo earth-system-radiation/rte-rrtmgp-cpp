@@ -115,4 +115,5 @@ if(USECUDA)
   message(STATUS "NVCC flags: " ${CUDA_NVCC_FLAGS})
 endif()
 
+add_subdirectory(src_fortran)
 add_subdirectory(test)
