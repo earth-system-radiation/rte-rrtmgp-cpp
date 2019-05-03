@@ -197,8 +197,8 @@ class Array
                 int ic = i;
                 for (int n=N-1; n>0; --n)
                 {
-                    index[n] = ic / subdims[n] + ranges[n].first;
-                    ic %= subdims[n];
+                    index[n] = ic / a_sub.strides[n] + ranges[n].first;
+                    ic %= a_sub.strides[n];
                 }
                 index[0] = ic + ranges[0].first;
                 a_sub.data[i] = (*this)(index);
