@@ -773,6 +773,8 @@ void Gas_optics<TF>::compute_gas_taus(
         Array<TF,6>& fmajor,
         const Array<TF,2>& col_dry)
 {
+    Array<TF,3> tau({ngpt, nlay, ncol});
+    Array<TF,3> tau_rayleigh({ngpt, nlay, ncol});
     Array<TF,3> vmr({ncol, nlay, this->get_ngas()});
     Array<TF,3> col_gas({ncol, nlay, this->get_ngas()+1});
     Array<TF,4> col_mix({2, this->get_nflav(), ncol, nlay});
@@ -794,6 +796,34 @@ void Gas_optics<TF>::compute_gas_taus(
     {
         Array<TF,2> vmr_2d({ncol, nlay});
         gas_desc.get_vmr(this->gas_names({igas}), vmr_2d);
+
+        for (int icol=1; icol<=ncol; ++icol)
+            for (int ilay=1; ilay<=nlay; ++ilay)
+                vmr({icol, ilay, igas}) = vmr_2d({icol, ilay});
+
+        // Assume that col_dry is provided.
+
+        // Call the fortran kernels
+        zero_array(ngpt, nlay, ncol, tau);
+        interpolation(
+                ncol, nlay,
+                ngas, nflav, neta, npres, ntemp,
+                this->flavor,
+                this->press_ref_log,
+                this->temp_ref,
+                this->press_ref_log_delta,
+                this->temp_ref_min,
+                this->temp_ref_delta,
+                this->press_ref_trop_log,
+                this->vmr_ref,
+                play,
+                tlay,
+                col_gas,
+                jtemp,
+                fmajor, fminor,
+                col_mix,
+                tropo,
+                jeta, jpress);
     }
 }
 #endif
