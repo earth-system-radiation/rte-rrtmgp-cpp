@@ -21,7 +21,7 @@ namespace
         i_count.push_back(string_len);
 
         // Multiply all elements in i_count.
-        int total_count_char = std::accumulate(i_count.begin(), i_count.end(), 1, std::multiplies<>());
+        // int total_count_char = std::accumulate(i_count.begin(), i_count.end(), 1, std::multiplies<>());
 
         // Read the entire char array;
         std::vector<char> var_char;

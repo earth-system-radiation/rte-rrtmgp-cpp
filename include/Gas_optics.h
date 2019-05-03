@@ -767,6 +767,27 @@ namespace rrtmgp_kernels
     extern "C" void zero_array_4D(
              int* ni, int* nj, int* nk, int* nl, double* array);
 
+    extern "C" void interpolation(
+                int* ncol, int* nlay,
+                int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
+                int* flavor,
+                double* press_ref_log,
+                double* temp_ref,
+                double* press_ref_log_delta,
+                double* temp_ref_min,
+                double* temp_ref_delta,
+                double* press_ref_trop_log,
+                double* vmr_ref,
+                double* play,
+                double* tlay,
+                double* col_gas,
+                int* jtemp,
+                double* fmajor, double* fminor,
+                double* col_mix,
+                int* tropo,
+                int* jeta,
+                int* jpress);
+
     template<typename TF> void zero_array(
             int ni, int nj, int nk, Array<TF,3>& array)
     {
@@ -774,9 +795,52 @@ namespace rrtmgp_kernels
     }
 
     template<typename TF> void zero_array(
-            const int ni, const int nj, const int nk, const int nl, Array<TF,4>& array)
+            int ni, int nj, int nk, int nl, Array<TF,4>& array)
     {
         zero_array_4D(&ni, &nj, &nk, &nl, array.v().data());
+    }
+
+    template<typename TF> void interpolation(
+            int ncol, int nlay,
+            int ngas, int nflav, int neta, int npres, int ntemp,
+            Array<int,2>& flavor,
+            Array<TF,1>& press_ref_log,
+            Array<TF,1>& temp_ref,
+            TF press_ref_log_delta,
+            TF temp_ref_min,
+            TF temp_ref_delta,
+            TF press_ref_trop_log,
+            Array<TF,3>& vmr_ref,
+            const Array<TF,2>& play,
+            const Array<TF,2>& tlay,
+            Array<TF,3>& col_gas,
+            Array<int,2>& jtemp,
+            Array<TF,6>& fmajor, Array<TF,5>& fminor,
+            Array<TF,4>& col_mix,
+            Array<int,2>& tropo,
+            Array<int,4>& jeta,
+            Array<int,2>& jpress)
+    {
+        interpolation(
+                &ncol, &nlay,
+                &ngas, &nflav, &neta, &npres, &ntemp,
+                flavor.v().data(),
+                press_ref_log.v().data(),
+                temp_ref.v().data(),
+                &press_ref_log_delta,
+                &temp_ref_min,
+                &temp_ref_delta,
+                &press_ref_trop_log,
+                vmr_ref.v().data(),
+                const_cast<TF*>(play.v().data()),
+                const_cast<TF*>(tlay.v().data()),
+                col_gas.v().data(),
+                jtemp.v().data(),
+                fmajor.v().data(), fminor.v().data(),
+                col_mix.v().data(),
+                tropo.v().data(),
+                jeta.v().data(),
+                jpress.v().data());
     }
 }
 
