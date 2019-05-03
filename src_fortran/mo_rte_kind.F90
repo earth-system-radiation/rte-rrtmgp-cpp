@@ -30,6 +30,7 @@ module mo_rte_kind
   !
   ! Logical - for use with kernels
   !
-  integer, parameter :: wl = c_bool
+  !integer, parameter :: wl = c_bool
+  integer, parameter :: wl = 4
 
 end module mo_rte_kind

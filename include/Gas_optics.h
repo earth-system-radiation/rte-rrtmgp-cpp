@@ -153,7 +153,7 @@ class Gas_optics : public Optical_props<TF>
                 std::unique_ptr<Optical_props_arry<TF>>& optical_props,
                 Array<int,2>& jtemp, Array<int,2>& jpress,
                 Array<int,4>& jeta,
-                Array<char,2>& tropo,
+                Array<int,2>& tropo,
                 Array<TF,6>& fmajor,
                 const Array<TF,2>& col_dry);
 };
@@ -746,7 +746,7 @@ void Gas_optics<TF>::gas_optics(
 
     Array<int,2> jtemp({play.dim(1), play.dim(2)});
     Array<int,2> jpress({play.dim(1), play.dim(2)});
-    Array<char,2> tropo({play.dim(1), play.dim(2)});
+    Array<int,2> tropo({play.dim(1), play.dim(2)});
     Array<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
     Array<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
 
@@ -784,7 +784,7 @@ namespace rrtmgp_kernels
                 int* jtemp,
                 double* fmajor, double* fminor,
                 double* col_mix,
-                bool* tropo,
+                int* tropo,
                 int* jeta,
                 int* jpress);
 
@@ -801,17 +801,17 @@ namespace rrtmgp_kernels
             double* kminor_upper,
             int* minor_limits_gpt_lower,
             int* minor_limits_gpt_upper,
-            bool* minor_scales_with_density_lower,
-            bool* minor_scales_with_density_upper,
-            bool* scale_by_complement_lower,
-            bool* scale_by_complement_upper,
+            int* minor_scales_with_density_lower,
+            int* minor_scales_with_density_upper,
+            int* scale_by_complement_lower,
+            int* scale_by_complement_upper,
             int* idx_minor_lower,
             int* idx_minor_upper,
             int* idx_minor_scaling_lower,
             int* idx_minor_scaling_upper,
             int* kminor_start_lower,
             int* kminor_start_upper,
-            bool* tropo,
+            int* tropo,
             double* col_mix, double* fmajor, double* fminor,
             double* play, double* tlay, double* col_gas,
             int* jeta, int* jtemp, int* jpress,
@@ -829,7 +829,8 @@ namespace rrtmgp_kernels
         zero_array_4D(&ni, &nj, &nk, &nl, array.v().data());
     }
 
-    template<typename TF> void interpolation(
+    template<typename TF>
+    void interpolation(
             int ncol, int nlay,
             int ngas, int nflav, int neta, int npres, int ntemp,
             Array<int,2>& flavor,
@@ -846,7 +847,7 @@ namespace rrtmgp_kernels
             Array<int,2>& jtemp,
             Array<TF,6>& fmajor, Array<TF,5>& fminor,
             Array<TF,4>& col_mix,
-            Array<char,2>& tropo,
+            Array<int,2>& tropo,
             Array<int,4>& jeta,
             Array<int,2>& jpress)
     {
@@ -867,7 +868,7 @@ namespace rrtmgp_kernels
                 jtemp.v().data(),
                 fmajor.v().data(), fminor.v().data(),
                 col_mix.v().data(),
-                reinterpret_cast<bool*>(tropo.v().data()),
+                tropo.v().data(),
                 jeta.v().data(),
                 jpress.v().data());
     }
@@ -886,20 +887,20 @@ namespace rrtmgp_kernels
             Array<TF,3>& kminor_upper,
             Array<int,2>& minor_limits_gpt_lower,
             Array<int,2>& minor_limits_gpt_upper,
-            Array<char,1>& minor_scales_with_density_lower,
-            Array<char,1>& minor_scales_with_density_upper,
-            Array<char,1>& scale_by_complement_lower,
-            Array<char,1>& scale_by_complement_upper,
+            Array<int,1>& minor_scales_with_density_lower,
+            Array<int,1>& minor_scales_with_density_upper,
+            Array<int,1>& scale_by_complement_lower,
+            Array<int,1>& scale_by_complement_upper,
             Array<int,1>& idx_minor_lower,
             Array<int,1>& idx_minor_upper,
             Array<int,1>& idx_minor_scaling_lower,
             Array<int,1>& idx_minor_scaling_upper,
             Array<int,1>& kminor_start_lower,
             Array<int,1>& kminor_start_upper,
-            Array<char,2>& tropo,
+            Array<int,2>& tropo,
             Array<TF,4>& col_mix, Array<TF,6>& fmajor, Array<TF,5>& fminor,
-            Array<TF,2>& play, Array<TF,2>& tlay, Array<TF,3>& col_gas,
-            Array<int,1>& jeta, Array<int,1>& jtemp, Array<int,1>& jpress,
+            const Array<TF,2>& play, const Array<TF,2>& tlay, Array<TF,3>& col_gas,
+            Array<int,4>& jeta, Array<int,2>& jtemp, Array<int,2>& jpress,
             Array<TF,3>& tau)
     {
         compute_tau_absorption(
@@ -927,7 +928,7 @@ namespace rrtmgp_kernels
             kminor_start_upper.v().data(),
             tropo.v().data(),
             col_mix.v().data(), fmajor.v().data(), fminor.v().data(),
-            play.v().data(), tlay.v().data(), col_gas.v().data(),
+            const_cast<TF*>(play.v().data()), const_cast<TF*>(tlay.v().data()), col_gas.v().data(),
             jeta.v().data(), jtemp.v().data(), jpress.v().data(),
             tau.v().data());
     }
@@ -943,7 +944,7 @@ void Gas_optics<TF>::compute_gas_taus(
         std::unique_ptr<Optical_props_arry<TF>>& optical_props,
         Array<int,2>& jtemp, Array<int,2>& jpress,
         Array<int,4>& jeta,
-        Array<char,2>& tropo,
+        Array<int,2>& tropo,
         Array<TF,6>& fmajor,
         const Array<TF,2>& col_dry)
 {
