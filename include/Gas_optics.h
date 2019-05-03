@@ -862,6 +862,7 @@ void Gas_optics<TF>::compute_gas_taus(
     Array<TF,3> tau_rayleigh({ngpt, nlay, ncol});
     Array<TF,3> vmr({ncol, nlay, this->get_ngas()});
     Array<TF,3> col_gas({ncol, nlay, this->get_ngas()+1});
+    col_gas.set_offsets({0, 0, -1});
     Array<TF,4> col_mix({2, this->get_nflav(), ncol, nlay});
     Array<TF,5> fminor({2, 2, this->get_nflav(), ncol, nlay});
 
@@ -885,61 +886,70 @@ void Gas_optics<TF>::compute_gas_taus(
         for (int icol=1; icol<=ncol; ++icol)
             for (int ilay=1; ilay<=nlay; ++ilay)
                 vmr({icol, ilay, igas}) = vmr_2d({icol, ilay});
-
-        // Assume that col_dry is provided.
-
-        // Call the fortran kernels
-        rrtmgp_kernels::zero_array(ngpt, nlay, ncol, tau);
-
-        rrtmgp_kernels::interpolation(
-                ncol, nlay,
-                ngas, nflav, neta, npres, ntemp,
-                this->flavor,
-                this->press_ref_log,
-                this->temp_ref,
-                this->press_ref_log_delta,
-                this->temp_ref_min,
-                this->temp_ref_delta,
-                this->press_ref_trop_log,
-                this->vmr_ref,
-                play,
-                tlay,
-                col_gas,
-                jtemp,
-                fmajor, fminor,
-                col_mix,
-                tropo,
-                jeta, jpress);
-
-        /*
-        compute_tau_absorption(
-                ncol, nlay, nband, ngpt,
-                ngas, nflav, neta, npres, ntemp,
-                nminorlower, nminorklower,
-                nminorupper, nminorkupper,
-                idx_h2o,
-                this->gpoint_flavor,
-                this->get_band_lims_gpoint(),
-                this->kmajor,
-                this->kminor_lower,
-                this->kminor_upper,
-                this->minor_limits_gpt_lower,
-                this->minor_limits_gpt_upper,
-                this->minor_scales_with_density_lower,
-                this->minor_scales_with_density_upper,
-                this->scale_by_complement_lower,
-                this->scale_by_complement_upper,
-                this->idx_minor_lower,
-                this->idx_minor_upper,
-                this->idx_minor_scaling_lower,
-                this->idx_minor_scaling_upper,
-                this->kminor_start_lower,
-                this->kminor_start_upper,
-                tropo,
-                col_mix, fmajor, fminor,
-                play, tlay, col_gas,
-                jeta, jtemp, jpress,
-                tau);*/
     }
+
+    // CvH: Assume that col_dry is provided.
+
+    for (int ilay=1; ilay<=nlay; ++ilay)
+        for (int icol=1; icol<=ncol; ++icol)
+            col_gas({icol, ilay, 0}) = col_dry({icol, ilay});
+
+    for (int igas=1; igas<=ngas; ++igas)
+        for (int ilay=1; ilay<=nlay; ++ilay)
+            for (int icol=1; icol<=ncol; ++icol)
+                col_gas({icol, ilay, igas}) = vmr({icol, ilay, igas}) * col_dry({icol, ilay});
+
+    // Call the fortran kernels
+    rrtmgp_kernels::zero_array(ngpt, nlay, ncol, tau);
+
+    rrtmgp_kernels::interpolation(
+            ncol, nlay,
+            ngas, nflav, neta, npres, ntemp,
+            this->flavor,
+            this->press_ref_log,
+            this->temp_ref,
+            this->press_ref_log_delta,
+            this->temp_ref_min,
+            this->temp_ref_delta,
+            this->press_ref_trop_log,
+            this->vmr_ref,
+            play,
+            tlay,
+            col_gas,
+            jtemp,
+            fmajor, fminor,
+            col_mix,
+            tropo,
+            jeta, jpress);
+
+    /*
+    compute_tau_absorption(
+            ncol, nlay, nband, ngpt,
+            ngas, nflav, neta, npres, ntemp,
+            nminorlower, nminorklower,
+            nminorupper, nminorkupper,
+            idx_h2o,
+            this->gpoint_flavor,
+            this->get_band_lims_gpoint(),
+            this->kmajor,
+            this->kminor_lower,
+            this->kminor_upper,
+            this->minor_limits_gpt_lower,
+            this->minor_limits_gpt_upper,
+            this->minor_scales_with_density_lower,
+            this->minor_scales_with_density_upper,
+            this->scale_by_complement_lower,
+            this->scale_by_complement_upper,
+            this->idx_minor_lower,
+            this->idx_minor_upper,
+            this->idx_minor_scaling_lower,
+            this->idx_minor_scaling_upper,
+            this->kminor_start_lower,
+            this->kminor_start_upper,
+            tropo,
+            col_mix, fmajor, fminor,
+            play, tlay, col_gas,
+            jeta, jtemp, jpress,
+            tau);*/
 }
 #endif
