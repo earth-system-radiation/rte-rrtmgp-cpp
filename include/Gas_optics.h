@@ -267,7 +267,7 @@ namespace
             const Array<std::string,1>& gas_minor,
             const Array<std::string,1>& identifier_minor,
             const Array<std::string,1>& minor_gases_atm,
-            Array<int,1> idx_minor_atm)
+            Array<int,1>& idx_minor_atm)
     {
         Array<int,1> idx_minor_atm_out({minor_gases_atm.dim(1)});
 
@@ -286,7 +286,7 @@ namespace
     void create_idx_minor_scaling(
             const Array<std::string,1>& gas_names,
             const Array<std::string,1>& scaling_gas_atm,
-            Array<int,1> idx_minor_scaling_atm)
+            Array<int,1>& idx_minor_scaling_atm)
     {
         Array<int,1> idx_minor_scaling_atm_out({scaling_gas_atm.dim(1)});
 
