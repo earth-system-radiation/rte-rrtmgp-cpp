@@ -53,6 +53,7 @@ class Gas_optics : public Optical_props<TF>
         int get_neta() const { return kmajor.dim(2); }
         int get_npres() const { return kmajor.dim(3)-1; }
         int get_ntemp() const { return kmajor.dim(4); }
+        int get_nPlanckTemp() const { return totplnk.dim(1); }
 
         void gas_optics(
                 const Array<TF,2>& play,
@@ -856,7 +857,7 @@ namespace rrtmgp_kernels
 
     extern "C" void compute_Planck_source(
             int* ncol, int* nlay, int* nbnd, int* ngpt,
-            int* nflav, int* neta, int* npres, int* ntemp, int* nPlanckTemp(),
+            int* nflav, int* neta, int* npres, int* ntemp, int* nPlanckTemp,
             double* tlay, double* tlev, double* tsfc,
             double* fmajor, int* jeta, int* tropo, int* jtemp, int* jpress,
             int* gpoint_bands, int* band_lims_gpt, double* pfracin, double* temp_ref_min,
@@ -997,12 +998,26 @@ namespace rrtmgp_kernels
     void compute_Planck_source(
             int ncol, int nlay, int nbnd, int ngpt,
             int nflav, int neta, int npres, int ntemp, int nPlanckTemp,
-            Array<TF,2>& tlay, Array<TF,2>& tlev, Array<TF,1>& tsfc,
-            Array<TF,6>& fmajor, Array<int,4>& jeta, Array<int,2>& tropo, Array<int,2>& jtemp, Array<int,2>& jpress,
+            const Array<TF,2>& tlay, const Array<TF,2>& tlev, const Array<TF,1>& tsfc,
+            const Array<TF,6>& fmajor, const Array<int,4>& jeta, const Array<int,2>& tropo, const Array<int,2>& jtemp, const Array<int,2>& jpress,
             Array<int,1>& gpoint_bands, Array<int,2>& band_lims_gpt, Array<TF,4>& pfracin, TF temp_ref_min,
             TF totplnk_delta, Array<TF,2>& totplnk, Array<int,2>& gpoint_flavor,
-            Array<TF,2>& sfc_src, Array<TF,3>& lay_src, Array<TF,3>& lev_src, Array<TF,3>& lev_source_dec)
+            Array<TF,2>& sfc_src, Array<TF,3>& lay_src, Array<TF,3>& lev_src_inc, Array<TF,3>& lev_src_dec)
     {
+        compute_Planck_source(
+                &ncol, &nlay, &nbnd, &ngpt,
+                &nflav, &neta, &npres, &ntemp, &nPlanckTemp,
+                const_cast<TF*>(tlay.v().data()),
+                const_cast<TF*>(tlev.v().data()),
+                const_cast<TF*>(tsfc.v().data()),
+                const_cast<TF*>(fmajor.v().data()),
+                const_cast<int*>(jeta.v().data()),
+                const_cast<int*>(tropo.v().data()),
+                const_cast<int*>(jtemp.v().data()),
+                const_cast<int*>(jpress.v().data()),
+                gpoint_bands.v().data(), band_lims_gpt.v().data(), pfracin.v().data(), &temp_ref_min,
+                &totplnk_delta, totplnk.v().data(), gpoint_flavor.v().data(),
+                sfc_src.v().data(), lay_src.v().data(), lev_src_inc.v().data(), lev_src_dec.v().data());
     }
 }
 
@@ -1165,6 +1180,7 @@ void Gas_optics<TF>::source(
     const int nflav = this->get_nflav();
     const int neta = this->get_neta();
     const int npres = this->get_npres();
+    const int ntemp = this->get_ntemp();
     const int nPlanckTemp = this->get_nPlanckTemp();
     auto gpoint_bands = this->get_gpoint_bands();
     auto band_lims_gpoint = this->get_band_lims_gpoint();
@@ -1176,12 +1192,11 @@ void Gas_optics<TF>::source(
 
     rrtmgp_kernels::compute_Planck_source(
             ncol, nlay, nbnd, ngpt,
-            this->get_nflav(), this->get_neta(), this->get_npres, this->get_ntemp, this->get_nPlanckTemp(),
+            nflav, neta, npres, ntemp, nPlanckTemp,
             tlay, tlev, tsfc,
             fmajor, jeta, tropo, jtemp, jpress,
-            gpoint_bands, band_lims_gpoint, this->planck_fraction, this->temp_ref_min,
+            gpoint_bands, band_lims_gpoint, this->planck_frac, this->temp_ref_min,
             this->totplnk_delta, this->totplnk, this->gpoint_flavor,
             sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t);
 }
-
 #endif
