@@ -103,7 +103,7 @@ class Optical_props_arry : public Optical_props<TF>
             Optical_props<TF>(optical_props)
         {}
         virtual ~Optical_props_arry() {};
-        // virtual Array<TF,3>& get_tau() = 0;
+        virtual Array<TF,3>& get_tau() = 0;
         // virtual Array<TF,3>& get_ssa() = 0;
         // virtual Array<TF,3>& get_g() = 0;
 
@@ -190,11 +190,10 @@ class Optical_props_1scl : public Optical_props_arry<TF>
         int get_nlay() const { return tau_.dim2(); }
         int get_ngpt() const { return tau_.dim3(); }
         std::string get_name() const { return name_; }
-
-        Array<TF,3>& get_tau() { return tau_; }
-        Array<TF,3>& get_ssa() { throw std::runtime_error("Not available in this class"); }
-        Array<TF,3>& get_g  () { throw std::runtime_error("Not available in this class"); }
          */
+        Array<TF,3>& get_tau() { return tau; }
+        Array<TF,3>& get_ssa() { throw std::runtime_error("ssa is not available in this class"); }
+        Array<TF,3>& get_g  () { throw std::runtime_error("g is available in this class"); }
 
     private:
         Array<TF,3> tau;

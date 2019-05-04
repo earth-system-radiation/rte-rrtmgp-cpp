@@ -65,6 +65,12 @@ class Gas_optics : public Optical_props<TF>
                 const Array<TF,2>& col_dry,
                 const Array<TF,2>& tlev);
 
+    void combine_and_reorder(
+            const Array<TF,3>& tau,
+            const Array<TF,3>& tau_rayleigh,
+            const bool has_rayleigh,
+            std::unique_ptr<Optical_props_arry<TF>>& optical_props);
+
     private:
         Array<TF,2> totplnk;
         Array<TF,4> planck_frac;
@@ -827,6 +833,10 @@ namespace rrtmgp_kernels
             int* jeta, int* jtemp, int* jpress,
             double* tau);
 
+    extern "C" void reorder_123x321_kernel(
+            int* dim1, int* dim2, int* dim3,
+            double* array, double* array_out);
+
     template<typename TF> void zero_array(
             int ni, int nj, int nk, Array<TF,3>& array)
     {
@@ -941,6 +951,20 @@ namespace rrtmgp_kernels
             const_cast<TF*>(play.v().data()), const_cast<TF*>(tlay.v().data()), col_gas.v().data(),
             jeta.v().data(), jtemp.v().data(), jpress.v().data(),
             tau.v().data());
+    }
+
+    template<typename TF>
+    void reorder123x321(
+            const Array<TF,3>& data,
+            Array<TF,3>& data_out)
+    {
+        int dim1 = data.dim(1);
+        int dim2 = data.dim(2);
+        int dim3 = data.dim(3);
+        reorder_123x321_kernel(
+                &dim1, &dim2, &dim3,
+                const_cast<TF*>(data.v().data()),
+                data_out.v().data());
     }
 }
 
@@ -1062,5 +1086,28 @@ void Gas_optics<TF>::compute_gas_taus(
             play, tlay, col_gas,
             jeta, jtemp, jpress,
             tau);
+
+    bool has_rayleigh = false;
+    combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
+}
+
+template<typename TF>
+void Gas_optics<TF>::combine_and_reorder(
+        const Array<TF,3>& tau,
+        const Array<TF,3>& tau_rayleigh,
+        const bool has_rayleigh,
+        std::unique_ptr<Optical_props_arry<TF>>& optical_props)
+{
+    int ncol = tau.dim(3);
+    int nlay = tau.dim(2);
+    int ngpt = tau.dim(1);
+
+    if (!has_rayleigh)
+        rrtmgp_kernels::reorder123x321(tau, optical_props->get_tau());
+    else
+        throw std::runtime_error("Rayleigh scattering not implemented yet");
+
+    // CvH for 2 stream and n-stream zero the g and ssa
+
 }
 #endif
