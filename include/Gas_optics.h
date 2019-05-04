@@ -71,6 +71,16 @@ class Gas_optics : public Optical_props<TF>
             const bool has_rayleigh,
             std::unique_ptr<Optical_props_arry<TF>>& optical_props);
 
+    void source(
+            const int ncol, const int nlay, const int nband, const int ngpt,
+            const Array<TF,2>& play, const Array<TF,2>& plev,
+            const Array<TF,2>& tlay, const Array<TF,1>& tsfc,
+            const Array<int,2>& jtemp, const Array<int,2>& jpress,
+            const Array<int,4>& jeta, const Array<int,2>& tropo,
+            const Array<TF,6>& fmajor,
+            Source_func_lw<TF>& sources,
+            const Array<TF,2>& tlev);
+
     private:
         Array<TF,2> totplnk;
         Array<TF,4> planck_frac;
@@ -773,6 +783,13 @@ void Gas_optics<TF>::gas_optics(
             optical_props,
             jtemp, jpress, jeta, tropo, fmajor,
             col_dry);
+
+    // External sources.
+    source(
+            ncol, nlay, nband, ngpt,
+            play, plev, tlay, tsfc,
+            jtemp, jpress, jeta, tropo, fmajor,
+            sources, tlev);
 }
 
 namespace rrtmgp_kernels
@@ -1108,6 +1125,18 @@ void Gas_optics<TF>::combine_and_reorder(
         throw std::runtime_error("Rayleigh scattering not implemented yet");
 
     // CvH for 2 stream and n-stream zero the g and ssa
-
 }
+
+template<typename TF>
+void Gas_optics<TF>::source(
+        const int ncol, const int nlay, const int nband, const int ngpt,
+        const Array<TF,2>& play, const Array<TF,2>& plev,
+        const Array<TF,2>& tlay, const Array<TF,1>& tsfc,
+        const Array<int,2>& jtemp, const Array<int,2>& jpress,
+        const Array<int,4>& jeta, const Array<int,2>& tropo,
+        const Array<TF,6>& fmajor,
+        Source_func_lw<TF>& sources,
+        const Array<TF,2>& tlev)
+{}
+
 #endif
