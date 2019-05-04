@@ -858,7 +858,7 @@ namespace rrtmgp_kernels
     extern "C" void compute_Planck_source(
             int* ncol, int* nlay, int* nbnd, int* ngpt,
             int* nflav, int* neta, int* npres, int* ntemp, int* nPlanckTemp,
-            double* tlay, double* tlev, double* tsfc,
+            double* tlay, double* tlev, double* tsfc, int* sfc_lay,
             double* fmajor, int* jeta, int* tropo, int* jtemp, int* jpress,
             int* gpoint_bands, int* band_lims_gpt, double* pfracin, double* temp_ref_min,
             double* totplnk_delta, double* totplnk, int* gpoint_flavor,
@@ -998,7 +998,7 @@ namespace rrtmgp_kernels
     void compute_Planck_source(
             int ncol, int nlay, int nbnd, int ngpt,
             int nflav, int neta, int npres, int ntemp, int nPlanckTemp,
-            const Array<TF,2>& tlay, const Array<TF,2>& tlev, const Array<TF,1>& tsfc,
+            const Array<TF,2>& tlay, const Array<TF,2>& tlev, const Array<TF,1>& tsfc, int sfc_lay,
             const Array<TF,6>& fmajor, const Array<int,4>& jeta, const Array<int,2>& tropo, const Array<int,2>& jtemp, const Array<int,2>& jpress,
             Array<int,1>& gpoint_bands, Array<int,2>& band_lims_gpt, Array<TF,4>& pfracin, TF temp_ref_min,
             TF totplnk_delta, Array<TF,2>& totplnk, Array<int,2>& gpoint_flavor,
@@ -1010,6 +1010,7 @@ namespace rrtmgp_kernels
                 const_cast<TF*>(tlay.v().data()),
                 const_cast<TF*>(tlev.v().data()),
                 const_cast<TF*>(tsfc.v().data()),
+                &sfc_lay,
                 const_cast<TF*>(fmajor.v().data()),
                 const_cast<int*>(jeta.v().data()),
                 const_cast<int*>(tropo.v().data()),
@@ -1190,10 +1191,11 @@ void Gas_optics<TF>::source(
     Array<TF,3> lev_source_dec_t({ngpt, nlay, ncol});
     Array<TF,2> sfc_source_t({ngpt, ncol});
 
+    int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
     rrtmgp_kernels::compute_Planck_source(
             ncol, nlay, nbnd, ngpt,
             nflav, neta, npres, ntemp, nPlanckTemp,
-            tlay, tlev, tsfc,
+            tlay, tlev, tsfc, sfc_lay,
             fmajor, jeta, tropo, jtemp, jpress,
             gpoint_bands, band_lims_gpoint, this->planck_frac, this->temp_ref_min,
             this->totplnk_delta, this->totplnk, this->gpoint_flavor,
