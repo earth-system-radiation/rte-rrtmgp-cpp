@@ -202,8 +202,8 @@ int main()
             rayl_lower,
             rayl_upper);
 
-    int n_gpt = kdist.get_ngpt();
-    int n_bnd = kdist.get_nband();
+    const int n_gpt = kdist.get_ngpt();
+    const int n_bnd = kdist.get_nband();
 
     Array<double,2> emis_sfc;
     Array<double,1> t_sfc;
@@ -252,6 +252,36 @@ int main()
             optical_props->set_subset(optical_props_subset, col_s, col_e);
             sources.set_subset(sources_subset, col_s, col_e);
         }
+
+        // Save the output to disk.
+        Netcdf_file output_nc(master, "test_gas_optics_out.nc", Netcdf_mode::Create);
+        output_nc.add_dimension("col", n_col);
+        output_nc.add_dimension("lay", n_lay);
+        output_nc.add_dimension("gpt", n_gpt);
+        output_nc.add_dimension("band", n_bnd);
+        output_nc.add_dimension("pair", 2);
+
+        // First, store the optical properties.
+        auto nc_band_lims_wvn = output_nc.add_variable<double>("band_lims_wvn", {"pair", "band"});
+        auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"pair", "band"});
+        auto nc_tau = output_nc.add_variable<double>("tau", {"col", "lay", "gpt"});
+
+        // Remember that the NetCDF interface uses C ordering and counting.
+        nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
+        nc_band_lims_gpt.insert(optical_props->get_band_lims_gpoint().v()    , {0, 0});
+        nc_tau.insert(optical_props->get_tau().v(), {0, 0, 0});
+
+        // Second, store the sources.
+        auto nc_lay_src     = output_nc.add_variable<double>("lay_src"    , {"col", "lay", "gpt"});
+        auto nc_lev_src_inc = output_nc.add_variable<double>("lev_src_inc", {"col", "lay", "gpt"});
+        auto nc_lev_src_dec = output_nc.add_variable<double>("lev_src_dec", {"col", "lay", "gpt"});
+        auto nc_sfc_src     = output_nc.add_variable<double>("sfc_src"    , {"col", "gpt"}       );
+
+        // Remember that the NetCDF interface uses C ordering and counting.
+        nc_lay_src.insert    (sources.get_lay_source().v(), {0, 0, 0});
+        nc_lev_src_inc.insert(sources.get_lev_source_inc().v(), {0, 0, 0});
+        nc_lev_src_dec.insert(sources.get_lev_source_dec().v(), {0, 0, 0});
+        nc_sfc_src.insert    (sources.get_sfc_source()    .v(), {0, 0}   );
     }
     else
     {
