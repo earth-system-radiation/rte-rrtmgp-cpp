@@ -250,6 +250,7 @@ int main()
                     );
 
             optical_props->set_subset(optical_props_subset, col_s, col_e);
+            sources.set_subset(sources_subset, col_s, col_e);
         }
     }
     else
