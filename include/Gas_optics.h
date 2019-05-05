@@ -242,7 +242,7 @@ namespace
         else
         {
             // Use a lambda function as the operation has to be repeated many times.
-            auto resize_and_set = [=](auto& a_red, const auto& a)
+            auto resize_and_set = [&](auto& a_red, const auto& a)
             {
                 a_red.set_dims({red_nm});
                 int counter = 1;
