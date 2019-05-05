@@ -104,6 +104,9 @@ class Optical_props_arry : public Optical_props<TF>
         {}
         virtual ~Optical_props_arry() {};
         virtual Array<TF,3>& get_tau() = 0;
+        virtual void set_subset(
+                const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+                const int col_s, const int col_e) = 0;
         // virtual Array<TF,3>& get_ssa() = 0;
         // virtual Array<TF,3>& get_g() = 0;
 
@@ -147,6 +150,16 @@ class Optical_props_1scl : public Optical_props_arry<TF>
             Optical_props_arry<TF>(optical_props),
             tau({ncol, nlay, this->get_ngpt()})
         {}
+
+        void set_subset(
+                const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+                const int col_s, const int col_e)
+        {
+            for (int igpt=1; igpt<=tau.dim(3); ++igpt)
+                for (int ilay=1; ilay<=tau.dim(2); ++ilay)
+                    for (int icol=col_s; icol<=col_e; ++icol)
+                        tau({icol, ilay, igpt}) = optical_props_sub->get_tau()({icol-col_s+1, ilay, igpt});
+        }
 
         // Optical_props_1scl(
         //         const int ncol, const int nlay, const int ngpt,

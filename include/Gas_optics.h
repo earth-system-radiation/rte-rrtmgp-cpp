@@ -528,11 +528,6 @@ Gas_optics<TF>::Gas_optics(
             totplnk(totplnk),
             planck_frac(planck_frac)
 {
-    // Temperature steps for Planck function interpolation.
-    // Assumes that temperature minimum and max are the same for the absorption coefficient grid and the
-    // Planck grid and the Planck grid is equally spaced.
-    totplnk_delta = (temp_ref_max - temp_ref_min) / (totplnk.dim(1)-1);
-
     // Initialize the absorption coefficient array, including Rayleigh scattering
     // tables if provided.
     init_abs_coeffs(
@@ -555,6 +550,11 @@ Gas_optics<TF>::Gas_optics(
             kminor_start_lower,
             kminor_start_upper,
             rayl_lower, rayl_upper);
+
+    // Temperature steps for Planck function interpolation.
+    // Assumes that temperature minimum and max are the same for the absorption coefficient grid and the
+    // Planck grid and the Planck grid is equally spaced.
+    totplnk_delta = (temp_ref_max - temp_ref_min) / (totplnk.dim(1)-1);
 }
 
 template<typename TF>
@@ -1200,5 +1200,14 @@ void Gas_optics<TF>::source(
             gpoint_bands, band_lims_gpoint, this->planck_frac, this->temp_ref_min,
             this->totplnk_delta, this->totplnk, this->gpoint_flavor,
             sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t);
+
+    // CvH this transpose is super slow.
+    for (int j=1; j<=sfc_source_t.dim(2); ++j)
+        for (int i=1; i<=sfc_source_t.dim(1); ++i)
+            sources.get_sfc_source()({j, i}) = sfc_source_t({i, j});
+
+    rrtmgp_kernels::reorder123x321(lay_source_t, sources.get_lay_source());
+    rrtmgp_kernels::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());
+    rrtmgp_kernels::reorder123x321(lev_source_dec_t, sources.get_lev_source_dec());
 }
 #endif

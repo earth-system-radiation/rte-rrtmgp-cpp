@@ -248,6 +248,8 @@ int main()
                     col_dry.subset({{ {col_s, col_e}, {1, n_lay} }}),
                     t_lev.subset  ({{ {col_s, col_e}, {1, n_lev} }})
                     );
+
+            optical_props->set_subset(optical_props_subset, col_s, col_e);
         }
     }
     else
