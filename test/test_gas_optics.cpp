@@ -294,7 +294,7 @@ int main()
         // WARNING: The storage in the NetCDF interface uses C-ordering and indexing.
         // First, store the optical properties.
         auto nc_band_lims_wvn = output_nc.add_variable<double>("band_lims_wvn", {"band", "pair"});
-        auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
+        auto nc_band_lims_gpt = output_nc.add_variable<int>   ("band_lims_gpt", {"band", "pair"});
         auto nc_tau = output_nc.add_variable<double>("tau", {"gpt", "lay", "col"});
 
         nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
@@ -310,7 +310,7 @@ int main()
         nc_lay_src.insert    (sources.get_lay_source().v()    , {0, 0, 0});
         nc_lev_src_inc.insert(sources.get_lev_source_inc().v(), {0, 0, 0});
         nc_lev_src_dec.insert(sources.get_lev_source_dec().v(), {0, 0, 0});
-        nc_sfc_src.insert    (sources.get_sfc_source()    .v(), {0, 0}   );
+        nc_sfc_src.insert    (sources.get_sfc_source().v()    , {0, 0}   );
     }
     else
     {
