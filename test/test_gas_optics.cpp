@@ -230,7 +230,7 @@ int main()
         t_sfc = t_sfc_tmp;
 
         int n_blocks = n_col / n_col_block;
-        for (int b=1; b<=n_col_block; ++b)
+        for (int b=1; b<=n_blocks; ++b)
         {
             const int col_s = (b-1) * n_col_block + 1;
             const int col_e = b     * n_col_block;
@@ -261,24 +261,23 @@ int main()
         output_nc.add_dimension("band", n_bnd);
         output_nc.add_dimension("pair", 2);
 
+        // WARNING: The storage in the NetCDF interface uses C-ordering and indexing.
         // First, store the optical properties.
-        auto nc_band_lims_wvn = output_nc.add_variable<double>("band_lims_wvn", {"pair", "band"});
-        auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"pair", "band"});
-        auto nc_tau = output_nc.add_variable<double>("tau", {"col", "lay", "gpt"});
+        auto nc_band_lims_wvn = output_nc.add_variable<double>("band_lims_wvn", {"band", "pair"});
+        auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
+        auto nc_tau = output_nc.add_variable<double>("tau", {"gpt", "lay", "col"});
 
-        // Remember that the NetCDF interface uses C ordering and counting.
         nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
         nc_band_lims_gpt.insert(optical_props->get_band_lims_gpoint().v()    , {0, 0});
         nc_tau.insert(optical_props->get_tau().v(), {0, 0, 0});
 
         // Second, store the sources.
-        auto nc_lay_src     = output_nc.add_variable<double>("lay_src"    , {"col", "lay", "gpt"});
-        auto nc_lev_src_inc = output_nc.add_variable<double>("lev_src_inc", {"col", "lay", "gpt"});
-        auto nc_lev_src_dec = output_nc.add_variable<double>("lev_src_dec", {"col", "lay", "gpt"});
-        auto nc_sfc_src     = output_nc.add_variable<double>("sfc_src"    , {"col", "gpt"}       );
+        auto nc_lay_src     = output_nc.add_variable<double>("lay_src"    , {"gpt", "lay", "col"});
+        auto nc_lev_src_inc = output_nc.add_variable<double>("lev_src_inc", {"gpt", "lay", "col"});
+        auto nc_lev_src_dec = output_nc.add_variable<double>("lev_src_dec", {"gpt", "lay", "col"});
+        auto nc_sfc_src     = output_nc.add_variable<double>("sfc_src"    , {"gpt", "col"}       );
 
-        // Remember that the NetCDF interface uses C ordering and counting.
-        nc_lay_src.insert    (sources.get_lay_source().v(), {0, 0, 0});
+        nc_lay_src.insert    (sources.get_lay_source().v()    , {0, 0, 0});
         nc_lev_src_inc.insert(sources.get_lev_source_inc().v(), {0, 0, 0});
         nc_lev_src_dec.insert(sources.get_lev_source_dec().v(), {0, 0, 0});
         nc_sfc_src.insert    (sources.get_sfc_source()    .v(), {0, 0}   );
