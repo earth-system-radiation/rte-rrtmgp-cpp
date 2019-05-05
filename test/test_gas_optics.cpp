@@ -212,15 +212,11 @@ int main()
 
     std::unique_ptr<Optical_props_arry<double>> optical_props;
     std::unique_ptr<Optical_props_arry<double>> optical_props_subset;
+    std::unique_ptr<Optical_props_arry<double>> optical_props_left;
 
     if (kdist.source_is_internal())
     {
         master.print_message("Computing optical depths for longwave radiation\n");
-
-        Source_func_lw<double> sources       (n_col      , n_lay, kdist);
-        Source_func_lw<double> sources_subset(n_col_block, n_lay, kdist);
-        optical_props = std::make_unique<Optical_props_1scl<double>>(n_col, n_lay, kdist);
-        optical_props_subset = std::make_unique<Optical_props_1scl<double>>(n_col_block, n_lay, kdist);
 
         // Download surface boundary conditions for long wave.
         Array<double,2> emis_sfc_tmp(input_nc.get_variable<double>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
@@ -229,28 +225,62 @@ int main()
         emis_sfc = emis_sfc_tmp;
         t_sfc = t_sfc_tmp;
 
+        // Read the sources and create containers for the substeps.
         int n_blocks = n_col / n_col_block;
+        int n_col_block_left = n_col % n_col_block;
+
+        optical_props        = std::make_unique<Optical_props_1scl<double>>(n_col      , n_lay, kdist);
+        optical_props_subset = std::make_unique<Optical_props_1scl<double>>(n_col_block, n_lay, kdist);
+        Source_func_lw<double> sources       (n_col      , n_lay, kdist);
+        Source_func_lw<double> sources_subset(n_col_block, n_lay, kdist);
+
+        auto process_subset = [&](
+                const int col_s_in, const int col_e_in,
+                std::unique_ptr<Optical_props_arry<double>>& optical_props_subset_in,
+                Source_func_lw<double>& sources_subset_in)
+        {
+            const int n_col_in = col_e_in - col_s_in + 1;
+            Gas_concs<double> gas_concs_subset(gas_concs, col_s_in, n_col_in);
+
+            kdist.gas_optics(
+                    p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                    p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }}),
+                    t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                    t_sfc.subset({{ {col_s_in, col_e_in} }}),
+                    gas_concs_subset,
+                    optical_props_subset_in,
+                    sources_subset_in,
+                    col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                    t_lev.subset  ({{ {col_s_in, col_e_in}, {1, n_lev} }})
+                    );
+
+            optical_props->set_subset(optical_props_subset_in, col_s_in, col_e_in);
+            sources.set_subset(sources_subset_in, col_s_in, col_e_in);
+        };
+
         for (int b=1; b<=n_blocks; ++b)
         {
             const int col_s = (b-1) * n_col_block + 1;
             const int col_e = b     * n_col_block;
 
-            Gas_concs<double> gas_concs_subset(gas_concs, col_s, n_col_block);
-
-            kdist.gas_optics(
-                    p_lay.subset({{ {col_s, col_e}, {1, n_lay} }}),
-                    p_lev.subset({{ {col_s, col_e}, {1, n_lev} }}),
-                    t_lay.subset({{ {col_s, col_e}, {1, n_lay} }}),
-                    t_sfc.subset({{ {col_s, col_e} }}),
-                    gas_concs_subset,
+            process_subset(
+                    col_s, col_e,
                     optical_props_subset,
-                    sources_subset,
-                    col_dry.subset({{ {col_s, col_e}, {1, n_lay} }}),
-                    t_lev.subset  ({{ {col_s, col_e}, {1, n_lev} }})
-                    );
+                    sources_subset);
+        }
 
-            optical_props->set_subset(optical_props_subset, col_s, col_e);
-            sources.set_subset(sources_subset, col_s, col_e);
+        if (n_col_block_left > 0)
+        {
+            optical_props_left = std::make_unique<Optical_props_1scl<double>>(n_col_block_left, n_lay, kdist);
+            Source_func_lw<double> sources_left(n_col_block_left, n_lay, kdist);
+
+            const int col_s = n_col - n_col_block_left + 1;
+            const int col_e = n_col;
+
+            process_subset(
+                    col_s, col_e,
+                    optical_props_left,
+                    sources_left);
         }
 
         // Save the output to disk.
