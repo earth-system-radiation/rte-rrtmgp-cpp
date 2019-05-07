@@ -7,6 +7,14 @@ namespace rrtmgp_kernels
             int* ncol, int* nlay, int* ngpt,
             int* top_at_1, double* gpt_flux_dn);
 
+    extern "C" void lw_solver_noscat_GaussQuad(
+            int* ncol, int* nlay, int* ngpt, int* top_at_1, int* n_quad_angs,
+            double* gauss_Ds_subset, double* gauss_wts_subset,
+            double* tau,
+            double* lay_source, double* lev_source_inc, double* lev_source_dec,
+            double* sfc_emis_gpt, double* sfc_source,
+            double* gpt_flux_up, double* gpt_flux_dn);
+
     template<typename TF>
     void apply_BC(
             int ncol, int nlay, int ngpt,
@@ -20,12 +28,26 @@ namespace rrtmgp_kernels
     template<typename TF>
     void lw_solver_noscat_GaussQuad(
             int ncol, int nlay, int ngpt, int top_at_1, int n_quad_angs,
-            const Array<TF,2>& gauss_Ds_subset, const Array<TF,2>& gauss_wts_subset,
+            const Array<TF,2>& gauss_Ds_subset,
+            const Array<TF,2>& gauss_wts_subset,
             const Array<TF,3>& tau,
             const Array<TF,3>& lay_source, const Array<TF,3>& lev_source_inc, const Array<TF,3>& lev_source_dec,
             const Array<TF,2>& sfc_emis_gpt, const Array<TF,2>& sfc_source,
-            const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn)
-    {}
+            Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn)
+    {
+        lw_solver_noscat_GaussQuad(
+                &ncol, &nlay, &ngpt, &top_at_1, &n_quad_angs,
+                const_cast<TF*>(gauss_Ds_subset.v().data()),
+                const_cast<TF*>(gauss_wts_subset.v().data()),
+                const_cast<TF*>(tau.v().data()),
+                const_cast<TF*>(lay_source.v().data()),
+                const_cast<TF*>(lev_source_inc.v().data()),
+                const_cast<TF*>(lev_source_dec.v().data()),
+                const_cast<TF*>(sfc_emis_gpt.v().data()),
+                const_cast<TF*>(sfc_source.v().data()),
+                gpt_flux_up.v().data(),
+                gpt_flux_dn.v().data());
+    }
 }
 
 template<typename TF>
