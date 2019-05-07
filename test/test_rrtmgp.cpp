@@ -380,7 +380,7 @@ int main()
             {
                 const int n_col_in = col_e_in - col_s_in + 1;
 
-                std::unique_ptr<Fluxes<double>> fluxes;// = std::make_unique<Fluxes_byband<double>>();
+                std::unique_ptr<Fluxes<double>> fluxes = std::make_unique<Fluxes_byband<double>>();
 
                 Rte_lw<double>::rte_lw(
                         optical_props_subset_in,
