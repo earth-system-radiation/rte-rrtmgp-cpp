@@ -25,7 +25,7 @@ template<typename TF>
 class Fluxes_byband : public Fluxes_broadband<TF>
 {
     public:
-        Fluxes_broadband();
+        Fluxes_byband();
         void reduce() {}
 
     private:

@@ -4,6 +4,8 @@
 #include "Gas_concs.h"
 #include "Gas_optics.h"
 #include "Source_functions.h"
+#include "Fluxes.h"
+#include "Rte_lw.h"
 
 namespace
 {
@@ -61,6 +63,8 @@ int main()
         Array<double, 2> p_lev(input_nc.get_variable<double>("p_lev", {n_lev, n_col}), {n_col, n_lev});
         Array<double, 2> t_lev(input_nc.get_variable<double>("t_lev", {n_lev, n_col}), {n_col, n_lev});
 
+        const int top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
+
         Gas_concs<double> gas_concs;
         Gas_concs<double> gas_concs_subset;
 
@@ -86,12 +90,6 @@ int main()
 
         // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
         Netcdf_file coef_lw_nc(master, "coefficients_lw.nc", Netcdf_mode::Read);
-
-        // const int top_at_1 = pres_layer({1, 1}) < pres_layer({1, n_lay});
-
-        // Download surface boundary conditions for long wave.
-        // Array<double,1> surface_emissivity (group_nc.get_variable<double>("surface_emissivity" , {n_col}), {n_col});
-        // Array<double,1> surface_temperature(group_nc.get_variable<double>("surface_temperature", {n_col}), {n_col});
 
         // Read k-distribution information.
         int n_temps = coef_lw_nc.get_dimension_size("temperature");
@@ -377,9 +375,20 @@ int main()
             auto calc_fluxes_subset = [&](
                     const int col_s_in, const int col_e_in,
                     const std::unique_ptr<Optical_props_arry<double>>& optical_props_subset_in,
-                    const Source_func_lw<double>& sources_subset_in)
+                    const Source_func_lw<double>& sources_subset_in,
+                    const Array<double,2> emis_sfc_subset_in)
             {
                 const int n_col_in = col_e_in - col_s_in + 1;
+
+                std::unique_ptr<Fluxes<double>> fluxes;// = std::make_unique<Fluxes_byband<double>>();
+
+                Rte_lw<double>::rte_lw(
+                        optical_props_subset_in,
+                        top_at_1,
+                        sources_subset_in,
+                        emis_sfc_subset_in,
+                        fluxes,
+                        n_ang);
             };
 
             for (int b=1; b<=n_blocks; ++b)
@@ -390,10 +399,13 @@ int main()
                 optical_props_subset->get_subset(optical_props, col_s, col_e);
                 sources_subset.get_subset(sources, col_s, col_e);
 
+                Array<double,2> emis_sfc_subset = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
+
                 calc_fluxes_subset(
                         col_s, col_e,
                         optical_props_subset,
-                        sources_subset);
+                        sources_subset,
+                        emis_sfc_subset);
             }
 
             if (n_col_block_left > 0)
@@ -407,10 +419,13 @@ int main()
                 optical_props_left->get_subset(optical_props, col_s, col_e);
                 sources_left.get_subset(sources, col_s, col_e);
 
+                Array<double,2> emis_sfc_left = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
+
                 calc_fluxes_subset(
                         col_s, col_e,
                         optical_props_left,
-                        sources_left);
+                        sources_left,
+                        emis_sfc_left);
             }
         }
         else
