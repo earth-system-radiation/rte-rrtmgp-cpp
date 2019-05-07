@@ -15,6 +15,7 @@ template<typename TF>
 class Fluxes_broadband : public Fluxes<TF>
 {
     public:
+        Fluxes_broadband();
         virtual void reduce(
                 const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn,
                 const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
@@ -30,6 +31,7 @@ template<typename TF>
 class Fluxes_byband : public Fluxes_broadband<TF>
 {
     public:
+        Fluxes_byband();
         void reduce(
                 const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn,
                 const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
@@ -77,6 +79,11 @@ namespace rrtmgp_kernels
 }
 
 template<typename TF>
+Fluxes_broadband<TF>::Fluxes_broadband() :
+    flux_up(nullptr), flux_dn(nullptr), flux_net(nullptr)
+{}
+
+template<typename TF>
 void Fluxes_broadband<TF>::reduce(
     const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn,
     const std::unique_ptr<Optical_props_arry<TF>>& spectral_disc,
@@ -100,6 +107,12 @@ void Fluxes_broadband<TF>::reduce(
         rrtmgp_kernels::net_broadband(
                 ncol, nlev, this->flux_dn, this->flux_up, this->flux_net);
 }
+
+template<typename TF>
+Fluxes_byband<TF>::Fluxes_byband() :
+        bnd_flux_up(nullptr), bnd_flux_dn(nullptr), bnd_flux_net(nullptr)
+{}
+
 template<typename TF>
 void Fluxes_byband<TF>::reduce(
     const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn,
