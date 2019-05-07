@@ -114,6 +114,9 @@ class Optical_props_arry : public Optical_props<TF>
                 const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
                 const int col_s, const int col_e) = 0;
 
+        virtual int get_ncol() const = 0;
+        virtual int get_nlay() const = 0;
+
         // virtual Array<TF,3>& get_ssa() = 0;
         // virtual Array<TF,3>& get_g() = 0;
 
@@ -215,11 +218,12 @@ class Optical_props_1scl : public Optical_props_arry<TF>
 
         ~Optical_props_1scl() {};
 
-        int get_ncol() const { return tau_.dim1(); }
-        int get_nlay() const { return tau_.dim2(); }
-        int get_ngpt() const { return tau_.dim3(); }
         std::string get_name() const { return name_; }
          */
+
+        int get_ncol() const { return tau.dim(1); }
+        int get_nlay() const { return tau.dim(2); }
+
         Array<TF,3>& get_tau() { return tau; }
         Array<TF,3>& get_ssa() { throw std::runtime_error("ssa is not available in this class"); }
         Array<TF,3>& get_g  () { throw std::runtime_error("g is available in this class"); }

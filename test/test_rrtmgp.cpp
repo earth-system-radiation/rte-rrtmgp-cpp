@@ -276,6 +276,7 @@ int main()
 
             optical_props = std::make_unique<Optical_props_1scl<double>>(n_col, n_lay, kdist);
             optical_props_subset = std::make_unique<Optical_props_1scl<double>>(n_col_block, n_lay, kdist);
+
             Source_func_lw<double> sources(n_col, n_lay, kdist);
             Source_func_lw<double> sources_subset(n_col_block, n_lay, kdist);
 
