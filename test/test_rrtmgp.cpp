@@ -262,7 +262,8 @@ int main()
 
         if (kdist.source_is_internal())
         {
-            master.print_message("Computing optical depths for longwave radiation\n");
+            /// SOLVING THE OPTICAL PROPERTIES FOR LONGWAVE RADIATION.
+            master.print_message("STEP 1: Computing optical depths for longwave radiation\n");
 
             // Download surface boundary conditions for long wave.
             Array<double, 2> emis_sfc_tmp(input_nc.get_variable<double>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
@@ -283,7 +284,8 @@ int main()
             auto process_subset = [&](
                     const int col_s_in, const int col_e_in,
                     std::unique_ptr<Optical_props_arry<double>> &optical_props_subset_in,
-                    Source_func_lw<double> &sources_subset_in) {
+                    Source_func_lw<double> &sources_subset_in)
+            {
                 const int n_col_in = col_e_in - col_s_in + 1;
                 Gas_concs<double> gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
@@ -329,7 +331,7 @@ int main()
             }
 
             // Save the output to disk.
-            Netcdf_file output_nc(master, "test_gas_optics_out.nc", Netcdf_mode::Create);
+            Netcdf_file output_nc(master, "test_rrtmgp_out.nc", Netcdf_mode::Create);
             output_nc.add_dimension("col", n_col);
             output_nc.add_dimension("lay", n_lay);
             output_nc.add_dimension("gpt", n_gpt);
@@ -356,6 +358,11 @@ int main()
             nc_lev_src_inc.insert(sources.get_lev_source_inc().v(), {0, 0, 0});
             nc_lev_src_dec.insert(sources.get_lev_source_dec().v(), {0, 0, 0});
             nc_sfc_src.insert(sources.get_sfc_source().v(), {0, 0});
+
+
+            /// SOLVING THE FLUXES FOR LONGWAVE RADIATION.
+            master.print_message("STEP 2: Computing optical depths for longwave radiation\n");
+
         }
         else
         {

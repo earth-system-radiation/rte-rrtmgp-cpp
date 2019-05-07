@@ -1,8 +1,8 @@
 # 
 #  MicroHH
-#  Copyright (c) 2011-2018 Chiel van Heerwaarden
-#  Copyright (c) 2011-2018 Thijs Heus
-#  Copyright (c) 2014-2018 Bart van Stratum
+#  Copyright (c) 2011-2019 Chiel van Heerwaarden
+#  Copyright (c) 2011-2019 Thijs Heus
+#  Copyright (c) 2014-2019 Bart van Stratum
 # 
 #  This file is part of MicroHH
 # 
@@ -39,12 +39,9 @@ add_definitions(-DGITHASH="${GITHASH}")
 
 # double precision version
 if(USECUDA)
-  cuda_add_executable(test test.cpp)
-  target_link_libraries(test ${LIBS} m)
+  cuda_add_executable(test_rrtmgp test_rrtmgp.cpp)
+  target_link_libraries(test_rrtmgp rrtmgp_kernels ${LIBS} m)
 else()
-  # add_executable(test_rrtmgp test.cpp)
-  # target_link_libraries(test_rrtmgp ${LIBS} m)
-
-  add_executable(test_gas_optics test_gas_optics.cpp)
-  target_link_libraries(test_gas_optics rrtmgp_kernels ${LIBS} m)
+  add_executable(test_rrtmgp test_rrtmgp.cpp)
+  target_link_libraries(test_rrtmgp rrtmgp_kernels ${LIBS} m)
 endif()
