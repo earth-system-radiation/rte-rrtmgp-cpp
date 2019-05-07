@@ -283,8 +283,8 @@ int main()
 
             auto calc_optical_props_subset = [&](
                     const int col_s_in, const int col_e_in,
-                    std::unique_ptr<Optical_props_arry<double>> &optical_props_subset_in,
-                    Source_func_lw<double> &sources_subset_in)
+                    std::unique_ptr<Optical_props_arry<double>>& optical_props_subset_in,
+                    Source_func_lw<double>& sources_subset_in)
             {
                 const int n_col_in = col_e_in - col_s_in + 1;
                 Gas_concs<double> gas_concs_subset(gas_concs, col_s_in, n_col_in);
@@ -305,10 +305,10 @@ int main()
                 sources.set_subset(sources_subset_in, col_s_in, col_e_in);
             };
 
-            for (int b = 1; b <= n_blocks; ++b)
+            for (int b=1; b<=n_blocks; ++b)
             {
-                const int col_s = (b - 1) * n_col_block + 1;
-                const int col_e = b * n_col_block;
+                const int col_s = (b-1) * n_col_block + 1;
+                const int col_e =  b    * n_col_block;
 
                 calc_optical_props_subset(
                         col_s, col_e,
@@ -361,7 +361,6 @@ int main()
             nc_sfc_src.insert(sources.get_sfc_source().v(), {0, 0});
             */
 
-
             /// SOLVING THE FLUXES FOR LONGWAVE RADIATION.
             master.print_message("STEP 2: Computing optical depths for longwave radiation\n");
 
@@ -376,18 +375,25 @@ int main()
             Array<double,3> bnd_heating_rate({n_col, n_lay, n_bnd});
 
             auto calc_fluxes_subset = [&](
-                    const int col_s_in, const int col_e_in)
+                    const int col_s_in, const int col_e_in,
+                    const std::unique_ptr<Optical_props_arry<double>>& optical_props_subset_in,
+                    const Source_func_lw<double>& sources_subset_in)
             {
-                // const int n_col_in = col_e_in - col_s_in + 1;
+                const int n_col_in = col_e_in - col_s_in + 1;
             };
 
-            for (int b = 1; b <= n_blocks; ++b)
+            for (int b=1; b<=n_blocks; ++b)
             {
-                const int col_s = (b - 1) * n_col_block + 1;
-                const int col_e = b * n_col_block;
+                const int col_s = (b-1) * n_col_block + 1;
+                const int col_e =  b    * n_col_block;
+
+                optical_props_subset->get_subset(optical_props, col_s, col_e);
+                sources_subset.get_subset(sources, col_s, col_e);
 
                 calc_fluxes_subset(
-                        col_s, col_e);
+                        col_s, col_e,
+                        optical_props_subset,
+                        sources_subset);
             }
 
             if (n_col_block_left > 0)
@@ -395,8 +401,16 @@ int main()
                 const int col_s = n_col - n_col_block_left + 1;
                 const int col_e = n_col;
 
+                // CvH, check for reuse of this field.
+                Source_func_lw<double> sources_left(n_col_block_left, n_lay, kdist);
+
+                optical_props_left->get_subset(optical_props, col_s, col_e);
+                sources_left.get_subset(sources, col_s, col_e);
+
                 calc_fluxes_subset(
-                        col_s, col_e);
+                        col_s, col_e,
+                        optical_props_left,
+                        sources_left);
             }
         }
         else

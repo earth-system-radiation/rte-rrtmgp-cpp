@@ -37,6 +37,24 @@ class Source_func_lw : public Optical_props<TF>
                     }
         }
 
+        void get_subset(
+                const Source_func_lw<TF>& sources_sub,
+                const int col_s, const int col_e)
+        {
+            for (int igpt=1; igpt<=lay_source.dim(3); ++igpt)
+                for (int icol=col_s; icol<=col_e; ++icol)
+                    sfc_source({icol-col_s+1, igpt}) = sources_sub.get_sfc_source()({icol, igpt});
+
+            for (int igpt=1; igpt<=lay_source.dim(3); ++igpt)
+                for (int ilay=1; ilay<=lay_source.dim(2); ++ilay)
+                    for (int icol=col_s; icol<=col_e; ++icol)
+                    {
+                        lay_source    ({icol-col_s+1, ilay, igpt}) = sources_sub.get_lay_source()    ({icol-col_s+1, ilay, igpt});
+                        lev_source_inc({icol-col_s+1, ilay, igpt}) = sources_sub.get_lev_source_inc()({icol-col_s+1, ilay, igpt});
+                        lev_source_dec({icol-col_s+1, ilay, igpt}) = sources_sub.get_lev_source_dec()({icol-col_s+1, ilay, igpt});
+                    }
+        }
+
         Array<TF,2>& get_sfc_source() { return sfc_source; }
         Array<TF,3>& get_lay_source() { return lay_source; }
         Array<TF,3>& get_lev_source_inc() { return lev_source_inc; }
