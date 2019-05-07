@@ -329,11 +329,11 @@ int main()
                         sources_left);
             }
 
-            // Save the output to disk.
-            /*
+            // Save the output of the optical solver to disk.
             Netcdf_file output_nc(master, "test_rrtmgp_out.nc", Netcdf_mode::Create);
             output_nc.add_dimension("col", n_col);
             output_nc.add_dimension("lay", n_lay);
+            output_nc.add_dimension("lev", n_lev);
             output_nc.add_dimension("gpt", n_gpt);
             output_nc.add_dimension("band", n_bnd);
             output_nc.add_dimension("pair", 2);
@@ -358,17 +358,18 @@ int main()
             nc_lev_src_inc.insert(sources.get_lev_source_inc().v(), {0, 0, 0});
             nc_lev_src_dec.insert(sources.get_lev_source_dec().v(), {0, 0, 0});
             nc_sfc_src.insert(sources.get_sfc_source().v(), {0, 0});
-            */
 
             /// SOLVING THE FLUXES FOR LONGWAVE RADIATION.
             master.print_message("STEP 2: Computing optical depths for longwave radiation\n");
 
             const int n_ang = input_nc.get_variable<double>("angle");
 
-            Array<double,2> flux_up({n_col, n_lay+1});
-            Array<double,2> flux_dn({n_col, n_lay+1});
-            Array<double,3> bnd_flux_up({n_col, n_lay+1, n_bnd});
-            Array<double,3> bnd_flux_dn({n_col, n_lay+1, n_bnd});
+            Array<double,2> flux_up ({n_col, n_lay+1});
+            Array<double,2> flux_dn ({n_col, n_lay+1});
+            Array<double,2> flux_net({n_col, n_lay+1});
+            Array<double,3> bnd_flux_up ({n_col, n_lay+1, n_bnd});
+            Array<double,3> bnd_flux_dn ({n_col, n_lay+1, n_bnd});
+            Array<double,3> bnd_flux_net({n_col, n_lay+1, n_bnd});
 
             Array<double,2> heating_rate({n_col, n_lay});
             Array<double,3> bnd_heating_rate({n_col, n_lay, n_bnd});
@@ -428,6 +429,19 @@ int main()
                         sources_left,
                         emis_sfc_left);
             }
+
+            // Save the output of the flux calculation to disk.
+            auto nc_flux_up  = output_nc.add_variable<double>("flux_up" , {"lev", "col"});
+            auto nc_flux_dn  = output_nc.add_variable<double>("flux_dn" , {"lev", "col"});
+            auto nc_flux_net = output_nc.add_variable<double>("flux_net", {"lev", "col"});
+
+            auto nc_bnd_flux_up  = output_nc.add_variable<double>("bnd_flux_up" , {"lev", "col", "band"});
+            auto nc_bnd_flux_dn  = output_nc.add_variable<double>("bnd_flux_dn" , {"lev", "col", "band"});
+            auto nc_bnd_flux_net = output_nc.add_variable<double>("bnd_flux_net", {"lev", "col", "band"});
+
+            nc_flux_up .insert(flux_up .v(), {0, 0});
+            nc_flux_dn .insert(flux_dn .v(), {0, 0});
+            nc_flux_net.insert(flux_net.v(), {0, 0});
         }
         else
         {
