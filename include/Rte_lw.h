@@ -104,6 +104,8 @@ class Rte_lw
                     sources.get_lay_source(), sources.get_lev_source_inc(), sources.get_lev_source_dec(),
                     sfc_emis_gpt, sources.get_sfc_source(),
                     gpt_flux_up, gpt_flux_dn);
+
+            fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);
         }
 
         static void expand_and_transpose(
