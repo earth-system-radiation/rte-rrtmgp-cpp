@@ -16,6 +16,16 @@ namespace rrtmgp_kernels
                 &ncol, &nlay, &ngpt,
                 &top_at_1, gpt_flux_dn.v().data());
     }
+
+    template<typename TF>
+    void lw_solver_noscat_GaussQuad(
+            int ncol, int nlay, int ngpt, int top_at_1, int n_quad_angs,
+            const Array<TF,2>& gauss_Ds_subset, const Array<TF,2>& gauss_wts_subset,
+            const Array<TF,3>& tau,
+            const Array<TF,3>& lay_source, const Array<TF,3>& lev_source_inc, const Array<TF,3>& lev_source_dec,
+            const Array<TF,2>& sfc_emis_gpt, const Array<TF,2>& sfc_source,
+            const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn)
+    {}
 }
 
 template<typename TF>
@@ -58,6 +68,20 @@ class Rte_lw
 
             // Upper boundary condition.
             rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
+
+            // Run the radiative transfer solver
+            const int n_quad_angs = 1;
+
+            Array<TF,2> gauss_Ds_subset  = gauss_Ds .subset({ {{1, n_quad_angs}, {n_quad_angs, n_quad_angs}} });
+            Array<TF,2> gauss_wts_subset = gauss_wts.subset({ {{1, n_quad_angs}, {n_quad_angs, n_quad_angs}} });
+
+            rrtmgp_kernels::lw_solver_noscat_GaussQuad(
+                    ncol, nlay, ngpt, top_at_1, n_quad_angs,
+                    gauss_Ds_subset, gauss_wts_subset,
+                    optical_props->get_tau(),
+                    sources.get_lay_source(), sources.get_lev_source_inc(), sources.get_lev_source_dec(),
+                    sfc_emis_gpt, sources.get_sfc_source(),
+                    gpt_flux_up, gpt_flux_dn);
         }
 
         static void expand_and_transpose(
