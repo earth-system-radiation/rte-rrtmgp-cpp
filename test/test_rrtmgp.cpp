@@ -281,7 +281,7 @@ int main()
             Source_func_lw<double> sources(n_col, n_lay, kdist);
             Source_func_lw<double> sources_subset(n_col_block, n_lay, kdist);
 
-            auto process_subset = [&](
+            auto calc_optical_props_subset = [&](
                     const int col_s_in, const int col_e_in,
                     std::unique_ptr<Optical_props_arry<double>> &optical_props_subset_in,
                     Source_func_lw<double> &sources_subset_in)
@@ -310,7 +310,7 @@ int main()
                 const int col_s = (b - 1) * n_col_block + 1;
                 const int col_e = b * n_col_block;
 
-                process_subset(
+                calc_optical_props_subset(
                         col_s, col_e,
                         optical_props_subset,
                         sources_subset);
@@ -324,13 +324,14 @@ int main()
                 const int col_s = n_col - n_col_block_left + 1;
                 const int col_e = n_col;
 
-                process_subset(
+                calc_optical_props_subset(
                         col_s, col_e,
                         optical_props_left,
                         sources_left);
             }
 
             // Save the output to disk.
+            /*
             Netcdf_file output_nc(master, "test_rrtmgp_out.nc", Netcdf_mode::Create);
             output_nc.add_dimension("col", n_col);
             output_nc.add_dimension("lay", n_lay);
@@ -358,11 +359,45 @@ int main()
             nc_lev_src_inc.insert(sources.get_lev_source_inc().v(), {0, 0, 0});
             nc_lev_src_dec.insert(sources.get_lev_source_dec().v(), {0, 0, 0});
             nc_sfc_src.insert(sources.get_sfc_source().v(), {0, 0});
+            */
 
 
             /// SOLVING THE FLUXES FOR LONGWAVE RADIATION.
             master.print_message("STEP 2: Computing optical depths for longwave radiation\n");
 
+            const int n_ang = input_nc.get_variable<double>("angle");
+
+            Array<double,2> flux_up({n_col, n_lay+1});
+            Array<double,2> flux_dn({n_col, n_lay+1});
+            Array<double,3> bnd_flux_up({n_col, n_lay+1, n_bnd});
+            Array<double,3> bnd_flux_dn({n_col, n_lay+1, n_bnd});
+
+            Array<double,2> heating_rate({n_col, n_lay});
+            Array<double,3> bnd_heating_rate({n_col, n_lay, n_bnd});
+
+            auto calc_fluxes_subset = [&](
+                    const int col_s_in, const int col_e_in)
+            {
+                // const int n_col_in = col_e_in - col_s_in + 1;
+            };
+
+            for (int b = 1; b <= n_blocks; ++b)
+            {
+                const int col_s = (b - 1) * n_col_block + 1;
+                const int col_e = b * n_col_block;
+
+                calc_fluxes_subset(
+                        col_s, col_e);
+            }
+
+            if (n_col_block_left > 0)
+            {
+                const int col_s = n_col - n_col_block_left + 1;
+                const int col_e = n_col;
+
+                calc_fluxes_subset(
+                        col_s, col_e);
+            }
         }
         else
         {
