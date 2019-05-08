@@ -69,21 +69,21 @@ int main()
         Gas_concs<double> gas_concs_subset;
 
         gas_concs.set_vmr("h2o",
-                          Array<double, 2>(input_nc.get_variable<double>("vmr_h2o", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double, 2>(input_nc.get_variable<double>("vmr_h2o", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("co2",
-                          Array<double, 2>(input_nc.get_variable<double>("vmr_co2", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double, 2>(input_nc.get_variable<double>("vmr_co2", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("o3",
-                          Array<double, 2>(input_nc.get_variable<double>("vmr_o3", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double, 2>(input_nc.get_variable<double>("vmr_o3", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("n2o",
-                          Array<double, 2>(input_nc.get_variable<double>("vmr_n2o", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double, 2>(input_nc.get_variable<double>("vmr_n2o", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("co",
-                          Array<double, 2>(input_nc.get_variable<double>("vmr_co", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double, 2>(input_nc.get_variable<double>("vmr_co", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("ch4",
-                          Array<double, 2>(input_nc.get_variable<double>("vmr_ch4", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double, 2>(input_nc.get_variable<double>("vmr_ch4", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("o2",
-                          Array<double, 2>(input_nc.get_variable<double>("vmr_o2", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double, 2>(input_nc.get_variable<double>("vmr_o2", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("n2",
-                          Array<double, 2>(input_nc.get_variable<double>("vmr_n2", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double, 2>(input_nc.get_variable<double>("vmr_n2", {n_lay, n_col}), {n_col, n_lay}));
 
         // CvH: does this one need to be present?
         Array<double, 2> col_dry(input_nc.get_variable<double>("col_dry", {n_lay, n_col}), {n_col, n_lay});
@@ -113,8 +113,9 @@ int main()
         Array<std::string, 1> gas_names(get_variable_string("gas_names", {n_absorbers}, coef_lw_nc, n_char, true),
                                         {n_absorbers});
 
-        Array<int, 3> key_species(coef_lw_nc.get_variable<int>("key_species", {n_bnds, n_layers, 2}),
-                                  {2, n_layers, n_bnds});
+        Array<int, 3> key_species(
+                coef_lw_nc.get_variable<int>("key_species", {n_bnds, n_layers, 2}),
+                {2, n_layers, n_bnds});
         Array<double, 2> band_lims(coef_lw_nc.get_variable<double>("bnd_limits_wavenumber", {n_bnds, 2}), {2, n_bnds});
         Array<int, 2> band2gpt(coef_lw_nc.get_variable<int>("bnd_limits_gpt", {n_bnds, 2}), {2, n_bnds});
         Array<double, 1> press_ref(coef_lw_nc.get_variable<double>("press_ref", {n_press}), {n_press});
@@ -178,12 +179,13 @@ int main()
                 coef_lw_nc.get_variable<int>("kminor_start_upper", {n_minor_absorber_intervals_upper}),
                 {n_minor_absorber_intervals_upper});
 
-        Array<double, 3> vmr_ref(coef_lw_nc.get_variable<double>("vmr_ref", {n_temps, n_extabsorbers, n_layers}),
-                                 {n_layers, n_extabsorbers, n_temps});
+        Array<double, 3> vmr_ref(
+                coef_lw_nc.get_variable<double>("vmr_ref", {n_temps, n_extabsorbers, n_layers}),
+                {n_layers, n_extabsorbers, n_temps});
 
         Array<double, 4> kmajor(
-                coef_lw_nc.get_variable<double>("kmajor", {n_temps, n_press + 1, n_mixingfracs, n_gpts}),
-                {n_gpts, n_mixingfracs, n_press + 1, n_temps});
+                coef_lw_nc.get_variable<double>("kmajor", {n_temps, n_press+1, n_mixingfracs, n_gpts}),
+                {n_gpts, n_mixingfracs, n_press+1, n_temps});
 
         Array<double, 3> rayl_lower({n_gpts, n_mixingfracs, n_temps});
         Array<double, 3> rayl_upper({n_gpts, n_mixingfracs, n_temps});
@@ -197,13 +199,16 @@ int main()
 
         // Is it really LW if so read these variables as well.
         Array<double, 2> totplnk({n_internal_sourcetemps, n_bnds});
-        Array<double, 4> planck_frac({n_gpts, n_mixingfracs, n_press + 1, n_temps});
+        Array<double, 4> planck_frac({n_gpts, n_mixingfracs, n_press+1, n_temps});
 
         if (coef_lw_nc.variable_exists("totplnk"))
         {
-            totplnk = coef_lw_nc.get_variable<double>("totplnk", {n_bnds, n_internal_sourcetemps});
-            planck_frac = coef_lw_nc.get_variable<double>("plank_fraction",
-                                                          {n_temps, n_press + 1, n_mixingfracs, n_gpts});
+            totplnk = coef_lw_nc.get_variable<double>(
+                    "totplnk",
+                    {n_bnds, n_internal_sourcetemps});
+            planck_frac = coef_lw_nc.get_variable<double>(
+                    "plank_fraction",
+                    {n_temps, n_press+1, n_mixingfracs, n_gpts});
         }
         else
         {
@@ -264,8 +269,12 @@ int main()
             master.print_message("STEP 1: Computing optical depths for longwave radiation\n");
 
             // Download surface boundary conditions for long wave.
-            Array<double, 2> emis_sfc_tmp(input_nc.get_variable<double>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
-            Array<double, 1> t_sfc_tmp(input_nc.get_variable<double>("t_sfc", {n_col}), {n_col});
+            Array<double, 2> emis_sfc_tmp(
+                    input_nc.get_variable<double>(
+                            "emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
+            Array<double, 1> t_sfc_tmp(
+                    input_nc.get_variable<double>(
+                            "t_sfc", {n_col}), {n_col});
 
             emis_sfc = emis_sfc_tmp;
             t_sfc = t_sfc_tmp;
@@ -274,10 +283,10 @@ int main()
             int n_blocks = n_col / n_col_block;
             int n_col_block_left = n_col % n_col_block;
 
-            optical_props = std::make_unique<Optical_props_1scl<double>>(n_col, n_lay, kdist);
+            optical_props        = std::make_unique<Optical_props_1scl<double>>(n_col      , n_lay, kdist);
             optical_props_subset = std::make_unique<Optical_props_1scl<double>>(n_col_block, n_lay, kdist);
 
-            Source_func_lw<double> sources(n_col, n_lay, kdist);
+            Source_func_lw<double> sources       (n_col      , n_lay, kdist);
             Source_func_lw<double> sources_subset(n_col_block, n_lay, kdist);
 
             auto calc_optical_props_subset = [&](
@@ -345,18 +354,20 @@ int main()
             auto nc_tau = output_nc.add_variable<double>("tau", {"gpt", "lay", "col"});
 
             nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
-            nc_band_lims_gpt.insert(optical_props->get_band_lims_gpoint().v(), {0, 0});
+            nc_band_lims_gpt.insert(optical_props->get_band_lims_gpoint().v()    , {0, 0});
             nc_tau.insert(optical_props->get_tau().v(), {0, 0, 0});
 
             // Second, store the sources.
-            auto nc_lay_src = output_nc.add_variable<double>("lay_src", {"gpt", "lay", "col"});
+            auto nc_lay_src     = output_nc.add_variable<double>("lay_src"    , {"gpt", "lay", "col"});
             auto nc_lev_src_inc = output_nc.add_variable<double>("lev_src_inc", {"gpt", "lay", "col"});
             auto nc_lev_src_dec = output_nc.add_variable<double>("lev_src_dec", {"gpt", "lay", "col"});
+
             auto nc_sfc_src = output_nc.add_variable<double>("sfc_src", {"gpt", "col"});
 
-            nc_lay_src.insert(sources.get_lay_source().v(), {0, 0, 0});
+            nc_lay_src.insert    (sources.get_lay_source().v()    , {0, 0, 0});
             nc_lev_src_inc.insert(sources.get_lev_source_inc().v(), {0, 0, 0});
             nc_lev_src_dec.insert(sources.get_lev_source_dec().v(), {0, 0, 0});
+
             nc_sfc_src.insert(sources.get_sfc_source().v(), {0, 0});
 
             /// SOLVING THE FLUXES FOR LONGWAVE RADIATION.
