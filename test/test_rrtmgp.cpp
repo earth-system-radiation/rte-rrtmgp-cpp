@@ -371,8 +371,8 @@ int main()
             Array<double,3> bnd_flux_dn ({n_col, n_lay+1, n_bnd});
             Array<double,3> bnd_flux_net({n_col, n_lay+1, n_bnd});
 
-            Array<double,2> heating_rate({n_col, n_lay});
-            Array<double,3> bnd_heating_rate({n_col, n_lay, n_bnd});
+            // Array<double,2> heating_rate({n_col, n_lay});
+            // Array<double,3> bnd_heating_rate({n_col, n_lay, n_bnd});
 
             auto calc_fluxes_subset = [&](
                     const int col_s_in, const int col_e_in,
@@ -380,9 +380,14 @@ int main()
                     const Source_func_lw<double>& sources_subset_in,
                     const Array<double,2> emis_sfc_subset_in)
             {
-                const int n_col_in = col_e_in - col_s_in + 1;
+                // const int n_col_in = col_e_in - col_s_in + 1;
 
-                std::unique_ptr<Fluxes<double>> fluxes = std::make_unique<Fluxes_byband<double>>();
+                std::unique_ptr<Fluxes_broadband<double>> fluxes = std::make_unique<Fluxes_byband<double>>();
+
+                // CvH, why not immediately construct the fluxes object with this info?
+                fluxes->set_flux_up (flux_up , col_s_in);
+                fluxes->set_flux_dn (flux_dn , col_s_in);
+                fluxes->set_flux_net(flux_net, col_s_in);
 
                 Rte_lw<double>::rte_lw(
                         optical_props_subset_in,

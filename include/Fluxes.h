@@ -21,6 +21,15 @@ class Fluxes_broadband : public Fluxes<TF>
                 const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
                 const int top_at_1);
 
+        void set_flux_up(Array<TF,2>& flux_up_in, const int col_s)
+        { flux_up = &flux_up_in.v()[col_s-1]; }
+
+        void set_flux_dn(Array<TF,2>& flux_dn_in, const int col_s)
+        { flux_dn = &flux_dn_in.v()[col_s-1]; }
+
+        void set_flux_net(Array<TF,2>& flux_net_in, const int col_s)
+        { flux_net = &flux_net_in.v()[col_s-1]; }
+
     private:
         TF* flux_up;
         TF* flux_dn;
