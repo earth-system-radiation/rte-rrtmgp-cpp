@@ -15,25 +15,20 @@ template<typename TF>
 class Fluxes_broadband : public Fluxes<TF>
 {
     public:
-        Fluxes_broadband();
+        Fluxes_broadband(const int ncol, const int nlev);
         virtual void reduce(
                 const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn,
                 const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
                 const int top_at_1);
 
-        void set_flux_up(Array<TF,2>& flux_up_in, const int col_s)
-        { flux_up = &flux_up_in.v()[col_s-1]; }
-
-        void set_flux_dn(Array<TF,2>& flux_dn_in, const int col_s)
-        { flux_dn = &flux_dn_in.v()[col_s-1]; }
-
-        void set_flux_net(Array<TF,2>& flux_net_in, const int col_s)
-        { flux_net = &flux_net_in.v()[col_s-1]; }
+        Array<TF,2>& get_flux_up (){ return flux_up;  }
+        Array<TF,2>& get_flux_dn (){ return flux_dn;  }
+        Array<TF,2>& get_flux_net(){ return flux_net; }
 
     private:
-        TF* flux_up;
-        TF* flux_dn;
-        TF* flux_net;
+        Array<TF,2> flux_up;
+        Array<TF,2> flux_dn;
+        Array<TF,2> flux_net;
 };
 
 template<typename TF>
@@ -60,36 +55,37 @@ namespace rrtmgp_kernels
 
     extern "C" void net_broadband_precalc(
             int* ncol, int* nlev,
-            double* spectral_flux_dn, double* spectral_flux_up,
+            double* broadband_flux_dn, double* broadband_flux_up,
             double* broadband_flux_net);
 
     template<typename TF>
     void sum_broadband(
             int ncol, int nlev, int ngpt,
-            const Array<TF,3>& spectral_flux, TF* broadband_flux)
+            const Array<TF,3>& spectral_flux, Array<TF,2>& broadband_flux)
     {
         sum_broadband(
                 &ncol, &nlev, &ngpt,
                 const_cast<TF*>(spectral_flux.v().data()),
-                broadband_flux);
+                broadband_flux.v().data());
     }
 
     template<typename TF>
     void net_broadband(
             int ncol, int nlev,
-            TF* spectral_flux_dn, TF* spectral_flux_up,
-            TF* broadband_flux_net)
+            const Array<TF,2>& broadband_flux_dn, const Array<TF,2>& broadband_flux_up,
+            Array<TF,2>& broadband_flux_net)
     {
         net_broadband_precalc(
                 &ncol, &nlev,
-                spectral_flux_dn, spectral_flux_up,
-                broadband_flux_net);
+                const_cast<TF*>(broadband_flux_dn.v().data()),
+                const_cast<TF*>(broadband_flux_up.v().data()),
+                broadband_flux_net.v().data());
     }
 }
 
 template<typename TF>
-Fluxes_broadband<TF>::Fluxes_broadband() :
-    flux_up(nullptr), flux_dn(nullptr), flux_net(nullptr)
+Fluxes_broadband<TF>::Fluxes_broadband(const int ncol, const int nlev) :
+    flux_up({ncol, nlev}), flux_dn({ncol, nlev}), flux_net({ncol, nlev})
 {}
 
 template<typename TF>
@@ -104,17 +100,14 @@ void Fluxes_broadband<TF>::reduce(
 
     auto band_lims = spectral_disc->get_band_lims_gpoint();
 
-    if (this->flux_up != nullptr)
-        rrtmgp_kernels::sum_broadband(
-                ncol, nlev, ngpt, gpt_flux_up, this->flux_up);
+    rrtmgp_kernels::sum_broadband(
+            ncol, nlev, ngpt, gpt_flux_up, this->flux_up);
 
-    if (this->flux_dn != nullptr)
-        rrtmgp_kernels::sum_broadband(
-                ncol, nlev, ngpt, gpt_flux_dn, this->flux_dn);
+    rrtmgp_kernels::sum_broadband(
+            ncol, nlev, ngpt, gpt_flux_dn, this->flux_dn);
 
-    if (this->flux_up != nullptr && this->flux_dn != nullptr)
-        rrtmgp_kernels::net_broadband(
-                ncol, nlev, this->flux_dn, this->flux_up, this->flux_net);
+    rrtmgp_kernels::net_broadband(
+            ncol, nlev, this->flux_dn, this->flux_up, this->flux_net);
 }
 
 template<typename TF>

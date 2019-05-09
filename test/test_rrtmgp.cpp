@@ -110,8 +110,8 @@ int main()
         int n_contributors_upper = coef_lw_nc.get_dimension_size("contributors_upper");
 
         // Read gas names.
-        Array<std::string, 1> gas_names(get_variable_string("gas_names", {n_absorbers}, coef_lw_nc, n_char, true),
-                                        {n_absorbers});
+        Array<std::string, 1> gas_names(
+                get_variable_string("gas_names", {n_absorbers}, coef_lw_nc, n_char, true), {n_absorbers});
 
         Array<int, 3> key_species(
                 coef_lw_nc.get_variable<int>("key_species", {n_bnds, n_layers, 2}),
@@ -378,6 +378,7 @@ int main()
             Array<double,2> flux_up ({n_col, n_lay+1});
             Array<double,2> flux_dn ({n_col, n_lay+1});
             Array<double,2> flux_net({n_col, n_lay+1});
+
             Array<double,3> bnd_flux_up ({n_col, n_lay+1, n_bnd});
             Array<double,3> bnd_flux_dn ({n_col, n_lay+1, n_bnd});
             Array<double,3> bnd_flux_net({n_col, n_lay+1, n_bnd});
@@ -389,17 +390,14 @@ int main()
                     const int col_s_in, const int col_e_in,
                     const std::unique_ptr<Optical_props_arry<double>>& optical_props_subset_in,
                     const Source_func_lw<double>& sources_subset_in,
-                    const Array<double,2> emis_sfc_subset_in)
+                    const Array<double,2> emis_sfc_subset_in,
+                    std::unique_ptr<Fluxes_broadband<double>>& fluxes)
             {
                 // const int n_col_in = col_e_in - col_s_in + 1;
 
-                std::unique_ptr<Fluxes_broadband<double>> fluxes = std::make_unique<Fluxes_byband<double>>();
+                // std::unique_ptr<Fluxes_broadband<double>> fluxes = std::make_unique<Fluxes_byband<double>>();
 
-                // CvH, why not immediately construct the fluxes object with this info?
-                fluxes->set_flux_up (flux_up , col_s_in);
-                fluxes->set_flux_dn (flux_dn , col_s_in);
-                fluxes->set_flux_net(flux_net, col_s_in);
-
+                // CvH I removed the pointer assignments as this is unportable Fortran code.
                 Rte_lw<double>::rte_lw(
                         optical_props_subset_in,
                         top_at_1,
@@ -419,11 +417,24 @@ int main()
 
                 Array<double,2> emis_sfc_subset = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
 
+                std::unique_ptr<Fluxes_broadband<double>> fluxes_subset =
+                        std::make_unique<Fluxes_broadband<double>>(n_col_block, n_lev);
+
                 calc_fluxes_subset(
                         col_s, col_e,
                         optical_props_subset,
                         sources_subset,
-                        emis_sfc_subset);
+                        emis_sfc_subset,
+                        fluxes_subset);
+
+                // Copy the data to the output.
+                for (int ilev=1; ilev<=n_lev; ++ilev)
+                    for (int icol=col_s; icol<=col_e; ++icol)
+                    {
+                        flux_up ({icol, ilev}) = fluxes_subset->get_flux_up ()({icol-col_s+1, ilev});
+                        flux_dn ({icol, ilev}) = fluxes_subset->get_flux_dn ()({icol-col_s+1, ilev});
+                        flux_net({icol, ilev}) = fluxes_subset->get_flux_net()({icol-col_s+1, ilev});
+                    }
             }
 
             if (n_col_block_left > 0)
@@ -439,11 +450,24 @@ int main()
 
                 Array<double,2> emis_sfc_left = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
 
+                std::unique_ptr<Fluxes_broadband<double>> fluxes_left =
+                        std::make_unique<Fluxes_broadband<double>>(n_col_block_left, n_lev);
+
                 calc_fluxes_subset(
                         col_s, col_e,
                         optical_props_left,
                         sources_left,
-                        emis_sfc_left);
+                        emis_sfc_left,
+                        fluxes_left);
+
+                // Copy the data to the output.
+                for (int ilev=1; ilev<=n_lev; ++ilev)
+                    for (int icol=col_s; icol<=col_e; ++icol)
+                    {
+                        flux_up ({icol, ilev}) = fluxes_left->get_flux_up ()({icol-col_s+1, ilev});
+                        flux_dn ({icol, ilev}) = fluxes_left->get_flux_dn ()({icol-col_s+1, ilev});
+                        flux_net({icol, ilev}) = fluxes_left->get_flux_net()({icol-col_s+1, ilev});
+                    }
             }
 
             // Save the output of the flux calculation to disk.

@@ -31,7 +31,8 @@ namespace rrtmgp_kernels
             const Array<TF,2>& gauss_Ds_subset,
             const Array<TF,2>& gauss_wts_subset,
             const Array<TF,3>& tau,
-            const Array<TF,3>& lay_source, const Array<TF,3>& lev_source_inc, const Array<TF,3>& lev_source_dec,
+            const Array<TF,3>& lay_source,
+            const Array<TF,3>& lev_source_inc, const Array<TF,3>& lev_source_dec,
             const Array<TF,2>& sfc_emis_gpt, const Array<TF,2>& sfc_source,
             Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn)
     {
@@ -78,9 +79,9 @@ class Rte_lw
                      0.1355069134, 0.2034645680, 0.1298475476, 0.0311809710},
                     { max_gauss_pts, max_gauss_pts });
 
-            const int ncol  = optical_props->get_ncol();
-            const int nlay  = optical_props->get_nlay();
-            const int ngpt  = optical_props->get_ngpt();
+            const int ncol = optical_props->get_ncol();
+            const int nlay = optical_props->get_nlay();
+            const int ngpt = optical_props->get_ngpt();
             // const int nband = optical_props->get_nband();
 
             Array<TF,3> gpt_flux_up({ncol, nlay+1, ngpt});
@@ -95,14 +96,17 @@ class Rte_lw
             // Run the radiative transfer solver
             const int n_quad_angs = 1;
 
-            Array<TF,2> gauss_Ds_subset  = gauss_Ds .subset({ {{1, n_quad_angs}, {n_quad_angs, n_quad_angs}} });
-            Array<TF,2> gauss_wts_subset = gauss_wts.subset({ {{1, n_quad_angs}, {n_quad_angs, n_quad_angs}} });
+            Array<TF,2> gauss_Ds_subset = gauss_Ds.subset(
+                    { {{1, n_quad_angs}, {n_quad_angs, n_quad_angs}} });
+            Array<TF,2> gauss_wts_subset = gauss_wts.subset(
+                    { {{1, n_quad_angs}, {n_quad_angs, n_quad_angs}} });
 
             rrtmgp_kernels::lw_solver_noscat_GaussQuad(
                     ncol, nlay, ngpt, top_at_1, n_quad_angs,
                     gauss_Ds_subset, gauss_wts_subset,
                     optical_props->get_tau(),
-                    sources.get_lay_source(), sources.get_lev_source_inc(), sources.get_lev_source_dec(),
+                    sources.get_lay_source(),
+                    sources.get_lev_source_inc(), sources.get_lev_source_dec(),
                     sfc_emis_gpt, sources.get_sfc_source(),
                     gpt_flux_up, gpt_flux_dn);
 
