@@ -116,7 +116,7 @@ class Rte_lw
         static void expand_and_transpose(
                 const std::unique_ptr<Optical_props_arry<TF>>& ops,
                 const Array<TF,2> arr_in,
-                Array<TF,2> arr_out)
+                Array<TF,2>& arr_out)
         {
             const int ncol = arr_in.dim(2);
             const int nband = ops->get_nband();

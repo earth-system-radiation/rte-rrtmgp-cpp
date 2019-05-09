@@ -425,21 +425,21 @@ int main()
 
                 // Copy the data to the output.
                 for (int ilev=1; ilev<=n_lev; ++ilev)
-                    for (int icol=col_s; icol<=col_e; ++icol)
+                    for (int icol=1; icol<=n_col_block; ++icol)
                     {
-                        flux_up ({icol, ilev}) = fluxes_subset->get_flux_up ()({icol-col_s+1, ilev});
-                        flux_dn ({icol, ilev}) = fluxes_subset->get_flux_dn ()({icol-col_s+1, ilev});
-                        flux_net({icol, ilev}) = fluxes_subset->get_flux_net()({icol-col_s+1, ilev});
+                        flux_up ({icol+col_s-1, ilev}) = fluxes_subset->get_flux_up ()({icol, ilev});
+                        flux_dn ({icol+col_s-1, ilev}) = fluxes_subset->get_flux_dn ()({icol, ilev});
+                        flux_net({icol+col_s-1, ilev}) = fluxes_subset->get_flux_net()({icol, ilev});
                     }
 
                 // Copy the data to the output.
                 for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
                     for (int ilev=1; ilev<=n_lev; ++ilev)
-                        for (int icol=col_s; icol<=col_e; ++icol)
+                        for (int icol=1; icol<=n_col_block; ++icol)
                         {
-                            bnd_flux_up ({icol, ilev, ibnd}) = fluxes_subset->get_bnd_flux_up ()({icol-col_s+1, ilev, ibnd});
-                            bnd_flux_dn ({icol, ilev, ibnd}) = fluxes_subset->get_bnd_flux_dn ()({icol-col_s+1, ilev, ibnd});
-                            bnd_flux_net({icol, ilev, ibnd}) = fluxes_subset->get_bnd_flux_net()({icol-col_s+1, ilev, ibnd});
+                            bnd_flux_up ({icol+col_s-1, ilev, ibnd}) = fluxes_subset->get_bnd_flux_up ()({icol, ilev, ibnd});
+                            bnd_flux_dn ({icol+col_s-1, ilev, ibnd}) = fluxes_subset->get_bnd_flux_dn ()({icol, ilev, ibnd});
+                            bnd_flux_net({icol+col_s-1, ilev, ibnd}) = fluxes_subset->get_bnd_flux_net()({icol, ilev, ibnd});
                         }
             }
 
@@ -468,23 +468,23 @@ int main()
 
                 // Copy the data to the output.
                 for (int ilev=1; ilev<=n_lev; ++ilev)
-                    for (int icol=col_s; icol<=col_e; ++icol)
+                    for (int icol=1; icol<=n_col_block_left; ++icol)
                     {
-                        flux_up ({icol, ilev}) = fluxes_left->get_flux_up ()({icol-col_s+1, ilev});
-                        flux_dn ({icol, ilev}) = fluxes_left->get_flux_dn ()({icol-col_s+1, ilev});
-                        flux_net({icol, ilev}) = fluxes_left->get_flux_net()({icol-col_s+1, ilev});
+                        flux_up ({icol+col_s-1, ilev}) = fluxes_left->get_flux_up ()({icol, ilev});
+                        flux_dn ({icol+col_s-1, ilev}) = fluxes_left->get_flux_dn ()({icol, ilev});
+                        flux_net({icol+col_s-1, ilev}) = fluxes_left->get_flux_net()({icol, ilev});
                     }
 
                 // Copy the data to the output.
                 for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
                     for (int ilev=1; ilev<=n_lev; ++ilev)
-                        for (int icol=col_s; icol<=col_e; ++icol)
+                        for (int icol=1; icol<=n_col_block_left; ++icol)
                         {
-                            bnd_flux_up ({icol, ilev, ibnd}) = fluxes_left->get_bnd_flux_up ()({icol-col_s+1, ilev, ibnd});
-                            bnd_flux_dn ({icol, ilev, ibnd}) = fluxes_left->get_bnd_flux_dn ()({icol-col_s+1, ilev, ibnd});
-                            bnd_flux_net({icol, ilev, ibnd}) = fluxes_left->get_bnd_flux_net()({icol-col_s+1, ilev, ibnd});
+                            bnd_flux_up ({icol+col_s-1, ilev, ibnd}) = fluxes_left->get_bnd_flux_up ()({icol, ilev, ibnd});
+                            bnd_flux_dn ({icol+col_s-1, ilev, ibnd}) = fluxes_left->get_bnd_flux_dn ()({icol, ilev, ibnd});
+                            bnd_flux_net({icol+col_s-1, ilev, ibnd}) = fluxes_left->get_bnd_flux_net()({icol, ilev, ibnd});
                         }
-                    }
+            }
 
             // Save the output of the flux calculation to disk.
             auto nc_flux_up  = output_nc.add_variable<double>("flux_up" , {"lev", "col"});

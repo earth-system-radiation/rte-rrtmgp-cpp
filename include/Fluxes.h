@@ -142,7 +142,7 @@ void Fluxes_broadband<TF>::reduce(
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
-    const int ngpt = spectral_disc->get_ngpt();
+    const int ngpt = gpt_flux_up.dim(3);
 
     rrtmgp_kernels::sum_broadband(
             ncol, nlev, ngpt, gpt_flux_up, this->flux_up);
@@ -157,7 +157,9 @@ void Fluxes_broadband<TF>::reduce(
 template<typename TF>
 Fluxes_byband<TF>::Fluxes_byband(const int ncol, const int nlev, const int nbnd) :
     Fluxes_broadband<TF>(ncol, nlev),
-    bnd_flux_up({ncol, nlev, nbnd}), bnd_flux_dn({ncol, nlev, nbnd}), bnd_flux_net({ncol, nlev, nbnd})
+    bnd_flux_up ({ncol, nlev, nbnd}),
+    bnd_flux_dn ({ncol, nlev, nbnd}),
+    bnd_flux_net({ncol, nlev, nbnd})
 {}
 
 template<typename TF>
