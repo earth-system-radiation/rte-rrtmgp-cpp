@@ -58,10 +58,10 @@ int main()
         int n_lev = input_nc.get_dimension_size("lev");
         int n_col = input_nc.get_dimension_size("col");
 
-        Array<double, 2> p_lay(input_nc.get_variable<double>("p_lay", {n_lay, n_col}), {n_col, n_lay});
-        Array<double, 2> t_lay(input_nc.get_variable<double>("t_lay", {n_lay, n_col}), {n_col, n_lay});
-        Array<double, 2> p_lev(input_nc.get_variable<double>("p_lev", {n_lev, n_col}), {n_col, n_lev});
-        Array<double, 2> t_lev(input_nc.get_variable<double>("t_lev", {n_lev, n_col}), {n_col, n_lev});
+        Array<double,2> p_lay(input_nc.get_variable<double>("p_lay", {n_lay, n_col}), {n_col, n_lay});
+        Array<double,2> t_lay(input_nc.get_variable<double>("t_lay", {n_lay, n_col}), {n_col, n_lay});
+        Array<double,2> p_lev(input_nc.get_variable<double>("p_lev", {n_lev, n_col}), {n_col, n_lev});
+        Array<double,2> t_lev(input_nc.get_variable<double>("t_lev", {n_lev, n_col}), {n_col, n_lev});
 
         const int top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
@@ -69,24 +69,24 @@ int main()
         Gas_concs<double> gas_concs_subset;
 
         gas_concs.set_vmr("h2o",
-                Array<double, 2>(input_nc.get_variable<double>("vmr_h2o", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double,2>(input_nc.get_variable<double>("vmr_h2o", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("co2",
-                Array<double, 2>(input_nc.get_variable<double>("vmr_co2", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double,2>(input_nc.get_variable<double>("vmr_co2", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("o3",
-                Array<double, 2>(input_nc.get_variable<double>("vmr_o3", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double,2>(input_nc.get_variable<double>("vmr_o3", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("n2o",
-                Array<double, 2>(input_nc.get_variable<double>("vmr_n2o", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double,2>(input_nc.get_variable<double>("vmr_n2o", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("co",
-                Array<double, 2>(input_nc.get_variable<double>("vmr_co", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double,2>(input_nc.get_variable<double>("vmr_co", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("ch4",
-                Array<double, 2>(input_nc.get_variable<double>("vmr_ch4", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double,2>(input_nc.get_variable<double>("vmr_ch4", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("o2",
-                Array<double, 2>(input_nc.get_variable<double>("vmr_o2", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double,2>(input_nc.get_variable<double>("vmr_o2", {n_lay, n_col}), {n_col, n_lay}));
         gas_concs.set_vmr("n2",
-                Array<double, 2>(input_nc.get_variable<double>("vmr_n2", {n_lay, n_col}), {n_col, n_lay}));
+                Array<double,2>(input_nc.get_variable<double>("vmr_n2", {n_lay, n_col}), {n_col, n_lay}));
 
         // CvH: does this one need to be present?
-        Array<double, 2> col_dry(input_nc.get_variable<double>("col_dry", {n_lay, n_col}), {n_col, n_lay});
+        Array<double,2> col_dry(input_nc.get_variable<double>("col_dry", {n_lay, n_col}), {n_col, n_lay});
 
         // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
         Netcdf_file coef_lw_nc(master, "coefficients_lw.nc", Netcdf_mode::Read);
@@ -110,85 +110,85 @@ int main()
         int n_contributors_upper = coef_lw_nc.get_dimension_size("contributors_upper");
 
         // Read gas names.
-        Array<std::string, 1> gas_names(
+        Array<std::string,1> gas_names(
                 get_variable_string("gas_names", {n_absorbers}, coef_lw_nc, n_char, true), {n_absorbers});
 
-        Array<int, 3> key_species(
+        Array<int,3> key_species(
                 coef_lw_nc.get_variable<int>("key_species", {n_bnds, n_layers, 2}),
                 {2, n_layers, n_bnds});
-        Array<double, 2> band_lims(coef_lw_nc.get_variable<double>("bnd_limits_wavenumber", {n_bnds, 2}), {2, n_bnds});
-        Array<int, 2> band2gpt(coef_lw_nc.get_variable<int>("bnd_limits_gpt", {n_bnds, 2}), {2, n_bnds});
-        Array<double, 1> press_ref(coef_lw_nc.get_variable<double>("press_ref", {n_press}), {n_press});
-        Array<double, 1> temp_ref(coef_lw_nc.get_variable<double>("temp_ref", {n_temps}), {n_temps});
+        Array<double,2> band_lims(coef_lw_nc.get_variable<double>("bnd_limits_wavenumber", {n_bnds, 2}), {2, n_bnds});
+        Array<int,2> band2gpt(coef_lw_nc.get_variable<int>("bnd_limits_gpt", {n_bnds, 2}), {2, n_bnds});
+        Array<double,1> press_ref(coef_lw_nc.get_variable<double>("press_ref", {n_press}), {n_press});
+        Array<double,1> temp_ref(coef_lw_nc.get_variable<double>("temp_ref", {n_temps}), {n_temps});
 
         double temp_ref_p = coef_lw_nc.get_variable<double>("absorption_coefficient_ref_P");
         double temp_ref_t = coef_lw_nc.get_variable<double>("absorption_coefficient_ref_T");
         double press_ref_trop = coef_lw_nc.get_variable<double>("press_ref_trop");
 
-        Array<double, 3> kminor_lower(
+        Array<double,3> kminor_lower(
                 coef_lw_nc.get_variable<double>("kminor_lower", {n_temps, n_mixingfracs, n_contributors_lower}),
                 {n_contributors_lower, n_mixingfracs, n_temps});
-        Array<double, 3> kminor_upper(
+        Array<double,3> kminor_upper(
                 coef_lw_nc.get_variable<double>("kminor_upper", {n_temps, n_mixingfracs, n_contributors_upper}),
                 {n_contributors_upper, n_mixingfracs, n_temps});
 
-        Array<std::string, 1> gas_minor(get_variable_string("gas_minor", {n_minorabsorbers}, coef_lw_nc, n_char),
+        Array<std::string,1> gas_minor(get_variable_string("gas_minor", {n_minorabsorbers}, coef_lw_nc, n_char),
                                         {n_minorabsorbers});
-        Array<std::string, 1> identifier_minor(
+        Array<std::string,1> identifier_minor(
                 get_variable_string("identifier_minor", {n_minorabsorbers}, coef_lw_nc, n_char), {n_minorabsorbers});
 
-        Array<std::string, 1> minor_gases_lower(
+        Array<std::string,1> minor_gases_lower(
                 get_variable_string("minor_gases_lower", {n_minor_absorber_intervals_lower}, coef_lw_nc, n_char),
                 {n_minor_absorber_intervals_lower});
-        Array<std::string, 1> minor_gases_upper(
+        Array<std::string,1> minor_gases_upper(
                 get_variable_string("minor_gases_upper", {n_minor_absorber_intervals_upper}, coef_lw_nc, n_char),
                 {n_minor_absorber_intervals_upper});
 
-        Array<int, 2> minor_limits_gpt_lower(
+        Array<int,2> minor_limits_gpt_lower(
                 coef_lw_nc.get_variable<int>("minor_limits_gpt_lower", {n_minor_absorber_intervals_lower, n_pairs}),
                 {n_pairs, n_minor_absorber_intervals_lower});
-        Array<int, 2> minor_limits_gpt_upper(
+        Array<int,2> minor_limits_gpt_upper(
                 coef_lw_nc.get_variable<int>("minor_limits_gpt_upper", {n_minor_absorber_intervals_upper, n_pairs}),
                 {n_pairs, n_minor_absorber_intervals_upper});
 
-        Array<int, 1> minor_scales_with_density_lower(
+        Array<int,1> minor_scales_with_density_lower(
                 coef_lw_nc.get_variable<int>("minor_scales_with_density_lower", {n_minor_absorber_intervals_lower}),
                 {n_minor_absorber_intervals_lower});
-        Array<int, 1> minor_scales_with_density_upper(
+        Array<int,1> minor_scales_with_density_upper(
                 coef_lw_nc.get_variable<int>("minor_scales_with_density_upper", {n_minor_absorber_intervals_upper}),
                 {n_minor_absorber_intervals_upper});
 
-        Array<int, 1> scale_by_complement_lower(
+        Array<int,1> scale_by_complement_lower(
                 coef_lw_nc.get_variable<int>("scale_by_complement_lower", {n_minor_absorber_intervals_lower}),
                 {n_minor_absorber_intervals_lower});
-        Array<int, 1> scale_by_complement_upper(
+        Array<int,1> scale_by_complement_upper(
                 coef_lw_nc.get_variable<int>("scale_by_complement_upper", {n_minor_absorber_intervals_upper}),
                 {n_minor_absorber_intervals_upper});
 
-        Array<std::string, 1> scaling_gas_lower(
+        Array<std::string,1> scaling_gas_lower(
                 get_variable_string("scaling_gas_lower", {n_minor_absorber_intervals_lower}, coef_lw_nc, n_char),
                 {n_minor_absorber_intervals_lower});
-        Array<std::string, 1> scaling_gas_upper(
+        Array<std::string,1> scaling_gas_upper(
                 get_variable_string("scaling_gas_upper", {n_minor_absorber_intervals_upper}, coef_lw_nc, n_char),
                 {n_minor_absorber_intervals_upper});
 
-        Array<int, 1> kminor_start_lower(
+        Array<int,1> kminor_start_lower(
                 coef_lw_nc.get_variable<int>("kminor_start_lower", {n_minor_absorber_intervals_lower}),
                 {n_minor_absorber_intervals_lower});
-        Array<int, 1> kminor_start_upper(
+        Array<int,1> kminor_start_upper(
                 coef_lw_nc.get_variable<int>("kminor_start_upper", {n_minor_absorber_intervals_upper}),
                 {n_minor_absorber_intervals_upper});
 
-        Array<double, 3> vmr_ref(
+        Array<double,3> vmr_ref(
                 coef_lw_nc.get_variable<double>("vmr_ref", {n_temps, n_extabsorbers, n_layers}),
                 {n_layers, n_extabsorbers, n_temps});
 
-        Array<double, 4> kmajor(
+        Array<double,4> kmajor(
                 coef_lw_nc.get_variable<double>("kmajor", {n_temps, n_press+1, n_mixingfracs, n_gpts}),
                 {n_gpts, n_mixingfracs, n_press+1, n_temps});
 
-        Array<double, 3> rayl_lower({n_gpts, n_mixingfracs, n_temps});
-        Array<double, 3> rayl_upper({n_gpts, n_mixingfracs, n_temps});
+        Array<double,3> rayl_lower({n_gpts, n_mixingfracs, n_temps});
+        Array<double,3> rayl_upper({n_gpts, n_mixingfracs, n_temps});
 
         if (coef_lw_nc.variable_exists("rayl_lower"))
         {
@@ -198,8 +198,8 @@ int main()
         }
 
         // Is it really LW if so read these variables as well.
-        Array<double, 2> totplnk({n_internal_sourcetemps, n_bnds});
-        Array<double, 4> planck_frac({n_gpts, n_mixingfracs, n_press+1, n_temps});
+        Array<double,2> totplnk({n_internal_sourcetemps, n_bnds});
+        Array<double,4> planck_frac({n_gpts, n_mixingfracs, n_press+1, n_temps});
 
         if (coef_lw_nc.variable_exists("totplnk"))
         {
@@ -254,8 +254,8 @@ int main()
         const int n_gpt = kdist.get_ngpt();
         const int n_bnd = kdist.get_nband();
 
-        Array<double, 2> emis_sfc;
-        Array<double, 1> t_sfc;
+        Array<double,2> emis_sfc;
+        Array<double,1> t_sfc;
 
         const int n_col_block = 4;
 
@@ -269,10 +269,10 @@ int main()
             master.print_message("STEP 1: Computing optical depths for longwave radiation\n");
 
             // Download surface boundary conditions for long wave.
-            Array<double, 2> emis_sfc_tmp(
+            Array<double,2> emis_sfc_tmp(
                     input_nc.get_variable<double>(
                             "emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
-            Array<double, 1> t_sfc_tmp(
+            Array<double,1> t_sfc_tmp(
                     input_nc.get_variable<double>(
                             "t_sfc", {n_col}), {n_col});
 
@@ -350,7 +350,7 @@ int main()
             // WARNING: The storage in the NetCDF interface uses C-ordering and indexing.
             // First, store the optical properties.
             auto nc_band_lims_wvn = output_nc.add_variable<double>("band_lims_wvn", {"band", "pair"});
-            auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
+            auto nc_band_lims_gpt = output_nc.add_variable<int>   ("band_lims_gpt", {"band", "pair"});
             auto nc_tau = output_nc.add_variable<double>("tau", {"gpt", "lay", "col"});
 
             nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
@@ -375,13 +375,13 @@ int main()
 
             const int n_ang = input_nc.get_variable<double>("angle");
 
-            Array<double,2> flux_up ({n_col, n_lay+1});
-            Array<double,2> flux_dn ({n_col, n_lay+1});
-            Array<double,2> flux_net({n_col, n_lay+1});
+            Array<double,2> flux_up ({n_col, n_lev});
+            Array<double,2> flux_dn ({n_col, n_lev});
+            Array<double,2> flux_net({n_col, n_lev});
 
-            Array<double,3> bnd_flux_up ({n_col, n_lay+1, n_bnd});
-            Array<double,3> bnd_flux_dn ({n_col, n_lay+1, n_bnd});
-            Array<double,3> bnd_flux_net({n_col, n_lay+1, n_bnd});
+            Array<double,3> bnd_flux_up ({n_col, n_lev, n_bnd});
+            Array<double,3> bnd_flux_dn ({n_col, n_lev, n_bnd});
+            Array<double,3> bnd_flux_net({n_col, n_lev, n_bnd});
 
             // Array<double,2> heating_rate({n_col, n_lay});
             // Array<double,3> bnd_heating_rate({n_col, n_lay, n_bnd});
@@ -393,11 +393,7 @@ int main()
                     const Array<double,2> emis_sfc_subset_in,
                     std::unique_ptr<Fluxes_broadband<double>>& fluxes)
             {
-                // const int n_col_in = col_e_in - col_s_in + 1;
-
-                // std::unique_ptr<Fluxes_broadband<double>> fluxes = std::make_unique<Fluxes_byband<double>>();
-
-                // CvH I removed the pointer assignments as this is unportable Fortran code.
+                // CvH: I removed the pointer assignments of the fluxes, as this is unportable Fortran code.
                 Rte_lw<double>::rte_lw(
                         optical_props_subset_in,
                         top_at_1,
@@ -418,7 +414,7 @@ int main()
                 Array<double,2> emis_sfc_subset = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
 
                 std::unique_ptr<Fluxes_broadband<double>> fluxes_subset =
-                        std::make_unique<Fluxes_broadband<double>>(n_col_block, n_lev);
+                        std::make_unique<Fluxes_byband<double>>(n_col_block, n_lev, n_bnd);
 
                 calc_fluxes_subset(
                         col_s, col_e,
@@ -435,6 +431,16 @@ int main()
                         flux_dn ({icol, ilev}) = fluxes_subset->get_flux_dn ()({icol-col_s+1, ilev});
                         flux_net({icol, ilev}) = fluxes_subset->get_flux_net()({icol-col_s+1, ilev});
                     }
+
+                // Copy the data to the output.
+                for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
+                    for (int ilev=1; ilev<=n_lev; ++ilev)
+                        for (int icol=col_s; icol<=col_e; ++icol)
+                        {
+                            bnd_flux_up ({icol, ilev, ibnd}) = fluxes_subset->get_bnd_flux_up ()({icol-col_s+1, ilev, ibnd});
+                            bnd_flux_dn ({icol, ilev, ibnd}) = fluxes_subset->get_bnd_flux_dn ()({icol-col_s+1, ilev, ibnd});
+                            bnd_flux_net({icol, ilev, ibnd}) = fluxes_subset->get_bnd_flux_net()({icol-col_s+1, ilev, ibnd});
+                        }
             }
 
             if (n_col_block_left > 0)
@@ -451,7 +457,7 @@ int main()
                 Array<double,2> emis_sfc_left = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
 
                 std::unique_ptr<Fluxes_broadband<double>> fluxes_left =
-                        std::make_unique<Fluxes_broadband<double>>(n_col_block_left, n_lev);
+                        std::make_unique<Fluxes_byband<double>>(n_col_block_left, n_lev, n_bnd);
 
                 calc_fluxes_subset(
                         col_s, col_e,
@@ -468,20 +474,34 @@ int main()
                         flux_dn ({icol, ilev}) = fluxes_left->get_flux_dn ()({icol-col_s+1, ilev});
                         flux_net({icol, ilev}) = fluxes_left->get_flux_net()({icol-col_s+1, ilev});
                     }
-            }
+
+                // Copy the data to the output.
+                for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
+                    for (int ilev=1; ilev<=n_lev; ++ilev)
+                        for (int icol=col_s; icol<=col_e; ++icol)
+                        {
+                            bnd_flux_up ({icol, ilev, ibnd}) = fluxes_left->get_bnd_flux_up ()({icol-col_s+1, ilev, ibnd});
+                            bnd_flux_dn ({icol, ilev, ibnd}) = fluxes_left->get_bnd_flux_dn ()({icol-col_s+1, ilev, ibnd});
+                            bnd_flux_net({icol, ilev, ibnd}) = fluxes_left->get_bnd_flux_net()({icol-col_s+1, ilev, ibnd});
+                        }
+                    }
 
             // Save the output of the flux calculation to disk.
             auto nc_flux_up  = output_nc.add_variable<double>("flux_up" , {"lev", "col"});
             auto nc_flux_dn  = output_nc.add_variable<double>("flux_dn" , {"lev", "col"});
             auto nc_flux_net = output_nc.add_variable<double>("flux_net", {"lev", "col"});
 
-            auto nc_bnd_flux_up  = output_nc.add_variable<double>("bnd_flux_up" , {"lev", "col", "band"});
-            auto nc_bnd_flux_dn  = output_nc.add_variable<double>("bnd_flux_dn" , {"lev", "col", "band"});
-            auto nc_bnd_flux_net = output_nc.add_variable<double>("bnd_flux_net", {"lev", "col", "band"});
+            auto nc_bnd_flux_up  = output_nc.add_variable<double>("bnd_flux_up" , {"band", "lev", "col"});
+            auto nc_bnd_flux_dn  = output_nc.add_variable<double>("bnd_flux_dn" , {"band", "lev", "col"});
+            auto nc_bnd_flux_net = output_nc.add_variable<double>("bnd_flux_net", {"band", "lev", "col"});
 
             nc_flux_up .insert(flux_up .v(), {0, 0});
             nc_flux_dn .insert(flux_dn .v(), {0, 0});
             nc_flux_net.insert(flux_net.v(), {0, 0});
+
+            nc_bnd_flux_up .insert(bnd_flux_up .v(), {0, 0, 0});
+            nc_bnd_flux_dn .insert(bnd_flux_dn .v(), {0, 0, 0});
+            nc_bnd_flux_net.insert(bnd_flux_net.v(), {0, 0, 0});
         }
         else
         {
