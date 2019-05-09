@@ -94,12 +94,12 @@ class Rte_lw
             rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
 
             // Run the radiative transfer solver
-            const int n_quad_angs = 1;
+            const int n_quad_angs = n_gauss_angles;
 
             Array<TF,2> gauss_Ds_subset = gauss_Ds.subset(
-                    { {{1, n_quad_angs}, {n_quad_angs, n_quad_angs}} });
+                    {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
             Array<TF,2> gauss_wts_subset = gauss_wts.subset(
-                    { {{1, n_quad_angs}, {n_quad_angs, n_quad_angs}} });
+                    {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
 
             rrtmgp_kernels::lw_solver_noscat_GaussQuad(
                     ncol, nlay, ngpt, top_at_1, n_quad_angs,

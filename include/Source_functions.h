@@ -49,9 +49,9 @@ class Source_func_lw : public Optical_props<TF>
                 for (int ilay=1; ilay<=lay_source.dim(2); ++ilay)
                     for (int icol=col_s; icol<=col_e; ++icol)
                     {
-                        lay_source    ({icol-col_s+1, ilay, igpt}) = sources_sub.get_lay_source()    ({icol-col_s+1, ilay, igpt});
-                        lev_source_inc({icol-col_s+1, ilay, igpt}) = sources_sub.get_lev_source_inc()({icol-col_s+1, ilay, igpt});
-                        lev_source_dec({icol-col_s+1, ilay, igpt}) = sources_sub.get_lev_source_dec()({icol-col_s+1, ilay, igpt});
+                        lay_source    ({icol-col_s+1, ilay, igpt}) = sources_sub.get_lay_source()    ({icol, ilay, igpt});
+                        lev_source_inc({icol-col_s+1, ilay, igpt}) = sources_sub.get_lev_source_inc()({icol, ilay, igpt});
+                        lev_source_dec({icol-col_s+1, ilay, igpt}) = sources_sub.get_lev_source_dec()({icol, ilay, igpt});
                     }
         }
 
