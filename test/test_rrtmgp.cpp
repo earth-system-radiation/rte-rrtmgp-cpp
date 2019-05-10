@@ -133,7 +133,8 @@ int main()
                 {n_contributors_upper, n_mixingfracs, n_temps});
 
         Array<std::string,1> gas_minor(get_variable_string("gas_minor", {n_minorabsorbers}, coef_lw_nc, n_char),
-                                        {n_minorabsorbers});
+                {n_minorabsorbers});
+
         Array<std::string,1> identifier_minor(
                 get_variable_string("identifier_minor", {n_minorabsorbers}, coef_lw_nc, n_char), {n_minorabsorbers});
 
@@ -265,8 +266,8 @@ int main()
 
         if (kdist.source_is_internal())
         {
-            /// SOLVING THE OPTICAL PROPERTIES FOR LONGWAVE RADIATION.
-            master.print_message("STEP 1: Computing optical depths for longwave radiation\n");
+            ////// SOLVING THE OPTICAL PROPERTIES FOR LONGWAVE RADIATION //////
+            master.print_message("STEP 1: Computing optical depths for longwave radiation.\n");
 
             // Download surface boundary conditions for long wave.
             Array<double,2> emis_sfc_tmp(
@@ -338,40 +339,9 @@ int main()
                         sources_left);
             }
 
-            // Save the output of the optical solver to disk.
-            Netcdf_file output_nc(master, "test_rrtmgp_out.nc", Netcdf_mode::Create);
-            output_nc.add_dimension("col", n_col);
-            output_nc.add_dimension("lay", n_lay);
-            output_nc.add_dimension("lev", n_lev);
-            output_nc.add_dimension("gpt", n_gpt);
-            output_nc.add_dimension("band", n_bnd);
-            output_nc.add_dimension("pair", 2);
 
-            // WARNING: The storage in the NetCDF interface uses C-ordering and indexing.
-            // First, store the optical properties.
-            auto nc_band_lims_wvn = output_nc.add_variable<double>("band_lims_wvn", {"band", "pair"});
-            auto nc_band_lims_gpt = output_nc.add_variable<int>   ("band_lims_gpt", {"band", "pair"});
-            auto nc_tau = output_nc.add_variable<double>("tau", {"gpt", "lay", "col"});
-
-            nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
-            nc_band_lims_gpt.insert(optical_props->get_band_lims_gpoint().v()    , {0, 0});
-            nc_tau.insert(optical_props->get_tau().v(), {0, 0, 0});
-
-            // Second, store the sources.
-            auto nc_lay_src     = output_nc.add_variable<double>("lay_src"    , {"gpt", "lay", "col"});
-            auto nc_lev_src_inc = output_nc.add_variable<double>("lev_src_inc", {"gpt", "lay", "col"});
-            auto nc_lev_src_dec = output_nc.add_variable<double>("lev_src_dec", {"gpt", "lay", "col"});
-
-            auto nc_sfc_src = output_nc.add_variable<double>("sfc_src", {"gpt", "col"});
-
-            nc_lay_src.insert    (sources.get_lay_source().v()    , {0, 0, 0});
-            nc_lev_src_inc.insert(sources.get_lev_source_inc().v(), {0, 0, 0});
-            nc_lev_src_dec.insert(sources.get_lev_source_dec().v(), {0, 0, 0});
-
-            nc_sfc_src.insert(sources.get_sfc_source().v(), {0, 0});
-
-            /// SOLVING THE FLUXES FOR LONGWAVE RADIATION.
-            master.print_message("STEP 2: Computing optical depths for longwave radiation\n");
+            ////// SOLVING THE FLUXES FOR LONGWAVE RADIATION //////
+            master.print_message("STEP 2: Computing the longwave radiation fluxes.\n");
 
             const int n_ang = input_nc.get_variable<double>("angle");
 
@@ -468,6 +438,42 @@ int main()
                         emis_sfc_left,
                         fluxes_left);
             }
+
+
+            ////// SAVING THE MODEL OUTPUT //////
+            master.print_message("STEP 3: Saving the output to NetCDF.\n");
+
+            // Save the output of the optical solver to disk.
+            Netcdf_file output_nc(master, "test_rrtmgp_out.nc", Netcdf_mode::Create);
+            output_nc.add_dimension("col", n_col);
+            output_nc.add_dimension("lay", n_lay);
+            output_nc.add_dimension("lev", n_lev);
+            output_nc.add_dimension("gpt", n_gpt);
+            output_nc.add_dimension("band", n_bnd);
+            output_nc.add_dimension("pair", 2);
+
+            // WARNING: The storage in the NetCDF interface uses C-ordering and indexing.
+            // First, store the optical properties.
+            auto nc_band_lims_wvn = output_nc.add_variable<double>("band_lims_wvn", {"band", "pair"});
+            auto nc_band_lims_gpt = output_nc.add_variable<int>   ("band_lims_gpt", {"band", "pair"});
+            auto nc_tau = output_nc.add_variable<double>("tau", {"gpt", "lay", "col"});
+
+            nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
+            nc_band_lims_gpt.insert(optical_props->get_band_lims_gpoint().v()    , {0, 0});
+            nc_tau.insert(optical_props->get_tau().v(), {0, 0, 0});
+
+            // Second, store the sources.
+            auto nc_lay_src     = output_nc.add_variable<double>("lay_src"    , {"gpt", "lay", "col"});
+            auto nc_lev_src_inc = output_nc.add_variable<double>("lev_src_inc", {"gpt", "lay", "col"});
+            auto nc_lev_src_dec = output_nc.add_variable<double>("lev_src_dec", {"gpt", "lay", "col"});
+
+            auto nc_sfc_src = output_nc.add_variable<double>("sfc_src", {"gpt", "col"});
+
+            nc_lay_src.insert    (sources.get_lay_source().v()    , {0, 0, 0});
+            nc_lev_src_inc.insert(sources.get_lev_source_inc().v(), {0, 0, 0});
+            nc_lev_src_dec.insert(sources.get_lev_source_dec().v(), {0, 0, 0});
+
+            nc_sfc_src.insert(sources.get_sfc_source().v(), {0, 0});
 
             // Save the output of the flux calculation to disk.
             auto nc_flux_up  = output_nc.add_variable<double>("flux_up" , {"lev", "col"});
