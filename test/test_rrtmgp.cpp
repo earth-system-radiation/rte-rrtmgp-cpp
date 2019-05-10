@@ -298,15 +298,15 @@ int main()
                 Gas_concs<double> gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
                 kdist.gas_optics(
-                        p_lay.subset({{{col_s_in, col_e_in}, {1, n_lay}}}),
-                        p_lev.subset({{{col_s_in, col_e_in}, {1, n_lev}}}),
-                        t_lay.subset({{{col_s_in, col_e_in}, {1, n_lay}}}),
-                        t_sfc.subset({{{col_s_in, col_e_in}}}),
+                        p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                        p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }}),
+                        t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                        t_sfc.subset({{ {col_s_in, col_e_in} }}),
                         gas_concs_subset,
                         optical_props_subset_in,
                         sources_subset_in,
-                        col_dry.subset({{{col_s_in, col_e_in}, {1, n_lay}}}),
-                        t_lev.subset({{{col_s_in, col_e_in}, {1, n_lev}}})
+                        col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                        t_lev.subset  ({{ {col_s_in, col_e_in}, {1, n_lev} }})
                 );
 
                 optical_props->set_subset(optical_props_subset_in, col_s_in, col_e_in);
@@ -393,6 +393,8 @@ int main()
                     const Array<double,2> emis_sfc_subset_in,
                     std::unique_ptr<Fluxes_broadband<double>>& fluxes)
             {
+                const int n_col_block_subset = col_e_in - col_s_in + 1;
+
                 // CvH: I removed the pointer assignments of the fluxes, as this is unportable Fortran code.
                 Rte_lw<double>::rte_lw(
                         optical_props_subset_in,
@@ -401,6 +403,25 @@ int main()
                         emis_sfc_subset_in,
                         fluxes,
                         n_ang);
+
+                // Copy the data to the output.
+                for (int ilev=1; ilev<=n_lev; ++ilev)
+                    for (int icol=1; icol<=n_col_block_subset; ++icol)
+                    {
+                        flux_up ({icol+col_s_in-1, ilev}) = fluxes->get_flux_up ()({icol, ilev});
+                        flux_dn ({icol+col_s_in-1, ilev}) = fluxes->get_flux_dn ()({icol, ilev});
+                        flux_net({icol+col_s_in-1, ilev}) = fluxes->get_flux_net()({icol, ilev});
+                    }
+
+                // Copy the data to the output.
+                for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
+                    for (int ilev=1; ilev<=n_lev; ++ilev)
+                        for (int icol=1; icol<=n_col_block_subset; ++icol)
+                        {
+                            bnd_flux_up ({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_up ()({icol, ilev, ibnd});
+                            bnd_flux_dn ({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_dn ()({icol, ilev, ibnd});
+                            bnd_flux_net({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_net()({icol, ilev, ibnd});
+                        }
             };
 
             for (int b=1; b<=n_blocks; ++b)
@@ -422,25 +443,6 @@ int main()
                         sources_subset,
                         emis_sfc_subset,
                         fluxes_subset);
-
-                // Copy the data to the output.
-                for (int ilev=1; ilev<=n_lev; ++ilev)
-                    for (int icol=1; icol<=n_col_block; ++icol)
-                    {
-                        flux_up ({icol+col_s-1, ilev}) = fluxes_subset->get_flux_up ()({icol, ilev});
-                        flux_dn ({icol+col_s-1, ilev}) = fluxes_subset->get_flux_dn ()({icol, ilev});
-                        flux_net({icol+col_s-1, ilev}) = fluxes_subset->get_flux_net()({icol, ilev});
-                    }
-
-                // Copy the data to the output.
-                for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
-                    for (int ilev=1; ilev<=n_lev; ++ilev)
-                        for (int icol=1; icol<=n_col_block; ++icol)
-                        {
-                            bnd_flux_up ({icol+col_s-1, ilev, ibnd}) = fluxes_subset->get_bnd_flux_up ()({icol, ilev, ibnd});
-                            bnd_flux_dn ({icol+col_s-1, ilev, ibnd}) = fluxes_subset->get_bnd_flux_dn ()({icol, ilev, ibnd});
-                            bnd_flux_net({icol+col_s-1, ilev, ibnd}) = fluxes_subset->get_bnd_flux_net()({icol, ilev, ibnd});
-                        }
             }
 
             if (n_col_block_left > 0)
@@ -465,25 +467,6 @@ int main()
                         sources_left,
                         emis_sfc_left,
                         fluxes_left);
-
-                // Copy the data to the output.
-                for (int ilev=1; ilev<=n_lev; ++ilev)
-                    for (int icol=1; icol<=n_col_block_left; ++icol)
-                    {
-                        flux_up ({icol+col_s-1, ilev}) = fluxes_left->get_flux_up ()({icol, ilev});
-                        flux_dn ({icol+col_s-1, ilev}) = fluxes_left->get_flux_dn ()({icol, ilev});
-                        flux_net({icol+col_s-1, ilev}) = fluxes_left->get_flux_net()({icol, ilev});
-                    }
-
-                // Copy the data to the output.
-                for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
-                    for (int ilev=1; ilev<=n_lev; ++ilev)
-                        for (int icol=1; icol<=n_col_block_left; ++icol)
-                        {
-                            bnd_flux_up ({icol+col_s-1, ilev, ibnd}) = fluxes_left->get_bnd_flux_up ()({icol, ilev, ibnd});
-                            bnd_flux_dn ({icol+col_s-1, ilev, ibnd}) = fluxes_left->get_bnd_flux_dn ()({icol, ilev, ibnd});
-                            bnd_flux_net({icol+col_s-1, ilev, ibnd}) = fluxes_left->get_bnd_flux_net()({icol, ilev, ibnd});
-                        }
             }
 
             // Save the output of the flux calculation to disk.
