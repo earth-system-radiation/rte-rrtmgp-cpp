@@ -144,6 +144,9 @@ class Array
         inline std::vector<T>& v() { return data; }
         inline const std::vector<T>& v() const { return data; }
 
+        inline T* ptr() { return data.data(); }
+        inline const T* ptr() const { return data.data(); }
+
         inline int size() const { return ncells; }
 
         // inline std::array<int, N> find_indices(const T& value) const

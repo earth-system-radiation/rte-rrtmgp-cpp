@@ -84,8 +84,8 @@ namespace rrtmgp_kernels
     {
         sum_broadband(
                 &ncol, &nlev, &ngpt,
-                const_cast<TF*>(spectral_flux.v().data()),
-                broadband_flux.v().data());
+                const_cast<TF*>(spectral_flux.ptr()),
+                broadband_flux.ptr());
     }
 
     template<typename TF>
@@ -96,9 +96,9 @@ namespace rrtmgp_kernels
     {
         net_broadband_precalc(
                 &ncol, &nlev,
-                const_cast<TF*>(broadband_flux_dn.v().data()),
-                const_cast<TF*>(broadband_flux_up.v().data()),
-                broadband_flux_net.v().data());
+                const_cast<TF*>(broadband_flux_dn.ptr()),
+                const_cast<TF*>(broadband_flux_up.ptr()),
+                broadband_flux_net.ptr());
     }
 
     template<typename TF>
@@ -110,9 +110,9 @@ namespace rrtmgp_kernels
     {
         sum_byband(
                 &ncol, &nlev, &ngpt, &nbnd,
-                const_cast<int*>(band_lims.v().data()),
-                const_cast<TF*>(spectral_flux.v().data()),
-                byband_flux.v().data());
+                const_cast<int*>(band_lims.ptr()),
+                const_cast<TF*>(spectral_flux.ptr()),
+                byband_flux.ptr());
     }
 
     template<typename TF>
@@ -123,9 +123,9 @@ namespace rrtmgp_kernels
     {
         net_byband_precalc(
                 &ncol, &nlev, &nband,
-                const_cast<TF*>(byband_flux_dn.v().data()),
-                const_cast<TF*>(byband_flux_up.v().data()),
-                byband_flux_net.v().data());
+                const_cast<TF*>(byband_flux_dn.ptr()),
+                const_cast<TF*>(byband_flux_up.ptr()),
+                byband_flux_net.ptr());
     }
 }
 

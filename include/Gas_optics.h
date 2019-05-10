@@ -867,13 +867,13 @@ namespace rrtmgp_kernels
     template<typename TF> void zero_array(
             int ni, int nj, int nk, Array<TF,3>& array)
     {
-        zero_array_3D(&ni, &nj, &nk, array.v().data());
+        zero_array_3D(&ni, &nj, &nk, array.ptr());
     }
 
     template<typename TF> void zero_array(
             int ni, int nj, int nk, int nl, Array<TF,4>& array)
     {
-        zero_array_4D(&ni, &nj, &nk, &nl, array.v().data());
+        zero_array_4D(&ni, &nj, &nk, &nl, array.ptr());
     }
 
     template<typename TF>
@@ -901,23 +901,23 @@ namespace rrtmgp_kernels
         interpolation(
                 &ncol, &nlay,
                 &ngas, &nflav, &neta, &npres, &ntemp,
-                flavor.v().data(),
-                press_ref_log.v().data(),
-                temp_ref.v().data(),
+                flavor.ptr(),
+                press_ref_log.ptr(),
+                temp_ref.ptr(),
                 &press_ref_log_delta,
                 &temp_ref_min,
                 &temp_ref_delta,
                 &press_ref_trop_log,
-                vmr_ref.v().data(),
-                const_cast<TF*>(play.v().data()),
-                const_cast<TF*>(tlay.v().data()),
-                col_gas.v().data(),
-                jtemp.v().data(),
-                fmajor.v().data(), fminor.v().data(),
-                col_mix.v().data(),
-                tropo.v().data(),
-                jeta.v().data(),
-                jpress.v().data());
+                vmr_ref.ptr(),
+                const_cast<TF*>(play.ptr()),
+                const_cast<TF*>(tlay.ptr()),
+                col_gas.ptr(),
+                jtemp.ptr(),
+                fmajor.ptr(), fminor.ptr(),
+                col_mix.ptr(),
+                tropo.ptr(),
+                jeta.ptr(),
+                jpress.ptr());
     }
 
     template<typename TF>
@@ -956,28 +956,28 @@ namespace rrtmgp_kernels
             &nminorlower, &nminorklower,
             &nminorupper, &nminorkupper,
             &idx_h2o,
-            gpoint_flavor.v().data(),
-            band_lims_gpt.v().data(),
-            kmajor.v().data(),
-            kminor_lower.v().data(),
-            kminor_upper.v().data(),
-            minor_limits_gpt_lower.v().data(),
-            minor_limits_gpt_upper.v().data(),
-            minor_scales_with_density_lower.v().data(),
-            minor_scales_with_density_upper.v().data(),
-            scale_by_complement_lower.v().data(),
-            scale_by_complement_upper.v().data(),
-            idx_minor_lower.v().data(),
-            idx_minor_upper.v().data(),
-            idx_minor_scaling_lower.v().data(),
-            idx_minor_scaling_upper.v().data(),
-            kminor_start_lower.v().data(),
-            kminor_start_upper.v().data(),
-            tropo.v().data(),
-            col_mix.v().data(), fmajor.v().data(), fminor.v().data(),
-            const_cast<TF*>(play.v().data()), const_cast<TF*>(tlay.v().data()), col_gas.v().data(),
-            jeta.v().data(), jtemp.v().data(), jpress.v().data(),
-            tau.v().data());
+            gpoint_flavor.ptr(),
+            band_lims_gpt.ptr(),
+            kmajor.ptr(),
+            kminor_lower.ptr(),
+            kminor_upper.ptr(),
+            minor_limits_gpt_lower.ptr(),
+            minor_limits_gpt_upper.ptr(),
+            minor_scales_with_density_lower.ptr(),
+            minor_scales_with_density_upper.ptr(),
+            scale_by_complement_lower.ptr(),
+            scale_by_complement_upper.ptr(),
+            idx_minor_lower.ptr(),
+            idx_minor_upper.ptr(),
+            idx_minor_scaling_lower.ptr(),
+            idx_minor_scaling_upper.ptr(),
+            kminor_start_lower.ptr(),
+            kminor_start_upper.ptr(),
+            tropo.ptr(),
+            col_mix.ptr(), fmajor.ptr(), fminor.ptr(),
+            const_cast<TF*>(play.ptr()), const_cast<TF*>(tlay.ptr()), col_gas.ptr(),
+            jeta.ptr(), jtemp.ptr(), jpress.ptr(),
+            tau.ptr());
     }
 
     template<typename TF>
@@ -990,8 +990,8 @@ namespace rrtmgp_kernels
         int dim3 = data.dim(3);
         reorder_123x321_kernel(
                 &dim1, &dim2, &dim3,
-                const_cast<TF*>(data.v().data()),
-                data_out.v().data());
+                const_cast<TF*>(data.ptr()),
+                data_out.ptr());
     }
 
     template<typename TF>
@@ -1007,18 +1007,18 @@ namespace rrtmgp_kernels
         compute_Planck_source(
                 &ncol, &nlay, &nbnd, &ngpt,
                 &nflav, &neta, &npres, &ntemp, &nPlanckTemp,
-                const_cast<TF*>(tlay.v().data()),
-                const_cast<TF*>(tlev.v().data()),
-                const_cast<TF*>(tsfc.v().data()),
+                const_cast<TF*>(tlay.ptr()),
+                const_cast<TF*>(tlev.ptr()),
+                const_cast<TF*>(tsfc.ptr()),
                 &sfc_lay,
-                const_cast<TF*>(fmajor.v().data()),
-                const_cast<int*>(jeta.v().data()),
-                const_cast<int*>(tropo.v().data()),
-                const_cast<int*>(jtemp.v().data()),
-                const_cast<int*>(jpress.v().data()),
-                gpoint_bands.v().data(), band_lims_gpt.v().data(), pfracin.v().data(), &temp_ref_min,
-                &totplnk_delta, totplnk.v().data(), gpoint_flavor.v().data(),
-                sfc_src.v().data(), lay_src.v().data(), lev_src_inc.v().data(), lev_src_dec.v().data());
+                const_cast<TF*>(fmajor.ptr()),
+                const_cast<int*>(jeta.ptr()),
+                const_cast<int*>(tropo.ptr()),
+                const_cast<int*>(jtemp.ptr()),
+                const_cast<int*>(jpress.ptr()),
+                gpoint_bands.ptr(), band_lims_gpt.ptr(), pfracin.ptr(), &temp_ref_min,
+                &totplnk_delta, totplnk.ptr(), gpoint_flavor.ptr(),
+                sfc_src.ptr(), lay_src.ptr(), lev_src_inc.ptr(), lev_src_dec.ptr());
     }
 }
 

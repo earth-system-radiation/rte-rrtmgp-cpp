@@ -22,7 +22,7 @@ namespace rrtmgp_kernels
     {
         apply_BC_0(
                 &ncol, &nlay, &ngpt,
-                &top_at_1, gpt_flux_dn.v().data());
+                &top_at_1, gpt_flux_dn.ptr());
     }
 
     template<typename TF>
@@ -38,16 +38,16 @@ namespace rrtmgp_kernels
     {
         lw_solver_noscat_GaussQuad(
                 &ncol, &nlay, &ngpt, &top_at_1, &n_quad_angs,
-                const_cast<TF*>(gauss_Ds_subset.v().data()),
-                const_cast<TF*>(gauss_wts_subset.v().data()),
-                const_cast<TF*>(tau.v().data()),
-                const_cast<TF*>(lay_source.v().data()),
-                const_cast<TF*>(lev_source_inc.v().data()),
-                const_cast<TF*>(lev_source_dec.v().data()),
-                const_cast<TF*>(sfc_emis_gpt.v().data()),
-                const_cast<TF*>(sfc_source.v().data()),
-                gpt_flux_up.v().data(),
-                gpt_flux_dn.v().data());
+                const_cast<TF*>(gauss_Ds_subset.ptr()),
+                const_cast<TF*>(gauss_wts_subset.ptr()),
+                const_cast<TF*>(tau.ptr()),
+                const_cast<TF*>(lay_source.ptr()),
+                const_cast<TF*>(lev_source_inc.ptr()),
+                const_cast<TF*>(lev_source_dec.ptr()),
+                const_cast<TF*>(sfc_emis_gpt.ptr()),
+                const_cast<TF*>(sfc_source.ptr()),
+                gpt_flux_up.ptr(),
+                gpt_flux_dn.ptr());
     }
 }
 
