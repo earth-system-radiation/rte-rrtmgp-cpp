@@ -174,6 +174,7 @@ class Gas_optics : public Optical_props<TF>
         Array<int,1> is_key;
 
         Array<TF,1> solar_src;
+        Array<TF,4> krayl;
 
         int get_ngas() const { return this->gas_names.dim(1); }
 
@@ -788,17 +789,16 @@ void Gas_optics<TF>::init_abs_coeffs(
     this->temp_ref = temp_ref;
     this->kmajor = kmajor;
 
-    /*
-    if(allocated(rayl_lower) .neqv. allocated(rayl_upper)) then
-      err_message = "rayl_lower and rayl_upper must have the same allocation status"
-      return
-    end if
-    if (allocated(rayl_lower)) then
-      allocate(this%krayl(size(rayl_lower,dim=1),size(rayl_lower,dim=2),size(rayl_lower,dim=3),2))
-      this%krayl(:,:,:,1) = rayl_lower
-      this%krayl(:,:,:,2) = rayl_upper
-    end if
-    */
+    // Create a new vector that consists of rayl_lower and rayl_upper stored in one variable.
+    if (rayl_lower.size() > 0)
+    {
+        this->krayl.set_dims({rayl_lower.dim(1), rayl_lower.dim(2), rayl_lower.dim(3), 2});
+        for (int i=0; i<rayl_lower.size(); ++i)
+        {
+            this->krayl.v()[i                    ] = rayl_lower.v()[i];
+            this->krayl.v()[i + rayl_lower.size()] = rayl_upper.v()[i];
+        }
+    }
 
     // ---- post processing ----
     //  creates log reference pressure
@@ -1012,6 +1012,17 @@ namespace rrtmgp_kernels
             double* totplnk_delta, double* totplnk, int* gpoint_flavor,
             double* sfc_src, double* lay_src, double* lev_src, double* lev_source_dec);
 
+    extern "C" void compute_tau_rayleigh(
+            int* ncol, int* nlay, int* nband, int* ngpt,
+            int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
+            int* gpoint_flavor,
+            int* band_lims_gpt,
+            double* krayl,
+            int* idx_h2o, double* col_dry, double* col_gas,
+            double* fminor, int* eta,
+            int* tropo, int* jtemp,
+            double* tau_rayleigh);
+
     template<typename TF> void zero_array(
             int ni, int nj, int nk, Array<TF,3>& array)
     {
@@ -1126,6 +1137,31 @@ namespace rrtmgp_kernels
             const_cast<TF*>(play.ptr()), const_cast<TF*>(tlay.ptr()), col_gas.ptr(),
             jeta.ptr(), jtemp.ptr(), jpress.ptr(),
             tau.ptr());
+    }
+
+    template<typename TF>
+    void compute_tau_rayleigh(
+            int ncol, int nlay, int nband, int ngpt,
+            int ngas, int nflav, int neta, int npres, int ntemp,
+            const Array<int,2>& gpoint_flavor,
+            const Array<int,2>& band_lims_gpt,
+            const Array<TF,4>& krayl,
+            int idx_h2o, const Array<TF,2>& col_dry, const Array<TF,3>& col_gas,
+            const Array<TF,5>& fminor, const Array<int,4>& jeta,
+            const Array<int,2>& tropo, const Array<int,2>& jtemp,
+            Array<TF,3>& tau_rayleigh)
+    {
+        compute_tau_rayleigh(
+                &ncol, &nlay, &nband, &ngpt,
+                &ngas, &nflav, &neta, &npres, &ntemp,
+                const_cast<int*>(gpoint_flavor.ptr()),
+                const_cast<int*>(band_lims_gpt.ptr()),
+                const_cast<TF*>(krayl.ptr()),
+                &idx_h2o,
+                const_cast<TF*>(col_dry.ptr()), const_cast<TF*>(col_gas.ptr()),
+                const_cast<TF*>(fminor.ptr()), const_cast<int*>(jeta.ptr()),
+                const_cast<int*>(tropo.ptr()), const_cast<int*>(jtemp.ptr()),
+                tau_rayleigh.ptr());
     }
 
     template<typename TF>
@@ -1289,7 +1325,21 @@ void Gas_optics<TF>::compute_gas_taus(
             jeta, jtemp, jpress,
             tau);
 
-    bool has_rayleigh = false;
+    bool has_rayleigh = (this->krayl.size() > 0);
+
+    if (has_rayleigh)
+    {
+        rrtmgp_kernels::compute_tau_rayleigh(
+                ncol, nlay, nband, ngpt,
+                ngas, nflav, neta, npres, ntemp,
+                this->gpoint_flavor,
+                band_lims_gpoint,
+                this->krayl,
+                idx_h2o, col_dry, col_gas,
+                fminor, jeta, tropo, jtemp,
+                tau_rayleigh);
+    }
+
     combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
 }
 
