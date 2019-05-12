@@ -104,8 +104,8 @@ class Rte_sw
             expand_and_transpose(optical_props, sfc_alb_dif, sfc_alb_dif_gpt);
 
             // Upper boundary condition.
-            rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, mu0, gpt_flux_dir);
-            rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
+            // rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, mu0, gpt_flux_dir);
+            // rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
 
             /*
             // Run the radiative transfer solver
@@ -119,7 +119,7 @@ class Rte_sw
                     gpt_flux_up, gpt_flux_dn);
                     */
 
-            // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
+            fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
         }
 
         static void expand_and_transpose(
