@@ -347,8 +347,7 @@ int main()
                         optical_props_subset_in,
                         sources_subset_in,
                         col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-                        t_lev.subset  ({{ {col_s_in, col_e_in}, {1, n_lev} }})
-                );
+                        t_lev.subset  ({{ {col_s_in, col_e_in}, {1, n_lev} }}) );
 
                 optical_props->set_subset(optical_props_subset_in, col_s_in, col_e_in);
                 sources.set_subset(sources_subset_in, col_s_in, col_e_in);
@@ -531,7 +530,7 @@ int main()
         }
         else
         {
-            ////// SOLVING THE OPTICAL PROPERTIES FOR LONGWAVE RADIATION //////
+            ////// SOLVING THE OPTICAL PROPERTIES FOR SHORTWAVE RADIATION //////
             master.print_message("STEP 1: Computing optical depths for shortwave radiation.\n");
 
             Array<double,2> toa_src({n_col, n_gpt});
@@ -543,7 +542,82 @@ int main()
             optical_props        = std::make_unique<Optical_props_2str<double>>(n_col      , n_lay, kdist);
             optical_props_subset = std::make_unique<Optical_props_2str<double>>(n_col_block, n_lay, kdist);
 
-            throw std::runtime_error("Shortwave radiation not fully implemented");
+            auto calc_optical_props_subset = [&](
+                    const int col_s_in, const int col_e_in,
+                    std::unique_ptr<Optical_props_arry<double>>& optical_props_subset_in)
+            {
+                const int n_col_in = col_e_in - col_s_in + 1;
+                Gas_concs<double> gas_concs_subset(gas_concs, col_s_in, n_col_in);
+                Array<double,2> toa_src_subset({n_col_in, n_gpt});
+
+                kdist.gas_optics(
+                        p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                        p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }}),
+                        t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                        gas_concs_subset,
+                        optical_props_subset_in,
+                        toa_src_subset,
+                        col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}) );
+
+                optical_props->set_subset(optical_props_subset_in, col_s_in, col_e_in);
+
+                // Copy the data to the output.
+                for (int igpt=1; igpt<=n_gpt; ++igpt)
+                    for (int icol=1; icol<=n_col_in; ++icol)
+                        toa_src({icol+col_s_in-1, igpt}) = toa_src_subset({icol, igpt});
+            };
+
+            for (int b=1; b<=n_blocks; ++b)
+            {
+                const int col_s = (b-1) * n_col_block + 1;
+                const int col_e =  b    * n_col_block;
+
+                calc_optical_props_subset(
+                        col_s, col_e,
+                        optical_props_subset);
+            }
+
+            if (n_col_block_left > 0)
+            {
+                optical_props_left = std::make_unique<Optical_props_2str<double>>(n_col_block_left, n_lay, kdist);
+
+                const int col_s = n_col - n_col_block_left + 1;
+                const int col_e = n_col;
+
+                calc_optical_props_subset(
+                        col_s, col_e,
+                        optical_props_left);
+            }
+
+            ////// SAVING THE MODEL OUTPUT //////
+            master.print_message("STEP 3: Saving the output to NetCDF.\n");
+
+            // Save the output of the optical solver to disk.
+            Netcdf_file output_nc(master, "test_rrtmgp_out.nc", Netcdf_mode::Create);
+            output_nc.add_dimension("col", n_col);
+            output_nc.add_dimension("lay", n_lay);
+            output_nc.add_dimension("lev", n_lev);
+            output_nc.add_dimension("gpt", n_gpt);
+            output_nc.add_dimension("band", n_bnd);
+            output_nc.add_dimension("pair", 2);
+
+            // WARNING: The storage in the NetCDF interface uses C-ordering and indexing.
+            // First, store the optical properties.
+            auto nc_band_lims_wvn = output_nc.add_variable<double>("band_lims_wvn", {"band", "pair"});
+            auto nc_band_lims_gpt = output_nc.add_variable<int>   ("band_lims_gpt", {"band", "pair"});
+            auto nc_tau = output_nc.add_variable<double>("tau", {"gpt", "lay", "col"});
+            auto nc_ssa = output_nc.add_variable<double>("ssa", {"gpt", "lay", "col"});
+            auto nc_g   = output_nc.add_variable<double>("g"  , {"gpt", "lay", "col"});
+
+            nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
+            nc_band_lims_gpt.insert(optical_props->get_band_lims_gpoint().v()    , {0, 0});
+
+            nc_tau.insert(optical_props->get_tau().v(), {0, 0, 0});
+            nc_ssa.insert(optical_props->get_ssa().v(), {0, 0, 0});
+            nc_g  .insert(optical_props->get_g  ().v(), {0, 0, 0});
+
+            auto nc_toa_src = output_nc.add_variable<double>("toa_src", {"gpt", "col"});
+            nc_toa_src.insert(toa_src.v(), {0, 0});
         }
     }
 

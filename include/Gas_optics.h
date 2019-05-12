@@ -90,6 +90,7 @@ class Gas_optics : public Optical_props<TF>
         int get_ntemp() const { return kmajor.dim(4); }
         int get_nPlanckTemp() const { return totplnk.dim(1); }
 
+        // Longwave variant.
         void gas_optics(
                 const Array<TF,2>& play,
                 const Array<TF,2>& plev,
@@ -100,6 +101,16 @@ class Gas_optics : public Optical_props<TF>
                 Source_func_lw<TF>& sources,
                 const Array<TF,2>& col_dry,
                 const Array<TF,2>& tlev);
+
+        // Shortwave variant.
+        void gas_optics(
+                const Array<TF,2>& play,
+                const Array<TF,2>& plev,
+                const Array<TF,2>& tlay,
+                const Gas_concs<TF>& gas_desc,
+                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                Array<TF,2>& toa_src,
+                const Array<TF,2>& col_dry);
 
     void combine_and_reorder(
             const Array<TF,3>& tau,
@@ -854,6 +865,7 @@ void Gas_optics<TF>::init_abs_coeffs(
     this->is_key = is_key;
 }
 
+// Gas optics solver longwave variant.
 template<typename TF>
 void Gas_optics<TF>::gas_optics(
         const Array<TF,2>& play,
@@ -891,6 +903,42 @@ void Gas_optics<TF>::gas_optics(
             play, plev, tlay, tsfc,
             jtemp, jpress, jeta, tropo, fmajor,
             sources, tlev);
+}
+
+// Gas optics solver shortwave variant.
+template<typename TF>
+void Gas_optics<TF>::gas_optics(
+        const Array<TF,2>& play,
+        const Array<TF,2>& plev,
+        const Array<TF,2>& tlay,
+        const Gas_concs<TF>& gas_desc,
+        std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+        Array<TF,2>& toa_src,
+        const Array<TF,2>& col_dry)
+{
+    const int ncol = play.dim(1);
+    const int nlay = play.dim(2);
+    const int ngpt = this->get_ngpt();
+    const int nband = this->get_nband();
+
+    Array<int,2> jtemp({play.dim(1), play.dim(2)});
+    Array<int,2> jpress({play.dim(1), play.dim(2)});
+    Array<int,2> tropo({play.dim(1), play.dim(2)});
+    Array<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
+    Array<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
+
+    // Gas optics.
+    compute_gas_taus(
+            ncol, nlay, ngpt, nband,
+            play, plev, tlay, gas_desc,
+            optical_props,
+            jtemp, jpress, jeta, tropo, fmajor,
+            col_dry);
+
+    // External source function is constant.
+    for (int igpt=1; igpt<=ngpt; ++igpt)
+        for (int icol=1; icol<=ncol; ++icol)
+            toa_src({icol, igpt}) = this->solar_src({icol});
 }
 
 namespace rrtmgp_kernels
