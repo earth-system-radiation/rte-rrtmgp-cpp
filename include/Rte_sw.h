@@ -12,16 +12,16 @@ namespace rrtmgp_kernels
             int* top_at_1, double* inc_flux,
             double* factor, double* flux_dn);
 
-    /*
-    extern "C" void lw_solver_noscat_GaussQuad(
-            int* ncol, int* nlay, int* ngpt, int* top_at_1, int* n_quad_angs,
-            double* gauss_Ds_subset, double* gauss_wts_subset,
+    extern "C" void sw_solver_2stream(
+            int* ncol, int* nlay, int* ngpt, int* top_at_1,
             double* tau,
-            double* lay_source, double* lev_source_inc, double* lev_source_dec,
-            double* sfc_emis_gpt, double* sfc_source,
-            double* gpt_flux_up, double* gpt_flux_dn);
-            */
+            double* ssa,
+            double* g,
+            double* mu0,
+            double* sfc_alb_dir_gpt, double* sfc_alb_dif_gpt,
+            double* gpt_flux_up, double* gpt_flux_dn, double* gpt_flux_dir);
 
+    // CvH: This one is already defined in the LW solver.
     // template<typename TF>
     // void apply_BC(
     //         int ncol, int nlay, int ngpt,
@@ -57,6 +57,15 @@ namespace rrtmgp_kernels
             const Array<TF,2>& sfc_alb_dir_gpt, const Array<TF,2>& sfc_alb_dif_gpt,
             Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn, Array<TF,3>& gpt_flux_dir)
     {
+        sw_solver_2stream(
+                &ncol, &nlay, &ngpt, &top_at_1,
+                const_cast<TF*>(tau.ptr()),
+                const_cast<TF*>(ssa.ptr()),
+                const_cast<TF*>(g  .ptr()),
+                const_cast<TF*>(mu0.ptr()),
+                const_cast<TF*>(sfc_alb_dir_gpt.ptr()),
+                const_cast<TF*>(sfc_alb_dif_gpt.ptr()),
+                gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr());
     }
 }
 
