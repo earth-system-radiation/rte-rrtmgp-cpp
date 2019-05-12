@@ -295,8 +295,15 @@ int main()
         const int n_gpt = kdist.get_ngpt();
         const int n_bnd = kdist.get_nband();
 
+        // Boundary conditions for longwave.
         Array<double,2> emis_sfc;
         Array<double,1> t_sfc;
+
+        // Boundary conditions for shortwave.
+        Array<double,1> sza;
+        Array<double,1> tsi;
+        Array<double,2> sfc_alb_dir;
+        Array<double,2> sfc_alb_dif;
 
         const int n_col_block = 4;
 
@@ -533,6 +540,28 @@ int main()
             ////// SOLVING THE OPTICAL PROPERTIES FOR SHORTWAVE RADIATION //////
             master.print_message("STEP 1: Computing optical depths for shortwave radiation.\n");
 
+            // Read the boundary conditions from disk.
+            sza.set_dims({n_col});
+            tsi.set_dims({n_col});
+            sfc_alb_dir.set_dims({n_bnd, n_col});
+            sfc_alb_dif.set_dims({n_bnd, n_col});
+
+            sza = input_nc.get_variable<double>("solar_zenith_angle", {n_col});
+            tsi = input_nc.get_variable<double>("total_solar_irradiance", {n_col});
+            sfc_alb_dir = input_nc.get_variable<double>("sfc_alb_direct" , {n_col, n_bnd});
+            sfc_alb_dif = input_nc.get_variable<double>("sfc_alb_diffuse", {n_col, n_bnd});
+
+            double tsi_scaling = -999.;
+            if (input_nc.variable_exists("tsi_scaling"))
+                tsi_scaling = input_nc.get_variable<double>("t_sfc");
+
+            Array<double,1> mu0({n_col});
+            for (int icol=1; icol<=n_col; ++icol)
+            {
+                const double pi = std::atan(1.)*4.;
+                mu0({icol}) = std::cos(sza({icol}) * pi/180.);
+            }
+
             Array<double,2> toa_src({n_col, n_gpt});
 
             // Read the sources and create containers for the substeps.
@@ -589,6 +618,111 @@ int main()
                         optical_props_left);
             }
 
+
+            ////// SOLVING THE FLUXES FOR SHORTWAVE RADIATION //////
+            master.print_message("STEP 2: Computing the shortwave radiation fluxes.\n");
+
+            Array<double,2> flux_up    ({n_col, n_lev});
+            Array<double,2> flux_dn    ({n_col, n_lev});
+            Array<double,2> flux_dn_dir({n_col, n_lev});
+            Array<double,2> flux_net   ({n_col, n_lev});
+
+            Array<double,3> bnd_flux_up    ({n_col, n_lev, n_bnd});
+            Array<double,3> bnd_flux_dn    ({n_col, n_lev, n_bnd});
+            Array<double,3> bnd_flux_dn_dir({n_col, n_lev, n_bnd});
+            Array<double,3> bnd_flux_net   ({n_col, n_lev, n_bnd});
+
+            auto calc_fluxes_subset = [&](
+                    const int col_s_in, const int col_e_in,
+                    const std::unique_ptr<Optical_props_arry<double>>& optical_props_subset_in,
+                    const Array<double,1>& mu0_subset_in,
+                    const Array<double,2>& toa_src_subset_in,
+                    const Array<double,2>& sfc_alb_dir_subset_in,
+                    const Array<double,2>& sfc_alb_dif_subset_in,
+                    std::unique_ptr<Fluxes_broadband<double>>& fluxes)
+            {
+                const int n_col_block_subset = col_e_in - col_s_in + 1;
+
+                // Rte_sw<double>::rte_sw(
+                //         optical_props_subset_in,
+                //         top_at_1,
+                //         sources_subset_in,
+                //         emis_sfc_subset_in,
+                //         fluxes)
+
+                // Copy the data to the output.
+                for (int ilev=1; ilev<=n_lev; ++ilev)
+                    for (int icol=1; icol<=n_col_block_subset; ++icol)
+                    {
+                        flux_up    ({icol+col_s_in-1, ilev}) = fluxes->get_flux_up    ()({icol, ilev});
+                        flux_dn    ({icol+col_s_in-1, ilev}) = fluxes->get_flux_dn    ()({icol, ilev});
+                        flux_dn_dir({icol+col_s_in-1, ilev}) = fluxes->get_flux_dn_dir()({icol, ilev});
+                        flux_net   ({icol+col_s_in-1, ilev}) = fluxes->get_flux_net   ()({icol, ilev});
+                    }
+
+                // Copy the data to the output.
+                for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
+                    for (int ilev=1; ilev<=n_lev; ++ilev)
+                        for (int icol=1; icol<=n_col_block_subset; ++icol)
+                        {
+                            bnd_flux_up    ({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_up    ()({icol, ilev, ibnd});
+                            bnd_flux_dn    ({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_dn    ()({icol, ilev, ibnd});
+                            bnd_flux_dn_dir({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_dn_dir()({icol, ilev, ibnd});
+                            bnd_flux_net   ({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_net   ()({icol, ilev, ibnd});
+                        }
+            };
+
+            for (int b=1; b<=n_blocks; ++b)
+            {
+                const int col_s = (b-1) * n_col_block + 1;
+                const int col_e =  b    * n_col_block;
+
+                optical_props_subset->get_subset(optical_props, col_s, col_e);
+
+                Array<double,1> mu0_subset = mu0.subset({{ {col_s, col_e} }});
+                Array<double,2> toa_src_subset = toa_src.subset({{ {col_s, col_e} }});
+                Array<double,2> sfc_alb_dir_subset = sfc_alb_dir.subset({{ {1, n_bnd}, {col_s, col_e} }});
+                Array<double,2> sfc_alb_dif_subset = sfc_alb_dif.subset({{ {1, n_bnd}, {col_s, col_e} }});
+
+                std::unique_ptr<Fluxes_broadband<double>> fluxes_subset =
+                        std::make_unique<Fluxes_byband<double>>(n_col_block, n_lev, n_bnd);
+
+                calc_fluxes_subset(
+                        col_s, col_e,
+                        optical_props_subset,
+                        mu0_subset,
+                        toa_src_subset,
+                        sfc_alb_dir_subset,
+                        sfc_alb_dif_subset,
+                        fluxes_subset);
+            }
+
+            if (n_col_block_left > 0)
+            {
+                const int col_s = n_col - n_col_block_left + 1;
+                const int col_e = n_col;
+
+                optical_props_left->get_subset(optical_props, col_s, col_e);
+
+                Array<double,1> mu0_left = mu0.subset({{ {col_s, col_e} }});
+                Array<double,2> toa_src_left = toa_src.subset({{ {col_s, col_e} }});
+                Array<double,2> sfc_alb_dir_left = sfc_alb_dir.subset({{ {1, n_bnd}, {col_s, col_e} }});
+                Array<double,2> sfc_alb_dif_left = sfc_alb_dif.subset({{ {1, n_bnd}, {col_s, col_e} }});
+
+                std::unique_ptr<Fluxes_broadband<double>> fluxes_left =
+                        std::make_unique<Fluxes_byband<double>>(n_col_block_left, n_lev, n_bnd);
+
+                calc_fluxes_subset(
+                        col_s, col_e,
+                        optical_props_left,
+                        mu0_left,
+                        toa_src_left,
+                        sfc_alb_dir_left,
+                        sfc_alb_dif_left,
+                        fluxes_left);
+            }
+
+
             ////// SAVING THE MODEL OUTPUT //////
             master.print_message("STEP 3: Saving the output to NetCDF.\n");
 
@@ -618,6 +752,27 @@ int main()
 
             auto nc_toa_src = output_nc.add_variable<double>("toa_src", {"gpt", "col"});
             nc_toa_src.insert(toa_src.v(), {0, 0});
+
+            // Save the output of the flux calculation to disk.
+            auto nc_flux_up     = output_nc.add_variable<double>("flux_up"    , {"lev", "col"});
+            auto nc_flux_dn     = output_nc.add_variable<double>("flux_dn"    , {"lev", "col"});
+            auto nc_flux_dn_dir = output_nc.add_variable<double>("flux_dn_dir", {"lev", "col"});
+            auto nc_flux_net    = output_nc.add_variable<double>("flux_net"   , {"lev", "col"});
+
+            auto nc_bnd_flux_up     = output_nc.add_variable<double>("bnd_flux_up"    , {"band", "lev", "col"});
+            auto nc_bnd_flux_dn     = output_nc.add_variable<double>("bnd_flux_dn"    , {"band", "lev", "col"});
+            auto nc_bnd_flux_dn_dir = output_nc.add_variable<double>("bnd_flux_dn_dir", {"band", "lev", "col"});
+            auto nc_bnd_flux_net    = output_nc.add_variable<double>("bnd_flux_net"   , {"band", "lev", "col"});
+
+            nc_flux_up    .insert(flux_up    .v(), {0, 0});
+            nc_flux_dn    .insert(flux_dn    .v(), {0, 0});
+            nc_flux_dn_dir.insert(flux_dn_dir.v(), {0, 0});
+            nc_flux_net   .insert(flux_net   .v(), {0, 0});
+
+            nc_bnd_flux_up    .insert(bnd_flux_up    .v(), {0, 0, 0});
+            nc_bnd_flux_dn    .insert(bnd_flux_dn    .v(), {0, 0, 0});
+            nc_bnd_flux_dn_dir.insert(bnd_flux_dn_dir.v(), {0, 0, 0});
+            nc_bnd_flux_net   .insert(bnd_flux_net   .v(), {0, 0, 0});
         }
     }
 

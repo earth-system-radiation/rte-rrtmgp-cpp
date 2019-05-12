@@ -21,17 +21,20 @@ class Fluxes_broadband : public Fluxes<TF>
                 const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
                 const int top_at_1);
 
-        Array<TF,2>& get_flux_up () { return flux_up;  }
-        Array<TF,2>& get_flux_dn () { return flux_dn;  }
-        Array<TF,2>& get_flux_net() { return flux_net; }
+        Array<TF,2>& get_flux_up    () { return flux_up;     }
+        Array<TF,2>& get_flux_dn    () { return flux_dn;     }
+        Array<TF,2>& get_flux_dn_dir() { return flux_dn_dir; }
+        Array<TF,2>& get_flux_net   () { return flux_net;    }
 
-        virtual Array<TF,3>& get_bnd_flux_up () { throw std::runtime_error("Band fluxes are not available"); }
-        virtual Array<TF,3>& get_bnd_flux_dn () { throw std::runtime_error("Band fluxes are not available"); }
-        virtual Array<TF,3>& get_bnd_flux_net() { throw std::runtime_error("Band fluxes are not available"); }
+        virtual Array<TF,3>& get_bnd_flux_up    () { throw std::runtime_error("Band fluxes are not available"); }
+        virtual Array<TF,3>& get_bnd_flux_dn    () { throw std::runtime_error("Band fluxes are not available"); }
+        virtual Array<TF,3>& get_bnd_flux_dn_dir() { throw std::runtime_error("Band fluxes are not available"); }
+        virtual Array<TF,3>& get_bnd_flux_net   () { throw std::runtime_error("Band fluxes are not available"); }
 
     private:
         Array<TF,2> flux_up;
         Array<TF,2> flux_dn;
+        Array<TF,2> flux_dn_dir;
         Array<TF,2> flux_net;
 };
 
@@ -45,13 +48,15 @@ class Fluxes_byband : public Fluxes_broadband<TF>
                 const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
                 const int top_at_1);
 
-        Array<TF,3>& get_bnd_flux_up () { return bnd_flux_up;  }
-        Array<TF,3>& get_bnd_flux_dn () { return bnd_flux_dn;  }
-        Array<TF,3>& get_bnd_flux_net() { return bnd_flux_net; }
+        Array<TF,3>& get_bnd_flux_up    () { return bnd_flux_up;     }
+        Array<TF,3>& get_bnd_flux_dn    () { return bnd_flux_dn;     }
+        Array<TF,3>& get_bnd_flux_dn_dir() { return bnd_flux_dn_dir; }
+        Array<TF,3>& get_bnd_flux_net   () { return bnd_flux_net;    }
 
     private:
         Array<TF,3> bnd_flux_up;
         Array<TF,3> bnd_flux_dn;
+        Array<TF,3> bnd_flux_dn_dir;
         Array<TF,3> bnd_flux_net;
 };
 
@@ -131,7 +136,10 @@ namespace rrtmgp_kernels
 
 template<typename TF>
 Fluxes_broadband<TF>::Fluxes_broadband(const int ncol, const int nlev) :
-    flux_up({ncol, nlev}), flux_dn({ncol, nlev}), flux_net({ncol, nlev})
+    flux_up    ({ncol, nlev}),
+    flux_dn    ({ncol, nlev}),
+    flux_dn_dir({ncol, nlev}),
+    flux_net   ({ncol, nlev})
 {}
 
 template<typename TF>
@@ -157,9 +165,10 @@ void Fluxes_broadband<TF>::reduce(
 template<typename TF>
 Fluxes_byband<TF>::Fluxes_byband(const int ncol, const int nlev, const int nbnd) :
     Fluxes_broadband<TF>(ncol, nlev),
-    bnd_flux_up ({ncol, nlev, nbnd}),
-    bnd_flux_dn ({ncol, nlev, nbnd}),
-    bnd_flux_net({ncol, nlev, nbnd})
+    bnd_flux_up    ({ncol, nlev, nbnd}),
+    bnd_flux_dn    ({ncol, nlev, nbnd}),
+    bnd_flux_dn_dir({ncol, nlev, nbnd}),
+    bnd_flux_net   ({ncol, nlev, nbnd})
 {}
 
 template<typename TF>
