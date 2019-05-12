@@ -1003,6 +1003,11 @@ namespace rrtmgp_kernels
             int* dim1, int* dim2, int* dim3,
             double* array, double* array_out);
 
+    extern "C" void combine_and_reorder_2str(
+            int* ncol, int* nlay, int* ngpt,
+            double* tau_local, double* tau_rayleigh,
+            double* tau, double* ssa, double* g);
+
     extern "C" void compute_Planck_source(
             int* ncol, int* nlay, int* nbnd, int* ngpt,
             int* nflav, int* neta, int* npres, int* ntemp, int* nPlanckTemp,
@@ -1176,6 +1181,18 @@ namespace rrtmgp_kernels
                 &dim1, &dim2, &dim3,
                 const_cast<TF*>(data.ptr()),
                 data_out.ptr());
+    }
+
+    template<typename TF>
+    void combine_and_reorder_2str(
+            int ncol, int nlay, int ngpt,
+            const Array<TF,3>& tau_local, const Array<TF,3>& tau_rayleigh,
+            Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g)
+    {
+        combine_and_reorder_2str(
+                &ncol, &nlay, &ngpt,
+                const_cast<TF*>(tau_local.ptr()), const_cast<TF*>(tau_rayleigh.ptr()),
+                tau.ptr(), ssa.ptr(), g.ptr());
     }
 
     template<typename TF>
@@ -1355,9 +1372,22 @@ void Gas_optics<TF>::combine_and_reorder(
     int ngpt = tau.dim(1);
 
     if (!has_rayleigh)
+    {
         rrtmgp_kernels::reorder123x321(tau, optical_props->get_tau());
+        rrtmgp_kernels::zero_array(ngpt, nlay, ncol, optical_props->get_ssa());
+        rrtmgp_kernels::zero_array(ngpt, nlay, ncol, optical_props->get_g  ());
+    }
     else
-        throw std::runtime_error("Rayleigh scattering not implemented yet");
+    {
+        // In case of 1scl type
+        // rrtmgp_kernels::reorder123x321(tau, optical_props->get_tau());
+
+        // In case of 2str type
+        rrtmgp_kernels::combine_and_reorder_2str(
+                ncol, nlay, ngpt,
+                tau, tau_rayleigh,
+                optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
+    }
 
     // CvH for 2 stream and n-stream zero the g and ssa
 }
