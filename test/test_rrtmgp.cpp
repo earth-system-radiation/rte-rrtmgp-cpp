@@ -6,6 +6,7 @@
 #include "Source_functions.h"
 #include "Fluxes.h"
 #include "Rte_lw.h"
+#include "Rte_sw.h"
 
 namespace
 {
@@ -643,12 +644,14 @@ int main()
             {
                 const int n_col_block_subset = col_e_in - col_s_in + 1;
 
-                // Rte_sw<double>::rte_sw(
-                //         optical_props_subset_in,
-                //         top_at_1,
-                //         sources_subset_in,
-                //         emis_sfc_subset_in,
-                //         fluxes)
+                Rte_sw<double>::rte_sw(
+                        optical_props_subset_in,
+                        top_at_1,
+                        mu0_subset_in,
+                        toa_src_subset_in,
+                        sfc_alb_dir_subset_in,
+                        sfc_alb_dif_subset_in,
+                        fluxes);
 
                 // Copy the data to the output.
                 for (int ilev=1; ilev<=n_lev; ++ilev)
