@@ -393,9 +393,6 @@ int main()
             Array<double,3> bnd_flux_dn ({n_col, n_lev, n_bnd});
             Array<double,3> bnd_flux_net({n_col, n_lev, n_bnd});
 
-            // Array<double,2> heating_rate({n_col, n_lay});
-            // Array<double,3> bnd_heating_rate({n_col, n_lay, n_bnd});
-
             auto calc_fluxes_subset = [&](
                     const int col_s_in, const int col_e_in,
                     const std::unique_ptr<Optical_props_arry<double>>& optical_props_subset_in,
@@ -534,8 +531,19 @@ int main()
         }
         else
         {
-            master.print_message("Computing optical depths for shortwave radiation\n");
-            throw std::runtime_error("Shortwave radiation not implemented");
+            ////// SOLVING THE OPTICAL PROPERTIES FOR LONGWAVE RADIATION //////
+            master.print_message("STEP 1: Computing optical depths for shortwave radiation.\n");
+
+            Array<double,2> toa_src({n_col, n_gpt});
+
+            // Read the sources and create containers for the substeps.
+            int n_blocks = n_col / n_col_block;
+            int n_col_block_left = n_col % n_col_block;
+
+            optical_props        = std::make_unique<Optical_props_2str<double>>(n_col      , n_lay, kdist);
+            optical_props_subset = std::make_unique<Optical_props_2str<double>>(n_col_block, n_lay, kdist);
+
+            throw std::runtime_error("Shortwave radiation not fully implemented");
         }
     }
 

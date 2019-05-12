@@ -54,6 +54,8 @@ class Optical_props_arry : public Optical_props<TF>
         {}
         virtual ~Optical_props_arry() {};
         virtual Array<TF,3>& get_tau() = 0;
+        virtual Array<TF,3>& get_ssa() = 0;
+        virtual Array<TF,3>& get_g  () = 0;
 
         virtual void set_subset(
                 const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
@@ -109,5 +111,61 @@ class Optical_props_1scl : public Optical_props_arry<TF>
 
     private:
         Array<TF,3> tau;
+};
+
+template<typename TF>
+class Optical_props_2str : public Optical_props_arry<TF>
+{
+    public:
+        // Initializer constructor.
+        Optical_props_2str(
+                const int ncol,
+                const int nlay,
+                const Optical_props<TF>& optical_props) :
+            Optical_props_arry<TF>(optical_props),
+            tau({ncol, nlay, this->get_ngpt()}),
+            ssa({ncol, nlay, this->get_ngpt()}),
+            g  ({ncol, nlay, this->get_ngpt()})
+        {}
+
+        void set_subset(
+                const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+                const int col_s, const int col_e)
+        {
+            for (int igpt=1; igpt<=tau.dim(3); ++igpt)
+                for (int ilay=1; ilay<=tau.dim(2); ++ilay)
+                    for (int icol=col_s; icol<=col_e; ++icol)
+                    {
+                        tau({icol, ilay, igpt}) = optical_props_sub->get_tau()({icol-col_s+1, ilay, igpt});
+                        ssa({icol, ilay, igpt}) = optical_props_sub->get_ssa()({icol-col_s+1, ilay, igpt});
+                        g  ({icol, ilay, igpt}) = optical_props_sub->get_g  ()({icol-col_s+1, ilay, igpt});
+                    }
+        }
+
+        void get_subset(
+                const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+                const int col_s, const int col_e)
+        {
+            for (int igpt=1; igpt<=tau.dim(3); ++igpt)
+                for (int ilay=1; ilay<=tau.dim(2); ++ilay)
+                    for (int icol=col_s; icol<=col_e; ++icol)
+                    {
+                        tau({icol-col_s+1, ilay, igpt}) = optical_props_sub->get_tau()({icol, ilay, igpt});
+                        ssa({icol-col_s+1, ilay, igpt}) = optical_props_sub->get_ssa()({icol, ilay, igpt});
+                        g  ({icol-col_s+1, ilay, igpt}) = optical_props_sub->get_g  ()({icol, ilay, igpt});
+                    }
+        }
+
+        int get_ncol() const { return tau.dim(1); }
+        int get_nlay() const { return tau.dim(2); }
+
+        Array<TF,3>& get_tau() { return tau; }
+        Array<TF,3>& get_ssa() { return ssa; }
+        Array<TF,3>& get_g  () { return g; }
+
+    private:
+        Array<TF,3> tau;
+        Array<TF,3> ssa;
+        Array<TF,3> g;
 };
 #endif
