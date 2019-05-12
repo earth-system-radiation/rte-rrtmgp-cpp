@@ -3,11 +3,16 @@
 
 namespace rrtmgp_kernels
 {
-    /*
     extern "C" void apply_BC_0(
             int* ncol, int* nlay, int* ngpt,
             int* top_at_1, double* gpt_flux_dn);
 
+    extern "C" void apply_BC_factor(
+            int* ncol, int* nlay, int* ngpt,
+            int* top_at_1, double* inc_flux,
+            double* factor, double* flux_dn);
+
+    /*
     extern "C" void lw_solver_noscat_GaussQuad(
             int* ncol, int* nlay, int* ngpt, int* top_at_1, int* n_quad_angs,
             double* gauss_Ds_subset, double* gauss_wts_subset,
@@ -15,17 +20,34 @@ namespace rrtmgp_kernels
             double* lay_source, double* lev_source_inc, double* lev_source_dec,
             double* sfc_emis_gpt, double* sfc_source,
             double* gpt_flux_up, double* gpt_flux_dn);
+            */
+
+    // template<typename TF>
+    // void apply_BC(
+    //         int ncol, int nlay, int ngpt,
+    //         int top_at_1, Array<TF,3>& gpt_flux_dn)
+    // {
+    //     apply_BC_0(
+    //             &ncol, &nlay, &ngpt,
+    //             &top_at_1, gpt_flux_dn.ptr());
+    // }
 
     template<typename TF>
     void apply_BC(
-            int ncol, int nlay, int ngpt,
-            int top_at_1, Array<TF,3>& gpt_flux_dn)
+            int ncol, int nlay, int ngpt, int top_at_1,
+            const Array<TF,2>& inc_flux,
+            const Array<TF,1>& factor,
+            Array<TF,3>& gpt_flux)
     {
-        apply_BC_0(
+        apply_BC_factor(
                 &ncol, &nlay, &ngpt,
-                &top_at_1, gpt_flux_dn.ptr());
+                &top_at_1,
+                const_cast<TF*>(inc_flux.ptr()),
+                const_cast<TF*>(factor.ptr()),
+                gpt_flux.ptr());
     }
 
+    /*
     template<typename TF>
     void lw_solver_noscat_GaussQuad(
             int ncol, int nlay, int ngpt, int top_at_1, int n_quad_angs,
@@ -66,44 +88,27 @@ class Rte_sw
                 const Array<TF,2>& sfc_alb_dif,
                 std::unique_ptr<Fluxes_broadband<TF>>& fluxes)
         {
-            /*
-            const int max_gauss_pts = 4;
-            const Array<TF,2> gauss_Ds(
-                    {      1.66,         0.,         0.,         0.,
-                     1.18350343, 2.81649655,         0.,         0.,
-                     1.09719858, 1.69338507, 4.70941630,         0.,
-                     1.06056257, 1.38282560, 2.40148179, 7.15513024},
-                    { max_gauss_pts, max_gauss_pts });
-
-            const Array<TF,2> gauss_wts(
-                    {         0.5,           0.,           0.,           0.,
-                     0.3180413817, 0.1819586183,           0.,           0.,
-                     0.2009319137, 0.2292411064, 0.0698269799,           0.,
-                     0.1355069134, 0.2034645680, 0.1298475476, 0.0311809710},
-                    { max_gauss_pts, max_gauss_pts });
-
             const int ncol = optical_props->get_ncol();
             const int nlay = optical_props->get_nlay();
             const int ngpt = optical_props->get_ngpt();
-            // const int nband = optical_props->get_nband();
+            const int nband = optical_props->get_nband();
 
-            Array<TF,3> gpt_flux_up({ncol, nlay+1, ngpt});
-            Array<TF,3> gpt_flux_dn({ncol, nlay+1, ngpt});
-            Array<TF,2> sfc_emis_gpt({ncol, ngpt});
+            Array<TF,3> gpt_flux_up ({ncol, nlay+1, ngpt});
+            Array<TF,3> gpt_flux_dn ({ncol, nlay+1, ngpt});
+            Array<TF,3> gpt_flux_dir({ncol, nlay+1, ngpt});
 
-            expand_and_transpose(optical_props, sfc_emis, sfc_emis_gpt);
+            Array<TF,2> sfc_alb_dir_gpt({ncol, ngpt});
+            Array<TF,2> sfc_alb_dif_gpt({ncol, ngpt});
+
+            expand_and_transpose(optical_props, sfc_alb_dir, sfc_alb_dir_gpt);
+            expand_and_transpose(optical_props, sfc_alb_dif, sfc_alb_dif_gpt);
 
             // Upper boundary condition.
+            rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, mu0, gpt_flux_dir);
             rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
 
+            /*
             // Run the radiative transfer solver
-            const int n_quad_angs = n_gauss_angles;
-
-            Array<TF,2> gauss_Ds_subset = gauss_Ds.subset(
-                    {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
-            Array<TF,2> gauss_wts_subset = gauss_wts.subset(
-                    {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
-
             rrtmgp_kernels::lw_solver_noscat_GaussQuad(
                     ncol, nlay, ngpt, top_at_1, n_quad_angs,
                     gauss_Ds_subset, gauss_wts_subset,
@@ -112,9 +117,9 @@ class Rte_sw
                     sources.get_lev_source_inc(), sources.get_lev_source_dec(),
                     sfc_emis_gpt, sources.get_sfc_source(),
                     gpt_flux_up, gpt_flux_dn);
+                    */
 
-            fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);
-             */
+            // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
         }
 
         static void expand_and_transpose(
