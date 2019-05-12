@@ -683,7 +683,7 @@ int main()
                 optical_props_subset->get_subset(optical_props, col_s, col_e);
 
                 Array<double,1> mu0_subset = mu0.subset({{ {col_s, col_e} }});
-                Array<double,2> toa_src_subset = toa_src.subset({{ {col_s, col_e} }});
+                Array<double,2> toa_src_subset = toa_src.subset({{ {col_s, col_e}, {1, n_gpt} }});
                 Array<double,2> sfc_alb_dir_subset = sfc_alb_dir.subset({{ {1, n_bnd}, {col_s, col_e} }});
                 Array<double,2> sfc_alb_dif_subset = sfc_alb_dif.subset({{ {1, n_bnd}, {col_s, col_e} }});
 
@@ -708,7 +708,7 @@ int main()
                 optical_props_left->get_subset(optical_props, col_s, col_e);
 
                 Array<double,1> mu0_left = mu0.subset({{ {col_s, col_e} }});
-                Array<double,2> toa_src_left = toa_src.subset({{ {col_s, col_e} }});
+                Array<double,2> toa_src_left = toa_src.subset({{ {col_s, col_e}, {1, n_gpt} }});
                 Array<double,2> sfc_alb_dir_left = sfc_alb_dir.subset({{ {1, n_bnd}, {col_s, col_e} }});
                 Array<double,2> sfc_alb_dif_left = sfc_alb_dif.subset({{ {1, n_bnd}, {col_s, col_e} }});
 
