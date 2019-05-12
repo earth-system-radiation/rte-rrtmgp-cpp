@@ -12,8 +12,9 @@ template<typename TF>
 class Gas_optics : public Optical_props<TF>
 {
     public:
+        // Constructor for longwave variant.
         Gas_optics(
-                Gas_concs<TF>& available_gases,
+                const Gas_concs<TF>& available_gases,
                 Array<std::string,1>& gas_names,
                 Array<int,3>& key_species,
                 Array<int,2>& band2gpt,
@@ -43,6 +44,40 @@ class Gas_optics : public Optical_props<TF>
                 Array<int,1>& kminor_start_upper,
                 Array<TF,2>& totplnk,
                 Array<TF,4>& planck_frac,
+                Array<TF,3>& rayl_lower,
+                Array<TF,3>& rayl_upper);
+
+        // Constructor for longwave variant.
+        Gas_optics(
+                const Gas_concs<TF>& available_gases,
+                Array<std::string,1>& gas_names,
+                Array<int,3>& key_species,
+                Array<int,2>& band2gpt,
+                Array<TF,2>& band_lims_wavenum,
+                Array<TF,1>& press_ref,
+                TF press_ref_trop,
+                Array<TF,1>& temp_ref,
+                TF temp_ref_p,
+                TF temp_ref_t,
+                Array<TF,3>& vmr_ref,
+                Array<TF,4>& kmajor,
+                Array<TF,3>& kminor_lower,
+                Array<TF,3>& kminor_upper,
+                Array<std::string,1>& gas_minor,
+                Array<std::string,1>& identifier_minor,
+                Array<std::string,1>& minor_gases_lower,
+                Array<std::string,1>& minor_gases_upper,
+                Array<int,2>& minor_limits_gpt_lower,
+                Array<int,2>& minor_limits_gpt_upper,
+                Array<int,1>& minor_scales_with_density_lower,
+                Array<int,1>& minor_scales_with_density_upper,
+                Array<std::string,1>& scaling_gas_lower,
+                Array<std::string,1>& scaling_gas_upper,
+                Array<int,1>& scale_by_complement_lower,
+                Array<int,1>& scale_by_complement_upper,
+                Array<int,1>& kminor_start_lower,
+                Array<int,1>& kminor_start_upper,
+                Array<TF,1>& solar_src,
                 Array<TF,3>& rayl_lower,
                 Array<TF,3>& rayl_upper);
 
@@ -126,6 +161,8 @@ class Gas_optics : public Optical_props<TF>
         Array<int,1> idx_minor_scaling_upper;
 
         Array<int,1> is_key;
+
+        Array<TF,1> solar_src;
 
         int get_ngas() const { return this->gas_names.dim(1); }
 
@@ -490,9 +527,11 @@ namespace
     }
 }
 
+// IMPLEMENTATION OF CLASS FUNCTIONS.
+// Constructor of longwave variant.
 template<typename TF>
 Gas_optics<TF>::Gas_optics(
-        Gas_concs<TF>& available_gases,
+        const Gas_concs<TF>& available_gases,
         Array<std::string,1>& gas_names,
         Array<int,3>& key_species,
         Array<int,2>& band2gpt,
@@ -555,6 +594,67 @@ Gas_optics<TF>::Gas_optics(
     // Assumes that temperature minimum and max are the same for the absorption coefficient grid and the
     // Planck grid and the Planck grid is equally spaced.
     totplnk_delta = (temp_ref_max - temp_ref_min) / (totplnk.dim(1)-1);
+}
+
+// Constructor of the shortwave variant.
+template<typename TF>
+Gas_optics<TF>::Gas_optics(
+        const Gas_concs<TF>& available_gases,
+        Array<std::string,1>& gas_names,
+        Array<int,3>& key_species,
+        Array<int,2>& band2gpt,
+        Array<TF,2>& band_lims_wavenum,
+        Array<TF,1>& press_ref,
+        TF press_ref_trop,
+        Array<TF,1>& temp_ref,
+        TF temp_ref_p,
+        TF temp_ref_t,
+        Array<TF,3>& vmr_ref,
+        Array<TF,4>& kmajor,
+        Array<TF,3>& kminor_lower,
+        Array<TF,3>& kminor_upper,
+        Array<std::string,1>& gas_minor,
+        Array<std::string,1>& identifier_minor,
+        Array<std::string,1>& minor_gases_lower,
+        Array<std::string,1>& minor_gases_upper,
+        Array<int,2>& minor_limits_gpt_lower,
+        Array<int,2>& minor_limits_gpt_upper,
+        Array<int,1>& minor_scales_with_density_lower,
+        Array<int,1>& minor_scales_with_density_upper,
+        Array<std::string,1>& scaling_gas_lower,
+        Array<std::string,1>& scaling_gas_upper,
+        Array<int,1>& scale_by_complement_lower,
+        Array<int,1>& scale_by_complement_upper,
+        Array<int,1>& kminor_start_lower,
+        Array<int,1>& kminor_start_upper,
+        Array<TF,1>& solar_src,
+        Array<TF,3>& rayl_lower,
+        Array<TF,3>& rayl_upper) :
+            Optical_props<TF>(band_lims_wavenum, band2gpt),
+            solar_src(solar_src)
+{
+    // Initialize the absorption coefficient array, including Rayleigh scattering
+    // tables if provided.
+    init_abs_coeffs(
+            available_gases,
+            gas_names, key_species,
+            band2gpt, band_lims_wavenum,
+            press_ref, temp_ref,
+            press_ref_trop, temp_ref_p, temp_ref_t,
+            vmr_ref,
+            kmajor, kminor_lower, kminor_upper,
+            gas_minor,identifier_minor,
+            minor_gases_lower, minor_gases_upper,
+            minor_limits_gpt_lower,
+            minor_limits_gpt_upper,
+            minor_scales_with_density_lower,
+            minor_scales_with_density_upper,
+            scaling_gas_lower, scaling_gas_upper,
+            scale_by_complement_lower,
+            scale_by_complement_upper,
+            kminor_start_lower,
+            kminor_start_upper,
+            rayl_lower, rayl_upper);
 }
 
 template<typename TF>
