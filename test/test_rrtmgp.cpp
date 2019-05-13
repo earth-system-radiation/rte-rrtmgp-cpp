@@ -1,4 +1,6 @@
 #include <boost/algorithm/string.hpp>
+#include <cmath>
+
 #include "Netcdf_interface.h"
 #include "Array.h"
 #include "Gas_concs.h"

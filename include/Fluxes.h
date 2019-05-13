@@ -4,7 +4,7 @@
 #include <memory>
 
 // Forward declarations.
-template<typename TF,int> class Array;
+template<typename TF, int> class Array;
 template<typename TF> class Optical_props_arry;
 
 template<typename TF>
