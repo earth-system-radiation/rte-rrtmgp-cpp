@@ -5,6 +5,7 @@
 #include "Array.h"
 #include "Gas_concs.h"
 #include "Gas_optics.h"
+#include "Optical_props.h"
 #include "Source_functions.h"
 #include "Fluxes.h"
 #include "Rte_lw.h"
