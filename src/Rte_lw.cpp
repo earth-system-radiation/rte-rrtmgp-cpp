@@ -4,26 +4,16 @@
 #include "Source_functions.h"
 #include "Fluxes.h"
 
-namespace rrtmgp_kernels
+#include "rrtmgp_kernels.h"
+
+namespace rrtmgp_kernel_launcher
 {
-    extern "C" void apply_BC_0(
-            int* ncol, int* nlay, int* ngpt,
-            int* top_at_1, double* gpt_flux_dn);
-
-    extern "C" void lw_solver_noscat_GaussQuad(
-            int* ncol, int* nlay, int* ngpt, int* top_at_1, int* n_quad_angs,
-            double* gauss_Ds_subset, double* gauss_wts_subset,
-            double* tau,
-            double* lay_source, double* lev_source_inc, double* lev_source_dec,
-            double* sfc_emis_gpt, double* sfc_source,
-            double* gpt_flux_up, double* gpt_flux_dn);
-
     template<typename TF>
     void apply_BC(
             int ncol, int nlay, int ngpt,
             int top_at_1, Array<TF,3>& gpt_flux_dn)
     {
-        apply_BC_0(
+        rrtmgp_kernels::apply_BC_0(
                 &ncol, &nlay, &ngpt,
                 &top_at_1, gpt_flux_dn.ptr());
     }
@@ -39,7 +29,7 @@ namespace rrtmgp_kernels
             const Array<TF,2>& sfc_emis_gpt, const Array<TF,2>& sfc_source,
             Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn)
     {
-        lw_solver_noscat_GaussQuad(
+        rrtmgp_kernels::lw_solver_noscat_GaussQuad(
                 &ncol, &nlay, &ngpt, &top_at_1, &n_quad_angs,
                 const_cast<TF*>(gauss_Ds_subset.ptr()),
                 const_cast<TF*>(gauss_wts_subset.ptr()),
@@ -91,7 +81,7 @@ void Rte_lw<TF>::rte_lw(
     expand_and_transpose(optical_props, sfc_emis, sfc_emis_gpt);
 
     // Upper boundary condition.
-    rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
+    rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
 
     // Run the radiative transfer solver
     const int n_quad_angs = n_gauss_angles;
@@ -101,7 +91,7 @@ void Rte_lw<TF>::rte_lw(
     Array<TF,2> gauss_wts_subset = gauss_wts.subset(
             {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
 
-    rrtmgp_kernels::lw_solver_noscat_GaussQuad(
+    rrtmgp_kernel_launcher::lw_solver_noscat_GaussQuad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,
             gauss_Ds_subset, gauss_wts_subset,
             optical_props->get_tau(),

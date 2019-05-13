@@ -8,6 +8,8 @@
 #include "Optical_props.h"
 #include "Source_functions.h"
 
+#include "rrtmgp_kernels.h"
+
 namespace
 {
     int find_index(
@@ -725,103 +727,18 @@ void Gas_optics<TF>::gas_optics(
             toa_src({icol, igpt}) = this->solar_src({igpt});
 }
 
-namespace rrtmgp_kernels
+namespace rrtmgp_kernel_launcher
 {
-    extern "C" void zero_array_3D(
-            int* ni, int* nj, int* nk, double* array);
-
-    extern "C" void zero_array_4D(
-             int* ni, int* nj, int* nk, int* nl, double* array);
-
-    extern "C" void interpolation(
-                int* ncol, int* nlay,
-                int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
-                int* flavor,
-                double* press_ref_log,
-                double* temp_ref,
-                double* press_ref_log_delta,
-                double* temp_ref_min,
-                double* temp_ref_delta,
-                double* press_ref_trop_log,
-                double* vmr_ref,
-                double* play,
-                double* tlay,
-                double* col_gas,
-                int* jtemp,
-                double* fmajor, double* fminor,
-                double* col_mix,
-                int* tropo,
-                int* jeta,
-                int* jpress);
-
-    extern "C" void compute_tau_absorption(
-            int* ncol, int* nlay, int* nband, int* ngpt,
-            int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
-            int* nminorlower, int* nminorklower,
-            int* nminorupper, int* nminorkupper,
-            int* idx_h2o,
-            int* gpoint_flavor,
-            int* band_lims_gpt,
-            double* kmajor,
-            double* kminor_lower,
-            double* kminor_upper,
-            int* minor_limits_gpt_lower,
-            int* minor_limits_gpt_upper,
-            int* minor_scales_with_density_lower,
-            int* minor_scales_with_density_upper,
-            int* scale_by_complement_lower,
-            int* scale_by_complement_upper,
-            int* idx_minor_lower,
-            int* idx_minor_upper,
-            int* idx_minor_scaling_lower,
-            int* idx_minor_scaling_upper,
-            int* kminor_start_lower,
-            int* kminor_start_upper,
-            int* tropo,
-            double* col_mix, double* fmajor, double* fminor,
-            double* play, double* tlay, double* col_gas,
-            int* jeta, int* jtemp, int* jpress,
-            double* tau);
-
-    extern "C" void reorder_123x321_kernel(
-            int* dim1, int* dim2, int* dim3,
-            double* array, double* array_out);
-
-    extern "C" void combine_and_reorder_2str(
-            int* ncol, int* nlay, int* ngpt,
-            double* tau_local, double* tau_rayleigh,
-            double* tau, double* ssa, double* g);
-
-    extern "C" void compute_Planck_source(
-            int* ncol, int* nlay, int* nbnd, int* ngpt,
-            int* nflav, int* neta, int* npres, int* ntemp, int* nPlanckTemp,
-            double* tlay, double* tlev, double* tsfc, int* sfc_lay,
-            double* fmajor, int* jeta, int* tropo, int* jtemp, int* jpress,
-            int* gpoint_bands, int* band_lims_gpt, double* pfracin, double* temp_ref_min,
-            double* totplnk_delta, double* totplnk, int* gpoint_flavor,
-            double* sfc_src, double* lay_src, double* lev_src, double* lev_source_dec);
-
-    extern "C" void compute_tau_rayleigh(
-            int* ncol, int* nlay, int* nband, int* ngpt,
-            int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
-            int* gpoint_flavor,
-            int* band_lims_gpt,
-            double* krayl,
-            int* idx_h2o, double* col_dry, double* col_gas,
-            double* fminor, int* eta,
-            int* tropo, int* jtemp,
-            double* tau_rayleigh);
-
     template<typename TF> void zero_array(
             int ni, int nj, int nk, Array<TF,3>& array)
     {
-        zero_array_3D(&ni, &nj, &nk, array.ptr());
+        rrtmgp_kernels::zero_array_3D(&ni, &nj, &nk, array.ptr());
     }
 
     template<typename TF> void zero_array(
             int ni, int nj, int nk, int nl, Array<TF,4>& array)
     {
-        zero_array_4D(&ni, &nj, &nk, &nl, array.ptr());
+        rrtmgp_kernels::zero_array_4D(&ni, &nj, &nk, &nl, array.ptr());
     }
 
     template<typename TF>
@@ -846,7 +763,7 @@ namespace rrtmgp_kernels
             Array<int,4>& jeta,
             Array<int,2>& jpress)
     {
-        interpolation(
+        rrtmgp_kernels::interpolation(
                 &ncol, &nlay,
                 &ngas, &nflav, &neta, &npres, &ntemp,
                 flavor.ptr(),
@@ -898,7 +815,7 @@ namespace rrtmgp_kernels
             Array<int,4>& jeta, Array<int,2>& jtemp, Array<int,2>& jpress,
             Array<TF,3>& tau)
     {
-        compute_tau_absorption(
+        rrtmgp_kernels::compute_tau_absorption(
             &ncol, &nlay, &nband, &ngpt,
             &ngas, &nflav, &neta, &npres, &ntemp,
             &nminorlower, &nminorklower,
@@ -940,7 +857,7 @@ namespace rrtmgp_kernels
             const Array<int,2>& tropo, const Array<int,2>& jtemp,
             Array<TF,3>& tau_rayleigh)
     {
-        compute_tau_rayleigh(
+        rrtmgp_kernels::compute_tau_rayleigh(
                 &ncol, &nlay, &nband, &ngpt,
                 &ngas, &nflav, &neta, &npres, &ntemp,
                 const_cast<int*>(gpoint_flavor.ptr()),
@@ -961,7 +878,7 @@ namespace rrtmgp_kernels
         int dim1 = data.dim(1);
         int dim2 = data.dim(2);
         int dim3 = data.dim(3);
-        reorder_123x321_kernel(
+        rrtmgp_kernels::reorder_123x321_kernel(
                 &dim1, &dim2, &dim3,
                 const_cast<TF*>(data.ptr()),
                 data_out.ptr());
@@ -973,7 +890,7 @@ namespace rrtmgp_kernels
             const Array<TF,3>& tau_local, const Array<TF,3>& tau_rayleigh,
             Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g)
     {
-        combine_and_reorder_2str(
+        rrtmgp_kernels::combine_and_reorder_2str(
                 &ncol, &nlay, &ngpt,
                 const_cast<TF*>(tau_local.ptr()), const_cast<TF*>(tau_rayleigh.ptr()),
                 tau.ptr(), ssa.ptr(), g.ptr());
@@ -989,7 +906,7 @@ namespace rrtmgp_kernels
             TF totplnk_delta, Array<TF,2>& totplnk, Array<int,2>& gpoint_flavor,
             Array<TF,2>& sfc_src, Array<TF,3>& lay_src, Array<TF,3>& lev_src_inc, Array<TF,3>& lev_src_dec)
     {
-        compute_Planck_source(
+        rrtmgp_kernels::compute_Planck_source(
                 &ncol, &nlay, &nbnd, &ngpt,
                 &nflav, &neta, &npres, &ntemp, &nPlanckTemp,
                 const_cast<TF*>(tlay.ptr()),
@@ -1063,9 +980,9 @@ void Gas_optics<TF>::compute_gas_taus(
                 col_gas({icol, ilay, igas}) = vmr({icol, ilay, igas}) * col_dry({icol, ilay});
 
     // Call the fortran kernels
-    rrtmgp_kernels::zero_array(ngpt, nlay, ncol, tau);
+    rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, tau);
 
-    rrtmgp_kernels::interpolation(
+    rrtmgp_kernel_launcher::interpolation(
             ncol, nlay,
             ngas, nflav, neta, npres, ntemp,
             this->flavor,
@@ -1097,7 +1014,7 @@ void Gas_optics<TF>::compute_gas_taus(
         throw std::runtime_error("idx_h2o cannot be found");
 
     auto band_lims_gpoint = this->get_band_lims_gpoint();
-    rrtmgp_kernels::compute_tau_absorption(
+    rrtmgp_kernel_launcher::compute_tau_absorption(
             ncol, nlay, nband, ngpt,
             ngas, nflav, neta, npres, ntemp,
             nminorlower, nminorklower,
@@ -1130,7 +1047,7 @@ void Gas_optics<TF>::compute_gas_taus(
 
     if (has_rayleigh)
     {
-        rrtmgp_kernels::compute_tau_rayleigh(
+        rrtmgp_kernel_launcher::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
                 this->gpoint_flavor,
@@ -1157,17 +1074,17 @@ void Gas_optics<TF>::combine_and_reorder(
 
     if (!has_rayleigh)
     {
-        rrtmgp_kernels::reorder123x321(tau, optical_props->get_tau());
-        // rrtmgp_kernels::zero_array(ngpt, nlay, ncol, optical_props->get_ssa());
-        // rrtmgp_kernels::zero_array(ngpt, nlay, ncol, optical_props->get_g  ());
+        rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
+        // rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, optical_props->get_ssa());
+        // rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, optical_props->get_g  ());
     }
     else
     {
         // In case of 1scl type
-        // rrtmgp_kernels::reorder123x321(tau, optical_props->get_tau());
+        // rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
 
         // In case of 2str type
-        rrtmgp_kernels::combine_and_reorder_2str(
+        rrtmgp_kernel_launcher::combine_and_reorder_2str(
                 ncol, nlay, ngpt,
                 tau, tau_rayleigh,
                 optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
@@ -1204,7 +1121,7 @@ void Gas_optics<TF>::source(
     Array<TF,2> sfc_source_t({ngpt, ncol});
 
     int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
-    rrtmgp_kernels::compute_Planck_source(
+    rrtmgp_kernel_launcher::compute_Planck_source(
             ncol, nlay, nbnd, ngpt,
             nflav, neta, npres, ntemp, nPlanckTemp,
             tlay, tlev, tsfc, sfc_lay,
@@ -1218,9 +1135,9 @@ void Gas_optics<TF>::source(
         for (int i=1; i<=sfc_source_t.dim(1); ++i)
             sources.get_sfc_source()({j, i}) = sfc_source_t({i, j});
 
-    rrtmgp_kernels::reorder123x321(lay_source_t, sources.get_lay_source());
-    rrtmgp_kernels::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());
-    rrtmgp_kernels::reorder123x321(lev_source_dec_t, sources.get_lev_source_dec());
+    rrtmgp_kernel_launcher::reorder123x321(lay_source_t, sources.get_lay_source());
+    rrtmgp_kernel_launcher::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());
+    rrtmgp_kernel_launcher::reorder123x321(lev_source_dec_t, sources.get_lev_source_dec());
 }
 
 template class Gas_optics<double>;

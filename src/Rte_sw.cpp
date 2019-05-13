@@ -3,32 +3,16 @@
 #include "Optical_props.h"
 #include "Fluxes.h"
 
-namespace rrtmgp_kernels
+#include "rrtmgp_kernels.h"
+
+namespace rrtmgp_kernel_launcher
 {
-    extern "C" void apply_BC_0(
-            int* ncol, int* nlay, int* ngpt,
-            int* top_at_1, double* gpt_flux_dn);
-
-    extern "C" void apply_BC_factor(
-            int* ncol, int* nlay, int* ngpt,
-            int* top_at_1, double* inc_flux,
-            double* factor, double* flux_dn);
-
-    extern "C" void sw_solver_2stream(
-            int* ncol, int* nlay, int* ngpt, int* top_at_1,
-            double* tau,
-            double* ssa,
-            double* g,
-            double* mu0,
-            double* sfc_alb_dir_gpt, double* sfc_alb_dif_gpt,
-            double* gpt_flux_up, double* gpt_flux_dn, double* gpt_flux_dir);
-
     template<typename TF>
     void apply_BC(
             int ncol, int nlay, int ngpt,
             int top_at_1, Array<TF,3>& gpt_flux_dn)
     {
-        apply_BC_0(
+        rrtmgp_kernels::apply_BC_0(
                 &ncol, &nlay, &ngpt,
                 &top_at_1, gpt_flux_dn.ptr());
     }
@@ -40,7 +24,7 @@ namespace rrtmgp_kernels
             const Array<TF,1>& factor,
             Array<TF,3>& gpt_flux)
     {
-        apply_BC_factor(
+        rrtmgp_kernels::apply_BC_factor(
                 &ncol, &nlay, &ngpt,
                 &top_at_1,
                 const_cast<TF*>(inc_flux.ptr()),
@@ -58,7 +42,7 @@ namespace rrtmgp_kernels
             const Array<TF,2>& sfc_alb_dir_gpt, const Array<TF,2>& sfc_alb_dif_gpt,
             Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn, Array<TF,3>& gpt_flux_dir)
     {
-        sw_solver_2stream(
+        rrtmgp_kernels::sw_solver_2stream(
                 &ncol, &nlay, &ngpt, &top_at_1,
                 const_cast<TF*>(tau.ptr()),
                 const_cast<TF*>(ssa.ptr()),
@@ -96,12 +80,12 @@ void Rte_sw<TF>::rte_sw(
     expand_and_transpose(optical_props, sfc_alb_dif, sfc_alb_dif_gpt);
 
     // Upper boundary condition.
-    rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, mu0, gpt_flux_dir);
-    rrtmgp_kernels::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
+    rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, mu0, gpt_flux_dir);
+    rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
 
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat
-    rrtmgp_kernels::sw_solver_2stream(
+    rrtmgp_kernel_launcher::sw_solver_2stream(
             ncol, nlay, ngpt, top_at_1,
             optical_props->get_tau(),
             optical_props->get_ssa(),

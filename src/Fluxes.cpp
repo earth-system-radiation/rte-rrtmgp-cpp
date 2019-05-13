@@ -2,34 +2,16 @@
 #include "Array.h"
 #include "Optical_props.h"
 
-namespace rrtmgp_kernels
+#include "rrtmgp_kernels.h"
+
+namespace rrtmgp_kernel_launcher
 {
-    extern "C" void sum_broadband(
-            int* ncol, int* nlev, int* ngpt,
-            double* spectral_flux, double* broadband_flux);
-
-    extern "C" void net_broadband_precalc(
-            int* ncol, int* nlev,
-            double* broadband_flux_dn, double* broadband_flux_up,
-            double* broadband_flux_net);
-
-    extern "C" void sum_byband(
-            int* ncol, int* nlev, int* ngpt, int* nbnd,
-            int* band_lims,
-            double* spectral_flux,
-            double* byband_flux);
-
-    extern "C" void net_byband_precalc(
-            int* ncol, int* nlev, int* nbnd,
-            double* byband_flux_dn, double* byband_flux_up,
-            double* byband_flux_net);
-
     template<typename TF>
     void sum_broadband(
             int ncol, int nlev, int ngpt,
             const Array<TF,3>& spectral_flux, Array<TF,2>& broadband_flux)
     {
-        sum_broadband(
+        rrtmgp_kernels::sum_broadband(
                 &ncol, &nlev, &ngpt,
                 const_cast<TF*>(spectral_flux.ptr()),
                 broadband_flux.ptr());
@@ -41,7 +23,7 @@ namespace rrtmgp_kernels
             const Array<TF,2>& broadband_flux_dn, const Array<TF,2>& broadband_flux_up,
             Array<TF,2>& broadband_flux_net)
     {
-        net_broadband_precalc(
+        rrtmgp_kernels::net_broadband_precalc(
                 &ncol, &nlev,
                 const_cast<TF*>(broadband_flux_dn.ptr()),
                 const_cast<TF*>(broadband_flux_up.ptr()),
@@ -55,7 +37,7 @@ namespace rrtmgp_kernels
             const Array<TF,3>& spectral_flux,
             Array<TF,3>& byband_flux)
     {
-        sum_byband(
+        rrtmgp_kernels::sum_byband(
                 &ncol, &nlev, &ngpt, &nbnd,
                 const_cast<int*>(band_lims.ptr()),
                 const_cast<TF*>(spectral_flux.ptr()),
@@ -68,7 +50,7 @@ namespace rrtmgp_kernels
             const Array<TF,3>& byband_flux_dn, const Array<TF,3>& byband_flux_up,
             Array<TF,3>& byband_flux_net)
     {
-        net_byband_precalc(
+        rrtmgp_kernels::net_byband_precalc(
                 &ncol, &nlev, &nband,
                 const_cast<TF*>(byband_flux_dn.ptr()),
                 const_cast<TF*>(byband_flux_up.ptr()),
@@ -94,13 +76,13 @@ void Fluxes_broadband<TF>::reduce(
     const int nlev = gpt_flux_up.dim(2);
     const int ngpt = gpt_flux_up.dim(3);
 
-    rrtmgp_kernels::sum_broadband(
+    rrtmgp_kernel_launcher::sum_broadband(
             ncol, nlev, ngpt, gpt_flux_up, this->flux_up);
 
-    rrtmgp_kernels::sum_broadband(
+    rrtmgp_kernel_launcher::sum_broadband(
             ncol, nlev, ngpt, gpt_flux_dn, this->flux_dn);
 
-    rrtmgp_kernels::net_broadband(
+    rrtmgp_kernel_launcher::net_broadband(
             ncol, nlev, this->flux_dn, this->flux_up, this->flux_net);
 }
 
@@ -117,7 +99,7 @@ void Fluxes_broadband<TF>::reduce(
 
     reduce(gpt_flux_up, gpt_flux_dn, spectral_disc, top_at_1);
 
-    rrtmgp_kernels::sum_broadband(
+    rrtmgp_kernel_launcher::sum_broadband(
             ncol, nlev, ngpt,
             gpt_flux_dn_dir, this->flux_dn_dir);
 }
@@ -149,15 +131,15 @@ void Fluxes_byband<TF>::reduce(
             gpt_flux_up, gpt_flux_dn,
             spectral_disc, top_at_1);
 
-    rrtmgp_kernels::sum_byband(
+    rrtmgp_kernel_launcher::sum_byband(
             ncol, nlev, ngpt, nbnd, band_lims,
             gpt_flux_up, this->bnd_flux_up);
 
-    rrtmgp_kernels::sum_byband(
+    rrtmgp_kernel_launcher::sum_byband(
             ncol, nlev, ngpt, nbnd, band_lims,
             gpt_flux_dn, this->bnd_flux_dn);
 
-    rrtmgp_kernels::net_byband(
+    rrtmgp_kernel_launcher::net_byband(
             ncol, nlev, nbnd,
             this->bnd_flux_dn, this->bnd_flux_up, this->bnd_flux_net);
 }
@@ -184,7 +166,7 @@ void Fluxes_byband<TF>::reduce(
 
     reduce(gpt_flux_up, gpt_flux_dn, spectral_disc, top_at_1);
 
-    rrtmgp_kernels::sum_byband(
+    rrtmgp_kernel_launcher::sum_byband(
             ncol, nlev, ngpt, nbnd, band_lims,
             gpt_flux_dn_dir, this->bnd_flux_dn_dir);
 }
