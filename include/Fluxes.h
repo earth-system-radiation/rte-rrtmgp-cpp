@@ -204,7 +204,8 @@ void Fluxes_broadband<TF>::reduce(
     reduce(gpt_flux_up, gpt_flux_dn, spectral_disc, top_at_1);
 
     rrtmgp_kernels::sum_broadband(
-            ncol, nlev, ngpt, gpt_flux_dn_dir, this->flux_dn_dir);
+            ncol, nlev, ngpt,
+            gpt_flux_dn_dir, this->flux_dn_dir);
 }
 
 template<typename TF>
@@ -235,13 +236,16 @@ void Fluxes_byband<TF>::reduce(
             spectral_disc, top_at_1);
 
     rrtmgp_kernels::sum_byband(
-            ncol, nlev, ngpt, nbnd, band_lims, gpt_flux_up, this->bnd_flux_up);
+            ncol, nlev, ngpt, nbnd, band_lims,
+            gpt_flux_up, this->bnd_flux_up);
 
     rrtmgp_kernels::sum_byband(
-            ncol, nlev, ngpt, nbnd, band_lims, gpt_flux_dn, this->bnd_flux_dn);
+            ncol, nlev, ngpt, nbnd, band_lims,
+            gpt_flux_dn, this->bnd_flux_dn);
 
     rrtmgp_kernels::net_byband(
-            ncol, nlev, nbnd, this->bnd_flux_dn, this->bnd_flux_up, this->bnd_flux_net);
+            ncol, nlev, nbnd,
+            this->bnd_flux_dn, this->bnd_flux_up, this->bnd_flux_net);
 }
 
 // CvH: a lot of code duplication.
@@ -267,6 +271,7 @@ void Fluxes_byband<TF>::reduce(
     reduce(gpt_flux_up, gpt_flux_dn, spectral_disc, top_at_1);
 
     rrtmgp_kernels::sum_byband(
-            ncol, nlev, ngpt, nbnd, band_lims, gpt_flux_dn_dir, this->bnd_flux_dn_dir);
+            ncol, nlev, ngpt, nbnd, band_lims,
+            gpt_flux_dn_dir, this->bnd_flux_dn_dir);
 }
 #endif
