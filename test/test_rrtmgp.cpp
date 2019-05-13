@@ -147,11 +147,14 @@ namespace
                 coef_nc.get_variable<double>("kmajor", {n_temps, n_press+1, n_mixingfracs, n_gpts}),
                 {n_gpts, n_mixingfracs, n_press+1, n_temps});
 
-        Array<double,3> rayl_lower({n_gpts, n_mixingfracs, n_temps});
-        Array<double,3> rayl_upper({n_gpts, n_mixingfracs, n_temps});
+        // Keep the size at zero, if it does not exist.
+        Array<double,3> rayl_lower;
+        Array<double,3> rayl_upper;
 
         if (coef_nc.variable_exists("rayl_lower"))
         {
+            rayl_lower.set_dims({n_gpts, n_mixingfracs, n_temps});
+            rayl_upper.set_dims({n_gpts, n_mixingfracs, n_temps});
             rayl_lower = coef_nc.get_variable<double>("rayl_lower", {n_temps, n_mixingfracs, n_gpts});
             rayl_upper = coef_nc.get_variable<double>("rayl_upper", {n_temps, n_mixingfracs, n_gpts});
         }

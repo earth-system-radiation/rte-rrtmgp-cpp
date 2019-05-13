@@ -1374,8 +1374,8 @@ void Gas_optics<TF>::combine_and_reorder(
     if (!has_rayleigh)
     {
         rrtmgp_kernels::reorder123x321(tau, optical_props->get_tau());
-        rrtmgp_kernels::zero_array(ngpt, nlay, ncol, optical_props->get_ssa());
-        rrtmgp_kernels::zero_array(ngpt, nlay, ncol, optical_props->get_g  ());
+        // rrtmgp_kernels::zero_array(ngpt, nlay, ncol, optical_props->get_ssa());
+        // rrtmgp_kernels::zero_array(ngpt, nlay, ncol, optical_props->get_g  ());
     }
     else
     {
