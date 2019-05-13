@@ -938,7 +938,7 @@ void Gas_optics<TF>::gas_optics(
     // External source function is constant.
     for (int igpt=1; igpt<=ngpt; ++igpt)
         for (int icol=1; icol<=ncol; ++icol)
-            toa_src({icol, igpt}) = this->solar_src({icol});
+            toa_src({icol, igpt}) = this->solar_src({igpt});
 }
 
 namespace rrtmgp_kernels
