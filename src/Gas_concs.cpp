@@ -33,4 +33,8 @@ bool Gas_concs<TF>::exists(const std::string& name) const
     return gas_concs_map.count(name) != 0;
 }
 
+#ifdef FLOAT_SINGLE
+template class Gas_concs<float>;
+#else
 template class Gas_concs<double>;
+#endif

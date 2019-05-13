@@ -91,6 +91,12 @@ void Optical_props_2str<TF>::get_subset(
             }
 }
 
+#ifdef FLOAT_SINGLE
+template class Optical_props<float>;
+template class Optical_props_1scl<float>;
+template class Optical_props_2str<float>;
+#else
 template class Optical_props<double>;
 template class Optical_props_1scl<double>;
 template class Optical_props_2str<double>;
+#endif

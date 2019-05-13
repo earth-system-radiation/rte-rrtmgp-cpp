@@ -119,4 +119,8 @@ void Rte_lw<TF>::expand_and_transpose(
                 arr_out({icol, igpt}) = arr_in({iband, icol});
 }
 
+#ifdef FLOAT_SINGLE
+template class Rte_lw<float>;
+#else
 template class Rte_lw<double>;
+#endif

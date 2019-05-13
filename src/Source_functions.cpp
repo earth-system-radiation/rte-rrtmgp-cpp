@@ -52,4 +52,8 @@ void Source_func_lw<TF>::get_subset(
             }
 }
 
+#ifdef FLOAT_SINGLE
+template class Source_func_lw<float>;
+#else
 template class Source_func_lw<double>;
+#endif

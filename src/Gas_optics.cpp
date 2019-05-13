@@ -1140,4 +1140,8 @@ void Gas_optics<TF>::source(
     rrtmgp_kernel_launcher::reorder123x321(lev_source_dec_t, sources.get_lev_source_dec());
 }
 
+#ifdef FLOAT_SINGLE
+template class Gas_optics<float>;
+#else
 template class Gas_optics<double>;
+#endif
