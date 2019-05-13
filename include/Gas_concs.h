@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include "Array.h"
+
 template<typename TF>
 class Gas_concs
 {
