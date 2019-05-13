@@ -6,7 +6,7 @@ if(FLOAT_TYPE STREQUAL "single")
         rrtmgp_kernels
         PROPERTIES
         COMPILE_DEFINITIONS REAL_TYPE=sp)
-elseif(FLOAT_TYPE STREQUAL "double")
+else()
     message(STATUS "Compiling RRTMGP kernels in double precision")
     FILE(GLOB sourcefiles "../src_fortran/*.F90")
     add_library(rrtmgp_kernels STATIC ${sourcefiles})
@@ -14,6 +14,4 @@ elseif(FLOAT_TYPE STREQUAL "double")
         rrtmgp_kernels
         PROPERTIES
         COMPILE_DEFINITIONS REAL_TYPE=dp)
-else()
-    message(FATAL_ERROR "Illegal FLOAT_TYPE specified.")
 endif()
