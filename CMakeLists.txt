@@ -116,4 +116,5 @@ if(USECUDA)
 endif()
 
 add_subdirectory(src_fortran)
+add_subdirectory(src)
 add_subdirectory(test)
