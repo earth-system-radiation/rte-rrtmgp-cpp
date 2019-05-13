@@ -25,11 +25,14 @@ module mo_rte_kind
   !
   ! Floating point working precision
   !
-  integer, parameter :: wp = dp
+  ! CvH: make this edit to permit variable compilation.
+  !integer, parameter :: wp = cp
+  integer, parameter :: wp = REAL_TYPE
 
   !
   ! Logical - for use with kernels
   !
+  ! CvH: make this edit to circumvent std::vector<bool> problems at C++ side.
   !integer, parameter :: wl = c_bool
   integer, parameter :: wl = 4
 
