@@ -270,9 +270,6 @@ void load_gas_concs(Gas_concs<TF>& gas_concs, Netcdf_file& input_nc)
             rad_nc.get_variable<TF>("n2o"));
     gas_concs.set_vmr("ch4",
             rad_nc.get_variable<TF>("ch4"));
-
-    // CvH: does this one need to be present?
-    // Array<TF,2> col_dry(input_nc.get_variable<TF>("col_dry", {n_lay, n_col}), {n_col, n_lay});
 }
 
 int main()
@@ -343,6 +340,7 @@ int main()
         Array<double,2> lw_flux_up ({n_col, n_lev});
         Array<double,2> lw_flux_dn ({n_col, n_lev});
         Array<double,2> lw_flux_net({n_col, n_lev});
+        Array<double,2> lw_heating ({n_col, n_lay});
 
         std::unique_ptr<Fluxes_broadband<double>> fluxes =
                 std::make_unique<Fluxes_broadband<double>>(n_col, n_lev);
@@ -365,21 +363,35 @@ int main()
             lw_flux_net({1, ilev}) = fluxes->get_flux_net()({1, ilev});
         }
 
+        constexpr double g = 9.80655;
+        constexpr double cp = 1005.;
+
+        for (int ilay=1; ilay<=n_lay; ++ilay)
+            lw_heating({1, ilay}) =
+                    ( lw_flux_up({1, ilay+1}) - lw_flux_up({1, ilay})
+                    - lw_flux_dn({1, ilay+1}) + lw_flux_dn({1, ilay}) )
+                    * g / ( cp * (p_lev({1, ilay+1}) - p_lev({1, ilay})) ) * 86400.;
+
         // Store the radiation fluxes to a file
         Netcdf_file output_nc(master, "test_rcemip_output.nc", Netcdf_mode::Create);
         output_nc.add_dimension("col", n_col);
         output_nc.add_dimension("lev", n_lev);
+        output_nc.add_dimension("lay", n_lay);
 
-        auto nc_p = output_nc.add_variable<double>("lev", {"lev"});
-        nc_p.insert(p_lev.v(), {0, 0});
+        auto nc_p_lev = output_nc.add_variable<double>("lev", {"lev"});
+        auto nc_p_lay = output_nc.add_variable<double>("lay", {"lay"});
+        nc_p_lev.insert(p_lev.v(), {0});
+        nc_p_lay.insert(p_lay.v(), {0});
 
         auto nc_lw_flux_up  = output_nc.add_variable<double>("lw_flux_up" , {"lev", "col"});
         auto nc_lw_flux_dn  = output_nc.add_variable<double>("lw_flux_dn" , {"lev", "col"});
         auto nc_lw_flux_net = output_nc.add_variable<double>("lw_flux_net", {"lev", "col"});
+        auto nc_lw_heating  = output_nc.add_variable<double>("lw_heating" , {"lay", "col"});
 
         nc_lw_flux_up .insert(lw_flux_up .v(), {0, 0});
         nc_lw_flux_dn .insert(lw_flux_dn .v(), {0, 0});
         nc_lw_flux_net.insert(lw_flux_net.v(), {0, 0});
+        nc_lw_heating .insert(lw_heating .v(), {0, 0});
     }
 
     // Catch any exceptions and return 1.
