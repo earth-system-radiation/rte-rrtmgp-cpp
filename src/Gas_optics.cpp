@@ -963,13 +963,34 @@ void Gas_optics<TF>::compute_gas_taus(
         Array<TF,2> vmr_2d({ncol, nlay});
         gas_desc.get_vmr(this->gas_names({igas}), vmr_2d);
 
-        for (int icol=1; icol<=ncol; ++icol)
+        // Fill array with constant value.
+        if (vmr_2d.dim(1) == 1 && vmr_2d.dim(2) == 1)
+        {
+            const TF vmr_c = vmr_2d({1, 1});
             for (int ilay=1; ilay<=nlay; ++ilay)
-                vmr({icol, ilay, igas}) = vmr_2d({icol, ilay});
+                for (int icol=1; icol<=ncol; ++icol)
+                    vmr({icol, ilay, igas}) = vmr_c;
+        }
+        // Fill array with constant profile.
+        else if (vmr_2d.dim(1) == 1)
+        {
+            for (int ilay=1; ilay<=nlay; ++ilay)
+            {
+                const TF vmr_lay = vmr_2d({1, ilay});
+                for (int icol=1; icol<=ncol; ++icol)
+                    vmr({icol, ilay, igas}) = vmr_lay;
+            }
+        }
+        // Fill array with full 2d data.
+        else
+        {
+            for (int ilay=1; ilay<=nlay; ++ilay)
+                for (int icol=1; icol<=ncol; ++icol)
+                    vmr({icol, ilay, igas}) = vmr_2d({icol, ilay});
+        }
     }
 
     // CvH: Assume that col_dry is provided.
-
     for (int ilay=1; ilay<=nlay; ++ilay)
         for (int icol=1; icol<=ncol; ++icol)
             col_gas({icol, ilay, 0}) = col_dry({icol, ilay});
