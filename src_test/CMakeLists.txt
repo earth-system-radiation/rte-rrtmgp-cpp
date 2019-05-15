@@ -41,7 +41,13 @@ add_definitions(-DGITHASH="${GITHASH}")
 if(USECUDA)
   cuda_add_executable(test_rrtmgp test_rrtmgp.cpp)
   target_link_libraries(test_rrtmgp rrtmgp_kernels rrtmgp ${LIBS} m)
+
+  cuda_add_executable(test_rcemip test_rcemip.cpp)
+  target_link_libraries(test_rcemip rrtmgp_kernels rrtmgp ${LIBS} m)
 else()
   add_executable(test_rrtmgp test_rrtmgp.cpp)
   target_link_libraries(test_rrtmgp rrtmgp_kernels rrtmgp ${LIBS} m)
+
+  add_executable(test_rcemip test_rcemip.cpp)
+  target_link_libraries(test_rcemip rrtmgp_kernels rrtmgp ${LIBS} m)
 endif()

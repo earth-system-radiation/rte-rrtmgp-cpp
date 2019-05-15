@@ -14,9 +14,25 @@ Gas_concs<TF>::Gas_concs(const Gas_concs& gas_concs_ref, const int start, const 
 
 // Insert new gas into the map.
 template<typename TF>
-void Gas_concs<TF>::set_vmr(const std::string& name, const Array<TF,2>& data)
+void Gas_concs<TF>::set_vmr(const std::string& name, const TF data)
 {
-    gas_concs_map.emplace(name, data);
+    Array<TF,2> data_2d({1, 1});
+    data_2d({1, 1}) = data;
+    gas_concs_map.emplace(name, std::move(data_2d));
+}
+
+// Insert new gas into the map.
+template<typename TF>
+void Gas_concs<TF>::set_vmr(const std::string& name, const Array<TF,1>& data)
+{
+    Array<TF,2> data_2d(data.v(), {1, data.dim(1)});
+    gas_concs_map.emplace(name, std::move(data_2d));
+}
+// Insert new gas into the map.
+template<typename TF>
+void Gas_concs<TF>::set_vmr(const std::string& name, const Array<TF,2>& data_2d)
+{
+    gas_concs_map.emplace(name, data_2d);
 }
 
 // Insert new gas into the map.
