@@ -742,7 +742,7 @@ void solve_radiation(Master& master)
         master.print_message("STEP 3: Saving the output to NetCDF.\n");
 
         // Save the output of the optical solver to disk.
-        Netcdf_file output_nc(master, "test_rrtmgp_out.nc", Netcdf_mode::Create);
+        Netcdf_file output_nc(master, "test_rrtmgp_output.nc", Netcdf_mode::Create);
         output_nc.add_dimension("col", n_col);
         output_nc.add_dimension("lay", n_lay);
         output_nc.add_dimension("lev", n_lev);
@@ -752,8 +752,8 @@ void solve_radiation(Master& master)
 
         // WARNING: The storage in the NetCDF interface uses C-ordering and indexing.
         // First, store the optical properties.
-        auto nc_band_lims_wvn = output_nc.add_variable<TF>("band_lims_wvn", {"band", "pair"});
-        auto nc_band_lims_gpt = output_nc.add_variable<int>   ("band_lims_gpt", {"band", "pair"});
+        auto nc_band_lims_wvn = output_nc.add_variable<TF> ("band_lims_wvn", {"band", "pair"});
+        auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
         auto nc_tau = output_nc.add_variable<TF>("tau", {"gpt", "lay", "col"});
         auto nc_ssa = output_nc.add_variable<TF>("ssa", {"gpt", "lay", "col"});
         auto nc_g   = output_nc.add_variable<TF>("g"  , {"gpt", "lay", "col"});

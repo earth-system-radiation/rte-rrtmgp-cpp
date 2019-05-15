@@ -340,9 +340,9 @@ int main()
                 col_dry,
                 t_lev);
 
-        Array<double,2> flux_up ({n_col, n_lev});
-        Array<double,2> flux_dn ({n_col, n_lev});
-        Array<double,2> flux_net({n_col, n_lev});
+        Array<double,2> lw_flux_up ({n_col, n_lev});
+        Array<double,2> lw_flux_dn ({n_col, n_lev});
+        Array<double,2> lw_flux_net({n_col, n_lev});
 
         std::unique_ptr<Fluxes_broadband<double>> fluxes =
                 std::make_unique<Fluxes_broadband<double>>(n_col, n_lev);
@@ -360,12 +360,26 @@ int main()
         // Copy the data to the output.
         for (int ilev=1; ilev<=n_lev; ++ilev)
         {
-            flux_up ({1, ilev}) = fluxes->get_flux_up ()({1, ilev});
-            flux_dn ({1, ilev}) = fluxes->get_flux_dn ()({1, ilev});
-            flux_net({1, ilev}) = fluxes->get_flux_net()({1, ilev});
+            lw_flux_up ({1, ilev}) = fluxes->get_flux_up ()({1, ilev});
+            lw_flux_dn ({1, ilev}) = fluxes->get_flux_dn ()({1, ilev});
+            lw_flux_net({1, ilev}) = fluxes->get_flux_net()({1, ilev});
         }
 
-        master.print_message("Single column computation completed.\n");
+        // Store the radiation fluxes to a file
+        Netcdf_file output_nc(master, "test_rcemip_output.nc", Netcdf_mode::Create);
+        output_nc.add_dimension("col", n_col);
+        output_nc.add_dimension("lev", n_lev);
+
+        auto nc_p = output_nc.add_variable<double>("lev", {"lev"});
+        nc_p.insert(p_lev.v(), {0, 0});
+
+        auto nc_lw_flux_up  = output_nc.add_variable<double>("lw_flux_up" , {"lev", "col"});
+        auto nc_lw_flux_dn  = output_nc.add_variable<double>("lw_flux_dn" , {"lev", "col"});
+        auto nc_lw_flux_net = output_nc.add_variable<double>("lw_flux_net", {"lev", "col"});
+
+        nc_lw_flux_up .insert(lw_flux_up .v(), {0, 0});
+        nc_lw_flux_dn .insert(lw_flux_dn .v(), {0, 0});
+        nc_lw_flux_net.insert(lw_flux_net.v(), {0, 0});
     }
 
     // Catch any exceptions and return 1.
