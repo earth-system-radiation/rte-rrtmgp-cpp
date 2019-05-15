@@ -182,8 +182,9 @@ namespace
                     const int ks = key_species({ip,ia,it});
                     if (ks != 0)
                     {
-                        key_species_red({ip,ia,it}) = find_index(gas_names_red, gas_names({ks}));
-                        if (ks == -1)
+                        const int ksr = find_index(gas_names_red, gas_names({ks}));
+                        key_species_red({ip,ia,it}) = ksr;
+                        if (ksr == -1)
                             key_species_present_init({ks}) = 0;
                     }
                     else
