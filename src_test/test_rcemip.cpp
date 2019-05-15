@@ -258,7 +258,7 @@ void load_gas_concs(Gas_concs<TF>& gas_concs, Netcdf_file& input_nc)
     // This part is contained in the create
     Netcdf_group rad_nc = input_nc.get_group("radiation");
 
-    const int n_lay = rad_nc.get_dimension_size("p");
+    const int n_lay = rad_nc.get_dimension_size("lay");
 
     gas_concs.set_vmr("h2o",
             Array<TF,1>(rad_nc.get_variable<TF>("h2o", {n_lay}), {n_lay}));
@@ -290,9 +290,9 @@ int main()
         std::unique_ptr<Gas_optics<double>> kdist_sw;
 
         // This is the part that is done in the initialization.
-        Netcdf_file input_nc(master, "test_rcemip_input.nc", Netcdf_mode::Read);
+        Netcdf_file file_nc(master, "test_rcemip_input.nc", Netcdf_mode::Read);
 
-        load_gas_concs<double>(gas_concs, input_nc);
+        load_gas_concs<double>(gas_concs, file_nc);
         kdist_lw = std::make_unique<Gas_optics<double>>(
                 load_and_init_gas_optics(master, gas_concs, "coefficients_lw.nc"));
 
@@ -300,10 +300,19 @@ int main()
         Array<double,1> t_sfc({1});
         t_sfc({1}) = 300.;
 
+        const int n_bnd = kdist_lw->get_nband();
+        Array<double,2> emis_sfc({n_bnd, 1});
+        for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
+            emis_sfc({ibnd, 1}) = 1.;
+
+        const int n_ang = 1;
+
         // Solve the full column once.
+        Netcdf_group input_nc = file_nc.get_group("radiation");
+
         const int n_col = 1;
-        const int n_lay = input_nc.get_dimension_size("p_lay");
-        const int n_lev = input_nc.get_dimension_size("p_lev");
+        const int n_lay = input_nc.get_dimension_size("lay");
+        const int n_lev = input_nc.get_dimension_size("lev");
 
         Array<double,2> p_lay(input_nc.get_variable<double>("p_lay", {n_lay, n_col}), {n_col, n_lay});
         Array<double,2> t_lay(input_nc.get_variable<double>("t_lay", {n_lay, n_col}), {n_col, n_lay});
@@ -314,10 +323,10 @@ int main()
         if (input_nc.variable_exists("col_dry"))
             col_dry = input_nc.get_variable<double>("t_lev", {n_lev, n_col});
         else
-            kdist_lw->get_col_dry(col_dry, gas_concs.get_vmr("h2o"), plev, tlay);
+            kdist_lw->get_col_dry(col_dry, gas_concs.get_vmr("h2o"), p_lev);
 
-        std::unique_ptr<Optical_props_arry<double>> optical_props;
-        optical_props = std::make_unique<Optical_props_1scl<double>>(n_col, n_lay, *kdist_lw);
+        std::unique_ptr<Optical_props_arry<double>> optical_props =
+                std::make_unique<Optical_props_1scl<double>>(n_col, n_lay, *kdist_lw);
         Source_func_lw<double> sources(n_col, n_lay, *kdist_lw);
 
         kdist_lw->gas_optics(
@@ -330,6 +339,33 @@ int main()
                 sources,
                 col_dry,
                 t_lev);
+
+        Array<double,2> flux_up ({n_col, n_lev});
+        Array<double,2> flux_dn ({n_col, n_lev});
+        Array<double,2> flux_net({n_col, n_lev});
+
+        std::unique_ptr<Fluxes_broadband<double>> fluxes =
+                std::make_unique<Fluxes_broadband<double>>(n_col, n_lev);
+
+        const int top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
+
+        Rte_lw<double>::rte_lw(
+                optical_props,
+                top_at_1,
+                sources,
+                emis_sfc,
+                fluxes,
+                n_ang);
+
+        // Copy the data to the output.
+        for (int ilev=1; ilev<=n_lev; ++ilev)
+        {
+            flux_up ({1, ilev}) = fluxes->get_flux_up ()({1, ilev});
+            flux_dn ({1, ilev}) = fluxes->get_flux_dn ()({1, ilev});
+            flux_net({1, ilev}) = fluxes->get_flux_net()({1, ilev});
+        }
+
+        master.print_message("Single column computation completed.\n");
     }
 
     // Catch any exceptions and return 1.
