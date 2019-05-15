@@ -651,6 +651,38 @@ void Gas_optics<TF>::init_abs_coeffs(
     this->is_key = is_key;
 }
 
+// Calculate the molecules of dry air.
+template<typename TF>
+void Gas_optics<TF>::get_col_dry(
+        Array<TF,2>& col_dry, const Array<TF,2>& vmr_h2o,
+        const Array<TF,2>& plev)
+{
+    // CvH: RRTMGP uses more accurate method based on latitude.
+    constexpr TF g0 = 9.80665;
+
+    constexpr TF avogad = 6.02214076e23;
+    constexpr TF m_dry = 0.028964;
+    constexpr TF m_h2o = 0.018016;
+
+    Array<double,2> delta_plev({col_dry.dim(1), col_dry.dim(2)});
+    Array<double,2> m_air     ({col_dry.dim(1), col_dry.dim(2)});
+
+    for (int ilay=1; ilay<=col_dry.dim(2); ++ilay)
+        for (int icol=1; icol<=col_dry.dim(1); ++icol)
+            delta_plev({icol, ilay}) = std::abs(plev({icol, ilay}) - plev({icol, ilay+1}));
+
+    for (int ilay=1; ilay<=col_dry.dim(2); ++ilay)
+        for (int icol=1; icol<=col_dry.dim(1); ++icol)
+            m_air({icol, ilay}) = (m_dry + m_h2o * vmr_h2o({icol, ilay})) / (1. + vmr_h2o({icol, ilay}));
+
+    for (int ilay=1; ilay<=col_dry.dim(2); ++ilay)
+        for (int icol=1; icol<=col_dry.dim(1); ++icol)
+        {
+            col_dry({icol, ilay}) = TF(10.) * delta_plev({icol, ilay}) * avogad / (TF(1000.)*m_air({icol, ilay})*TF(100.)*g0);
+            col_dry({icol, ilay}) /= (TF(1.) + vmr_h2o({icol, ilay}));
+        }
+}
+
 // Gas optics solver longwave variant.
 template<typename TF>
 void Gas_optics<TF>::gas_optics(
@@ -960,8 +992,7 @@ void Gas_optics<TF>::compute_gas_taus(
 
     for (int igas=1; igas<=ngas; ++igas)
     {
-        Array<TF,2> vmr_2d({ncol, nlay});
-        gas_desc.get_vmr(this->gas_names({igas}), vmr_2d);
+        const Array<TF,2>& vmr_2d = gas_desc.get_vmr(this->gas_names({igas}));
 
         // Fill array with constant value.
         if (vmr_2d.dim(1) == 1 && vmr_2d.dim(2) == 1)

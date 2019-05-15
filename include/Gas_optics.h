@@ -84,6 +84,11 @@ class Gas_optics : public Optical_props<TF>
                 Array<TF,3>& rayl_lower,
                 Array<TF,3>& rayl_upper);
 
+        void get_col_dry(
+                Array<TF,2>& col_dry,
+                const Array<TF,2>& vmr_h2o,
+                const Array<TF,2>& plev);
+
         bool source_is_internal() const { return (totplnk.size() > 0) && (planck_frac.size() > 0); }
         TF get_press_ref_min() const { return press_ref_min; }
 

@@ -253,10 +253,9 @@ namespace
 }
 
 template<typename TF>
-void load_gas_concs(Gas_concs<TF>& gas_concs, Master& master)
+void load_gas_concs(Gas_concs<TF>& gas_concs, Netcdf_file& input_nc)
 {
     // This part is contained in the create
-    Netcdf_file input_nc(master, "test_rcemip_input.nc", Netcdf_mode::Read);
     Netcdf_group rad_nc = input_nc.get_group("radiation");
 
     const int n_lay = rad_nc.get_dimension_size("p");
@@ -287,13 +286,50 @@ int main()
         // These are the global variables that need to be contained in a class.
         Gas_concs<double> gas_concs;
 
-        std::unique_ptr<Gas_optics<double>> gas_optics_lw;
-        std::unique_ptr<Gas_optics<double>> gas_optics_sw;
+        std::unique_ptr<Gas_optics<double>> kdist_lw;
+        std::unique_ptr<Gas_optics<double>> kdist_sw;
 
         // This is the part that is done in the initialization.
-        load_gas_concs<double>(gas_concs, master);
-        gas_optics_lw = std::make_unique<Gas_optics<double>>(
+        Netcdf_file input_nc(master, "test_rcemip_input.nc", Netcdf_mode::Read);
+
+        load_gas_concs<double>(gas_concs, input_nc);
+        kdist_lw = std::make_unique<Gas_optics<double>>(
                 load_and_init_gas_optics(master, gas_concs, "coefficients_lw.nc"));
+
+        // Set the surface temperature and emissivity.
+        Array<double,1> t_sfc({1});
+        t_sfc({1}) = 300.;
+
+        // Solve the full column once.
+        const int n_col = 1;
+        const int n_lay = input_nc.get_dimension_size("p_lay");
+        const int n_lev = input_nc.get_dimension_size("p_lev");
+
+        Array<double,2> p_lay(input_nc.get_variable<double>("p_lay", {n_lay, n_col}), {n_col, n_lay});
+        Array<double,2> t_lay(input_nc.get_variable<double>("t_lay", {n_lay, n_col}), {n_col, n_lay});
+        Array<double,2> p_lev(input_nc.get_variable<double>("p_lev", {n_lev, n_col}), {n_col, n_lev});
+        Array<double,2> t_lev(input_nc.get_variable<double>("t_lev", {n_lev, n_col}), {n_col, n_lev});
+
+        Array<double,2> col_dry({n_col, n_lev});
+        if (input_nc.variable_exists("col_dry"))
+            col_dry = input_nc.get_variable<double>("t_lev", {n_lev, n_col});
+        else
+            kdist_lw->get_col_dry(col_dry, gas_concs.get_vmr("h2o"), plev, tlay);
+
+        std::unique_ptr<Optical_props_arry<double>> optical_props;
+        optical_props = std::make_unique<Optical_props_1scl<double>>(n_col, n_lay, *kdist_lw);
+        Source_func_lw<double> sources(n_col, n_lay, *kdist_lw);
+
+        kdist_lw->gas_optics(
+                p_lay,
+                p_lev,
+                t_lay,
+                t_sfc,
+                gas_concs,
+                optical_props,
+                sources,
+                col_dry,
+                t_lev);
     }
 
     // Catch any exceptions and return 1.

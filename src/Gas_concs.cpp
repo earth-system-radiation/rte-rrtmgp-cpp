@@ -36,10 +36,17 @@ void Gas_concs<TF>::set_vmr(const std::string& name, const Array<TF,2>& data_2d)
 }
 
 // Insert new gas into the map.
+// template<typename TF>
+// void Gas_concs<TF>::get_vmr(const std::string& name, Array<TF,2>& data) const
+// {
+//     data = this->gas_concs_map.at(name);
+// }
+
+// Insert new gas into the map.
 template<typename TF>
-void Gas_concs<TF>::get_vmr(const std::string& name, Array<TF,2>& data) const
+const Array<TF,2>& Gas_concs<TF>::get_vmr(const std::string& name) const
 {
-    data = this->gas_concs_map.at(name);
+    return this->gas_concs_map.at(name);
 }
 
 // Check if gas exists in map.

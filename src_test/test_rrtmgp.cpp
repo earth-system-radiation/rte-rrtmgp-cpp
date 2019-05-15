@@ -295,11 +295,15 @@ void solve_radiation(Master& master)
     gas_concs.set_vmr("n2",
             Array<TF,2>(input_nc.get_variable<TF>("vmr_n2", {n_lay, n_col}), {n_col, n_lay}));
 
-    // CvH: does this one need to be present?
-    Array<TF,2> col_dry(input_nc.get_variable<TF>("col_dry", {n_lay, n_col}), {n_col, n_lay});
-
     // Construct the gas optics class.
     Gas_optics<TF> kdist = load_and_init_gas_optics(master, gas_concs, "coefficients.nc");
+
+    // Fetch the col_dry in case present.
+    Array<TF,2> col_dry({n_col, n_lay});
+    if (input_nc.variable_exists("col_dry"))
+        col_dry = input_nc.get_variable<TF>("col_dry", {n_lay, n_col});
+    else
+        kdist.get_col_dry(col_dry, gas_concs.get_vmr("h2o"), p_lev);
 
     const int n_gpt = kdist.get_ngpt();
     const int n_bnd = kdist.get_nband();
