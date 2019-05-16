@@ -500,7 +500,7 @@ void solve_radiation(Master& master)
         master.print_message("STEP 3: Saving the output to NetCDF.\n");
 
         // Save the output of the optical solver to disk.
-        Netcdf_file output_nc(master, "test_rrtmgp_out.nc", Netcdf_mode::Create);
+        Netcdf_file output_nc(master, "test_rrtmgp_output.nc", Netcdf_mode::Create);
         output_nc.add_dimension("col", n_col);
         output_nc.add_dimension("lay", n_lay);
         output_nc.add_dimension("lev", n_lev);
