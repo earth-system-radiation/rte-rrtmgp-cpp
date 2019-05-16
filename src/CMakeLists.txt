@@ -3,6 +3,8 @@ include_directories("../include" SYSTEM ${INCLUDE_DIRS})
 
 if(USECUDA)
   cuda_add_library(rrtmgp STATIC ${sourcefiles})
+  target_link_libraries(rrtmgp rrtmgp_kernels)
 else()
   add_library(rrtmgp STATIC ${sourcefiles})
+  target_link_libraries(rrtmgp rrtmgp_kernels)
 endif()
