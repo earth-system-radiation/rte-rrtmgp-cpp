@@ -270,6 +270,10 @@ void load_gas_concs(Gas_concs<TF>& gas_concs, Netcdf_file& input_nc)
             rad_nc.get_variable<TF>("n2o"));
     gas_concs.set_vmr("ch4",
             rad_nc.get_variable<TF>("ch4"));
+    gas_concs.set_vmr("o2",
+            rad_nc.get_variable<TF>("o2"));
+    gas_concs.set_vmr("n2",
+            rad_nc.get_variable<TF>("n2"));
 }
 
 int main()
@@ -279,6 +283,9 @@ int main()
     {
         master.start();
         master.init();
+
+        // We are doing a single column run.
+        const int n_col = 1;
 
         // These are the global variables that need to be contained in a class.
         Gas_concs<double> gas_concs;
@@ -292,7 +299,10 @@ int main()
         load_gas_concs<double>(gas_concs, file_nc);
         kdist_lw = std::make_unique<Gas_optics<double>>(
                 load_and_init_gas_optics(master, gas_concs, "coefficients_lw.nc"));
+        kdist_sw = std::make_unique<Gas_optics<double>>(
+                load_and_init_gas_optics(master, gas_concs, "coefficients_sw.nc"));
 
+        // LOAD THE LONGWAVE SPECIFIC BOUNDARY CONDITIONS.
         // Set the surface temperature and emissivity.
         Array<double,1> t_sfc({1});
         t_sfc({1}) = 300.;
@@ -304,10 +314,27 @@ int main()
 
         const int n_ang = 1;
 
+        // LOAD THE SHORTWAVE SPECIFIC BOUNDARY CONDITIONS.
+        Array<double,1> sza({n_col});
+        Array<double,1> tsi({n_col});
+        Array<double,2> sfc_alb_dir({n_bnd, n_col});
+        Array<double,2> sfc_alb_dif({n_bnd, n_col});
+
+        sza({1}) = 0.7339109504636155;
+        tsi({1}) = 551.58;
+
+        for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
+        {
+            sfc_alb_dir({ibnd, 1}) = 0.07;
+            sfc_alb_dif({ibnd, 1}) = 0.07;
+        }
+
+        Array<double,1> mu0({n_col});
+        mu0({1}) = std::cos(sza({1}));
+
         // Solve the full column once.
         Netcdf_group input_nc = file_nc.get_group("radiation");
 
-        const int n_col = 1;
         const int n_lay = input_nc.get_dimension_size("lay");
         const int n_lev = input_nc.get_dimension_size("lev");
 
@@ -320,10 +347,15 @@ int main()
         if (input_nc.variable_exists("col_dry"))
             col_dry = input_nc.get_variable<double>("t_lev", {n_lay, n_col});
         else
+        {
             kdist_lw->get_col_dry(col_dry, gas_concs.get_vmr("h2o"), p_lev);
+            kdist_sw->get_col_dry(col_dry, gas_concs.get_vmr("h2o"), p_lev);
+        }
 
-        std::unique_ptr<Optical_props_arry<double>> optical_props =
+        // Solve the longwave first.
+        std::unique_ptr<Optical_props_arry<double>> optical_props_lw =
                 std::make_unique<Optical_props_1scl<double>>(n_col, n_lay, *kdist_lw);
+
         Source_func_lw<double> sources(n_col, n_lay, *kdist_lw);
 
         kdist_lw->gas_optics(
@@ -332,15 +364,10 @@ int main()
                 t_lay,
                 t_sfc,
                 gas_concs,
-                optical_props,
+                optical_props_lw,
                 sources,
                 col_dry,
                 t_lev);
-
-        Array<double,2> lw_flux_up ({n_col, n_lev});
-        Array<double,2> lw_flux_dn ({n_col, n_lev});
-        Array<double,2> lw_flux_net({n_col, n_lev});
-        Array<double,2> lw_heating ({n_col, n_lay});
 
         std::unique_ptr<Fluxes_broadband<double>> fluxes =
                 std::make_unique<Fluxes_broadband<double>>(n_col, n_lev);
@@ -348,12 +375,17 @@ int main()
         const int top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
         Rte_lw<double>::rte_lw(
-                optical_props,
+                optical_props_lw,
                 top_at_1,
                 sources,
                 emis_sfc,
                 fluxes,
                 n_ang);
+
+        Array<double,2> lw_flux_up ({n_col, n_lev});
+        Array<double,2> lw_flux_dn ({n_col, n_lev});
+        Array<double,2> lw_flux_net({n_col, n_lev});
+        Array<double,2> lw_heating ({n_col, n_lay});
 
         // Copy the data to the output.
         for (int ilev=1; ilev<=n_lev; ++ilev)
@@ -363,14 +395,59 @@ int main()
             lw_flux_net({1, ilev}) = fluxes->get_flux_net()({1, ilev});
         }
 
+        const int n_gpt = kdist_sw->get_ngpt();
+        Array<double,2> toa_src({n_col, n_gpt});
+
+        std::unique_ptr<Optical_props_arry<double>> optical_props_sw =
+                std::make_unique<Optical_props_2str<double>>(n_col, n_lay, *kdist_sw);
+
+        kdist_sw->gas_optics(
+                p_lay,
+                p_lev,
+                t_lay,
+                gas_concs,
+                optical_props_sw,
+                toa_src,
+                col_dry);
+
+        Rte_sw<double>::rte_sw(
+                optical_props_sw,
+                top_at_1,
+                mu0,
+                toa_src,
+                sfc_alb_dir,
+                sfc_alb_dif,
+                fluxes);
+
+        Array<double,2> sw_flux_up ({n_col, n_lev});
+        Array<double,2> sw_flux_dn ({n_col, n_lev});
+        Array<double,2> sw_flux_net({n_col, n_lev});
+        Array<double,2> sw_heating ({n_col, n_lay});
+
+        // Copy the data to the output.
+        for (int ilev=1; ilev<=n_lev; ++ilev)
+        {
+            sw_flux_up ({1, ilev}) = fluxes->get_flux_up ()({1, ilev});
+            sw_flux_dn ({1, ilev}) = fluxes->get_flux_dn ()({1, ilev});
+            sw_flux_net({1, ilev}) = fluxes->get_flux_net()({1, ilev});
+        }
+
+        // Compute the heating rates.
         constexpr double g = 9.80655;
         constexpr double cp = 1005.;
 
         for (int ilay=1; ilay<=n_lay; ++ilay)
+        {
             lw_heating({1, ilay}) =
                     ( lw_flux_up({1, ilay+1}) - lw_flux_up({1, ilay})
                     - lw_flux_dn({1, ilay+1}) + lw_flux_dn({1, ilay}) )
                     * g / ( cp * (p_lev({1, ilay+1}) - p_lev({1, ilay})) ) * 86400.;
+
+            sw_heating({1, ilay}) =
+                    ( sw_flux_up({1, ilay+1}) - sw_flux_up({1, ilay})
+                    - sw_flux_dn({1, ilay+1}) + sw_flux_dn({1, ilay}) )
+                    * g / ( cp * (p_lev({1, ilay+1}) - p_lev({1, ilay})) ) * 86400.;
+        }
 
         // Store the radiation fluxes to a file
         Netcdf_file output_nc(master, "test_rcemip_output.nc", Netcdf_mode::Create);
@@ -392,6 +469,16 @@ int main()
         nc_lw_flux_dn .insert(lw_flux_dn .v(), {0, 0});
         nc_lw_flux_net.insert(lw_flux_net.v(), {0, 0});
         nc_lw_heating .insert(lw_heating .v(), {0, 0});
+
+        auto nc_sw_flux_up  = output_nc.add_variable<double>("sw_flux_up" , {"lev", "col"});
+        auto nc_sw_flux_dn  = output_nc.add_variable<double>("sw_flux_dn" , {"lev", "col"});
+        auto nc_sw_flux_net = output_nc.add_variable<double>("sw_flux_net", {"lev", "col"});
+        auto nc_sw_heating  = output_nc.add_variable<double>("sw_heating" , {"lay", "col"});
+
+        nc_sw_flux_up .insert(sw_flux_up .v(), {0, 0});
+        nc_sw_flux_dn .insert(sw_flux_dn .v(), {0, 0});
+        nc_sw_flux_net.insert(sw_flux_net.v(), {0, 0});
+        nc_sw_heating .insert(sw_heating .v(), {0, 0});
     }
 
     // Catch any exceptions and return 1.

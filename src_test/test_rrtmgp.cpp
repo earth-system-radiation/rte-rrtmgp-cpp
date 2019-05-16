@@ -566,7 +566,7 @@ void solve_radiation(Master& master)
 
         TF tsi_scaling = -999.;
         if (input_nc.variable_exists("tsi_scaling"))
-            tsi_scaling = input_nc.get_variable<TF>("t_sfc");
+            tsi_scaling = input_nc.get_variable<TF>("tsi_scaling");
 
         Array<TF,1> mu0({n_col});
         for (int icol=1; icol<=n_col; ++icol)
