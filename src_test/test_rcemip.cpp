@@ -316,12 +316,10 @@ int main()
 
         // LOAD THE SHORTWAVE SPECIFIC BOUNDARY CONDITIONS.
         Array<double,1> sza({n_col});
-        Array<double,1> tsi({n_col});
         Array<double,2> sfc_alb_dir({n_bnd, n_col});
         Array<double,2> sfc_alb_dif({n_bnd, n_col});
 
         sza({1}) = 0.7339109504636155;
-        tsi({1}) = 551.58;
 
         for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
         {
@@ -410,6 +408,10 @@ int main()
                 toa_src,
                 col_dry);
 
+        const double tsi_scaling = 0.4053176301654965;
+        for (int igpt; igpt<=n_gpt; ++igpt)
+            toa_src({1, igpt}) *= tsi_scaling;
+
         Rte_sw<double>::rte_sw(
                 optical_props_sw,
                 top_at_1,
@@ -436,6 +438,8 @@ int main()
         constexpr double g = 9.80655;
         constexpr double cp = 1005.;
 
+        Array<double,2> heating ({n_col, n_lay});
+
         for (int ilay=1; ilay<=n_lay; ++ilay)
         {
             lw_heating({1, ilay}) =
@@ -447,6 +451,8 @@ int main()
                     ( sw_flux_up({1, ilay+1}) - sw_flux_up({1, ilay})
                     - sw_flux_dn({1, ilay+1}) + sw_flux_dn({1, ilay}) )
                     * g / ( cp * (p_lev({1, ilay+1}) - p_lev({1, ilay})) ) * 86400.;
+
+            heating({1, ilay}) = lw_heating({1, ilay}) + sw_heating({1, ilay});
         }
 
         // Store the radiation fluxes to a file
@@ -479,6 +485,9 @@ int main()
         nc_sw_flux_dn .insert(sw_flux_dn .v(), {0, 0});
         nc_sw_flux_net.insert(sw_flux_net.v(), {0, 0});
         nc_sw_heating .insert(sw_heating .v(), {0, 0});
+
+        auto nc_heating = output_nc.add_variable<double>("heating", {"lay", "col"});
+        nc_heating.insert(heating.v(), {0, 0});
     }
 
     // Catch any exceptions and return 1.
