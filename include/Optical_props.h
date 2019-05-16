@@ -1,6 +1,7 @@
 #ifndef OPTICAL_PROPS_H
 #define OPTICAL_PROPS_H
 
+#include <memory>
 #include "Array.h"
 
 template<typename TF>
