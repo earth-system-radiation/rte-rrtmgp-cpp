@@ -343,7 +343,7 @@ int main()
 
         Array<double,2> col_dry({n_col, n_lay});
         if (input_nc.variable_exists("col_dry"))
-            col_dry = input_nc.get_variable<double>("t_lev", {n_lay, n_col});
+            col_dry = input_nc.get_variable<double>("col_dry", {n_lay, n_col});
         else
         {
             kdist_lw->get_col_dry(col_dry, gas_concs.get_vmr("h2o"), p_lev);
