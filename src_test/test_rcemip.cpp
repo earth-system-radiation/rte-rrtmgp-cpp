@@ -409,7 +409,7 @@ int main()
                 col_dry);
 
         const double tsi_scaling = 0.4053176301654965;
-        for (int igpt; igpt<=n_gpt; ++igpt)
+        for (int igpt=1; igpt<=n_gpt; ++igpt)
             toa_src({1, igpt}) *= tsi_scaling;
 
         Rte_sw<double>::rte_sw(
