@@ -372,13 +372,22 @@ int main()
 
         const int top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
+        const int n_gpt_lw = optical_props_lw->get_ngpt();
+        Array<double,3> lw_gpt_flux_up({n_col, n_lev, n_gpt_lw});
+        Array<double,3> lw_gpt_flux_dn({n_col, n_lev, n_gpt_lw});
+
         Rte_lw<double>::rte_lw(
                 optical_props_lw,
                 top_at_1,
                 sources,
                 emis_sfc,
-                fluxes,
+                lw_gpt_flux_up,
+                lw_gpt_flux_dn,
                 n_ang);
+
+        fluxes->reduce(
+                lw_gpt_flux_up, lw_gpt_flux_dn,
+                optical_props_lw, top_at_1);
 
         Array<double,2> lw_flux_up ({n_col, n_lev});
         Array<double,2> lw_flux_dn ({n_col, n_lev});
@@ -393,8 +402,8 @@ int main()
             lw_flux_net({1, ilev}) = fluxes->get_flux_net()({1, ilev});
         }
 
-        const int n_gpt = kdist_sw->get_ngpt();
-        Array<double,2> toa_src({n_col, n_gpt});
+        const int n_gpt_sw = kdist_sw->get_ngpt();
+        Array<double,2> toa_src({n_col, n_gpt_sw});
 
         std::unique_ptr<Optical_props_arry<double>> optical_props_sw =
                 std::make_unique<Optical_props_2str<double>>(n_col, n_lay, *kdist_sw);
@@ -409,12 +418,12 @@ int main()
                 col_dry);
 
         const double tsi_scaling = 0.4053176301654965;
-        for (int igpt=1; igpt<=n_gpt; ++igpt)
+        for (int igpt=1; igpt<=n_gpt_sw; ++igpt)
             toa_src({1, igpt}) *= tsi_scaling;
 
-        Array<double,3> gpt_flux_up    ({n_col, n_lev, n_gpt});
-        Array<double,3> gpt_flux_dn    ({n_col, n_lev, n_gpt});
-        Array<double,3> gpt_flux_dn_dir({n_col, n_lev, n_gpt});
+        Array<double,3> sw_gpt_flux_up    ({n_col, n_lev, n_gpt_sw});
+        Array<double,3> sw_gpt_flux_dn    ({n_col, n_lev, n_gpt_sw});
+        Array<double,3> sw_gpt_flux_dn_dir({n_col, n_lev, n_gpt_sw});
 
         Rte_sw<double>::rte_sw(
                 optical_props_sw,
@@ -423,11 +432,13 @@ int main()
                 toa_src,
                 sfc_alb_dir,
                 sfc_alb_dif,
-                gpt_flux_up,
-                gpt_flux_dn,
-                gpt_flux_dn_dir);
+                sw_gpt_flux_up,
+                sw_gpt_flux_dn,
+                sw_gpt_flux_dn_dir);
 
-        fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_sw, top_at_1);
+        fluxes->reduce(
+                sw_gpt_flux_up, sw_gpt_flux_dn, sw_gpt_flux_dn_dir,
+                optical_props_sw, top_at_1);
 
         Array<double,2> sw_flux_up ({n_col, n_lev});
         Array<double,2> sw_flux_dn ({n_col, n_lev});
