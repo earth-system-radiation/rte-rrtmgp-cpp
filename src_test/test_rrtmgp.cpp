@@ -652,7 +652,10 @@ void solve_radiation(Master& master)
                 const Array<TF,2>& toa_src_subset_in,
                 const Array<TF,2>& sfc_alb_dir_subset_in,
                 const Array<TF,2>& sfc_alb_dif_subset_in,
-                std::unique_ptr<Fluxes_broadband<TF>>& fluxes)
+                Array<TF,3>& gpt_flux_up_subset_in,
+                Array<TF,3>& gpt_flux_dn_subset_in,
+                Array<TF,3>& gpt_flux_dn_dir_subset_in,
+                std::unique_ptr<Fluxes_broadband<TF>>& fluxes_subset_in)
         {
             const int n_col_block_subset = col_e_in - col_s_in + 1;
 
@@ -663,16 +666,22 @@ void solve_radiation(Master& master)
                     toa_src_subset_in,
                     sfc_alb_dir_subset_in,
                     sfc_alb_dif_subset_in,
-                    fluxes);
+                    gpt_flux_up_subset_in,
+                    gpt_flux_dn_subset_in,
+                    gpt_flux_dn_dir_subset_in);
+
+            fluxes_subset_in->reduce(
+                    gpt_flux_up_subset_in, gpt_flux_dn_subset_in, gpt_flux_dn_dir_subset_in,
+                    optical_props_subset_in, top_at_1);
 
             // Copy the data to the output.
             for (int ilev=1; ilev<=n_lev; ++ilev)
                 for (int icol=1; icol<=n_col_block_subset; ++icol)
                 {
-                    flux_up    ({icol+col_s_in-1, ilev}) = fluxes->get_flux_up    ()({icol, ilev});
-                    flux_dn    ({icol+col_s_in-1, ilev}) = fluxes->get_flux_dn    ()({icol, ilev});
-                    flux_dn_dir({icol+col_s_in-1, ilev}) = fluxes->get_flux_dn_dir()({icol, ilev});
-                    flux_net   ({icol+col_s_in-1, ilev}) = fluxes->get_flux_net   ()({icol, ilev});
+                    flux_up    ({icol+col_s_in-1, ilev}) = fluxes_subset_in->get_flux_up    ()({icol, ilev});
+                    flux_dn    ({icol+col_s_in-1, ilev}) = fluxes_subset_in->get_flux_dn    ()({icol, ilev});
+                    flux_dn_dir({icol+col_s_in-1, ilev}) = fluxes_subset_in->get_flux_dn_dir()({icol, ilev});
+                    flux_net   ({icol+col_s_in-1, ilev}) = fluxes_subset_in->get_flux_net   ()({icol, ilev});
                 }
 
             // Copy the data to the output.
@@ -680,10 +689,10 @@ void solve_radiation(Master& master)
                 for (int ilev=1; ilev<=n_lev; ++ilev)
                     for (int icol=1; icol<=n_col_block_subset; ++icol)
                     {
-                        bnd_flux_up    ({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_up    ()({icol, ilev, ibnd});
-                        bnd_flux_dn    ({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_dn    ()({icol, ilev, ibnd});
-                        bnd_flux_dn_dir({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_dn_dir()({icol, ilev, ibnd});
-                        bnd_flux_net   ({icol+col_s_in-1, ilev, ibnd}) = fluxes->get_bnd_flux_net   ()({icol, ilev, ibnd});
+                        bnd_flux_up    ({icol+col_s_in-1, ilev, ibnd}) = fluxes_subset_in->get_bnd_flux_up    ()({icol, ilev, ibnd});
+                        bnd_flux_dn    ({icol+col_s_in-1, ilev, ibnd}) = fluxes_subset_in->get_bnd_flux_dn    ()({icol, ilev, ibnd});
+                        bnd_flux_dn_dir({icol+col_s_in-1, ilev, ibnd}) = fluxes_subset_in->get_bnd_flux_dn_dir()({icol, ilev, ibnd});
+                        bnd_flux_net   ({icol+col_s_in-1, ilev, ibnd}) = fluxes_subset_in->get_bnd_flux_net   ()({icol, ilev, ibnd});
                     }
         };
 
@@ -702,6 +711,10 @@ void solve_radiation(Master& master)
             std::unique_ptr<Fluxes_broadband<TF>> fluxes_subset =
                     std::make_unique<Fluxes_byband<TF>>(n_col_block, n_lev, n_bnd);
 
+            Array<TF,3> gpt_flux_up_subset    ({n_col_block, n_lev, n_gpt});
+            Array<TF,3> gpt_flux_dn_subset    ({n_col_block, n_lev, n_gpt});
+            Array<TF,3> gpt_flux_dn_dir_subset({n_col_block, n_lev, n_gpt});
+
             calc_fluxes_subset(
                     col_s, col_e,
                     optical_props_subset,
@@ -709,6 +722,9 @@ void solve_radiation(Master& master)
                     toa_src_subset,
                     sfc_alb_dir_subset,
                     sfc_alb_dif_subset,
+                    gpt_flux_up_subset,
+                    gpt_flux_dn_subset,
+                    gpt_flux_dn_dir_subset,
                     fluxes_subset);
         }
 
@@ -727,6 +743,10 @@ void solve_radiation(Master& master)
             std::unique_ptr<Fluxes_broadband<TF>> fluxes_left =
                     std::make_unique<Fluxes_byband<TF>>(n_col_block_left, n_lev, n_bnd);
 
+            Array<TF,3> gpt_flux_up_left    ({n_col_block_left, n_lev, n_gpt});
+            Array<TF,3> gpt_flux_dn_left    ({n_col_block_left, n_lev, n_gpt});
+            Array<TF,3> gpt_flux_dn_dir_left({n_col_block_left, n_lev, n_gpt});
+
             calc_fluxes_subset(
                     col_s, col_e,
                     optical_props_left,
@@ -734,6 +754,9 @@ void solve_radiation(Master& master)
                     toa_src_left,
                     sfc_alb_dir_left,
                     sfc_alb_dif_left,
+                    gpt_flux_up_left,
+                    gpt_flux_dn_left,
+                    gpt_flux_dn_dir_left,
                     fluxes_left);
         }
 

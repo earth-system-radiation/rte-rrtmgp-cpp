@@ -412,6 +412,10 @@ int main()
         for (int igpt=1; igpt<=n_gpt; ++igpt)
             toa_src({1, igpt}) *= tsi_scaling;
 
+        Array<double,3> gpt_flux_up    ({n_col, n_lev, n_gpt});
+        Array<double,3> gpt_flux_dn    ({n_col, n_lev, n_gpt});
+        Array<double,3> gpt_flux_dn_dir({n_col, n_lev, n_gpt});
+
         Rte_sw<double>::rte_sw(
                 optical_props_sw,
                 top_at_1,
@@ -419,7 +423,11 @@ int main()
                 toa_src,
                 sfc_alb_dir,
                 sfc_alb_dif,
-                fluxes);
+                gpt_flux_up,
+                gpt_flux_dn,
+                gpt_flux_dn_dir);
+
+        fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_sw, top_at_1);
 
         Array<double,2> sw_flux_up ({n_col, n_lev});
         Array<double,2> sw_flux_dn ({n_col, n_lev});
