@@ -105,25 +105,26 @@ class Array
             offsets({})
         {} // CvH Do we need to size check data?
 
-        Array(std::vector<T>&& data, const std::array<int, N>& dims) :
-            dims(dims),
-            ncells(product<N>(dims)),
-            data(data),
-            strides(calc_strides<N>(dims)),
-            offsets({})
-        {} // CvH Do we need to size check data?
+        // Array(std::vector<T>&& data, const std::array<int, N>& dims) :
+        //     dims(dims),
+        //     ncells(product<N>(dims)),
+        //     data(data),
+        //     strides(calc_strides<N>(dims)),
+        //     offsets({})
+        // {} // CvH Do we need to size check data?
 
         // Define the default copy constructor and assignment operator.
-        Array(const Array<T, N>&) = default;
+        // Array(const Array<T, N>&) = default;
+
         Array<T,N>& operator=(const Array<T, N>&) = default; // CvH does this one need empty checking?
 
-        Array(Array<T, N>&& array) :
-            dims(std::exchange(array.dims, {})),
-            ncells(std::exchange(array.ncells, 0)),
-            data(std::move(array.data)),
-            strides(std::exchange(array.strides, {})),
-            offsets(std::exchange(array.offsets, {}))
-        {}
+        // Array(Array<T, N>&& array) :
+        //     dims(std::exchange(array.dims, {})),
+        //     ncells(std::exchange(array.ncells, 0)),
+        //     data(std::move(array.data)),
+        //     strides(std::exchange(array.strides, {})),
+        //     offsets(std::exchange(array.offsets, {}))
+        // {}
 
         inline void set_offsets(const std::array<int, N>& offsets)
         {
