@@ -381,6 +381,7 @@ int main()
                 top_at_1,
                 sources,
                 emis_sfc,
+                Array<double,2>(), // Add an empty array, no inc_flux.
                 lw_gpt_flux_up,
                 lw_gpt_flux_dn,
                 n_ang);
@@ -432,6 +433,7 @@ int main()
                 toa_src,
                 sfc_alb_dir,
                 sfc_alb_dif,
+                Array<double,2>(), // Add an empty array, no inc_flux.
                 sw_gpt_flux_up,
                 sw_gpt_flux_dn,
                 sw_gpt_flux_dn_dir);
