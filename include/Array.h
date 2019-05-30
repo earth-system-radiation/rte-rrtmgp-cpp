@@ -105,26 +105,25 @@ class Array
             offsets({})
         {} // CvH Do we need to size check data?
 
-        // Array(std::vector<T>&& data, const std::array<int, N>& dims) :
-        //     dims(dims),
-        //     ncells(product<N>(dims)),
-        //     data(data),
-        //     strides(calc_strides<N>(dims)),
-        //     offsets({})
-        // {} // CvH Do we need to size check data?
+        Array(std::vector<T>&& data, const std::array<int, N>& dims) :
+            dims(dims),
+            ncells(product<N>(dims)),
+            data(data),
+            strides(calc_strides<N>(dims)),
+            offsets({})
+        {} // CvH Do we need to size check data?
 
         // Define the default copy constructor and assignment operator.
-        // Array(const Array<T, N>&) = default;
-
+        Array(const Array<T, N>&) = default;
         Array<T,N>& operator=(const Array<T, N>&) = default; // CvH does this one need empty checking?
 
-        // Array(Array<T, N>&& array) :
-        //     dims(std::exchange(array.dims, {})),
-        //     ncells(std::exchange(array.ncells, 0)),
-        //     data(std::move(array.data)),
-        //     strides(std::exchange(array.strides, {})),
-        //     offsets(std::exchange(array.offsets, {}))
-        // {}
+        Array(Array<T, N>&& array) :
+            dims(std::exchange(array.dims, {})),
+            ncells(std::exchange(array.ncells, 0)),
+            data(std::move(array.data)),
+            strides(std::exchange(array.strides, {})),
+            offsets(std::exchange(array.offsets, {}))
+        {}
 
         inline void set_offsets(const std::array<int, N>& offsets)
         {
@@ -191,8 +190,14 @@ class Array
         {
             // Calculate the dimension sizes based on the range.
             std::array<int, N> subdims;
+            std::array<bool, N> do_spread;
+
             for (int i=0; i<N; ++i)
+            {
                 subdims[i] = ranges[i].second - ranges[i].first + 1;
+                // CvH how flexible / tolerant are we? This could go wrong...
+                do_spread[i] = (dims[i] == 1 && subdims[i] > 1) ? true : false;
+            }
 
             // Create the array and fill it with the subset.
             Array<T, N> a_sub(subdims);
@@ -202,10 +207,14 @@ class Array
                 int ic = i;
                 for (int n=N-1; n>0; --n)
                 {
-                    index[n] = ic / a_sub.strides[n] + ranges[n].first;
+                    // CvH: I substituded this to enable spreading along dimension of 1.
+                    // index[n] = ic / a_sub.strides[n] + ranges[n].first;
+                    index[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
                     ic %= a_sub.strides[n];
                 }
-                index[0] = ic + ranges[0].first;
+                // CvH: I substituded this to enable spreading along dimension of 1.
+                // index[0] = ic + ranges[0].first;
+                index[0] = do_spread[0] ? 1 : ic + ranges[0].first;
                 a_sub.data[i] = (*this)(index);
             }
 
