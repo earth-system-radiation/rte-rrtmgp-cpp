@@ -1,6 +1,9 @@
 #include <cmath>
 #include <numeric>
 #include <boost/algorithm/string.hpp>
+// #include <xtensor/xarray.hpp>
+// #include <xtensor/xadapt.hpp>
+// #include "xtensor/xnoalias.hpp"
 
 #include "Gas_concs.h"
 #include "Gas_optics.h"
@@ -9,6 +12,7 @@
 #include "Source_functions.h"
 
 #include "rrtmgp_kernels.h"
+#define restrict __restrict__
 
 namespace
 {
@@ -324,6 +328,45 @@ namespace
                         flavor, rewritten_pair);
             }
     }
+
+    /*
+    template<typename TF>
+    inline void reorder123x321_test(
+            TF* restrict out, const TF* restrict in,
+            const int d1, const int d2, const int d3)
+    {
+        const int jj_in = d1;
+        const int kk_in = d1*d2;
+
+        const int ii_out = d3*d2;
+        const int jj_out = d3;
+
+        for (int i=0; i<d1; ++i)
+            for (int j=0; j<d2; ++j)
+                #pragma GCC ivdep
+                for (int k=0; k<d3; ++k)
+                {
+                    const int ijk_in  = i + j*jj_in  + k*kk_in ;
+                    const int ijk_out = k + j*jj_out + i*ii_out;
+                    out[ijk_out] = in[ijk_in];
+                }
+    }
+
+    template<typename TF>
+    inline void reorder123x321_test(
+            TF* out, const TF* in,
+            const size_t d1, const size_t d2, const size_t d3)
+    {
+        const size_t size = d1*d2*d3;
+        const std::array<size_t, 3> in_shape = { d1, d2, d3 };
+        const std::array<size_t, 3> out_shape = { d3, d2, d1 };
+
+        const auto a_in = xt::adapt<xt::layout_type::column_major>(in, size, xt::no_ownership(), in_shape);
+        auto a_out = xt::adapt<xt::layout_type::column_major>(out, size, xt::no_ownership(), out_shape);
+
+        xt::noalias(a_out) = xt::transpose(a_out);
+    }
+    */
 }
 
 // IMPLEMENTATION OF CLASS FUNCTIONS.
@@ -1126,7 +1169,10 @@ void Gas_optics<TF>::combine_and_reorder(
 
     if (!has_rayleigh)
     {
+        // CvH for 2 stream and n-stream zero the g and ssa
         rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
+        // reorder123x321_test(optical_props->get_tau().ptr(), tau.ptr(), ngpt, nlay, ncol);
+
         // rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, optical_props->get_ssa());
         // rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, optical_props->get_g  ());
     }
@@ -1141,8 +1187,6 @@ void Gas_optics<TF>::combine_and_reorder(
                 tau, tau_rayleigh,
                 optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
     }
-
-    // CvH for 2 stream and n-stream zero the g and ssa
 }
 
 template<typename TF>
@@ -1190,6 +1234,9 @@ void Gas_optics<TF>::source(
     rrtmgp_kernel_launcher::reorder123x321(lay_source_t, sources.get_lay_source());
     rrtmgp_kernel_launcher::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());
     rrtmgp_kernel_launcher::reorder123x321(lev_source_dec_t, sources.get_lev_source_dec());
+    // reorder123x321_test(sources.get_lay_source    ().ptr(), lay_source_t    .ptr(), ngpt, nlay, ncol);
+    // reorder123x321_test(sources.get_lev_source_inc().ptr(), lev_source_inc_t.ptr(), ngpt, nlay, ncol);
+    // reorder123x321_test(sources.get_lev_source_dec().ptr(), lev_source_dec_t.ptr(), ngpt, nlay, ncol);
 }
 
 #ifdef FLOAT_SINGLE
