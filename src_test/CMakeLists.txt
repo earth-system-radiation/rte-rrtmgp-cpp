@@ -37,7 +37,6 @@ message(STATUS "Git hash " ${GITHASH})
 # send a precompiler statement replacing the git hash
 add_definitions(-DGITHASH="${GITHASH}")
 
-# double precision version
 if(USECUDA)
   cuda_add_executable(test_rrtmgp test_rrtmgp.cpp)
   target_link_libraries(test_rrtmgp rrtmgp ${LIBS} m)

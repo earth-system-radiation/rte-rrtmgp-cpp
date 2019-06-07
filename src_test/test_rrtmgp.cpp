@@ -35,7 +35,7 @@
 #include "Rte_lw.h"
 #include "Rte_sw.h"
 
-#ifdef FLOAT_SINGLE
+#ifdef FLOAT_SINGLE_RRTMGP
 #define FLOAT_TYPE float
 #else
 #define FLOAT_TYPE double
@@ -454,7 +454,7 @@ void solve_radiation(Master& master)
                     top_at_1,
                     sources_subset_in,
                     emis_sfc_subset_in,
-                    Array<double,2>(), // Add an empty array, no inc_flux.
+                    Array<TF,2>(), // Add an empty array, no inc_flux.
                     gpt_flux_up,
                     gpt_flux_dn,
                     n_ang);
@@ -699,7 +699,7 @@ void solve_radiation(Master& master)
                     toa_src_subset_in,
                     sfc_alb_dir_subset_in,
                     sfc_alb_dif_subset_in,
-                    Array<double,2>(), // Add an empty array, no inc_flux.
+                    Array<TF,2>(), // Add an empty array, no inc_flux.
                     gpt_flux_up,
                     gpt_flux_dn,
                     gpt_flux_dn_dir);
