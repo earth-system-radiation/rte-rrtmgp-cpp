@@ -48,8 +48,12 @@ def calc_p_q_T(z):
 
     return p, q, T
 
-p_lay,   h2o, T_lay = calc_p_q_T( z)
-p_lev, dummy, T_lev = calc_p_q_T(zh)
+p_lay, q, T_lay = calc_p_q_T( z)
+p_lev, _, T_lev = calc_p_q_T(zh)
+
+# convert water from q to vmr
+Rd_Rv = 287.04 / 461.5
+h2o = q / (Rd_Rv * (1. - q))
 
 co2 =  348.e-6
 ch4 = 1650.e-9
