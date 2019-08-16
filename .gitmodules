@@ -1,0 +1,3 @@
+[submodule "rte-rrtmgp"]
+	path = rte-rrtmgp
+	url = https://github.com/RobertPincus/rte-rrtmgp
