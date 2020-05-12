@@ -89,7 +89,12 @@ namespace
         int n_temps = coef_nc.get_dimension_size("temperature");
         int n_press = coef_nc.get_dimension_size("pressure");
         int n_absorbers = coef_nc.get_dimension_size("absorber");
-        int n_char = coef_nc.get_dimension_size("string_len");
+
+        // CvH: I hardcode the value to 32 now, because coef files
+        // CvH: changed dimension name inconsistently.
+        // int n_char = coef_nc.get_dimension_size("string_len");
+        int n_char = 32;
+
         int n_minorabsorbers = coef_nc.get_dimension_size("minor_absorber");
         int n_extabsorbers = coef_nc.get_dimension_size("absorber_ext");
         int n_mixingfracs = coef_nc.get_dimension_size("mixing_fraction");
