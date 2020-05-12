@@ -7,13 +7,22 @@ The original code is found at https://github.com/RobertPincus/rte-rrtmgp.
 Contacts: Robert Pincus and Eli Mlawer
 email: rrtmgp@aer.com
 
-This C++ interface can be downloaded from https://github.com/Chiil/rrtmgp_cpp
+This C++ interface can be downloaded from https://github.com/microhh/rrtmgp_cpp
 
 Contact: Chiel van Heerwaarden
 email: chiel.vanheerwaarden@wur.nl
 
 Use and duplication is permitted under the terms of the
 BSD 3-clause license, see http://opensource.org/licenses/BSD-3-Clause
+
+In order to check out the code including the `rte-rrtmgp` submodule, use:
+
+    git clone --recurse-submodules https://github.com/microhh/rrtmgp_cpp
+
+In case you had already checked out the repository, use:
+
+    git submodule update --init
+
 
 # Some temporary instructions
 In order to run the RCEMIP test:
