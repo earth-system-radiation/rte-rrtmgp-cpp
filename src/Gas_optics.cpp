@@ -1004,7 +1004,8 @@ namespace rrtmgp_kernel_launcher
             const Array<TF,6>& fmajor, const Array<int,4>& jeta, const Array<int,2>& tropo, const Array<int,2>& jtemp, const Array<int,2>& jpress,
             const Array<int,1>& gpoint_bands, const Array<int,2>& band_lims_gpt, const Array<TF,4>& pfracin, TF temp_ref_min,
             TF totplnk_delta, const Array<TF,2>& totplnk, const Array<int,2>& gpoint_flavor,
-            Array<TF,2>& sfc_src, Array<TF,3>& lay_src, Array<TF,3>& lev_src_inc, Array<TF,3>& lev_src_dec)
+            Array<TF,2>& sfc_src, Array<TF,3>& lay_src, Array<TF,3>& lev_src_inc, Array<TF,3>& lev_src_dec,
+            Array<TF,2>& sfc_src_jac)
     {
         rrtmgp_kernels::compute_Planck_source(
                 &ncol, &nlay, &nbnd, &ngpt,
@@ -1020,7 +1021,8 @@ namespace rrtmgp_kernel_launcher
                 const_cast<int*>(jpress.ptr()),
                 const_cast<int*>(gpoint_bands.ptr()), const_cast<int*>(band_lims_gpt.ptr()), const_cast<TF*>(pfracin.ptr()), &temp_ref_min,
                 &totplnk_delta, const_cast<TF*>(totplnk.ptr()), const_cast<int*>(gpoint_flavor.ptr()),
-                sfc_src.ptr(), lay_src.ptr(), lev_src_inc.ptr(), lev_src_dec.ptr());
+                sfc_src.ptr(), lay_src.ptr(), lev_src_inc.ptr(), lev_src_dec.ptr(),
+                sfc_src_jac.ptr());
     }
 }
 
@@ -1239,6 +1241,7 @@ void Gas_optics<TF>::source(
     Array<TF,3> lev_source_inc_t({ngpt, nlay, ncol});
     Array<TF,3> lev_source_dec_t({ngpt, nlay, ncol});
     Array<TF,2> sfc_source_t({ngpt, ncol});
+    Array<TF,2> sfc_source_jac({ngpt, ncol});
 
     int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
     rrtmgp_kernel_launcher::compute_Planck_source(
@@ -1248,12 +1251,16 @@ void Gas_optics<TF>::source(
             fmajor, jeta, tropo, jtemp, jpress,
             gpoint_bands, band_lims_gpoint, this->planck_frac, this->temp_ref_min,
             this->totplnk_delta, this->totplnk, this->gpoint_flavor,
-            sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t);
+            sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t,
+            sfc_source_jac);
 
     // CvH this transpose is super slow.
     for (int j=1; j<=sfc_source_t.dim(2); ++j)
         for (int i=1; i<=sfc_source_t.dim(1); ++i)
-            sources.get_sfc_source()({j, i}) = sfc_source_t({i, j});
+        {
+            sources.get_sfc_source    ()({j, i}) = sfc_source_t  ({i, j});
+            sources.get_sfc_source_jac()({j, i}) = sfc_source_jac({i, j});
+        }
 
     rrtmgp_kernel_launcher::reorder123x321(lay_source_t, sources.get_lay_source());
     rrtmgp_kernel_launcher::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());

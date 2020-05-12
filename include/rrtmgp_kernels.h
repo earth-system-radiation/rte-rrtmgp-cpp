@@ -126,7 +126,8 @@ namespace rrtmgp_kernels
             FLOAT_TYPE* fmajor, int* jeta, int* tropo, int* jtemp, int* jpress,
             int* gpoint_bands, int* band_lims_gpt, FLOAT_TYPE* pfracin, FLOAT_TYPE* temp_ref_min,
             FLOAT_TYPE* totplnk_delta, FLOAT_TYPE* totplnk, int* gpoint_flavor,
-            FLOAT_TYPE* sfc_src, FLOAT_TYPE* lay_src, FLOAT_TYPE* lev_src, FLOAT_TYPE* lev_source_dec);
+            FLOAT_TYPE* sfc_src, FLOAT_TYPE* lay_src, FLOAT_TYPE* lev_src, FLOAT_TYPE* lev_source_dec,
+            FLOAT_TYPE* sfc_src_jac);
 
     extern "C" void compute_tau_rayleigh(
             int* ncol, int* nlay, int* nband, int* ngpt,
