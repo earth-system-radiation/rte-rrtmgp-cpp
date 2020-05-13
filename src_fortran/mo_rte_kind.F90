@@ -3,7 +3,7 @@
 ! Contacts: Robert Pincus and Eli Mlawer
 ! email:  rrtmgp@aer.com
 !
-! Copyright 2015-2018,  Atmospheric and Environmental Research and
+! Copyright 2015-2020,  Atmospheric and Environmental Research and
 ! Regents of the University of Colorado.  All right reserved.
 !
 ! Use and duplication is permitted under the terms of the
