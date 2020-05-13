@@ -493,11 +493,15 @@ Gas_optics<TF>::Gas_optics(
         const Array<int,1>& scale_by_complement_upper,
         const Array<int,1>& kminor_start_lower,
         const Array<int,1>& kminor_start_upper,
-        const Array<TF,1>& solar_src,
+        const Array<TF,1>& solar_source_quiet,
+        const Array<TF,1>& solar_source_facular,
+        const Array<TF,1>& solar_source_sunspot,
+        const TF tsi_default,
+        const TF mg_default,
+        const TF sb_default,
         const Array<TF,3>& rayl_lower,
         const Array<TF,3>& rayl_upper) :
-            Optical_props<TF>(band_lims_wavenum, band2gpt),
-            solar_src(solar_src)
+            Optical_props<TF>(band_lims_wavenum, band2gpt)
 {
     // Initialize the absorption coefficient array, including Rayleigh scattering
     // tables if provided.
@@ -521,6 +525,15 @@ Gas_optics<TF>::Gas_optics(
             kminor_start_lower,
             kminor_start_upper,
             rayl_lower, rayl_upper);
+
+    // Compute the solar source.
+    this->solar_source_quiet = solar_source_quiet;
+    this->solar_source_facular = solar_source_facular;
+    this->solar_source_sunspot = solar_source_sunspot;
+
+    this->solar_source.set_dims(solar_source_quiet.get_dims());
+
+    set_solar_variability(mg_default, sb_default);
 }
 
 template<typename TF>
@@ -719,6 +732,25 @@ void Gas_optics<TF>::init_abs_coeffs(
     this->is_key = is_key;
 }
 
+template<typename TF>
+void Gas_optics<TF>::set_solar_variability(
+        const TF mg_index, const TF sb_index)
+{
+    constexpr TF a_offset = TF(0.1495954);
+    constexpr TF b_offset = TF(0.00066696);
+
+    for (int igpt=1; igpt<=this->solar_source_quiet.dim(1); ++igpt)
+    {
+        this->solar_source({igpt}) = this->solar_source_quiet({igpt})
+                + (mg_index - a_offset) * this->solar_source_facular({igpt})
+                + (sb_index - b_offset) * this->solar_source_sunspot({igpt});
+    }
+
+    // Scale solar source to input TSI value
+    // if (present(tsi)) error_msg = this%set_tsi(tsi)
+}
+
+
 // Calculate the molecules of dry air.
 template<typename TF>
 void Gas_optics<TF>::get_col_dry(
@@ -824,7 +856,7 @@ void Gas_optics<TF>::gas_optics(
     // External source function is constant.
     for (int igpt=1; igpt<=ngpt; ++igpt)
         for (int icol=1; icol<=ncol; ++icol)
-            toa_src({icol, igpt}) = this->solar_src({igpt});
+            toa_src({icol, igpt}) = this->solar_source({igpt});
 }
 
 namespace rrtmgp_kernel_launcher

@@ -104,7 +104,12 @@ class Gas_optics : public Optical_props<TF>
                 const Array<int,1>& scale_by_complement_upper,
                 const Array<int,1>& kminor_start_lower,
                 const Array<int,1>& kminor_start_upper,
-                const Array<TF,1>& solar_src,
+                const Array<TF,1>& solar_src_quiet,
+                const Array<TF,1>& solar_src_facular,
+                const Array<TF,1>& solar_src_sunspot,
+                const TF tsi_default,
+                const TF mg_default,
+                const TF sb_default,
                 const Array<TF,3>& rayl_lower,
                 const Array<TF,3>& rayl_upper);
 
@@ -189,7 +194,11 @@ class Gas_optics : public Optical_props<TF>
 
         Array<int,1> is_key;
 
-        Array<TF,1> solar_src;
+        Array<TF,1> solar_source_quiet;
+        Array<TF,1> solar_source_facular;
+        Array<TF,1> solar_source_sunspot;
+        Array<TF,1> solar_source;
+
         Array<TF,4> krayl;
 
         int get_ngas() const { return this->gas_names.dim(1); }
@@ -225,6 +234,9 @@ class Gas_optics : public Optical_props<TF>
                 const Array<int,1>& kminor_start_upper,
                 const Array<TF,3>& rayl_lower,
                 const Array<TF,3>& rayl_upper);
+
+        void set_solar_variability(
+                const TF md_index, const TF sb_index);
 
         void compute_gas_taus(
                 const int ncol, const int nlay, const int ngpt, const int nband,

@@ -133,6 +133,8 @@ class Array
             this->offsets = offsets;
         }
 
+        inline std::array<int, N> get_dims() const { return dims; }
+
         inline void set_dims(const std::array<int, N>& dims)
         {
             if (this->ncells != 0)

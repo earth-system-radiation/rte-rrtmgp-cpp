@@ -93,7 +93,7 @@ namespace
         // CvH: I hardcode the value to 32 now, because coef files
         // CvH: changed dimension name inconsistently.
         // int n_char = coef_nc.get_dimension_size("string_len");
-        int n_char = 32;
+        constexpr int n_char = 32;
 
         int n_minorabsorbers = coef_nc.get_dimension_size("minor_absorber");
         int n_extabsorbers = coef_nc.get_dimension_size("absorber_ext");
@@ -247,8 +247,16 @@ namespace
         }
         else
         {
-            Array<TF,1> solar_src(
-                    coef_nc.get_variable<TF>("solar_source", {n_gpts}), {n_gpts});
+            Array<TF,1> solar_src_quiet(
+                    coef_nc.get_variable<TF>("solar_source_quiet", {n_gpts}), {n_gpts});
+            Array<TF,1> solar_src_facular(
+                    coef_nc.get_variable<TF>("solar_source_facular", {n_gpts}), {n_gpts});
+            Array<TF,1> solar_src_sunspot(
+                    coef_nc.get_variable<TF>("solar_source_sunspot", {n_gpts}), {n_gpts});
+
+            TF tsi = coef_nc.get_variable<TF>("tsi_default");
+            TF mg_index = coef_nc.get_variable<TF>("mg_default");
+            TF sb_index = coef_nc.get_variable<TF>("sb_default");
 
             return Gas_optics<TF>(
                     gas_concs,
@@ -279,7 +287,12 @@ namespace
                     scale_by_complement_upper,
                     kminor_start_lower,
                     kminor_start_upper,
-                    solar_src,
+                    solar_src_quiet,
+                    solar_src_facular,
+                    solar_src_sunspot,
+                    tsi,
+                    mg_index,
+                    sb_index,
                     rayl_lower,
                     rayl_upper);
         }
@@ -335,7 +348,7 @@ void solve_radiation(Master& master)
     // LOAD THE LONGWAVE SPECIFIC BOUNDARY CONDITIONS.
     // Set the surface temperature and emissivity.
     Array<TF,1> t_sfc({1});
-    t_sfc({1}) = 300.;
+    t_sfc({1}) = TF(300.);
 
     const int n_bnd = kdist_lw->get_nband();
     Array<TF,2> emis_sfc({n_bnd, 1});
@@ -349,7 +362,7 @@ void solve_radiation(Master& master)
     Array<TF,2> sfc_alb_dir({n_bnd, n_col});
     Array<TF,2> sfc_alb_dif({n_bnd, n_col});
 
-    sza({1}) = 0.7339109504636155;
+    sza({1}) = TF(0.7339109504636155);
 
     for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
     {
