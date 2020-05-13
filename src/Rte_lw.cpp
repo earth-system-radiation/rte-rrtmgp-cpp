@@ -62,9 +62,10 @@ namespace rrtmgp_kernel_launcher
             const Array<TF,3>& lay_source,
             const Array<TF,3>& lev_source_inc, const Array<TF,3>& lev_source_dec,
             const Array<TF,2>& sfc_emis_gpt, const Array<TF,2>& sfc_source,
-            Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn)
-    {
-        rrtmgp_kernels::lw_solver_noscat_GaussQuad(
+            Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn,
+            Array<TF,2>& sfc_source_jac, Array<TF,3>& gpt_flux_up_jac)
+{
+    rrtmgp_kernels::lw_solver_noscat_GaussQuad(
                 &ncol, &nlay, &ngpt, &top_at_1, &n_quad_angs,
                 const_cast<TF*>(gauss_Ds_subset.ptr()),
                 const_cast<TF*>(gauss_wts_subset.ptr()),
@@ -75,7 +76,9 @@ namespace rrtmgp_kernel_launcher
                 const_cast<TF*>(sfc_emis_gpt.ptr()),
                 const_cast<TF*>(sfc_source.ptr()),
                 gpt_flux_up.ptr(),
-                gpt_flux_dn.ptr());
+                gpt_flux_dn.ptr(),
+                sfc_source_jac.ptr(),
+                gpt_flux_up_jac.ptr());
     }
 }
 
@@ -127,6 +130,10 @@ void Rte_lw<TF>::rte_lw(
     Array<TF,2> gauss_wts_subset = gauss_wts.subset(
             {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
 
+    // For now, just pass the arrays around.
+    Array<TF,2> sfc_src_jac(sources.get_sfc_source().get_dims());
+    Array<TF,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
+
     rrtmgp_kernel_launcher::lw_solver_noscat_GaussQuad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,
             gauss_Ds_subset, gauss_wts_subset,
@@ -134,7 +141,8 @@ void Rte_lw<TF>::rte_lw(
             sources.get_lay_source(),
             sources.get_lev_source_inc(), sources.get_lev_source_dec(),
             sfc_emis_gpt, sources.get_sfc_source(),
-            gpt_flux_up, gpt_flux_dn);
+            gpt_flux_up, gpt_flux_dn,
+            sfc_src_jac, gpt_flux_up_jac);
 
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);

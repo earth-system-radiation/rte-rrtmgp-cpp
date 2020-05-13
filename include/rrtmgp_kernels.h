@@ -154,7 +154,8 @@ namespace rrtmgp_kernels
             FLOAT_TYPE* tau,
             FLOAT_TYPE* lay_source, FLOAT_TYPE* lev_source_inc, FLOAT_TYPE* lev_source_dec,
             FLOAT_TYPE* sfc_emis_gpt, FLOAT_TYPE* sfc_source,
-            FLOAT_TYPE* gpt_flux_up, FLOAT_TYPE* gpt_flux_dn);
+            FLOAT_TYPE* gpt_flux_up, FLOAT_TYPE* gpt_flux_dn,
+            FLOAT_TYPE* sfc_source_jac, FLOAT_TYPE* gpt_flux_up_jac);
 
     extern "C" void apply_BC_factor(
             int* ncol, int* nlay, int* ngpt,
