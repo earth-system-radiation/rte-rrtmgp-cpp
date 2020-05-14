@@ -1,5 +1,5 @@
 FILE(GLOB sourcefiles
-    "../src_fortran/mo_rte_kind.F90"
+    "../rte_rrtmgp/rte/mo_rte_kind.F90"
     "../rte-rrtmgp/rte/mo_rte_util_array.F90"
     "../rte-rrtmgp/rrtmgp/kernels/mo_gas_optics_kernels.F90"
     "../rte-rrtmgp/rrtmgp/kernels/mo_rrtmgp_util_reorder_kernels.F90"
@@ -11,15 +11,9 @@ FILE(GLOB sourcefiles
 if(FLOAT_TYPE STREQUAL "single")
     message(STATUS "Compiling RRTMGP kernels in single precision")
     add_library(rte_rrtmgp_kernels STATIC ${sourcefiles})
-    set_target_properties(
-        rte_rrtmgp_kernels
-        PROPERTIES
-        COMPILE_DEFINITIONS REAL_TYPE=sp)
+    target_compile_definitions(rte_rrtmgp_kernels PRIVATE REAL_TYPE=sp USE_CBOOL=1)
 else()
     message(STATUS "Compiling RRTMGP kernels in double precision")
     add_library(rte_rrtmgp_kernels STATIC ${sourcefiles})
-    set_target_properties(
-        rte_rrtmgp_kernels
-        PROPERTIES
-        COMPILE_DEFINITIONS REAL_TYPE=dp)
+    target_compile_definitions(rte_rrtmgp_kernels PRIVATE REAL_TYPE=dp USE_CBOOL=1)
 endif()
