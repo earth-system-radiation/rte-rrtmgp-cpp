@@ -1,5 +1,5 @@
 FILE(GLOB sourcefiles
-    "../rte_rrtmgp/rte/mo_rte_kind.F90"
+    "../rte-rrtmgp/rte/mo_rte_kind.F90"
     "../rte-rrtmgp/rte/mo_rte_util_array.F90"
     "../rte-rrtmgp/rrtmgp/kernels/mo_gas_optics_kernels.F90"
     "../rte-rrtmgp/rrtmgp/kernels/mo_rrtmgp_util_reorder_kernels.F90"
