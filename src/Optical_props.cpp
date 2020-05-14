@@ -70,6 +70,7 @@ Optical_props<TF>::Optical_props(
             this->gpt2band({i}) = iband;
     }
 }
+
 template<typename TF>
 Optical_props_1scl<TF>::Optical_props_1scl(
         const int ncol,

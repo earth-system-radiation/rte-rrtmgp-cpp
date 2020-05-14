@@ -30,7 +30,7 @@
 // #include "xtensor/xnoalias.hpp"
 
 #include "Gas_concs.h"
-#include "Gas_optics.h"
+#include "Gas_optics_rrtmgp.h"
 #include "Array.h"
 #include "Optical_props.h"
 #include "Source_functions.h"
@@ -396,7 +396,7 @@ namespace
 // IMPLEMENTATION OF CLASS FUNCTIONS.
 // Constructor of longwave variant.
 template<typename TF>
-Gas_optics<TF>::Gas_optics(
+Gas_optics_rrtmgp<TF>::Gas_optics_rrtmgp(
         const Gas_concs<TF>& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
@@ -429,7 +429,7 @@ Gas_optics<TF>::Gas_optics(
         const Array<TF,4>& planck_frac,
         const Array<TF,3>& rayl_lower,
         const Array<TF,3>& rayl_upper) :
-            Optical_props<TF>(band_lims_wavenum, band2gpt),
+            Gas_optics<TF>(band_lims_wavenum, band2gpt),
             totplnk(totplnk),
             planck_frac(planck_frac)
 {
@@ -464,7 +464,7 @@ Gas_optics<TF>::Gas_optics(
 
 // Constructor of the shortwave variant.
 template<typename TF>
-Gas_optics<TF>::Gas_optics(
+Gas_optics_rrtmgp<TF>::Gas_optics_rrtmgp(
         const Gas_concs<TF>& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
@@ -501,7 +501,7 @@ Gas_optics<TF>::Gas_optics(
         const TF sb_default,
         const Array<TF,3>& rayl_lower,
         const Array<TF,3>& rayl_upper) :
-            Optical_props<TF>(band_lims_wavenum, band2gpt)
+            Gas_optics<TF>(band_lims_wavenum, band2gpt)
 {
     // Initialize the absorption coefficient array, including Rayleigh scattering
     // tables if provided.
@@ -537,7 +537,7 @@ Gas_optics<TF>::Gas_optics(
 }
 
 template<typename TF>
-void Gas_optics<TF>::init_abs_coeffs(
+void Gas_optics_rrtmgp<TF>::init_abs_coeffs(
         const Gas_concs<TF>& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
@@ -733,7 +733,7 @@ void Gas_optics<TF>::init_abs_coeffs(
 }
 
 template<typename TF>
-void Gas_optics<TF>::set_solar_variability(
+void Gas_optics_rrtmgp<TF>::set_solar_variability(
         const TF mg_index, const TF sb_index)
 {
     constexpr TF a_offset = TF(0.1495954);
@@ -753,7 +753,7 @@ void Gas_optics<TF>::set_solar_variability(
 
 // Calculate the molecules of dry air.
 template<typename TF>
-void Gas_optics<TF>::get_col_dry(
+void Gas_optics_rrtmgp<TF>::get_col_dry(
         Array<TF,2>& col_dry, const Array<TF,2>& vmr_h2o,
         const Array<TF,2>& plev)
 {
@@ -785,7 +785,7 @@ void Gas_optics<TF>::get_col_dry(
 
 // Gas optics solver longwave variant.
 template<typename TF>
-void Gas_optics<TF>::gas_optics(
+void Gas_optics_rrtmgp<TF>::gas_optics(
         const Array<TF,2>& play,
         const Array<TF,2>& plev,
         const Array<TF,2>& tlay,
@@ -825,7 +825,7 @@ void Gas_optics<TF>::gas_optics(
 
 // Gas optics solver shortwave variant.
 template<typename TF>
-void Gas_optics<TF>::gas_optics(
+void Gas_optics_rrtmgp<TF>::gas_optics(
         const Array<TF,2>& play,
         const Array<TF,2>& plev,
         const Array<TF,2>& tlay,
@@ -1059,7 +1059,7 @@ namespace rrtmgp_kernel_launcher
 }
 
 template<typename TF>
-void Gas_optics<TF>::compute_gas_taus(
+void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         const int ncol, const int nlay, const int ngpt, const int nband,
         const Array<TF,2>& play,
         const Array<TF,2>& plev,
@@ -1215,7 +1215,7 @@ void Gas_optics<TF>::compute_gas_taus(
 }
 
 template<typename TF>
-void Gas_optics<TF>::combine_and_reorder(
+void Gas_optics_rrtmgp<TF>::combine_and_reorder(
         const Array<TF,3>& tau,
         const Array<TF,3>& tau_rayleigh,
         const bool has_rayleigh,
@@ -1248,7 +1248,7 @@ void Gas_optics<TF>::combine_and_reorder(
 }
 
 template<typename TF>
-void Gas_optics<TF>::source(
+void Gas_optics_rrtmgp<TF>::source(
         const int ncol, const int nlay, const int nbnd, const int ngpt,
         const Array<TF,2>& play, const Array<TF,2>& plev,
         const Array<TF,2>& tlay, const Array<TF,1>& tsfc,
@@ -1303,7 +1303,7 @@ void Gas_optics<TF>::source(
 }
 
 #ifdef FLOAT_SINGLE_RRTMGP
-template class Gas_optics<float>;
+template class Gas_optics_rrtmgp<float>;
 #else
-template class Gas_optics<double>;
+template class Gas_optics_rrtmgp<double>;
 #endif

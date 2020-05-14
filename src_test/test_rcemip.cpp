@@ -28,7 +28,7 @@
 #include "Netcdf_interface.h"
 #include "Array.h"
 #include "Gas_concs.h"
-#include "Gas_optics.h"
+#include "Gas_optics_rrtmgp.h"
 #include "Optical_props.h"
 #include "Source_functions.h"
 #include "Fluxes.h"
@@ -77,7 +77,7 @@ namespace
     }
 
     template<typename TF>
-    Gas_optics<TF> load_and_init_gas_optics(
+    Gas_optics_rrtmgp<TF> load_and_init_gas_optics(
             Master& master,
             const Gas_concs<TF>& gas_concs,
             const std::string& coef_file)
@@ -211,7 +211,7 @@ namespace
                     {n_gpts, n_mixingfracs, n_press+1, n_temps});
 
             // Construct the k-distribution.
-            return Gas_optics<TF>(
+            return Gas_optics_rrtmgp<TF>(
                     gas_concs,
                     gas_names,
                     key_species,
@@ -258,7 +258,7 @@ namespace
             TF mg_index = coef_nc.get_variable<TF>("mg_default");
             TF sb_index = coef_nc.get_variable<TF>("sb_default");
 
-            return Gas_optics<TF>(
+            return Gas_optics_rrtmgp<TF>(
                     gas_concs,
                     gas_names,
                     key_species,
@@ -333,16 +333,16 @@ void solve_radiation(Master& master)
     // These are the global variables that need to be contained in a class.
     Gas_concs<TF> gas_concs;
 
-    std::unique_ptr<Gas_optics<TF>> kdist_lw;
-    std::unique_ptr<Gas_optics<TF>> kdist_sw;
+    std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist_lw;
+    std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist_sw;
 
     // This is the part that is done in the initialization.
     Netcdf_file file_nc(master, "test_rcemip_input.nc", Netcdf_mode::Read);
 
     load_gas_concs<TF>(gas_concs, file_nc);
-    kdist_lw = std::make_unique<Gas_optics<TF>>(
+    kdist_lw = std::make_unique<Gas_optics_rrtmgp<TF>>(
             load_and_init_gas_optics(master, gas_concs, "coefficients_lw.nc"));
-    kdist_sw = std::make_unique<Gas_optics<TF>>(
+    kdist_sw = std::make_unique<Gas_optics_rrtmgp<TF>>(
             load_and_init_gas_optics(master, gas_concs, "coefficients_sw.nc"));
 
     // LOAD THE LONGWAVE SPECIFIC BOUNDARY CONDITIONS.
