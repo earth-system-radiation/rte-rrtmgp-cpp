@@ -63,12 +63,12 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array<std::string,1>& minor_gases_upper,
                 const Array<int,2>& minor_limits_gpt_lower,
                 const Array<int,2>& minor_limits_gpt_upper,
-                const Array<int,1>& minor_scales_with_density_lower,
-                const Array<int,1>& minor_scales_with_density_upper,
+                const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
+                const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
                 const Array<std::string,1>& scaling_gas_lower,
                 const Array<std::string,1>& scaling_gas_upper,
-                const Array<int,1>& scale_by_complement_lower,
-                const Array<int,1>& scale_by_complement_upper,
+                const Array<BOOL_TYPE,1>& scale_by_complement_lower,
+                const Array<BOOL_TYPE,1>& scale_by_complement_upper,
                 const Array<int,1>& kminor_start_lower,
                 const Array<int,1>& kminor_start_upper,
                 const Array<TF,2>& totplnk,
@@ -98,12 +98,12 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array<std::string,1>& minor_gases_upper,
                 const Array<int,2>& minor_limits_gpt_lower,
                 const Array<int,2>& minor_limits_gpt_upper,
-                const Array<int,1>& minor_scales_with_density_lower,
-                const Array<int,1>& minor_scales_with_density_upper,
+                const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
+                const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
                 const Array<std::string,1>& scaling_gas_lower,
                 const Array<std::string,1>& scaling_gas_upper,
-                const Array<int,1>& scale_by_complement_lower,
-                const Array<int,1>& scale_by_complement_upper,
+                const Array<BOOL_TYPE,1>& scale_by_complement_lower,
+                const Array<BOOL_TYPE,1>& scale_by_complement_upper,
                 const Array<int,1>& kminor_start_lower,
                 const Array<int,1>& kminor_start_upper,
                 const Array<TF,1>& solar_src_quiet,
@@ -185,11 +185,11 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
         Array<int,2> minor_limits_gpt_lower;
         Array<int,2> minor_limits_gpt_upper;
 
-        Array<int,1> minor_scales_with_density_lower;
-        Array<int,1> minor_scales_with_density_upper;
+        Array<BOOL_TYPE,1> minor_scales_with_density_lower;
+        Array<BOOL_TYPE,1> minor_scales_with_density_upper;
 
-        Array<int,1> scale_by_complement_lower;
-        Array<int,1> scale_by_complement_upper;
+        Array<BOOL_TYPE,1> scale_by_complement_lower;
+        Array<BOOL_TYPE,1> scale_by_complement_upper;
 
         Array<int,1> kminor_start_lower;
         Array<int,1> kminor_start_upper;
@@ -232,12 +232,12 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array<std::string,1>& minor_gases_upper,
                 const Array<int,2>& minor_limits_gpt_lower,
                 const Array<int,2>& minor_limits_gpt_upper,
-                const Array<int,1>& minor_scales_with_density_lower,
-                const Array<int,1>& minor_scales_with_density_upper,
+                const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
+                const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
                 const Array<std::string,1>& scaling_gas_lower,
                 const Array<std::string,1>& scaling_gas_upper,
-                const Array<int,1>& scale_by_complement_lower,
-                const Array<int,1>& scale_by_complement_upper,
+                const Array<BOOL_TYPE,1>& scale_by_complement_lower,
+                const Array<BOOL_TYPE,1>& scale_by_complement_upper,
                 const Array<int,1>& kminor_start_lower,
                 const Array<int,1>& kminor_start_upper,
                 const Array<TF,3>& rayl_lower,
@@ -255,7 +255,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 std::unique_ptr<Optical_props_arry<TF>>& optical_props,
                 Array<int,2>& jtemp, Array<int,2>& jpress,
                 Array<int,4>& jeta,
-                Array<int,2>& tropo,
+                Array<BOOL_TYPE,2>& tropo,
                 Array<TF,6>& fmajor,
                 const Array<TF,2>& col_dry) const;
 
@@ -270,7 +270,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array<TF,2>& play, const Array<TF,2>& plev,
                 const Array<TF,2>& tlay, const Array<TF,1>& tsfc,
                 const Array<int,2>& jtemp, const Array<int,2>& jpress,
-                const Array<int,4>& jeta, const Array<int,2>& tropo,
+                const Array<int,4>& jeta, const Array<BOOL_TYPE,2>& tropo,
                 const Array<TF,6>& fmajor,
                 Source_func_lw<TF>& sources,
                 const Array<TF,2>& tlev) const;

@@ -206,6 +206,13 @@ namespace
         return nc_get_vara_text(ncid, var_id, start.data(), count.data(), values.data());
     }
 
+    template<>
+    int nc_get_vara_wrapper(
+            int ncid, int var_id, const std::vector<size_t>& start, const std::vector<size_t>& count, std::vector<signed char>& values)
+    {
+        return nc_get_vara_schar(ncid, var_id, start.data(), count.data(), values.data());
+    }
+
     // Wrapper for the `nc_put_vara_TYPE` functions
     template<typename TF>
     int nc_put_vara_wrapper(

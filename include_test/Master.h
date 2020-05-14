@@ -50,6 +50,7 @@ class Master
 
         // Overload the broadcast function.
         void broadcast(char*, int, int=0);
+        void broadcast(signed char*, int, int=0);
         void broadcast(int*, int, int=0);
         void broadcast(bool*, int, int=0);
         void broadcast(double*, int, int=0);
@@ -127,6 +128,7 @@ void Master::init()
 
 // All broadcasts return directly, because there is nothing to broadcast.
 void Master::broadcast(char* data, int datasize, int mpiid_to_write) {}
+void Master::broadcast(signed char* data, int datasize, int mpiid_to_write) {}
 void Master::broadcast(int* data, int datasize, int mpiid_to_write) {}
 void Master::broadcast(unsigned long* data, int datasize, int mpiid_to_write) {}
 void Master::broadcast(double* data, int datasize, int mpiid_to_write) {}
