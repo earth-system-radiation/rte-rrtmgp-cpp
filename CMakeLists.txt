@@ -56,7 +56,7 @@ else()
 endif()
 
 # Start the project only after the system specific settings are loaded.
-project(rrtmgp_cpp CXX Fortran)
+project(rte-rrtmgp-cpp CXX Fortran)
 
 # Display status messages for MPI set precompiler flags.
 if(USEMPI)
