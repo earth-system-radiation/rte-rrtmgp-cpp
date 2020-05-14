@@ -10,16 +10,16 @@ FILE(GLOB sourcefiles
 
 if(FLOAT_TYPE STREQUAL "single")
     message(STATUS "Compiling RRTMGP kernels in single precision")
-    add_library(rrtmgp_kernels STATIC ${sourcefiles})
+    add_library(rte_rrtmgp_kernels STATIC ${sourcefiles})
     set_target_properties(
-        rrtmgp_kernels
+        rte_rrtmgp_kernels
         PROPERTIES
         COMPILE_DEFINITIONS REAL_TYPE=sp)
 else()
     message(STATUS "Compiling RRTMGP kernels in double precision")
-    add_library(rrtmgp_kernels STATIC ${sourcefiles})
+    add_library(rte_rrtmgp_kernels STATIC ${sourcefiles})
     set_target_properties(
-        rrtmgp_kernels
+        rte_rrtmgp_kernels
         PROPERTIES
         COMPILE_DEFINITIONS REAL_TYPE=dp)
 endif()
