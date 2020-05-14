@@ -25,8 +25,6 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
-#define BOOL_TYPE signed char
-
 #include <array>
 #include <vector>
 #include <algorithm>

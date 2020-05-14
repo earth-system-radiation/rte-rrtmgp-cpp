@@ -94,7 +94,7 @@ template<typename TF>
 void Fluxes_broadband<TF>::reduce(
     const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn,
     const std::unique_ptr<Optical_props_arry<TF>>& spectral_disc,
-    const int top_at_1)
+    const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
@@ -115,7 +115,7 @@ template<typename TF>
 void Fluxes_broadband<TF>::reduce(
     const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn, const Array<TF,3>& gpt_flux_dn_dir,
     const std::unique_ptr<Optical_props_arry<TF>>& spectral_disc,
-    const int top_at_1)
+    const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
@@ -142,7 +142,7 @@ void Fluxes_byband<TF>::reduce(
     const Array<TF,3>& gpt_flux_up,
     const Array<TF,3>& gpt_flux_dn,
     const std::unique_ptr<Optical_props_arry<TF>>& spectral_disc,
-    const int top_at_1)
+    const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
@@ -175,7 +175,7 @@ void Fluxes_byband<TF>::reduce(
     const Array<TF,3>& gpt_flux_dn,
     const Array<TF,3>& gpt_flux_dn_dir,
     const std::unique_ptr<Optical_props_arry<TF>>& spectral_disc,
-    const int top_at_1)
+    const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);

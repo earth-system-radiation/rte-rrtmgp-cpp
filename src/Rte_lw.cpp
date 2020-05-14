@@ -35,7 +35,7 @@ namespace rrtmgp_kernel_launcher
     template<typename TF>
     void apply_BC(
             int ncol, int nlay, int ngpt,
-            int top_at_1, Array<TF,3>& gpt_flux_dn)
+            BOOL_TYPE top_at_1, Array<TF,3>& gpt_flux_dn)
     {
         rrtmgp_kernels::apply_BC_0(
                 &ncol, &nlay, &ngpt,
@@ -45,7 +45,7 @@ namespace rrtmgp_kernel_launcher
     template<typename TF>
     void apply_BC(
             int ncol, int nlay, int ngpt,
-            int top_at_1, const Array<TF,2>& inc_flux,
+            BOOL_TYPE top_at_1, const Array<TF,2>& inc_flux,
             Array<TF,3>& gpt_flux_dn)
     {
         rrtmgp_kernels::apply_BC_gpt(
@@ -55,7 +55,7 @@ namespace rrtmgp_kernel_launcher
 
     template<typename TF>
     void lw_solver_noscat_GaussQuad(
-            int ncol, int nlay, int ngpt, int top_at_1, int n_quad_angs,
+            int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1, int n_quad_angs,
             const Array<TF,2>& gauss_Ds_subset,
             const Array<TF,2>& gauss_wts_subset,
             const Array<TF,3>& tau,
@@ -85,7 +85,7 @@ namespace rrtmgp_kernel_launcher
 template<typename TF>
 void Rte_lw<TF>::rte_lw(
         const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
-        const int top_at_1,
+        const BOOL_TYPE top_at_1,
         const Source_func_lw<TF>& sources,
         const Array<TF,2>& sfc_emis,
         const Array<TF,2>& inc_flux,
