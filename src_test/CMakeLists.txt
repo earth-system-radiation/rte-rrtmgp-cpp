@@ -38,14 +38,14 @@ message(STATUS "Git hash " ${GITHASH})
 add_definitions(-DGITHASH="${GITHASH}")
 
 if(USECUDA)
-  # cuda_add_executable(test_rte_rrtmgp test_rte_rrtmgp.cpp)
-  # target_link_libraries(test_rte_rrtmgp rte_rrtmgp ${LIBS} m)
+  cuda_add_executable(test_rte_rrtmgp test_rte_rrtmgp.cpp)
+  target_link_libraries(test_rte_rrtmgp rte_rrtmgp ${LIBS} m)
 
   cuda_add_executable(test_rcemip test_rcemip.cpp)
   target_link_libraries(test_rcemip rte_rrtmgp ${LIBS} m)
 else()
-  # add_executable(test_rte_rrtmgp test_rte_rrtmgp.cpp)
-  # target_link_libraries(test_rte_rrtmgp rte_rrtmgp ${LIBS} m)
+  add_executable(test_rte_rrtmgp test_rte_rrtmgp.cpp)
+  target_link_libraries(test_rte_rrtmgp rte_rrtmgp ${LIBS} m)
 
   add_executable(test_rcemip test_rcemip.cpp)
   target_link_libraries(test_rcemip rte_rrtmgp ${LIBS} m)

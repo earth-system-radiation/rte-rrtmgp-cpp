@@ -28,7 +28,7 @@
 #include "Netcdf_interface.h"
 #include "Array.h"
 #include "Gas_concs.h"
-#include "Gas_optics.h"
+#include "Gas_optics_rrtmgp.h"
 #include "Optical_props.h"
 #include "Source_functions.h"
 #include "Fluxes.h"
@@ -77,7 +77,7 @@ namespace
     }
 
     template<typename TF>
-    Gas_optics<TF> load_and_init_gas_optics(
+    Gas_optics_rrtmgp<TF> load_and_init_gas_optics(
             Master& master,
             const Gas_concs<TF>& gas_concs,
             const std::string& coef_file)
@@ -89,7 +89,12 @@ namespace
         int n_temps = coef_nc.get_dimension_size("temperature");
         int n_press = coef_nc.get_dimension_size("pressure");
         int n_absorbers = coef_nc.get_dimension_size("absorber");
-        int n_char = coef_nc.get_dimension_size("string_len");
+
+        // CvH: I hardcode the value to 32 now, because coef files
+        // CvH: changed dimension name inconsistently.
+        // int n_char = coef_nc.get_dimension_size("string_len");
+        constexpr int n_char = 32;
+
         int n_minorabsorbers = coef_nc.get_dimension_size("minor_absorber");
         int n_extabsorbers = coef_nc.get_dimension_size("absorber_ext");
         int n_mixingfracs = coef_nc.get_dimension_size("mixing_fraction");
@@ -145,18 +150,18 @@ namespace
                 coef_nc.get_variable<int>("minor_limits_gpt_upper", {n_minor_absorber_intervals_upper, n_pairs}),
                 {n_pairs, n_minor_absorber_intervals_upper});
 
-        Array<int,1> minor_scales_with_density_lower(
-                coef_nc.get_variable<int>("minor_scales_with_density_lower", {n_minor_absorber_intervals_lower}),
+        Array<BOOL_TYPE,1> minor_scales_with_density_lower(
+                coef_nc.get_variable<BOOL_TYPE>("minor_scales_with_density_lower", {n_minor_absorber_intervals_lower}),
                 {n_minor_absorber_intervals_lower});
-        Array<int,1> minor_scales_with_density_upper(
-                coef_nc.get_variable<int>("minor_scales_with_density_upper", {n_minor_absorber_intervals_upper}),
+        Array<BOOL_TYPE,1> minor_scales_with_density_upper(
+                coef_nc.get_variable<BOOL_TYPE>("minor_scales_with_density_upper", {n_minor_absorber_intervals_upper}),
                 {n_minor_absorber_intervals_upper});
 
-        Array<int,1> scale_by_complement_lower(
-                coef_nc.get_variable<int>("scale_by_complement_lower", {n_minor_absorber_intervals_lower}),
+        Array<BOOL_TYPE,1> scale_by_complement_lower(
+                coef_nc.get_variable<BOOL_TYPE>("scale_by_complement_lower", {n_minor_absorber_intervals_lower}),
                 {n_minor_absorber_intervals_lower});
-        Array<int,1> scale_by_complement_upper(
-                coef_nc.get_variable<int>("scale_by_complement_upper", {n_minor_absorber_intervals_upper}),
+        Array<BOOL_TYPE,1> scale_by_complement_upper(
+                coef_nc.get_variable<BOOL_TYPE>("scale_by_complement_upper", {n_minor_absorber_intervals_upper}),
                 {n_minor_absorber_intervals_upper});
 
         Array<std::string,1> scaling_gas_lower(
@@ -206,7 +211,7 @@ namespace
                     {n_gpts, n_mixingfracs, n_press+1, n_temps});
 
             // Construct the k-distribution.
-            return Gas_optics<TF>(
+            return Gas_optics_rrtmgp<TF>(
                     gas_concs,
                     gas_names,
                     key_species,
@@ -242,10 +247,18 @@ namespace
         }
         else
         {
-            Array<TF,1> solar_src(
-                    coef_nc.get_variable<TF>("solar_source", {n_gpts}), {n_gpts});
+            Array<TF,1> solar_src_quiet(
+                    coef_nc.get_variable<TF>("solar_source_quiet", {n_gpts}), {n_gpts});
+            Array<TF,1> solar_src_facular(
+                    coef_nc.get_variable<TF>("solar_source_facular", {n_gpts}), {n_gpts});
+            Array<TF,1> solar_src_sunspot(
+                    coef_nc.get_variable<TF>("solar_source_sunspot", {n_gpts}), {n_gpts});
 
-            return Gas_optics<TF>(
+            TF tsi = coef_nc.get_variable<TF>("tsi_default");
+            TF mg_index = coef_nc.get_variable<TF>("mg_default");
+            TF sb_index = coef_nc.get_variable<TF>("sb_default");
+
+            return Gas_optics_rrtmgp<TF>(
                     gas_concs,
                     gas_names,
                     key_species,
@@ -274,7 +287,12 @@ namespace
                     scale_by_complement_upper,
                     kminor_start_lower,
                     kminor_start_upper,
-                    solar_src,
+                    solar_src_quiet,
+                    solar_src_facular,
+                    solar_src_sunspot,
+                    tsi,
+                    mg_index,
+                    sb_index,
                     rayl_lower,
                     rayl_upper);
         }
@@ -320,7 +338,7 @@ void solve_radiation(Master& master)
             Array<TF,2>(input_nc.get_variable<TF>("vmr_n2", {n_lay, n_col}), {n_col, n_lay}));
 
     // Construct the gas optics class.
-    Gas_optics<TF> kdist = load_and_init_gas_optics(master, gas_concs, "coefficients.nc");
+    Gas_optics_rrtmgp<TF> kdist = load_and_init_gas_optics(master, gas_concs, "coefficients.nc");
 
     // Fetch the col_dry in case present.
     Array<TF,2> col_dry({n_col, n_lay});
