@@ -315,7 +315,7 @@ void solve_radiation(Master& master)
     Array<TF,2> p_lev(input_nc.get_variable<TF>("p_lev", {n_lev, n_col}), {n_col, n_lev});
     Array<TF,2> t_lev(input_nc.get_variable<TF>("t_lev", {n_lev, n_col}), {n_col, n_lev});
 
-    const int top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
+    const BOOL_TYPE top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
     Gas_concs<TF> gas_concs;
     Gas_concs<TF> gas_concs_subset;
