@@ -89,21 +89,21 @@ nc_T_lev = nc_file.createVariable("t_lev", float_type, ("lev", "col"))
 nc_T_lay[:,:] = np.tile(T_lay[:,None], (1, n_col))
 nc_T_lev[:,:] = np.tile(T_lev[:,None], (1, n_col))
 
-nc_CO2 = nc_file.createVariable("vmr_co2", float_type, ("lay", "col"))
-nc_CH4 = nc_file.createVariable("vmr_ch4", float_type, ("lay", "col"))
-nc_N2O = nc_file.createVariable("vmr_n2o", float_type, ("lay", "col"))
+nc_CO2 = nc_file.createVariable("vmr_co2", float_type)
+nc_CH4 = nc_file.createVariable("vmr_ch4", float_type)
+nc_N2O = nc_file.createVariable("vmr_n2o", float_type)
 nc_O3  = nc_file.createVariable("vmr_o3" , float_type, ("lay", "col"))
 nc_H2O = nc_file.createVariable("vmr_h2o", float_type, ("lay", "col"))
-nc_N2  = nc_file.createVariable("vmr_n2" , float_type, ("lay", "col"))
-nc_O2  = nc_file.createVariable("vmr_o2" , float_type, ("lay", "col"))
+nc_N2  = nc_file.createVariable("vmr_n2" , float_type)
+nc_O2  = nc_file.createVariable("vmr_o2" , float_type)
 
-nc_CO2[:,:] = co2
-nc_CH4[:,:] = ch4
-nc_N2O[:,:] = n2o
+nc_CO2[:] = co2
+nc_CH4[:] = ch4
+nc_N2O[:] = n2o
 nc_O3 [:,:] = np.tile(o3 [:,None], (1, n_col))
 nc_H2O[:,:] = np.tile(h2o[:,None], (1, n_col))
-nc_N2 [:,:] = n2
-nc_O2 [:,:] = o2
+nc_N2 [:] = n2
+nc_O2 [:] = o2
 
 nc_emis_sfc = nc_file.createVariable("emis_sfc" , float_type, ("col", "band"))
 nc_t_sfc = nc_file.createVariable("t_sfc" , float_type, ("col"))

@@ -324,13 +324,32 @@ void solve_radiation(Master& master)
         if (input_nc.variable_exists(vmr_gas_name))
         {
             std::map<std::string, int> dims = input_nc.get_variable_dimensions(vmr_gas_name);
-            gas_concs.set_vmr(gas_name,
-                    Array<TF,2>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay, n_col}), {n_col, n_lay}));
+            const int n_dims = dims.size();
+
+            if (n_dims == 0)
+            {
+                gas_concs.set_vmr(gas_name, input_nc.get_variable<TF>(vmr_gas_name));
+            }
+            else if (n_dims == 1)
+            {
+                if (dims.at("lay") == n_lay)
+                    gas_concs.set_vmr(gas_name,
+                            Array<TF,1>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay}), {n_lay}));
+                else
+                    throw std::runtime_error("Illegal dimensions of gas \"" + gas_name + "\" in input");
+            }
+            else if (n_dims == 2)
+            {
+                if (dims.at("lay") == n_lay && dims.at("col") == n_col)
+                    gas_concs.set_vmr(gas_name,
+                            Array<TF,2>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay, n_col}), {n_col, n_lay}));
+                else
+                    throw std::runtime_error("Illegal dimensions of gas \"" + gas_name + "\" in input");
+            }
         }
         else
         {
-            const std::string warning = "Gas \"" + gas_name + "\" not available in input file.";
-            master.print_warning(warning);
+            master.print_warning("Gas \"" + gas_name + "\" not available in input file.");
         }
     };
 
