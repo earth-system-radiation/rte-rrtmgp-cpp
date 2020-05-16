@@ -317,22 +317,22 @@ void solve_radiation(Master& master)
     Gas_concs<TF> gas_concs;
     Gas_concs<TF> gas_concs_subset;
 
-    gas_concs.set_vmr("h2o",
-            Array<TF,2>(input_nc.get_variable<TF>("vmr_h2o", {n_lay, n_col}), {n_col, n_lay}));
-    gas_concs.set_vmr("co2",
-            Array<TF,2>(input_nc.get_variable<TF>("vmr_co2", {n_lay, n_col}), {n_col, n_lay}));
-    gas_concs.set_vmr("o3",
-            Array<TF,2>(input_nc.get_variable<TF>("vmr_o3", {n_lay, n_col}), {n_col, n_lay}));
-    gas_concs.set_vmr("n2o",
-            Array<TF,2>(input_nc.get_variable<TF>("vmr_n2o", {n_lay, n_col}), {n_col, n_lay}));
-    // gas_concs.set_vmr("co",
-    //         Array<TF,2>(input_nc.get_variable<TF>("vmr_co", {n_lay, n_col}), {n_col, n_lay}));
-    gas_concs.set_vmr("ch4",
-            Array<TF,2>(input_nc.get_variable<TF>("vmr_ch4", {n_lay, n_col}), {n_col, n_lay}));
-    gas_concs.set_vmr("o2",
-            Array<TF,2>(input_nc.get_variable<TF>("vmr_o2", {n_lay, n_col}), {n_col, n_lay}));
-    // gas_concs.set_vmr("n2",
-    //         Array<TF,2>(input_nc.get_variable<TF>("vmr_n2", {n_lay, n_col}), {n_col, n_lay}));
+    auto read_and_set_vmr = [&](const std::string& gas_name)
+    {
+        const std::string vmr_gas_name = "vmr_" + gas_name;
+        std::map<std::string, int> dims = input_nc.get_variable_dimensions(vmr_gas_name);
+        gas_concs.set_vmr(gas_name,
+                Array<TF,2>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay, n_col}), {n_col, n_lay}));
+    };
+
+    read_and_set_vmr("h2o");
+    read_and_set_vmr("co2");
+    read_and_set_vmr("o3" );
+    read_and_set_vmr("n2o");
+    // read_and_set_vmr("co" );
+    read_and_set_vmr("ch4");
+    read_and_set_vmr("o2" );
+    // read_and_set_vmr("n2" );
 
     // Construct the gas optics classes for the solvers.
     std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist_lw = std::make_unique<Gas_optics_rrtmgp<TF>>(
