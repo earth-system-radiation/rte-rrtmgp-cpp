@@ -391,7 +391,7 @@ void solve_radiation(Master& master)
     if (n_col_block_left > 0)
     {
         optical_props_left = std::make_unique<Optical_props_1scl<TF>>(n_col_block_left, n_lay, *kdist_lw);
-        sources_left = std::make_unique<Source_func_lw<TF>>(n_col_block, n_lay, *kdist_lw);
+        sources_left = std::make_unique<Source_func_lw<TF>>(n_col_block_left, n_lay, *kdist_lw);
     }
 
     // Lambda function for solving optical properties subset.
