@@ -302,7 +302,7 @@ void solve_radiation(Master& master)
 {
     Netcdf_file input_nc(master, "rte_rrtmgp_input.nc", Netcdf_mode::Read);
 
-    // READ THE ATMOSPHERIC DATA.
+    ////// READ THE ATMOSPHERIC DATA //////
     int n_lay = input_nc.get_dimension_size("lay");
     int n_lev = input_nc.get_dimension_size("lev");
     int n_col = input_nc.get_dimension_size("col");
@@ -334,36 +334,43 @@ void solve_radiation(Master& master)
     // gas_concs.set_vmr("n2",
     //         Array<TF,2>(input_nc.get_variable<TF>("vmr_n2", {n_lay, n_col}), {n_col, n_lay}));
 
-    // Construct the gas optics class.
-    Gas_optics_rrtmgp<TF> kdist_lw = load_and_init_gas_optics(master, gas_concs, "coefficients_lw.nc");
+    // Construct the gas optics classes for the solvers.
+    std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist_lw = std::make_unique<Gas_optics_rrtmgp<TF>>(
+        load_and_init_gas_optics(master, gas_concs, "coefficients_lw.nc"));
 
     // Fetch the col_dry in case present.
     Array<TF,2> col_dry({n_col, n_lay});
     if (input_nc.variable_exists("col_dry"))
         col_dry = input_nc.get_variable<TF>("col_dry", {n_lay, n_col});
     else
-        kdist_lw.get_col_dry(col_dry, gas_concs.get_vmr("h2o"), p_lev);
+        Gas_optics_rrtmgp<TF>::get_col_dry(col_dry, gas_concs.get_vmr("h2o"), p_lev);
 
-    const int n_gpt = kdist_lw.get_ngpt();
-    const int n_bnd = kdist_lw.get_nband();
+
+    ////// READ THE BOUNDARY CONDITIONS //////
+    const int n_gpt = kdist_lw->get_ngpt();
+    const int n_bnd = kdist_lw->get_nband();
 
     // Boundary conditions for longwave.
-    Array<TF,2> emis_sfc;
-    Array<TF,1> t_sfc;
-
-    // Download surface boundary conditions for long wave.
-    Array<TF,2> emis_sfc_tmp(
+    Array<TF,2> emis_sfc(
             input_nc.get_variable<TF>(
                     "emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
-    Array<TF,1> t_sfc_tmp(
+    Array<TF,1> t_sfc(
             input_nc.get_variable<TF>(
                     "t_sfc", {n_col}), {n_col});
 
-    emis_sfc = emis_sfc_tmp;
-    t_sfc = t_sfc_tmp;
 
-    ////// SOLVING THE OPTICAL PROPERTIES FOR LONGWAVE RADIATION //////
-    master.print_message("STEP 1: Computing optical depths for longwave radiation.\n");
+    ////// CREATE THE OUTPUT ARRAYS THAT NEED TO BE STORED //////
+    Array<TF,2> lw_flux_up ({n_col, n_lev});
+    Array<TF,2> lw_flux_dn ({n_col, n_lev});
+    Array<TF,2> lw_flux_net({n_col, n_lev});
+
+    Array<TF,3> lw_bnd_flux_up ({n_col, n_lev, n_bnd});
+    Array<TF,3> lw_bnd_flux_dn ({n_col, n_lev, n_bnd});
+    Array<TF,3> lw_bnd_flux_net({n_col, n_lev, n_bnd});
+
+
+    ////// SOLVING THE LONGWAVE RADIATION //////
+    master.print_message("Solving the radiation.\n");
 
     constexpr int n_col_block = 4;
 
@@ -371,28 +378,35 @@ void solve_radiation(Master& master)
     int n_blocks = n_col / n_col_block;
     int n_col_block_left = n_col % n_col_block;
 
-    std::unique_ptr<Optical_props_arry<TF>> optical_props;
     std::unique_ptr<Optical_props_arry<TF>> optical_props_subset;
     std::unique_ptr<Optical_props_arry<TF>> optical_props_left;
 
-    optical_props        = std::make_unique<Optical_props_1scl<TF>>(n_col      , n_lay, kdist_lw);
-    optical_props_subset = std::make_unique<Optical_props_1scl<TF>>(n_col_block, n_lay, kdist_lw);
+    optical_props_subset = std::make_unique<Optical_props_1scl<TF>>(n_col_block, n_lay, *kdist_lw);
+
+    std::unique_ptr<Source_func_lw<TF>> sources_subset;
+    std::unique_ptr<Source_func_lw<TF>> sources_left;
+
+    sources_subset = std::make_unique<Source_func_lw<TF>>(n_col_block, n_lay, *kdist_lw);
 
     if (n_col_block_left > 0)
-        optical_props_left = std::make_unique<Optical_props_1scl<TF>>(n_col_block_left, n_lay, kdist_lw);
+    {
+        optical_props_left = std::make_unique<Optical_props_1scl<TF>>(n_col_block_left, n_lay, *kdist_lw);
+        sources_left = std::make_unique<Source_func_lw<TF>>(n_col_block, n_lay, *kdist_lw);
+    }
 
-    Source_func_lw<TF> sources       (n_col      , n_lay, kdist_lw);
-    Source_func_lw<TF> sources_subset(n_col_block, n_lay, kdist_lw);
-
-    auto calc_optical_props_subset = [&](
+    // Lambda function for solving optical properties subset.
+    auto call_kernels = [&](
             const int col_s_in, const int col_e_in,
-            std::unique_ptr<Optical_props_arry<TF>>& optical_props_subset_in,
-            Source_func_lw<TF>& sources_subset_in)
+            std::unique_ptr<Optical_props_arry<double>>& optical_props_subset_in,
+            Source_func_lw<double>& sources_subset_in,
+            const Array<double,2>& emis_sfc_subset_in,
+            Fluxes_broadband<double>& fluxes,
+            Fluxes_broadband<double>& bnd_fluxes)
     {
         const int n_col_in = col_e_in - col_s_in + 1;
-        Gas_concs<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
+        Gas_concs<double> gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
-        kdist_lw.gas_optics(
+        kdist_lw->gas_optics(
                 p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                 p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }}),
                 t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
@@ -401,95 +415,41 @@ void solve_radiation(Master& master)
                 optical_props_subset_in,
                 sources_subset_in,
                 col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-                t_lev.subset  ({{ {col_s_in, col_e_in}, {1, n_lev} }}) );
+                t_lev  .subset({{ {col_s_in, col_e_in}, {1, n_lev} }}) );
 
-        optical_props->set_subset(optical_props_subset_in, col_s_in, col_e_in);
-        sources.set_subset(sources_subset_in, col_s_in, col_e_in);
-    };
+        Array<double,3> gpt_flux_up({n_col_in, n_lev, n_gpt});
+        Array<double,3> gpt_flux_dn({n_col_in, n_lev, n_gpt});
 
-    for (int b=1; b<=n_blocks; ++b)
-    {
-        const int col_s = (b-1) * n_col_block + 1;
-        const int col_e =  b    * n_col_block;
+        constexpr int n_ang = 1;
 
-        calc_optical_props_subset(
-                col_s, col_e,
-                optical_props_subset,
-                sources_subset);
-    }
-
-    if (n_col_block_left > 0)
-    {
-        optical_props_left = std::make_unique<Optical_props_1scl<TF>>(n_col_block_left, n_lay, kdist_lw);
-        Source_func_lw<TF> sources_left(n_col_block_left, n_lay, kdist_lw);
-
-        const int col_s = n_col - n_col_block_left + 1;
-        const int col_e = n_col;
-
-        calc_optical_props_subset(
-                col_s, col_e,
-                optical_props_left,
-                sources_left);
-    }
-
-
-    ////// SOLVING THE FLUXES FOR LONGWAVE RADIATION //////
-    master.print_message("STEP 2: Computing the longwave radiation fluxes.\n");
-
-    // const int n_ang = input_nc.get_variable<TF>("angle");
-    const int n_ang = 1;
-
-    Array<TF,2> flux_up ({n_col, n_lev});
-    Array<TF,2> flux_dn ({n_col, n_lev});
-    Array<TF,2> flux_net({n_col, n_lev});
-
-    Array<TF,3> bnd_flux_up ({n_col, n_lev, n_bnd});
-    Array<TF,3> bnd_flux_dn ({n_col, n_lev, n_bnd});
-    Array<TF,3> bnd_flux_net({n_col, n_lev, n_bnd});
-
-    auto calc_fluxes_subset = [&](
-            const int col_s_in, const int col_e_in,
-            const std::unique_ptr<Optical_props_arry<TF>>& optical_props_subset_in,
-            const Source_func_lw<TF>& sources_subset_in,
-            const Array<TF,2> emis_sfc_subset_in,
-            std::unique_ptr<Fluxes_broadband<TF>>& fluxes_subset_in)
-    {
-        const int n_col_block_subset = col_e_in - col_s_in + 1;
-
-        Array<TF,3> gpt_flux_up({n_col_block_subset, n_lev, n_gpt});
-        Array<TF,3> gpt_flux_dn({n_col_block_subset, n_lev, n_gpt});
-
-        // CvH: I removed the pointer assignments of the fluxes, as this is unportable Fortran code.
-        Rte_lw<TF>::rte_lw(
+        Rte_lw<double>::rte_lw(
                 optical_props_subset_in,
                 top_at_1,
                 sources_subset_in,
                 emis_sfc_subset_in,
                 Array<TF,2>(), // Add an empty array, no inc_flux.
-                gpt_flux_up,
-                gpt_flux_dn,
+                gpt_flux_up, gpt_flux_dn,
                 n_ang);
 
-        fluxes_subset_in->reduce(
-                gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);
+        fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
+        bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
 
         // Copy the data to the output.
         for (int ilev=1; ilev<=n_lev; ++ilev)
-            for (int icol=1; icol<=n_col_block_subset; ++icol)
+            for (int icol=1; icol<=n_col_in; ++icol)
             {
-                flux_up ({icol+col_s_in-1, ilev}) = fluxes_subset_in->get_flux_up ()({icol, ilev});
-                flux_dn ({icol+col_s_in-1, ilev}) = fluxes_subset_in->get_flux_dn ()({icol, ilev});
-                flux_net({icol+col_s_in-1, ilev}) = fluxes_subset_in->get_flux_net()({icol, ilev});
+                lw_flux_up ({icol+col_s_in-1, ilev}) = fluxes.get_flux_up ()({icol, ilev});
+                lw_flux_dn ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn ()({icol, ilev});
+                lw_flux_net({icol+col_s_in-1, ilev}) = fluxes.get_flux_net()({icol, ilev});
             }
 
-        // Copy the data to the output.
         for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
             for (int ilev=1; ilev<=n_lev; ++ilev)
-                for (int icol=1; icol<=n_col_block_subset; ++icol)
+                for (int icol=1; icol<=n_col_in; ++icol)
                 {
-                    bnd_flux_up ({icol+col_s_in-1, ilev, ibnd}) = fluxes_subset_in->get_bnd_flux_up ()({icol, ilev, ibnd});
-                    bnd_flux_dn ({icol+col_s_in-1, ilev, ibnd}) = fluxes_subset_in->get_bnd_flux_dn ()({icol, ilev, ibnd});
-                    bnd_flux_net({icol+col_s_in-1, ilev, ibnd}) = fluxes_subset_in->get_bnd_flux_net()({icol, ilev, ibnd});
+                    lw_bnd_flux_up ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_up ()({icol, ilev, ibnd});
+                    lw_bnd_flux_dn ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn ()({icol, ilev, ibnd});
+                    lw_bnd_flux_net({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_net()({icol, ilev, ibnd});
                 }
     };
 
@@ -498,20 +458,20 @@ void solve_radiation(Master& master)
         const int col_s = (b-1) * n_col_block + 1;
         const int col_e =  b    * n_col_block;
 
-        optical_props_subset->get_subset(optical_props, col_s, col_e);
-        sources_subset.get_subset(sources, col_s, col_e);
+        Array<double,2> emis_sfc_subset = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
 
-        Array<TF,2> emis_sfc_subset = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
+        std::unique_ptr<Fluxes_broadband<double>> fluxes_subset =
+                std::make_unique<Fluxes_broadband<double>>(n_col_block, n_lev);
+        std::unique_ptr<Fluxes_broadband<double>> bnd_fluxes_subset =
+                std::make_unique<Fluxes_byband<double>>(n_col_block, n_lev, n_bnd);
 
-        std::unique_ptr<Fluxes_broadband<TF>> fluxes_subset =
-                std::make_unique<Fluxes_byband<TF>>(n_col_block, n_lev, n_bnd);
-
-        calc_fluxes_subset(
+        call_kernels(
                 col_s, col_e,
                 optical_props_subset,
-                sources_subset,
+                *sources_subset,
                 emis_sfc_subset,
-                fluxes_subset);
+                *fluxes_subset,
+                *bnd_fluxes_subset);
     }
 
     if (n_col_block_left > 0)
@@ -519,28 +479,24 @@ void solve_radiation(Master& master)
         const int col_s = n_col - n_col_block_left + 1;
         const int col_e = n_col;
 
-        // CvH, check for reuse of this field.
-        Source_func_lw<TF> sources_left(n_col_block_left, n_lay, kdist_lw);
+        Array<double,2> emis_sfc_left = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
+        std::unique_ptr<Fluxes_broadband<double>> fluxes_left =
+                std::make_unique<Fluxes_broadband<double>>(n_col_block_left, n_lev);
+        std::unique_ptr<Fluxes_broadband<double>> bnd_fluxes_left =
+                std::make_unique<Fluxes_byband<double>>(n_col_block_left, n_lev, n_bnd);
 
-        optical_props_left->get_subset(optical_props, col_s, col_e);
-        sources_left.get_subset(sources, col_s, col_e);
-
-        Array<TF,2> emis_sfc_left = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
-
-        std::unique_ptr<Fluxes_broadband<TF>> fluxes_left =
-                std::make_unique<Fluxes_byband<TF>>(n_col_block_left, n_lev, n_bnd);
-
-        calc_fluxes_subset(
+        call_kernels(
                 col_s, col_e,
                 optical_props_left,
-                sources_left,
+                *sources_left,
                 emis_sfc_left,
-                fluxes_left);
+                *fluxes_left,
+                *bnd_fluxes_left);
     }
 
 
     ////// SAVING THE MODEL OUTPUT //////
-    master.print_message("STEP 3: Saving the output to NetCDF.\n");
+    master.print_message("Saving the output to NetCDF.\n");
 
     // Save the output of the optical solver to disk.
     Netcdf_file output_nc(master, "rte_rrtmgp_output.nc", Netcdf_mode::Create);
@@ -561,11 +517,12 @@ void solve_radiation(Master& master)
     // First, store the optical properties.
     auto nc_band_lims_wvn = output_nc.add_variable<TF>("band_lims_wvn", {"band", "pair"});
     auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
-    auto nc_tau = output_nc.add_variable<TF>("tau", {"gpt", "lay", "col"});
 
-    nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
-    nc_band_lims_gpt.insert(optical_props->get_band_lims_gpoint().v()    , {0, 0});
-    nc_tau.insert(optical_props->get_tau().v(), {0, 0, 0});
+    // nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
+    // nc_band_lims_gpt.insert(optical_props->get_band_lims_gpoint().v()    , {0, 0});
+
+    auto nc_tau = output_nc.add_variable<TF>("tau", {"gpt", "lay", "col"});
+    // nc_tau.insert(optical_props->get_tau().v(), {0, 0, 0});
 
     // Second, store the sources.
     auto nc_lay_src     = output_nc.add_variable<TF>("lay_src"    , {"gpt", "lay", "col"});
@@ -574,28 +531,28 @@ void solve_radiation(Master& master)
 
     auto nc_sfc_src = output_nc.add_variable<TF>("sfc_src", {"gpt", "col"});
 
-    nc_lay_src.insert    (sources.get_lay_source().v()    , {0, 0, 0});
-    nc_lev_src_inc.insert(sources.get_lev_source_inc().v(), {0, 0, 0});
-    nc_lev_src_dec.insert(sources.get_lev_source_dec().v(), {0, 0, 0});
+    // nc_lay_src.insert    (sources->get_lay_source().v()    , {0, 0, 0});
+    // nc_lev_src_inc.insert(sources->get_lev_source_inc().v(), {0, 0, 0});
+    // nc_lev_src_dec.insert(sources->get_lev_source_dec().v(), {0, 0, 0});
 
-    nc_sfc_src.insert(sources.get_sfc_source().v(), {0, 0});
+    // nc_sfc_src.insert(sources->get_sfc_source().v(), {0, 0});
 
     // Save the output of the flux calculation to disk.
-    auto nc_flux_up  = output_nc.add_variable<TF>("flux_up" , {"lev", "col"});
-    auto nc_flux_dn  = output_nc.add_variable<TF>("flux_dn" , {"lev", "col"});
-    auto nc_flux_net = output_nc.add_variable<TF>("flux_net", {"lev", "col"});
+    auto nc_flux_up  = output_nc.add_variable<TF>("lw_flux_up" , {"lev", "col"});
+    auto nc_flux_dn  = output_nc.add_variable<TF>("lw_flux_dn" , {"lev", "col"});
+    auto nc_flux_net = output_nc.add_variable<TF>("lw_flux_net", {"lev", "col"});
 
-    auto nc_bnd_flux_up  = output_nc.add_variable<TF>("bnd_flux_up" , {"band", "lev", "col"});
-    auto nc_bnd_flux_dn  = output_nc.add_variable<TF>("bnd_flux_dn" , {"band", "lev", "col"});
-    auto nc_bnd_flux_net = output_nc.add_variable<TF>("bnd_flux_net", {"band", "lev", "col"});
+    auto nc_bnd_flux_up  = output_nc.add_variable<TF>("lw_bnd_flux_up" , {"band", "lev", "col"});
+    auto nc_bnd_flux_dn  = output_nc.add_variable<TF>("lw_bnd_flux_dn" , {"band", "lev", "col"});
+    auto nc_bnd_flux_net = output_nc.add_variable<TF>("lw_bnd_flux_net", {"band", "lev", "col"});
 
-    nc_flux_up .insert(flux_up .v(), {0, 0});
-    nc_flux_dn .insert(flux_dn .v(), {0, 0});
-    nc_flux_net.insert(flux_net.v(), {0, 0});
+    nc_flux_up .insert(lw_flux_up .v(), {0, 0});
+    nc_flux_dn .insert(lw_flux_dn .v(), {0, 0});
+    nc_flux_net.insert(lw_flux_net.v(), {0, 0});
 
-    nc_bnd_flux_up .insert(bnd_flux_up .v(), {0, 0, 0});
-    nc_bnd_flux_dn .insert(bnd_flux_dn .v(), {0, 0, 0});
-    nc_bnd_flux_net.insert(bnd_flux_net.v(), {0, 0, 0});
+    nc_bnd_flux_up .insert(lw_bnd_flux_up .v(), {0, 0, 0});
+    nc_bnd_flux_dn .insert(lw_bnd_flux_dn .v(), {0, 0, 0});
+    nc_bnd_flux_net.insert(lw_bnd_flux_net.v(), {0, 0, 0});
 }
 
 int main()
