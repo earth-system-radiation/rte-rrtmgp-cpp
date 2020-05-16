@@ -307,9 +307,9 @@ void solve_radiation(Master& master)
     int n_lev = input_nc.get_dimension_size("lev");
     int n_col = input_nc.get_dimension_size("col");
 
-    Array<TF,2> p_lay(input_nc.get_variable<TF>("lay", {n_lay, n_col}), {n_col, n_lay});
+    Array<TF,2> p_lay(input_nc.get_variable<TF>("lay"  , {n_lay, n_col}), {n_col, n_lay});
     Array<TF,2> t_lay(input_nc.get_variable<TF>("t_lay", {n_lay, n_col}), {n_col, n_lay});
-    Array<TF,2> p_lev(input_nc.get_variable<TF>("lev", {n_lev, n_col}), {n_col, n_lev});
+    Array<TF,2> p_lev(input_nc.get_variable<TF>("lev"  , {n_lev, n_col}), {n_col, n_lev});
     Array<TF,2> t_lev(input_nc.get_variable<TF>("t_lev", {n_lev, n_col}), {n_col, n_lev});
 
     const BOOL_TYPE top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
@@ -320,19 +320,28 @@ void solve_radiation(Master& master)
     auto read_and_set_vmr = [&](const std::string& gas_name)
     {
         const std::string vmr_gas_name = "vmr_" + gas_name;
-        std::map<std::string, int> dims = input_nc.get_variable_dimensions(vmr_gas_name);
-        gas_concs.set_vmr(gas_name,
-                Array<TF,2>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay, n_col}), {n_col, n_lay}));
+
+        if (input_nc.variable_exists(vmr_gas_name))
+        {
+            std::map<std::string, int> dims = input_nc.get_variable_dimensions(vmr_gas_name);
+            gas_concs.set_vmr(gas_name,
+                    Array<TF,2>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay, n_col}), {n_col, n_lay}));
+        }
+        else
+        {
+            const std::string warning = "Gas \"" + gas_name + "\" not available in input file.";
+            master.print_warning(warning);
+        }
     };
 
     read_and_set_vmr("h2o");
     read_and_set_vmr("co2");
     read_and_set_vmr("o3" );
     read_and_set_vmr("n2o");
-    // read_and_set_vmr("co" );
+    read_and_set_vmr("co" );
     read_and_set_vmr("ch4");
     read_and_set_vmr("o2" );
-    // read_and_set_vmr("n2" );
+    read_and_set_vmr("n2" );
 
     // Construct the gas optics classes for the solvers.
     std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist_lw = std::make_unique<Gas_optics_rrtmgp<TF>>(
