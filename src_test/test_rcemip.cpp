@@ -25,7 +25,9 @@
 #include <boost/algorithm/string.hpp>
 #include <cmath>
 
+#include "Status.h"
 #include "Netcdf_interface.h"
+
 #include "Array.h"
 #include "Gas_concs.h"
 #include "Gas_optics_rrtmgp.h"
@@ -78,12 +80,11 @@ namespace
 
     template<typename TF>
     Gas_optics_rrtmgp<TF> load_and_init_gas_optics(
-            Master& master,
             const Gas_concs<TF>& gas_concs,
             const std::string& coef_file)
     {
         // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
-        Netcdf_file coef_nc(master, coef_file, Netcdf_mode::Read);
+        Netcdf_file coef_nc(coef_file, Netcdf_mode::Read);
 
         // Read k-distribution information.
         int n_temps = coef_nc.get_dimension_size("temperature");
@@ -325,7 +326,7 @@ void load_gas_concs(Gas_concs<TF>& gas_concs, Netcdf_file& input_nc)
 }
 
 template<typename TF>
-void solve_radiation(Master& master)
+void solve_radiation()
 {
     // We are doing a single column run.
     const int n_col = 1;
@@ -337,13 +338,13 @@ void solve_radiation(Master& master)
     std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist_sw;
 
     // This is the part that is done in the initialization.
-    Netcdf_file file_nc(master, "test_rcemip_input.nc", Netcdf_mode::Read);
+    Netcdf_file file_nc("test_rcemip_input.nc", Netcdf_mode::Read);
 
     load_gas_concs<TF>(gas_concs, file_nc);
     kdist_lw = std::make_unique<Gas_optics_rrtmgp<TF>>(
-            load_and_init_gas_optics(master, gas_concs, "coefficients_lw.nc"));
+            load_and_init_gas_optics(gas_concs, "coefficients_lw.nc"));
     kdist_sw = std::make_unique<Gas_optics_rrtmgp<TF>>(
-            load_and_init_gas_optics(master, gas_concs, "coefficients_sw.nc"));
+            load_and_init_gas_optics(gas_concs, "coefficients_sw.nc"));
 
     // LOAD THE LONGWAVE SPECIFIC BOUNDARY CONDITIONS.
     // Set the surface temperature and emissivity.
@@ -520,7 +521,7 @@ void solve_radiation(Master& master)
     }
 
     // Store the radiation fluxes to a file
-    Netcdf_file output_nc(master, "test_rcemip_output.nc", Netcdf_mode::Create);
+    Netcdf_file output_nc("test_rcemip_output.nc", Netcdf_mode::Create);
     output_nc.add_dimension("col", n_col);
     output_nc.add_dimension("lev", n_lev);
     output_nc.add_dimension("lay", n_lay);
@@ -556,24 +557,21 @@ void solve_radiation(Master& master)
 
 int main()
 {
-    Master master;
     try
     {
-        master.start();
-        master.init();
-
-        solve_radiation<FLOAT_TYPE>(master);
+        solve_radiation<FLOAT_TYPE>();
     }
 
     // Catch any exceptions and return 1.
     catch (const std::exception& e)
     {
-        master.print_message("EXCEPTION: %s\n", e.what());
+        std::string error = "EXCEPTION: " + std::string(e.what());
+        Status::print_message(error);
         return 1;
     }
     catch (...)
     {
-        master.print_message("UNHANDLED EXCEPTION!\n");
+        Status::print_message("UNHANDLED EXCEPTION!");
         return 1;
     }
 
