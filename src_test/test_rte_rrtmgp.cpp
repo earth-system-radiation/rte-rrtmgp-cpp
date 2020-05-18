@@ -316,7 +316,6 @@ void solve_radiation()
     const BOOL_TYPE top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
     Gas_concs<TF> gas_concs;
-    Gas_concs<TF> gas_concs_subset;
 
     auto read_and_set_vmr = [&](const std::string& gas_name)
     {
@@ -426,14 +425,14 @@ void solve_radiation()
     // Lambda function for solving optical properties subset.
     auto call_kernels = [&](
             const int col_s_in, const int col_e_in,
-            std::unique_ptr<Optical_props_arry<double>>& optical_props_subset_in,
-            Source_func_lw<double>& sources_subset_in,
-            const Array<double,2>& emis_sfc_subset_in,
-            Fluxes_broadband<double>& fluxes,
-            Fluxes_broadband<double>& bnd_fluxes)
+            std::unique_ptr<Optical_props_arry<TF>>& optical_props_subset_in,
+            Source_func_lw<TF>& sources_subset_in,
+            const Array<TF,2>& emis_sfc_subset_in,
+            Fluxes_broadband<TF>& fluxes,
+            Fluxes_broadband<TF>& bnd_fluxes)
     {
         const int n_col_in = col_e_in - col_s_in + 1;
-        Gas_concs<double> gas_concs_subset(gas_concs, col_s_in, n_col_in);
+        Gas_concs<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
         kdist_lw->gas_optics(
                 p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
@@ -446,12 +445,12 @@ void solve_radiation()
                 col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                 t_lev  .subset({{ {col_s_in, col_e_in}, {1, n_lev} }}) );
 
-        Array<double,3> gpt_flux_up({n_col_in, n_lev, n_gpt});
-        Array<double,3> gpt_flux_dn({n_col_in, n_lev, n_gpt});
+        Array<TF,3> gpt_flux_up({n_col_in, n_lev, n_gpt});
+        Array<TF,3> gpt_flux_dn({n_col_in, n_lev, n_gpt});
 
         constexpr int n_ang = 1;
 
-        Rte_lw<double>::rte_lw(
+        Rte_lw<TF>::rte_lw(
                 optical_props_subset_in,
                 top_at_1,
                 sources_subset_in,
@@ -487,12 +486,12 @@ void solve_radiation()
         const int col_s = (b-1) * n_col_block + 1;
         const int col_e =  b    * n_col_block;
 
-        Array<double,2> emis_sfc_subset = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
+        Array<TF,2> emis_sfc_subset = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
 
-        std::unique_ptr<Fluxes_broadband<double>> fluxes_subset =
-                std::make_unique<Fluxes_broadband<double>>(n_col_block, n_lev);
-        std::unique_ptr<Fluxes_broadband<double>> bnd_fluxes_subset =
-                std::make_unique<Fluxes_byband<double>>(n_col_block, n_lev, n_bnd);
+        std::unique_ptr<Fluxes_broadband<TF>> fluxes_subset =
+                std::make_unique<Fluxes_broadband<TF>>(n_col_block, n_lev);
+        std::unique_ptr<Fluxes_broadband<TF>> bnd_fluxes_subset =
+                std::make_unique<Fluxes_byband<TF>>(n_col_block, n_lev, n_bnd);
 
         call_kernels(
                 col_s, col_e,
@@ -508,11 +507,11 @@ void solve_radiation()
         const int col_s = n_col - n_col_block_left + 1;
         const int col_e = n_col;
 
-        Array<double,2> emis_sfc_left = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
-        std::unique_ptr<Fluxes_broadband<double>> fluxes_left =
-                std::make_unique<Fluxes_broadband<double>>(n_col_block_left, n_lev);
-        std::unique_ptr<Fluxes_broadband<double>> bnd_fluxes_left =
-                std::make_unique<Fluxes_byband<double>>(n_col_block_left, n_lev, n_bnd);
+        Array<TF,2> emis_sfc_left = emis_sfc.subset({{ {1, n_bnd}, {col_s, col_e} }});
+        std::unique_ptr<Fluxes_broadband<TF>> fluxes_left =
+                std::make_unique<Fluxes_broadband<TF>>(n_col_block_left, n_lev);
+        std::unique_ptr<Fluxes_broadband<TF>> bnd_fluxes_left =
+                std::make_unique<Fluxes_byband<TF>>(n_col_block_left, n_lev, n_bnd);
 
         call_kernels(
                 col_s, col_e,
