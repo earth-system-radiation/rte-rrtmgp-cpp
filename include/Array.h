@@ -87,11 +87,13 @@ template<typename T, int N>
 class Array
 {
     public:
+        // Create an empty array, without dimensions.
         Array() :
             dims({}),
             ncells(0)
         {}
 
+        // Create an array of zeros with given dimensions.
         Array(const std::array<int, N>& dims) :
             dims(dims),
             ncells(product<N>(dims)),
@@ -100,6 +102,7 @@ class Array
             offsets({})
         {}
 
+        // Create an array from copying the contents of an std::vector.
         Array(const std::vector<T>& data, const std::array<int, N>& dims) :
             dims(dims),
             ncells(product<N>(dims)),
@@ -108,6 +111,7 @@ class Array
             offsets({})
         {} // CvH Do we need to size check data?
 
+        // Create an array from moving the contents of an std::vector.
         Array(std::vector<T>&& data, const std::array<int, N>& dims) :
             dims(dims),
             ncells(product<N>(dims)),
