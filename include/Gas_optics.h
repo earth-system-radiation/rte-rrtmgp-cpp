@@ -28,10 +28,9 @@
 #include <string>
 
 #include "Array.h"
+#include "Optical_props.h"
 
 // Forward declarations.
-template<typename TF> class Optical_props;
-template<typename TF> class Optical_props_arry;
 template<typename TF> class Gas_concs;
 template<typename TF> class Source_func_lw;
 
