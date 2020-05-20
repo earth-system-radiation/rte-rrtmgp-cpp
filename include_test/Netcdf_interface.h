@@ -25,12 +25,9 @@
 #ifndef NETCDF_INTERFACE_H
 #define NETCDF_INTERFACE_H
 
-#include <iostream>
 #include <map>
 #include <vector>
-#include <numeric>
 #include <netcdf.h>
-#include "Status.h"
 
 enum class Netcdf_mode { Create, Read, Write };
 
@@ -75,7 +72,7 @@ class Netcdf_handle
         template<typename T>
         Netcdf_variable<T> add_variable(
                 const std::string&,
-                const std::vector<std::string>);
+                const std::vector<std::string>&);
 
         template<typename T>
         T get_variable(

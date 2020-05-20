@@ -24,6 +24,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <cmath>
+#include <numeric>
 
 #include "Radiation_solver.h"
 #include "Status.h"

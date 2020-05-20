@@ -31,33 +31,33 @@
 
 namespace Status
 {
-    void print_message(const std::ostringstream& ss)
+    inline void print_message(const std::ostringstream& ss)
     {
         std::cout << ss.str();
     }
-    
-    void print_message(const std::string& s)
+
+    inline void print_message(const std::string& s)
     {
         std::cout << s << std::endl;
     }
-    
-    void print_warning(const std::ostringstream& ss)
+
+    inline void print_warning(const std::ostringstream& ss)
     {
         std::cout << "WARNING: " << ss.str();
     }
-    
-    void print_warning(const std::string& s)
+
+    inline void print_warning(const std::string& s)
     {
         std::cout << "WARNING: " << s << std::endl;
     }
-    
-    void print_error(const std::ostringstream& ss)
+
+    inline void print_error(const std::ostringstream& ss)
     {
         std::cout << "ERROR: " << ss.str();
         std::cerr << "ERROR: " << ss.str();
     }
-    
-    void print_error(const std::string& s)
+
+    inline void print_error(const std::string& s)
     {
         std::cout << "ERROR: " << s << std::endl;
         std::cerr << "ERROR: " << s << std::endl;
