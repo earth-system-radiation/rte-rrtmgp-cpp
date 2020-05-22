@@ -22,14 +22,12 @@
  *
  */
 
-// #include <boost/algorithm/string.hpp>
-// #include <cmath>
 
 #include "Status.h"
 #include "Netcdf_interface.h"
 #include "Array.h"
-#include "Gas_concs.h"
 #include "Radiation_solver.h"
+
 
 #ifdef FLOAT_SINGLE_RRTMGP
 #define FLOAT_TYPE float
@@ -37,10 +35,12 @@
 #define FLOAT_TYPE double
 #endif
 
+
+
 template<typename TF>
 void read_and_set_vmr(
         const std::string& gas_name, const int n_col, const int n_lay,
-        const Netcdf_handle& input_nc, Gas_concs<TF>& gas_concs)
+        const Netcdf_handle& input_nc, Radiation_solver<TF>& radiation)
 {
     const std::string vmr_gas_name = "vmr_" + gas_name;
 
@@ -49,23 +49,24 @@ void read_and_set_vmr(
         std::map<std::string, int> dims = input_nc.get_variable_dimensions(vmr_gas_name);
         const int n_dims = dims.size();
 
+
         if (n_dims == 0)
         {
-            gas_concs.set_vmr(gas_name, input_nc.get_variable<TF>(vmr_gas_name));
+            radiation.set_vmr(gas_name, input_nc.get_variable<TF>(vmr_gas_name));
         }
         else if (n_dims == 1)
         {
             if (dims.at("lay") == n_lay)
-                gas_concs.set_vmr(gas_name,
-                                  Array<TF,1>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay}), {n_lay}));
+                radiation.set_vmr(gas_name,
+                        Array<TF,1>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay}), {n_lay}));
             else
                 throw std::runtime_error("Illegal dimensions of gas \"" + gas_name + "\" in input");
         }
         else if (n_dims == 2)
         {
             if (dims.at("lay") == n_lay && dims.at("col") == n_col)
-                gas_concs.set_vmr(gas_name,
-                                  Array<TF,2>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay, n_col}), {n_col, n_lay}));
+                radiation.set_vmr(gas_name,
+                        Array<TF,2>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay, n_col}), {n_col, n_lay}));
             else
                 throw std::runtime_error("Illegal dimensions of gas \"" + gas_name + "\" in input");
         }
@@ -76,19 +77,28 @@ void read_and_set_vmr(
     }
 }
 
+
 template<typename TF>
 void solve_radiation()
 {
+    ////// FLOW CONTROL SWITCHES //////
     const bool sw_output_optical = false;
     const bool sw_output_bnd_fluxes = true;
 
-    Netcdf_file input_nc("rte_rrtmgp_input.nc", Netcdf_mode::Read);
+
+    ////// INITIALIZE THE SOLVER //////
+    Status::print_message("Initializing the solver.");
+    Radiation_solver<TF> radiation;
+
 
     ////// READ THE ATMOSPHERIC DATA //////
+    Status::print_message("Reading atmospheric input data from NetCDF.");
+
+    Netcdf_file input_nc("rte_rrtmgp_input.nc", Netcdf_mode::Read);
+
     const int n_col = input_nc.get_dimension_size("col");
     const int n_lay = input_nc.get_dimension_size("lay");
     const int n_lev = input_nc.get_dimension_size("lev");
-    const int n_bnd = input_nc.get_dimension_size("band");
 
     // Read the atmospheric fields.
     Array<TF,2> p_lay(input_nc.get_variable<TF>("lay"  , {n_lay, n_col}), {n_col, n_lay});
@@ -96,35 +106,39 @@ void solve_radiation()
     Array<TF,2> p_lev(input_nc.get_variable<TF>("lev"  , {n_lev, n_col}), {n_col, n_lev});
     Array<TF,2> t_lev(input_nc.get_variable<TF>("t_lev", {n_lev, n_col}), {n_col, n_lev});
 
+    read_and_set_vmr("h2o", n_col, n_lay, input_nc, radiation);
+    read_and_set_vmr("co2", n_col, n_lay, input_nc, radiation);
+    read_and_set_vmr("o3" , n_col, n_lay, input_nc, radiation);
+    read_and_set_vmr("n2o", n_col, n_lay, input_nc, radiation);
+    read_and_set_vmr("co" , n_col, n_lay, input_nc, radiation);
+    read_and_set_vmr("ch4", n_col, n_lay, input_nc, radiation);
+    read_and_set_vmr("o2" , n_col, n_lay, input_nc, radiation);
+    read_and_set_vmr("n2" , n_col, n_lay, input_nc, radiation);
+
+
+    ////// INITIALIZE THE K-DISTRIBUTION //////
+    Status::print_message("Initializing the k-distribution after gases are read.");
+    radiation.load_kdistribution_lw("coefficients_lw.nc");
+
+
+    ////// READ THE SURFACE DATA //////
+    // Loading n_bnd and n_gpt can only be done after kdistribution is initialized.
+    const int n_bnd = radiation.get_n_bnd();
+    const int n_gpt = radiation.get_n_gpt();
+
     // Read the boundary conditions for longwave.
     Array<TF,2> emis_sfc(input_nc.get_variable<TF>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
     Array<TF,1> t_sfc(input_nc.get_variable<TF>("t_sfc", {n_col}), {n_col});
-
-    Gas_concs<TF> gas_concs;
-    read_and_set_vmr("h2o", n_col, n_lay, input_nc, gas_concs);
-    read_and_set_vmr("co2", n_col, n_lay, input_nc, gas_concs);
-    read_and_set_vmr("o3" , n_col, n_lay, input_nc, gas_concs);
-    read_and_set_vmr("n2o", n_col, n_lay, input_nc, gas_concs);
-    read_and_set_vmr("co" , n_col, n_lay, input_nc, gas_concs);
-    read_and_set_vmr("ch4", n_col, n_lay, input_nc, gas_concs);
-    read_and_set_vmr("o2" , n_col, n_lay, input_nc, gas_concs);
-    read_and_set_vmr("n2" , n_col, n_lay, input_nc, gas_concs);
 
     // Fetch the col_dry in case present.
     Array<TF,2> col_dry({n_col, n_lay});
     if (input_nc.variable_exists("col_dry"))
         col_dry = input_nc.get_variable<TF>("col_dry", {n_lay, n_col});
     else
-        Gas_optics_rrtmgp<TF>::get_col_dry(col_dry, gas_concs.get_vmr("h2o"), p_lev);
+        Gas_optics_rrtmgp<TF>::get_col_dry(col_dry, radiation.get_vmr("h2o"), p_lev);
 
 
-    ////// INITIALIZE THE SOLVER SO THE N_GPT CAN BE RETRIEVED //////
-    Status::print_message("Initializing the solver.");
-    Radiation_solver<TF> radiation(gas_concs);
-
-    ////// CREATE THE OUTPUT ARRAYS THAT NEED TO BE STORED //////
-    const int n_gpt = radiation.get_n_gpt();
-
+    ////// CREATE THE OUTPUT ARRAYS //////
     Array<TF,3> tau;
     Array<TF,3> lay_source;
     Array<TF,3> lev_source_inc;
@@ -155,11 +169,12 @@ void solve_radiation()
         lw_bnd_flux_net.set_dims({n_col, n_lev, n_bnd});
     }
 
+
+    ////// SOLVE THE RADIATION //////
     Status::print_message("Solving the longwave radiation.");
     radiation.solve_longwave(
             sw_output_optical,
             sw_output_bnd_fluxes,
-            gas_concs,
             p_lay, p_lev,
             t_lay, t_lev,
             col_dry,
@@ -169,7 +184,7 @@ void solve_radiation()
             lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
 
 
-    ////// SAVING THE MODEL OUTPUT //////
+    ////// SAVING THE OUTPUT TO NETCDF //////
     Status::print_message("Saving the output to NetCDF.");
 
     Netcdf_file output_nc("rte_rrtmgp_output.nc", Netcdf_mode::Create);
@@ -186,12 +201,12 @@ void solve_radiation()
     nc_lay.insert(p_lay.v(), {0});
     nc_lev.insert(p_lev.v(), {0});
 
+    auto nc_band_lims_wvn = output_nc.add_variable<TF>("band_lims_wvn", {"band", "pair"});
+    nc_band_lims_wvn.insert(radiation.get_band_lims_wavenumber().v(), {0, 0});
+
     if (sw_output_optical)
     {
-        auto nc_band_lims_wvn = output_nc.add_variable<TF>("band_lims_wvn", {"band", "pair"});
         auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
-
-        nc_band_lims_wvn.insert(radiation.get_band_lims_wavenumber().v(), {0, 0});
         nc_band_lims_gpt.insert(radiation.get_band_lims_gpoint().v()    , {0, 0});
 
         auto nc_tau = output_nc.add_variable<TF>("tau", {"gpt", "lay", "col"});

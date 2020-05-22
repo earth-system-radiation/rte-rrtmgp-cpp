@@ -295,18 +295,35 @@ namespace
 }
 
 template<typename TF>
-Radiation_solver<TF>::Radiation_solver(const Gas_concs<TF>& gas_concs)
+void Radiation_solver<TF>::load_kdistribution_lw(const std::string& file_name)
 {
     // Construct the gas optics classes for the solver.
     this->kdist_lw = std::make_unique<Gas_optics_rrtmgp<TF>>(
-            load_and_init_gas_optics(gas_concs, "coefficients_lw.nc"));
+            load_and_init_gas_optics(gas_concs, file_name));
+}
+
+template<typename TF>
+void Radiation_solver<TF>::set_vmr(const std::string& name, const TF value)
+{
+    this->gas_concs.set_vmr(name, value);
+}
+
+template<typename TF>
+void Radiation_solver<TF>::set_vmr(const std::string& name, const Array<TF,1>& value)
+{
+    this->gas_concs.set_vmr(name, value);
+}
+
+template<typename TF>
+void Radiation_solver<TF>::set_vmr(const std::string& name, const Array<TF,2>& value)
+{
+    this->gas_concs.set_vmr(name, value);
 }
 
 template<typename TF>
 void Radiation_solver<TF>::solve_longwave(
         const bool sw_output_optical,
         const bool sw_output_bnd_fluxes,
-        const Gas_concs<TF>& gas_concs,
         const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
         const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
         const Array<TF,2>& col_dry,
@@ -356,7 +373,7 @@ void Radiation_solver<TF>::solve_longwave(
             Fluxes_broadband<TF>& bnd_fluxes)
     {
         const int n_col_in = col_e_in - col_s_in + 1;
-        Gas_concs<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
+        Gas_concs<TF> gas_concs_subset(this->gas_concs, col_s_in, n_col_in);
 
         kdist_lw->gas_optics(
                 p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
