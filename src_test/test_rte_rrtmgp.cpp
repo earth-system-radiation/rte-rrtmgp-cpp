@@ -115,7 +115,19 @@ void solve_radiation()
         Gas_optics_rrtmgp<TF>::get_col_dry(col_dry, gas_concs.get_vmr("h2o"), p_lev);
 
 
+    ////// INITIALIZE THE SOLVER SO THE N_GPT CAN BE RETRIEVED //////
+    Status::print_message("Initializing the solver.");
+    Radiation_solver<TF> radiation(gas_concs);
+
     ////// CREATE THE OUTPUT ARRAYS THAT NEED TO BE STORED //////
+    const int n_gpt = radiation.get_n_gpt();
+
+    Array<TF,3> tau           ({n_col, n_lay, n_gpt});
+    Array<TF,3> lay_source    ({n_col, n_lay, n_gpt});
+    Array<TF,3> lev_source_inc({n_col, n_lay, n_gpt});
+    Array<TF,3> lev_source_dec({n_col, n_lay, n_gpt});
+    Array<TF,2> sfc_source    ({n_col, n_gpt});
+
     Array<TF,2> lw_flux_up ({n_col, n_lev});
     Array<TF,2> lw_flux_dn ({n_col, n_lev});
     Array<TF,2> lw_flux_net({n_col, n_lev});
@@ -124,9 +136,6 @@ void solve_radiation()
     Array<TF,3> lw_bnd_flux_dn ({n_col, n_lev, n_bnd});
     Array<TF,3> lw_bnd_flux_net({n_col, n_lev, n_bnd});
 
-    Status::print_message("Initializing the solver.");
-    Radiation_solver<TF> radiation(gas_concs);
-
     Status::print_message("Solving the longwave radiation.");
     radiation.solve_longwave(
             gas_concs,
@@ -134,15 +143,13 @@ void solve_radiation()
             t_lay, t_lev,
             col_dry,
             t_sfc, emis_sfc,
+            tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
             lw_flux_up, lw_flux_dn, lw_flux_net,
             lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
 
 
     ////// SAVING THE MODEL OUTPUT //////
     Status::print_message("Saving the output to NetCDF.");
-
-    // Save the output of the optical solver to disk.
-    const int n_gpt = radiation.get_n_gpt();
 
     Netcdf_file output_nc("rte_rrtmgp_output.nc", Netcdf_mode::Create);
     output_nc.add_dimension("col", n_col);
@@ -160,27 +167,27 @@ void solve_radiation()
     
     // WARNING: The storage in the NetCDF interface uses C-ordering and indexing.
     // First, store the optical properties.
-    // auto nc_band_lims_wvn = output_nc.add_variable<TF>("band_lims_wvn", {"band", "pair"});
-    // auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
+    auto nc_band_lims_wvn = output_nc.add_variable<TF>("band_lims_wvn", {"band", "pair"});
+    auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
 
-    // nc_band_lims_wvn.insert(optical_props->get_band_lims_wavenumber().v(), {0, 0});
-    // nc_band_lims_gpt.insert(optical_props->get_band_lims_gpoint().v()    , {0, 0});
+    nc_band_lims_wvn.insert(radiation.get_band_lims_wavenumber().v(), {0, 0});
+    nc_band_lims_gpt.insert(radiation.get_band_lims_gpoint().v()    , {0, 0});
 
-    // auto nc_tau = output_nc.add_variable<TF>("tau", {"gpt", "lay", "col"});
-    // nc_tau.insert(optical_props->get_tau().v(), {0, 0, 0});
+    auto nc_tau = output_nc.add_variable<TF>("tau", {"gpt", "lay", "col"});
+    nc_tau.insert(tau.v(), {0, 0, 0});
 
     // Second, store the sources.
-    // auto nc_lay_src     = output_nc.add_variable<TF>("lay_src"    , {"gpt", "lay", "col"});
-    // auto nc_lev_src_inc = output_nc.add_variable<TF>("lev_src_inc", {"gpt", "lay", "col"});
-    // auto nc_lev_src_dec = output_nc.add_variable<TF>("lev_src_dec", {"gpt", "lay", "col"});
+    auto nc_lay_src     = output_nc.add_variable<TF>("lay_src"    , {"gpt", "lay", "col"});
+    auto nc_lev_src_inc = output_nc.add_variable<TF>("lev_src_inc", {"gpt", "lay", "col"});
+    auto nc_lev_src_dec = output_nc.add_variable<TF>("lev_src_dec", {"gpt", "lay", "col"});
 
-    // auto nc_sfc_src = output_nc.add_variable<TF>("sfc_src", {"gpt", "col"});
+    auto nc_sfc_src = output_nc.add_variable<TF>("sfc_src", {"gpt", "col"});
 
-    // nc_lay_src.insert    (sources->get_lay_source().v()    , {0, 0, 0});
-    // nc_lev_src_inc.insert(sources->get_lev_source_inc().v(), {0, 0, 0});
-    // nc_lev_src_dec.insert(sources->get_lev_source_dec().v(), {0, 0, 0});
+    nc_lay_src.insert    (lay_source.v()    , {0, 0, 0});
+    nc_lev_src_inc.insert(lev_source_inc.v(), {0, 0, 0});
+    nc_lev_src_dec.insert(lev_source_dec.v(), {0, 0, 0});
 
-    // nc_sfc_src.insert(sources->get_sfc_source().v(), {0, 0});
+    nc_sfc_src.insert(sfc_source.v(), {0, 0});
 
     // Save the output of the flux calculation to disk.
     auto nc_flux_up  = output_nc.add_variable<TF>("lw_flux_up" , {"lev", "col"});

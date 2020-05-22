@@ -309,6 +309,8 @@ void Radiation_solver<TF>::solve_longwave(
         const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
         const Array<TF,2>& col_dry,
         const Array<TF,1>& t_sfc, const Array<TF,2>& emis_sfc,
+        Array<TF,3>& tau, Array<TF,3>& lay_source,
+        Array<TF,3>& lev_source_inc, Array<TF,3>& lev_source_dec, Array<TF,2>& sfc_source,
         Array<TF,2>& lw_flux_up, Array<TF,2>& lw_flux_dn, Array<TF,2>& lw_flux_net,
         Array<TF,3>& lw_bnd_flux_up, Array<TF,3>& lw_bnd_flux_dn, Array<TF,3>& lw_bnd_flux_net)
 {
@@ -364,6 +366,21 @@ void Radiation_solver<TF>::solve_longwave(
                 sources_subset_in,
                 col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                 t_lev  .subset({{ {col_s_in, col_e_in}, {1, n_lev} }}) );
+
+        // Store the optical properties, if desired.
+        for (int igpt=1; igpt<=n_gpt; ++igpt)
+            for (int ilay=1; ilay<=n_lay; ++ilay)
+                for (int icol=1; icol<=n_col_in; ++icol)
+                {
+                    tau           ({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_tau()    ({icol, ilay, igpt});
+                    lay_source    ({icol+col_s_in-1, ilay, igpt}) = sources_subset_in.get_lay_source()    ({icol, ilay, igpt});
+                    lev_source_inc({icol+col_s_in-1, ilay, igpt}) = sources_subset_in.get_lev_source_inc()({icol, ilay, igpt});
+                    lev_source_dec({icol+col_s_in-1, ilay, igpt}) = sources_subset_in.get_lev_source_dec()({icol, ilay, igpt});
+                }
+
+        for (int igpt=1; igpt<=n_gpt; ++igpt)
+            for (int icol=1; icol<=n_col_in; ++icol)
+                sfc_source({icol+col_s_in-1, igpt}) = sources_subset_in.get_sfc_source()({icol, igpt});
 
         Array<TF,3> gpt_flux_up({n_col_in, n_lev, n_gpt});
         Array<TF,3> gpt_flux_dn({n_col_in, n_lev, n_gpt});

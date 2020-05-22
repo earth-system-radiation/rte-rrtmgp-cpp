@@ -40,10 +40,19 @@ class Radiation_solver
                 const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
                 const Array<TF,2>& col_dry,
                 const Array<TF,1>& t_sfc, const Array<TF,2>& emis_sfc,
+                Array<TF,3>& tau, Array<TF,3>& lay_source,
+                Array<TF,3>& lev_source_inc, Array<TF,3>& lev_source_dec, Array<TF,2>& sfc_source,
                 Array<TF,2>& lw_flux_up, Array<TF,2>& lw_flux_dn, Array<TF,2>& lw_flux_net,
                 Array<TF,3>& lw_bnd_flux_up, Array<TF,3>& lw_bnd_flux_dn, Array<TF,3>& lw_bnd_flux_net);
 
         int get_n_gpt() const { return this->kdist_lw->get_ngpt(); };
+        int get_band() const { return this->kdist_lw->get_ngpt(); };
+
+        Array<int,2> get_band_lims_gpoint() const
+        { return this->kdist_lw->get_band_lims_gpoint(); }
+
+        Array<TF,2> get_band_lims_wavenumber() const
+        { return this->kdist_lw->get_band_lims_wavenumber(); }
 
     private:
         std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist_lw;
