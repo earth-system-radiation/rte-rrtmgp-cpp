@@ -31,13 +31,6 @@
 #include "Gas_concs.h"
 #include "Radiation_solver.h"
 
-// #include "Gas_optics_rrtmgp.h"
-// #include "Optical_props.h"
-// #include "Source_functions.h"
-// #include "Fluxes.h"
-// #include "Rte_lw.h"
-// #include "Rte_sw.h"
-
 #ifdef FLOAT_SINGLE_RRTMGP
 #define FLOAT_TYPE float
 #else
@@ -132,8 +125,8 @@ void solve_radiation()
     Status::print_message("Initializing the solver.");
     Radiation_solver<TF> radiation(gas_concs);
 
-    Status::print_message("Solving the radiation.");
-    radiation.solve(
+    Status::print_message("Solving the longwave radiation.");
+    radiation.solve_longwave(
             gas_concs,
             p_lay, p_lev,
             t_lay, t_lev,

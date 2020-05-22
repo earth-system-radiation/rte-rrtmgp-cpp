@@ -34,7 +34,7 @@ class Radiation_solver
 {
     public:
         Radiation_solver(const Gas_concs<TF>& gas_concs);
-        void solve(
+        void solve_longwave(
                 const Gas_concs<TF>& gas_concs,
                 const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
                 const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
