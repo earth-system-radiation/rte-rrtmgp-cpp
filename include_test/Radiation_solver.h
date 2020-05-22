@@ -35,6 +35,8 @@ class Radiation_solver
     public:
         Radiation_solver(const Gas_concs<TF>& gas_concs);
         void solve_longwave(
+                const bool sw_output_optical,
+                const bool sw_output_bnd_fluxes,
                 const Gas_concs<TF>& gas_concs,
                 const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
                 const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,

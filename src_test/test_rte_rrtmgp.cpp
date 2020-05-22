@@ -79,6 +79,9 @@ void read_and_set_vmr(
 template<typename TF>
 void solve_radiation()
 {
+    const bool sw_output_optical = false;
+    const bool sw_output_bnd_fluxes = true;
+
     Netcdf_file input_nc("rte_rrtmgp_input.nc", Netcdf_mode::Read);
 
     ////// READ THE ATMOSPHERIC DATA //////
@@ -122,22 +125,40 @@ void solve_radiation()
     ////// CREATE THE OUTPUT ARRAYS THAT NEED TO BE STORED //////
     const int n_gpt = radiation.get_n_gpt();
 
-    Array<TF,3> tau           ({n_col, n_lay, n_gpt});
-    Array<TF,3> lay_source    ({n_col, n_lay, n_gpt});
-    Array<TF,3> lev_source_inc({n_col, n_lay, n_gpt});
-    Array<TF,3> lev_source_dec({n_col, n_lay, n_gpt});
-    Array<TF,2> sfc_source    ({n_col, n_gpt});
+    Array<TF,3> tau;
+    Array<TF,3> lay_source;
+    Array<TF,3> lev_source_inc;
+    Array<TF,3> lev_source_dec;
+    Array<TF,2> sfc_source;
+
+    if (sw_output_optical)
+    {
+        tau           .set_dims({n_col, n_lay, n_gpt});
+        lay_source    .set_dims({n_col, n_lay, n_gpt});
+        lev_source_inc.set_dims({n_col, n_lay, n_gpt});
+        lev_source_dec.set_dims({n_col, n_lay, n_gpt});
+        sfc_source    .set_dims({n_col, n_gpt});
+    }
 
     Array<TF,2> lw_flux_up ({n_col, n_lev});
     Array<TF,2> lw_flux_dn ({n_col, n_lev});
     Array<TF,2> lw_flux_net({n_col, n_lev});
 
-    Array<TF,3> lw_bnd_flux_up ({n_col, n_lev, n_bnd});
-    Array<TF,3> lw_bnd_flux_dn ({n_col, n_lev, n_bnd});
-    Array<TF,3> lw_bnd_flux_net({n_col, n_lev, n_bnd});
+    Array<TF,3> lw_bnd_flux_up;
+    Array<TF,3> lw_bnd_flux_dn;
+    Array<TF,3> lw_bnd_flux_net;
+
+    if (sw_output_bnd_fluxes)
+    {
+        lw_bnd_flux_up .set_dims({n_col, n_lev, n_bnd});
+        lw_bnd_flux_dn .set_dims({n_col, n_lev, n_bnd});
+        lw_bnd_flux_net.set_dims({n_col, n_lev, n_bnd});
+    }
 
     Status::print_message("Solving the longwave radiation.");
     radiation.solve_longwave(
+            sw_output_optical,
+            sw_output_bnd_fluxes,
             gas_concs,
             p_lay, p_lev,
             t_lay, t_lev,
@@ -164,47 +185,51 @@ void solve_radiation()
 
     nc_lay.insert(p_lay.v(), {0});
     nc_lev.insert(p_lev.v(), {0});
-    
-    // WARNING: The storage in the NetCDF interface uses C-ordering and indexing.
-    // First, store the optical properties.
-    auto nc_band_lims_wvn = output_nc.add_variable<TF>("band_lims_wvn", {"band", "pair"});
-    auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
 
-    nc_band_lims_wvn.insert(radiation.get_band_lims_wavenumber().v(), {0, 0});
-    nc_band_lims_gpt.insert(radiation.get_band_lims_gpoint().v()    , {0, 0});
+    if (sw_output_optical)
+    {
+        auto nc_band_lims_wvn = output_nc.add_variable<TF>("band_lims_wvn", {"band", "pair"});
+        auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
 
-    auto nc_tau = output_nc.add_variable<TF>("tau", {"gpt", "lay", "col"});
-    nc_tau.insert(tau.v(), {0, 0, 0});
+        nc_band_lims_wvn.insert(radiation.get_band_lims_wavenumber().v(), {0, 0});
+        nc_band_lims_gpt.insert(radiation.get_band_lims_gpoint().v()    , {0, 0});
 
-    // Second, store the sources.
-    auto nc_lay_src     = output_nc.add_variable<TF>("lay_src"    , {"gpt", "lay", "col"});
-    auto nc_lev_src_inc = output_nc.add_variable<TF>("lev_src_inc", {"gpt", "lay", "col"});
-    auto nc_lev_src_dec = output_nc.add_variable<TF>("lev_src_dec", {"gpt", "lay", "col"});
+        auto nc_tau = output_nc.add_variable<TF>("tau", {"gpt", "lay", "col"});
+        nc_tau.insert(tau.v(), {0, 0, 0});
 
-    auto nc_sfc_src = output_nc.add_variable<TF>("sfc_src", {"gpt", "col"});
+        // Second, store the sources.
+        auto nc_lay_src     = output_nc.add_variable<TF>("lay_src"    , {"gpt", "lay", "col"});
+        auto nc_lev_src_inc = output_nc.add_variable<TF>("lev_src_inc", {"gpt", "lay", "col"});
+        auto nc_lev_src_dec = output_nc.add_variable<TF>("lev_src_dec", {"gpt", "lay", "col"});
 
-    nc_lay_src.insert    (lay_source.v()    , {0, 0, 0});
-    nc_lev_src_inc.insert(lev_source_inc.v(), {0, 0, 0});
-    nc_lev_src_dec.insert(lev_source_dec.v(), {0, 0, 0});
+        auto nc_sfc_src = output_nc.add_variable<TF>("sfc_src", {"gpt", "col"});
 
-    nc_sfc_src.insert(sfc_source.v(), {0, 0});
+        nc_lay_src.insert    (lay_source.v()    , {0, 0, 0});
+        nc_lev_src_inc.insert(lev_source_inc.v(), {0, 0, 0});
+        nc_lev_src_dec.insert(lev_source_dec.v(), {0, 0, 0});
+
+        nc_sfc_src.insert(sfc_source.v(), {0, 0});
+    }
 
     // Save the output of the flux calculation to disk.
     auto nc_flux_up  = output_nc.add_variable<TF>("lw_flux_up" , {"lev", "col"});
     auto nc_flux_dn  = output_nc.add_variable<TF>("lw_flux_dn" , {"lev", "col"});
     auto nc_flux_net = output_nc.add_variable<TF>("lw_flux_net", {"lev", "col"});
 
-    auto nc_bnd_flux_up  = output_nc.add_variable<TF>("lw_bnd_flux_up" , {"band", "lev", "col"});
-    auto nc_bnd_flux_dn  = output_nc.add_variable<TF>("lw_bnd_flux_dn" , {"band", "lev", "col"});
-    auto nc_bnd_flux_net = output_nc.add_variable<TF>("lw_bnd_flux_net", {"band", "lev", "col"});
-
     nc_flux_up .insert(lw_flux_up .v(), {0, 0});
     nc_flux_dn .insert(lw_flux_dn .v(), {0, 0});
     nc_flux_net.insert(lw_flux_net.v(), {0, 0});
 
-    nc_bnd_flux_up .insert(lw_bnd_flux_up .v(), {0, 0, 0});
-    nc_bnd_flux_dn .insert(lw_bnd_flux_dn .v(), {0, 0, 0});
-    nc_bnd_flux_net.insert(lw_bnd_flux_net.v(), {0, 0, 0});
+    if (sw_output_bnd_fluxes)
+    {
+        auto nc_bnd_flux_up  = output_nc.add_variable<TF>("lw_bnd_flux_up" , {"band", "lev", "col"});
+        auto nc_bnd_flux_dn  = output_nc.add_variable<TF>("lw_bnd_flux_dn" , {"band", "lev", "col"});
+        auto nc_bnd_flux_net = output_nc.add_variable<TF>("lw_bnd_flux_net", {"band", "lev", "col"});
+
+        nc_bnd_flux_up .insert(lw_bnd_flux_up .v(), {0, 0, 0});
+        nc_bnd_flux_dn .insert(lw_bnd_flux_dn .v(), {0, 0, 0});
+        nc_bnd_flux_net.insert(lw_bnd_flux_net.v(), {0, 0, 0});
+    }
 }
 
 int main()

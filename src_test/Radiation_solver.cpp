@@ -304,6 +304,8 @@ Radiation_solver<TF>::Radiation_solver(const Gas_concs<TF>& gas_concs)
 
 template<typename TF>
 void Radiation_solver<TF>::solve_longwave(
+        const bool sw_output_optical,
+        const bool sw_output_bnd_fluxes,
         const Gas_concs<TF>& gas_concs,
         const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
         const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
@@ -368,19 +370,22 @@ void Radiation_solver<TF>::solve_longwave(
                 t_lev  .subset({{ {col_s_in, col_e_in}, {1, n_lev} }}) );
 
         // Store the optical properties, if desired.
-        for (int igpt=1; igpt<=n_gpt; ++igpt)
-            for (int ilay=1; ilay<=n_lay; ++ilay)
-                for (int icol=1; icol<=n_col_in; ++icol)
-                {
-                    tau           ({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_tau()    ({icol, ilay, igpt});
-                    lay_source    ({icol+col_s_in-1, ilay, igpt}) = sources_subset_in.get_lay_source()    ({icol, ilay, igpt});
-                    lev_source_inc({icol+col_s_in-1, ilay, igpt}) = sources_subset_in.get_lev_source_inc()({icol, ilay, igpt});
-                    lev_source_dec({icol+col_s_in-1, ilay, igpt}) = sources_subset_in.get_lev_source_dec()({icol, ilay, igpt});
-                }
+        if (sw_output_optical)
+        {
+            for (int igpt=1; igpt<=n_gpt; ++igpt)
+                for (int ilay=1; ilay<=n_lay; ++ilay)
+                    for (int icol=1; icol<=n_col_in; ++icol)
+                    {
+                        tau           ({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_tau()    ({icol, ilay, igpt});
+                        lay_source    ({icol+col_s_in-1, ilay, igpt}) = sources_subset_in.get_lay_source()    ({icol, ilay, igpt});
+                        lev_source_inc({icol+col_s_in-1, ilay, igpt}) = sources_subset_in.get_lev_source_inc()({icol, ilay, igpt});
+                        lev_source_dec({icol+col_s_in-1, ilay, igpt}) = sources_subset_in.get_lev_source_dec()({icol, ilay, igpt});
+                    }
 
-        for (int igpt=1; igpt<=n_gpt; ++igpt)
-            for (int icol=1; icol<=n_col_in; ++icol)
-                sfc_source({icol+col_s_in-1, igpt}) = sources_subset_in.get_sfc_source()({icol, igpt});
+            for (int igpt=1; igpt<=n_gpt; ++igpt)
+                for (int icol=1; icol<=n_col_in; ++icol)
+                    sfc_source({icol+col_s_in-1, igpt}) = sources_subset_in.get_sfc_source()({icol, igpt});
+        }
 
         Array<TF,3> gpt_flux_up({n_col_in, n_lev, n_gpt});
         Array<TF,3> gpt_flux_dn({n_col_in, n_lev, n_gpt});
@@ -397,7 +402,6 @@ void Radiation_solver<TF>::solve_longwave(
                 n_ang);
 
         fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
-        bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
 
         // Copy the data to the output.
         for (int ilev=1; ilev<=n_lev; ++ilev)
@@ -408,14 +412,19 @@ void Radiation_solver<TF>::solve_longwave(
                 lw_flux_net({icol+col_s_in-1, ilev}) = fluxes.get_flux_net()({icol, ilev});
             }
 
-        for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
-            for (int ilev=1; ilev<=n_lev; ++ilev)
-                for (int icol=1; icol<=n_col_in; ++icol)
-                {
-                    lw_bnd_flux_up ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_up ()({icol, ilev, ibnd});
-                    lw_bnd_flux_dn ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn ()({icol, ilev, ibnd});
-                    lw_bnd_flux_net({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_net()({icol, ilev, ibnd});
-                }
+        if (sw_output_bnd_fluxes)
+        {
+            bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
+
+            for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
+                for (int ilev=1; ilev<=n_lev; ++ilev)
+                    for (int icol=1; icol<=n_col_in; ++icol)
+                    {
+                        lw_bnd_flux_up ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_up ()({icol, ilev, ibnd});
+                        lw_bnd_flux_dn ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn ()({icol, ilev, ibnd});
+                        lw_bnd_flux_net({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_net()({icol, ilev, ibnd});
+                    }
+        }
     };
 
     for (int b=1; b<=n_blocks; ++b)
