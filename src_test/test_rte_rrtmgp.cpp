@@ -38,14 +38,53 @@
 #endif
 
 template<typename TF>
+void read_and_set_vmr(
+        const std::string& gas_name, const int n_col, const int n_lay,
+        const Netcdf_handle& input_nc, Gas_concs<TF>& gas_concs)
+{
+    const std::string vmr_gas_name = "vmr_" + gas_name;
+
+    if (input_nc.variable_exists(vmr_gas_name))
+    {
+        std::map<std::string, int> dims = input_nc.get_variable_dimensions(vmr_gas_name);
+        const int n_dims = dims.size();
+
+        if (n_dims == 0)
+        {
+            gas_concs.set_vmr(gas_name, input_nc.get_variable<TF>(vmr_gas_name));
+        }
+        else if (n_dims == 1)
+        {
+            if (dims.at("lay") == n_lay)
+                gas_concs.set_vmr(gas_name,
+                                  Array<TF,1>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay}), {n_lay}));
+            else
+                throw std::runtime_error("Illegal dimensions of gas \"" + gas_name + "\" in input");
+        }
+        else if (n_dims == 2)
+        {
+            if (dims.at("lay") == n_lay && dims.at("col") == n_col)
+                gas_concs.set_vmr(gas_name,
+                                  Array<TF,2>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay, n_col}), {n_col, n_lay}));
+            else
+                throw std::runtime_error("Illegal dimensions of gas \"" + gas_name + "\" in input");
+        }
+    }
+    else
+    {
+        Status::print_warning("Gas \"" + gas_name + "\" not available in input file.");
+    }
+}
+
+template<typename TF>
 void solve_radiation()
 {
     Netcdf_file input_nc("rte_rrtmgp_input.nc", Netcdf_mode::Read);
 
     ////// READ THE ATMOSPHERIC DATA //////
+    const int n_col = input_nc.get_dimension_size("col");
     const int n_lay = input_nc.get_dimension_size("lay");
     const int n_lev = input_nc.get_dimension_size("lev");
-    const int n_col = input_nc.get_dimension_size("col");
     const int n_bnd = input_nc.get_dimension_size("band");
 
     // Read the atmospheric fields.
@@ -59,51 +98,14 @@ void solve_radiation()
     Array<TF,1> t_sfc(input_nc.get_variable<TF>("t_sfc", {n_col}), {n_col});
 
     Gas_concs<TF> gas_concs;
-
-    auto read_and_set_vmr = [&](const std::string& gas_name)
-    {
-        const std::string vmr_gas_name = "vmr_" + gas_name;
-
-        if (input_nc.variable_exists(vmr_gas_name))
-        {
-            std::map<std::string, int> dims = input_nc.get_variable_dimensions(vmr_gas_name);
-            const int n_dims = dims.size();
-
-            if (n_dims == 0)
-            {
-                gas_concs.set_vmr(gas_name, input_nc.get_variable<TF>(vmr_gas_name));
-            }
-            else if (n_dims == 1)
-            {
-                if (dims.at("lay") == n_lay)
-                    gas_concs.set_vmr(gas_name,
-                            Array<TF,1>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay}), {n_lay}));
-                else
-                    throw std::runtime_error("Illegal dimensions of gas \"" + gas_name + "\" in input");
-            }
-            else if (n_dims == 2)
-            {
-                if (dims.at("lay") == n_lay && dims.at("col") == n_col)
-                    gas_concs.set_vmr(gas_name,
-                            Array<TF,2>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay, n_col}), {n_col, n_lay}));
-                else
-                    throw std::runtime_error("Illegal dimensions of gas \"" + gas_name + "\" in input");
-            }
-        }
-        else
-        {
-            Status::print_warning("Gas \"" + gas_name + "\" not available in input file.");
-        }
-    };
-
-    read_and_set_vmr("h2o");
-    read_and_set_vmr("co2");
-    read_and_set_vmr("o3" );
-    read_and_set_vmr("n2o");
-    read_and_set_vmr("co" );
-    read_and_set_vmr("ch4");
-    read_and_set_vmr("o2" );
-    read_and_set_vmr("n2" );
+    read_and_set_vmr("h2o", n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("co2", n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("o3" , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("n2o", n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("co" , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("ch4", n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("o2" , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("n2" , n_col, n_lay, input_nc, gas_concs);
 
     // Fetch the col_dry in case present.
     Array<TF,2> col_dry({n_col, n_lay});

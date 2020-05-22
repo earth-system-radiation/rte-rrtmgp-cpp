@@ -65,13 +65,13 @@ class Netcdf_handle
         void add_dimension(const std::string&, const int dim_size = NC_UNLIMITED);
 
         Netcdf_group add_group(const std::string&);
-        Netcdf_group get_group(const std::string&);
+        Netcdf_group get_group(const std::string&) const;
 
         int get_dimension_size(const std::string&);
 
-        std::map<std::string, int> get_variable_dimensions(const std::string&);
+        std::map<std::string, int> get_variable_dimensions(const std::string&) const;
 
-        bool variable_exists(const std::string&);
+        bool variable_exists(const std::string&) const;
 
         template<typename T>
         Netcdf_variable<T> add_variable(
@@ -80,19 +80,19 @@ class Netcdf_handle
 
         template<typename T>
         T get_variable(
-            const std::string&);
+            const std::string&) const;
 
         template<typename T>
         std::vector<T> get_variable(
             const std::string&,
-            const std::vector<int>&);
+            const std::vector<int>&) const;
 
         template<typename T>
         void get_variable(
                 std::vector<T>&,
                 const std::string&,
                 const std::vector<int>&,
-                const std::vector<int>&);
+                const std::vector<int>&) const;
 
         template<typename T>
         void insert(
@@ -492,7 +492,7 @@ inline Netcdf_group Netcdf_handle::add_group(const std::string& name)
     return Netcdf_group(group_ncid, root_ncid);
 }
 
-inline Netcdf_group Netcdf_handle::get_group(const std::string& name)
+inline Netcdf_group Netcdf_handle::get_group(const std::string& name) const
 {
     int group_ncid = -1;
     int nc_check_code = 0;
@@ -527,7 +527,8 @@ inline Netcdf_group::Netcdf_group(const int ncid_in, const int root_ncid_in) :
     root_ncid = root_ncid_in;
 }
 
-inline std::map<std::string, int> Netcdf_handle::get_variable_dimensions(const std::string& name)
+inline std::map<std::string, int> Netcdf_handle::get_variable_dimensions(
+        const std::string& name) const
 {
     int nc_check_code = 0;
     int var_id;
@@ -559,7 +560,7 @@ inline std::map<std::string, int> Netcdf_handle::get_variable_dimensions(const s
     return dims;
 }
 
-inline bool Netcdf_handle::variable_exists(const std::string& name)
+inline bool Netcdf_handle::variable_exists(const std::string& name) const
 {
     int nc_check_code = 0;
     int var_id;
@@ -579,7 +580,7 @@ inline bool Netcdf_handle::variable_exists(const std::string& name)
 
 template<typename TF>
 inline TF Netcdf_handle::get_variable(
-        const std::string& name)
+        const std::string& name) const
 {
     std::string message = "Retrieving from NetCDF (single value): " + name;
     Status::print_message(message);
@@ -604,7 +605,7 @@ inline TF Netcdf_handle::get_variable(
 template<typename TF>
 inline std::vector<TF> Netcdf_handle::get_variable(
         const std::string& name,
-        const std::vector<int>& i_count)
+        const std::vector<int>& i_count) const
 {
     std::string message = "Retrieving from NetCDF (full array): " + name;
     Status::print_message(message);
@@ -633,7 +634,7 @@ inline void Netcdf_handle::get_variable(
         std::vector<TF>& values,
         const std::string& name,
         const std::vector<int>& i_start,
-        const std::vector<int>& i_count)
+        const std::vector<int>& i_count) const
 {
     std::string message = "Retrieving from NetCDF: " + name;
     Status::print_message(message);
