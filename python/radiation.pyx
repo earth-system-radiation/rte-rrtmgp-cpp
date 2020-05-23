@@ -30,7 +30,7 @@ cdef extern from "../include/Array.h":
 cdef extern from "../include_test/Radiation_solver.h":
     cdef cppclass Radiation_solver[TF]:
         Radiation_solver() except +
-        void load_kdistribution_lw(const std_string&);
+        void load_kdistribution_longwave(const std_string&);
         void set_vmr(const std_string&, const TF);
         void set_vmr(const std_string&, const Array[TF,d1]&);
         void set_vmr(const std_string&, const Array[TF,d2]&);
@@ -115,9 +115,9 @@ cdef class Radiation_solver_wrapper:
             raise RuntimeError('Illegal input')
 
 
-    def load_kdistribution_lw(self):
+    def load_kdistribution_longwave(self):
         cdef std_string file_name_cpp = b'coefficients_lw.nc'
-        self.rad.load_kdistribution_lw(file_name_cpp)
+        self.rad.load_kdistribution_longwave(file_name_cpp)
 
 
 
