@@ -118,7 +118,7 @@ void solve_radiation()
 
     ////// INITIALIZE THE K-DISTRIBUTION //////
     Status::print_message("Initializing the k-distribution after gases are read.");
-    radiation.load_kdistribution_lw("coefficients_lw.nc");
+    radiation.load_kdistribution_longwave("coefficients_lw.nc");
 
 
     ////// READ THE SURFACE DATA //////

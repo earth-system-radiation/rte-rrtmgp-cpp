@@ -295,7 +295,7 @@ namespace
 }
 
 template<typename TF>
-void Radiation_solver<TF>::load_kdistribution_lw(const std::string& file_name)
+void Radiation_solver<TF>::load_kdistribution_longwave(const std::string& file_name)
 {
     // Construct the gas optics classes for the solver.
     this->kdist_lw = std::make_unique<Gas_optics_rrtmgp<TF>>(

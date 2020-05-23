@@ -34,7 +34,7 @@ class Radiation_solver
 {
     public:
         Radiation_solver() {}
-        void load_kdistribution_lw(const std::string& file_name);
+        void load_kdistribution_longwave(const std::string& file_name);
 
         const Array<TF,2>& get_vmr(const std::string& name) const
         { return this->gas_concs.get_vmr(name); }
