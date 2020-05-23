@@ -39,7 +39,7 @@ cdef extern from "../include_test/Radiation_solver.h":
                 const bool sw_output_bnd_fluxes,
                 const Array[TF,d2]& p_lay, const Array[TF,d2]& p_lev,
                 const Array[TF,d2]& t_lay, const Array[TF,d2]& t_lev,
-                const Array[TF,d2]& col_dry,
+                # const Array[TF,d2]& col_dry,
                 const Array[TF,d1]& t_sfc, const Array[TF,d2]& emis_sfc,
                 Array[TF,d3]& tau, Array[TF,d3]& lay_source,
                 Array[TF,d3]& lev_source_inc, Array[TF,d3]& lev_source_dec, Array[TF,d2]& sfc_source,
@@ -128,7 +128,7 @@ cdef class Radiation_solver_wrapper:
                 np.ndarray[double, ndim=2, mode="c"] p_lev not None,
                 np.ndarray[double, ndim=2, mode="c"] t_lay not None,
                 np.ndarray[double, ndim=2, mode="c"] t_lev not None,
-                np.ndarray[double, ndim=2, mode="c"] col_dry not None,
+                # np.ndarray[double, ndim=2, mode="c"] col_dry not None,
                 np.ndarray[double, ndim=1, mode="c"] t_sfc not None,
                 np.ndarray[double, ndim=2, mode="c"] emis_sfc not None,
                 np.ndarray[double, ndim=3, mode="c"] tau not None,
@@ -149,7 +149,7 @@ cdef class Radiation_solver_wrapper:
 
         nbnd = emis_sfc.shape[1]
 
-        cdef Array[double,d2] p_lay_cpp, p_lev_cpp, t_lay_cpp, t_lev_cpp, col_dry_cpp
+        cdef Array[double,d2] p_lay_cpp, p_lev_cpp, t_lay_cpp, t_lev_cpp # , col_dry_cpp
         cdef Array[double,d1] t_sfc_cpp,
         cdef Array[double,d2] emis_sfc_cpp
         cdef Array[double,d3] tau_cpp, lay_source_cpp, lev_source_inc_cpp, lev_source_dec_cpp
@@ -173,7 +173,7 @@ cdef class Radiation_solver_wrapper:
         p_lev_cpp.set_dims(d_ncol_nlev)
         t_lay_cpp.set_dims(d_ncol_nlay)
         t_lev_cpp.set_dims(d_ncol_nlev)
-        col_dry_cpp.set_dims(d_ncol_nlay)
+        # col_dry_cpp.set_dims(d_ncol_nlay)
         t_sfc_cpp.set_dims(d_ncol)
         emis_sfc_cpp.set_dims(d_nbnd_ncol)
         lw_flux_up_cpp.set_dims(d_ncol_nlev)
@@ -184,7 +184,7 @@ cdef class Radiation_solver_wrapper:
         copy_raw(&p_lev[0,0], p_lev_cpp.ptr(), p_lev.size)
         copy_raw(&t_lay[0,0], t_lay_cpp.ptr(), t_lay.size)
         copy_raw(&t_lev[0,0], t_lev_cpp.ptr(), t_lev.size)
-        copy_raw(&col_dry[0,0], col_dry_cpp.ptr(), col_dry.size)
+        # copy_raw(&col_dry[0,0], col_dry_cpp.ptr(), col_dry.size)
         copy_raw(&t_sfc[0], t_sfc_cpp.ptr(), t_sfc.size)
         copy_raw(&emis_sfc[0,0], emis_sfc_cpp.ptr(), emis_sfc.size)
 
@@ -193,7 +193,7 @@ cdef class Radiation_solver_wrapper:
                 sw_output_bnd_fluxes,
                 p_lay_cpp, p_lev_cpp,
                 t_lay_cpp, t_lev_cpp,
-                col_dry_cpp,
+                # col_dry_cpp,
                 t_sfc_cpp, emis_sfc_cpp,
                 tau_cpp, lay_source_cpp,
                 lev_source_inc_cpp, lev_source_dec_cpp, sfc_source_cpp,

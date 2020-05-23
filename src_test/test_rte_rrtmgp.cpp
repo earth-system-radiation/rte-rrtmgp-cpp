@@ -130,12 +130,11 @@ void solve_radiation()
     Array<TF,2> emis_sfc(input_nc.get_variable<TF>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
     Array<TF,1> t_sfc(input_nc.get_variable<TF>("t_sfc", {n_col}), {n_col});
 
+    // CvH: This needs to be solved. Do we every have examples with col_dry?
     // Fetch the col_dry in case present.
-    Array<TF,2> col_dry({n_col, n_lay});
-    if (input_nc.variable_exists("col_dry"))
-        col_dry = input_nc.get_variable<TF>("col_dry", {n_lay, n_col});
-    else
-        Gas_optics_rrtmgp<TF>::get_col_dry(col_dry, radiation.get_vmr("h2o"), p_lev);
+    // Array<TF,2> col_dry({n_col, n_lay});
+    // if (input_nc.variable_exists("col_dry"))
+    //     col_dry = input_nc.get_variable<TF>("col_dry", {n_lay, n_col});
 
 
     ////// CREATE THE OUTPUT ARRAYS //////
@@ -177,7 +176,7 @@ void solve_radiation()
             sw_output_bnd_fluxes,
             p_lay, p_lev,
             t_lay, t_lev,
-            col_dry,
+            // col_dry,
             t_sfc, emis_sfc,
             tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
             lw_flux_up, lw_flux_dn, lw_flux_net,

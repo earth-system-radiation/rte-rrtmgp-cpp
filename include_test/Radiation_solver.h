@@ -48,7 +48,7 @@ class Radiation_solver
                 const bool sw_output_bnd_fluxes,
                 const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
                 const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
-                const Array<TF,2>& col_dry,
+                // const Array<TF,2>& col_dry,
                 const Array<TF,1>& t_sfc, const Array<TF,2>& emis_sfc,
                 Array<TF,3>& tau, Array<TF,3>& lay_source,
                 Array<TF,3>& lev_source_inc, Array<TF,3>& lev_source_dec, Array<TF,2>& sfc_source,
