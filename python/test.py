@@ -16,8 +16,28 @@ vmr_ch4 = nc_file.variables['vmr_ch4'][:]
 vmr_o2  = nc_file.variables['vmr_o2' ][:]
 vmr_n2  = nc_file.variables['vmr_n2' ][:]
 
+p_lay = nc_file.variables['lay'][:]
+p_lev = nc_file.variables['lev'][:]
+t_lay = nc_file.variables['t_lay'][:]
+t_lev = nc_file.variables['t_lev'][:]
+
+t_sfc = nc_file.variables['t_sfc'][:]
+emis_sfc = nc_file.variables['emis_sfc'][:]
+
 nc_file.close()
 
+tau = np.zeros((0,0,0))
+lay_source = np.zeros((0,0,0))
+lev_source_inc = np.zeros((0,0,0))
+lev_source_dec = np.zeros((0,0,0))
+sfc_source = np.zeros((0,0))
+
+lw_flux_up  = np.zeros(p_lev.shape)
+lw_flux_dn  = np.zeros(p_lev.shape)
+lw_flux_net = np.zeros(p_lev.shape)
+lw_flux_up  = np.zeros((0,0,0))
+lw_flux_dn  = np.zeros((0,0,0))
+lw_flux_net = np.zeros((0,0,0))
 
 rad = radiation.Radiation_solver_wrapper()
 
@@ -31,4 +51,19 @@ rad.set_vmr(b'o2' , vmr_o2 )
 rad.set_vmr(b'n2' , vmr_n2 )
 
 rad.load_kdistribution_lw()
+
+
+
+rad.solve_longwave(
+        False,
+        False,
+        p_lay, p_lev,
+        t_lay, t_lev,
+        col_dry,
+        t_sfc, emis_sfc,
+        tau, lay_source,
+        lev_source_inc, lev_source_dec,
+        sfc_source,
+        lw_flux_up, lw_flux_dn, lw_flux_net,
+        lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net)
 
