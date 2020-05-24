@@ -116,7 +116,7 @@ void solve_radiation()
 
     ////// INITIALIZE THE SOLVER AND INIT K-DISTRIBUTION //////
     Status::print_message("Initializing the solver.");
-    Radiation_solver<TF> radiation(gas_concs, "coefficients_lw.nc");
+    Radiation_solver_longwave<TF> radiation(gas_concs, "coefficients_lw.nc");
 
 
     ////// READ THE SURFACE DATA //////
@@ -174,7 +174,7 @@ void solve_radiation()
 
     auto time_start = std::chrono::high_resolution_clock::now();
 
-    radiation.solve_longwave(
+    radiation.solve(
             sw_output_optical,
             sw_output_bnd_fluxes,
             gas_concs,

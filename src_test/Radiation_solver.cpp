@@ -295,16 +295,16 @@ namespace
 }
 
 template<typename TF>
-Radiation_solver<TF>::Radiation_solver(
+Radiation_solver_longwave<TF>::Radiation_solver_longwave(
         const Gas_concs<TF>& gas_concs, const std::string& file_name)
 {
     // Construct the gas optics classes for the solver.
-    this->kdist_lw = std::make_unique<Gas_optics_rrtmgp<TF>>(
+    this->kdist = std::make_unique<Gas_optics_rrtmgp<TF>>(
             load_and_init_gas_optics(gas_concs, file_name));
 }
 
 template<typename TF>
-void Radiation_solver<TF>::solve_longwave(
+void Radiation_solver_longwave<TF>::solve(
         const bool sw_output_optical,
         const bool sw_output_bnd_fluxes,
         const Gas_concs<TF>& gas_concs,
@@ -320,8 +320,8 @@ void Radiation_solver<TF>::solve_longwave(
     const int n_col = p_lay.dim(1);
     const int n_lay = p_lay.dim(2);
     const int n_lev = p_lev.dim(2);
-    const int n_gpt = this->kdist_lw->get_ngpt();
-    const int n_bnd = this->kdist_lw->get_nband();
+    const int n_gpt = this->kdist->get_ngpt();
+    const int n_bnd = this->kdist->get_nband();
 
     const BOOL_TYPE top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
@@ -334,17 +334,17 @@ void Radiation_solver<TF>::solve_longwave(
     std::unique_ptr<Optical_props_arry<TF>> optical_props_subset;
     std::unique_ptr<Optical_props_arry<TF>> optical_props_residual;
 
-    optical_props_subset = std::make_unique<Optical_props_1scl<TF>>(n_col_block, n_lay, *kdist_lw);
+    optical_props_subset = std::make_unique<Optical_props_1scl<TF>>(n_col_block, n_lay, *kdist);
 
     std::unique_ptr<Source_func_lw<TF>> sources_subset;
     std::unique_ptr<Source_func_lw<TF>> sources_residual;
 
-    sources_subset = std::make_unique<Source_func_lw<TF>>(n_col_block, n_lay, *kdist_lw);
+    sources_subset = std::make_unique<Source_func_lw<TF>>(n_col_block, n_lay, *kdist);
 
     if (n_col_block_residual > 0)
     {
-        optical_props_residual = std::make_unique<Optical_props_1scl<TF>>(n_col_block_residual, n_lay, *kdist_lw);
-        sources_residual = std::make_unique<Source_func_lw<TF>>(n_col_block_residual, n_lay, *kdist_lw);
+        optical_props_residual = std::make_unique<Optical_props_1scl<TF>>(n_col_block_residual, n_lay, *kdist);
+        sources_residual = std::make_unique<Source_func_lw<TF>>(n_col_block_residual, n_lay, *kdist);
     }
 
     // Lambda function for solving optical properties subset.
@@ -367,7 +367,7 @@ void Radiation_solver<TF>::solve_longwave(
         else
             col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
-        kdist_lw->gas_optics(
+        kdist->gas_optics(
                 p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                 p_lev_subset,
                 t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
@@ -479,7 +479,7 @@ void Radiation_solver<TF>::solve_longwave(
 }
 
 #ifdef FLOAT_SINGLE_RRTMGP
-template class Radiation_solver<float>;
+template class Radiation_solver_longwave<float>;
 #else
-template class Radiation_solver<double>;
+template class Radiation_solver_longwave<double>;
 #endif

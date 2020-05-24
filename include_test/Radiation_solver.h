@@ -30,12 +30,12 @@
 #include "Gas_optics_rrtmgp.h"
 
 template<typename TF>
-class Radiation_solver
+class Radiation_solver_longwave
 {
     public:
-        Radiation_solver(const Gas_concs<TF>& gas_concs, const std::string& file_name);
+        Radiation_solver_longwave(const Gas_concs<TF>& gas_concs, const std::string& file_name);
 
-        void solve_longwave(
+        void solve(
                 const bool sw_output_optical,
                 const bool sw_output_bnd_fluxes,
                 const Gas_concs<TF>& gas_concs,
@@ -48,16 +48,16 @@ class Radiation_solver
                 Array<TF,2>& lw_flux_up, Array<TF,2>& lw_flux_dn, Array<TF,2>& lw_flux_net,
                 Array<TF,3>& lw_bnd_flux_up, Array<TF,3>& lw_bnd_flux_dn, Array<TF,3>& lw_bnd_flux_net) const;
 
-        int get_n_gpt() const { return this->kdist_lw->get_ngpt(); };
-        int get_n_bnd() const { return this->kdist_lw->get_nband(); };
+        int get_n_gpt() const { return this->kdist->get_ngpt(); };
+        int get_n_bnd() const { return this->kdist->get_nband(); };
 
         Array<int,2> get_band_lims_gpoint() const
-        { return this->kdist_lw->get_band_lims_gpoint(); }
+        { return this->kdist->get_band_lims_gpoint(); }
 
         Array<TF,2> get_band_lims_wavenumber() const
-        { return this->kdist_lw->get_band_lims_wavenumber(); }
+        { return this->kdist->get_band_lims_wavenumber(); }
 
     private:
-        std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist_lw;
+        std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist;
 };
 #endif
