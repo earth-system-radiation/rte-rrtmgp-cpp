@@ -26,6 +26,7 @@ emis_sfc = nc_file.variables['emis_sfc'][:]
 
 nc_file.close()
 
+col_dry = np.zeros((0,0))
 
 # Create the output arrays.
 tau = np.zeros((0,0,0))
@@ -67,7 +68,7 @@ rad.solve_longwave(
         False,
         p_lay, p_lev,
         t_lay, t_lev,
-        # col_dry,
+        col_dry,
         t_sfc, emis_sfc,
         tau, lay_source,
         lev_source_inc, lev_source_dec,
