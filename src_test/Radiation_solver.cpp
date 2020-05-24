@@ -341,7 +341,7 @@ void Radiation_solver<TF>::solve_longwave(
 
     const BOOL_TYPE top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
-    constexpr int n_col_block = 4;
+    constexpr int n_col_block = 16;
 
     // Read the sources and create containers for the substeps.
     int n_blocks = n_col / n_col_block;

@@ -83,7 +83,7 @@ void solve_radiation()
 {
     ////// FLOW CONTROL SWITCHES //////
     const bool sw_output_optical = false;
-    const bool sw_output_bnd_fluxes = true;
+    const bool sw_output_bnd_fluxes = false;
 
 
     ////// INITIALIZE THE SOLVER //////
@@ -173,6 +173,9 @@ void solve_radiation()
 
     ////// SOLVE THE RADIATION //////
     Status::print_message("Solving the longwave radiation.");
+
+    auto time_start = std::chrono::high_resolution_clock::now();
+
     radiation.solve_longwave(
             sw_output_optical,
             sw_output_bnd_fluxes,
@@ -183,6 +186,11 @@ void solve_radiation()
             tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
             lw_flux_up, lw_flux_dn, lw_flux_net,
             lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
+
+    auto time_end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+
+    Status::print_message("Duration solver: " + std::to_string(duration) + " (ms)");
 
 
     ////// SAVING THE OUTPUT TO NETCDF //////
@@ -246,6 +254,8 @@ void solve_radiation()
         nc_bnd_flux_dn .insert(lw_bnd_flux_dn .v(), {0, 0, 0});
         nc_bnd_flux_net.insert(lw_bnd_flux_net.v(), {0, 0, 0});
     }
+
+    Status::print_message("Finished.");
 }
 
 int main()
