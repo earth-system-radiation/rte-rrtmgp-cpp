@@ -1,8 +1,10 @@
 import netCDF4 as nc
 import numpy as np
 import matplotlib.pyplot as plt
+import timeit
 import radiation
 
+print('CvH0')
 
 # Read the input data.
 nc_file = nc.Dataset('rte_rrtmgp_input.nc', 'r')
@@ -16,6 +18,21 @@ vmr_ch4 = nc_file.variables['vmr_ch4'][:]
 vmr_o2  = nc_file.variables['vmr_o2' ][:]
 vmr_n2  = nc_file.variables['vmr_n2' ][:]
 
+gas_concs = radiation.Gas_concs_wrapper()
+
+# Load the gas concentrations.
+gas_concs.set_vmr(b'h2o', vmr_h2o)
+gas_concs.set_vmr(b'co2', vmr_co2)
+gas_concs.set_vmr(b'o3' , vmr_o3 )
+gas_concs.set_vmr(b'n2o', rmr_n2o)
+# gas_concs.set_vmr(b'co' , vmr_co )
+gas_concs.set_vmr(b'ch4', vmr_ch4)
+gas_concs.set_vmr(b'o2' , vmr_o2 )
+gas_concs.set_vmr(b'n2' , vmr_n2 )
+
+print('CvH1')
+
+# Load the thermodynamic variables.
 p_lay = nc_file.variables['lay'][:]
 p_lev = nc_file.variables['lev'][:]
 t_lay = nc_file.variables['t_lay'][:]
@@ -43,29 +60,19 @@ lw_bnd_flux_dn  = np.zeros((0,0,0))
 lw_bnd_flux_net = np.zeros((0,0,0))
 
 
+print('CvH2')
 # Initialize the solver.
-rad = radiation.Radiation_solver_wrapper()
+rad = radiation.Radiation_solver_wrapper(gas_concs, b'coefficients_lw.nc')
 
-
-# Load the gas concentrations.
-rad.set_vmr(b'h2o', vmr_h2o)
-rad.set_vmr(b'co2', vmr_co2)
-rad.set_vmr(b'o3' , vmr_o3 )
-rad.set_vmr(b'n2o', rmr_n2o)
-# rad.set_vmr(b'co' , vmr_co )
-rad.set_vmr(b'ch4', vmr_ch4)
-rad.set_vmr(b'o2' , vmr_o2 )
-rad.set_vmr(b'n2' , vmr_n2 )
-
-
-# Load the coefficients for the k-distribution.
-rad.load_kdistribution_longwave()
-
+print('CvH3')
 
 # Solve the radiation fluxes.
-rad.solve_longwave(
+start = timeit.default_timer()
+
+rad.solve(
         False,
         False,
+        gas_concs,
         p_lay, p_lev,
         t_lay, t_lev,
         col_dry,
@@ -76,6 +83,8 @@ rad.solve_longwave(
         lw_flux_up, lw_flux_dn, lw_flux_net,
         lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net)
 
+end = timeit.default_timer()
+print('Duration: {} s'.format(end-start))
 
 # Plot some output.
 plt.figure()

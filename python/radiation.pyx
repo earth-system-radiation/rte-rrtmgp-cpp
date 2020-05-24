@@ -27,16 +27,21 @@ cdef extern from "../include/Array.h":
         T* ptr()
 
 
+cdef extern from "../include/Gas_concs.h":
+    cdef cppclass Gas_concs[TF]:
+        Gas_concs()
+        void set_vmr(const std_string&, const TF) except +
+        void set_vmr(const std_string&, const Array[TF,d1]&) except +
+        void set_vmr(const std_string&, const Array[TF,d2]&) except +
+
+
 cdef extern from "../include_test/Radiation_solver.h":
-    cdef cppclass Radiation_solver[TF]:
-        Radiation_solver() except +
-        void load_kdistribution_longwave(const std_string&);
-        void set_vmr(const std_string&, const TF);
-        void set_vmr(const std_string&, const Array[TF,d1]&);
-        void set_vmr(const std_string&, const Array[TF,d2]&);
-        void solve_longwave(
+    cdef cppclass Radiation_solver_longwave[TF]:
+        Radiation_solver_longwave(const Gas_concs[TF]&, const std_string&) except +
+        void solve(
                 const bool sw_output_optical,
                 const bool sw_output_bnd_fluxes,
+                const Gas_concs[TF]& gas_concs,
                 const Array[TF,d2]& p_lay, const Array[TF,d2]& p_lev,
                 const Array[TF,d2]& t_lay, const Array[TF,d2]& t_lev,
                 const Array[TF,d2]& col_dry,
@@ -55,8 +60,8 @@ cdef copy_raw(double* a_in, double* a_out, int n):
         a_out[i] = a_in[i]
 
 
-cdef class Radiation_solver_wrapper:
-    cdef Radiation_solver[double] rad
+cdef class Gas_concs_wrapper:
+    cdef Gas_concs[double] gas_concs_cpp
 
     def set_vmr(self, gas_name, gas_conc):
         cdef std_string gas_name_cpp = gas_name
@@ -78,7 +83,7 @@ cdef class Radiation_solver_wrapper:
 
             if len(gas_conc.shape) == 0:
                 gas_conc_0d = gas_conc
-                self.rad.set_vmr(gas_name_cpp, gas_conc_0d)
+                self.gas_concs_cpp.set_vmr(gas_name_cpp, gas_conc_0d)
 
             elif len(gas_conc.shape) == 1:
                 dims_1d[0] = gas_conc.shape[0]
@@ -90,7 +95,7 @@ cdef class Radiation_solver_wrapper:
                     gas_conc_ptr = &gas_conc_1d(index_1d)
                     gas_conc_ptr[0] = gas_conc[ilev]
 
-                self.rad.set_vmr(gas_name_cpp, gas_conc_1d)
+                self.gas_concs_cpp.set_vmr(gas_name_cpp, gas_conc_1d)
 
             elif len(gas_conc.shape) == 2:
                 dims_2d[0] = gas_conc.shape[1]
@@ -106,7 +111,7 @@ cdef class Radiation_solver_wrapper:
                         gas_conc_ptr = &gas_conc_2d(index_2d)
                         gas_conc_ptr[0] = gas_conc[ilev, icol]
 
-                self.rad.set_vmr(gas_name_cpp, gas_conc_2d)
+                self.gas_concs_cpp.set_vmr(gas_name_cpp, gas_conc_2d)
 
             else:
                 raise RuntimeError('Illegal shape dimension')
@@ -115,33 +120,41 @@ cdef class Radiation_solver_wrapper:
             raise RuntimeError('Illegal input')
 
 
-    def load_kdistribution_longwave(self):
-        cdef std_string file_name_cpp = b'coefficients_lw.nc'
-        self.rad.load_kdistribution_longwave(file_name_cpp)
+cdef class Radiation_solver_wrapper:
+    cdef Radiation_solver_longwave[double]* rad
 
+    def __cinit__(
+            self, Gas_concs_wrapper gas_concs, file_name):
 
+        cdef std_string file_name_cpp = file_name
+        self.rad = new Radiation_solver_longwave[double](gas_concs.gas_concs_cpp, file_name_cpp)
 
-    def solve_longwave(self,
-                sw_output_optical,
-                sw_output_bnd_fluxes,
-                np.ndarray[double, ndim=2, mode="c"] p_lay not None,
-                np.ndarray[double, ndim=2, mode="c"] p_lev not None,
-                np.ndarray[double, ndim=2, mode="c"] t_lay not None,
-                np.ndarray[double, ndim=2, mode="c"] t_lev not None,
-                np.ndarray[double, ndim=2, mode="c"] col_dry not None,
-                np.ndarray[double, ndim=1, mode="c"] t_sfc not None,
-                np.ndarray[double, ndim=2, mode="c"] emis_sfc not None,
-                np.ndarray[double, ndim=3, mode="c"] tau not None,
-                np.ndarray[double, ndim=3, mode="c"] lay_source not None,
-                np.ndarray[double, ndim=3, mode="c"] lev_source_inc not None,
-                np.ndarray[double, ndim=3, mode="c"] lev_source_dec not None,
-                np.ndarray[double, ndim=2, mode="c"] sfc_source not None,
-                np.ndarray[double, ndim=2, mode="c"] lw_flux_up not None,
-                np.ndarray[double, ndim=2, mode="c"] lw_flux_dn not None,
-                np.ndarray[double, ndim=2, mode="c"] lw_flux_net not None,
-                np.ndarray[double, ndim=3, mode="c"] lw_bnd_flux_up not None,
-                np.ndarray[double, ndim=3, mode="c"] lw_bnd_flux_dn not None,
-                np.ndarray[double, ndim=3, mode="c"] lw_bnd_flux_net not None):
+    def __dealloc__(self):
+        del self.rad
+
+    def solve(
+            self,
+            sw_output_optical,
+            sw_output_bnd_fluxes,
+            Gas_concs_wrapper gas_concs,
+            np.ndarray[double, ndim=2, mode="c"] p_lay not None,
+            np.ndarray[double, ndim=2, mode="c"] p_lev not None,
+            np.ndarray[double, ndim=2, mode="c"] t_lay not None,
+            np.ndarray[double, ndim=2, mode="c"] t_lev not None,
+            np.ndarray[double, ndim=2, mode="c"] col_dry not None,
+            np.ndarray[double, ndim=1, mode="c"] t_sfc not None,
+            np.ndarray[double, ndim=2, mode="c"] emis_sfc not None,
+            np.ndarray[double, ndim=3, mode="c"] tau not None,
+            np.ndarray[double, ndim=3, mode="c"] lay_source not None,
+            np.ndarray[double, ndim=3, mode="c"] lev_source_inc not None,
+            np.ndarray[double, ndim=3, mode="c"] lev_source_dec not None,
+            np.ndarray[double, ndim=2, mode="c"] sfc_source not None,
+            np.ndarray[double, ndim=2, mode="c"] lw_flux_up not None,
+            np.ndarray[double, ndim=2, mode="c"] lw_flux_dn not None,
+            np.ndarray[double, ndim=2, mode="c"] lw_flux_net not None,
+            np.ndarray[double, ndim=3, mode="c"] lw_bnd_flux_up not None,
+            np.ndarray[double, ndim=3, mode="c"] lw_bnd_flux_dn not None,
+            np.ndarray[double, ndim=3, mode="c"] lw_bnd_flux_net not None):
 
         ncol = p_lay.shape[1]
         nlay = p_lay.shape[0]
@@ -190,9 +203,10 @@ cdef class Radiation_solver_wrapper:
         copy_raw(&t_sfc[0], t_sfc_cpp.ptr(), t_sfc.size)
         copy_raw(&emis_sfc[0,0], emis_sfc_cpp.ptr(), emis_sfc.size)
 
-        self.rad.solve_longwave(
+        self.rad.solve(
                 sw_output_optical,
                 sw_output_bnd_fluxes,
+                gas_concs.gas_concs_cpp,
                 p_lay_cpp, p_lev_cpp,
                 t_lay_cpp, t_lev_cpp,
                 col_dry_cpp,
