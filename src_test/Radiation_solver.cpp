@@ -326,7 +326,7 @@ void Radiation_solver<TF>::solve_longwave(
         const bool sw_output_bnd_fluxes,
         const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
         const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
-        // const Array<TF,2>& col_dry,
+        const Array<TF,2>& col_dry,
         const Array<TF,1>& t_sfc, const Array<TF,2>& emis_sfc,
         Array<TF,3>& tau, Array<TF,3>& lay_source,
         Array<TF,3>& lev_source_inc, Array<TF,3>& lev_source_dec, Array<TF,2>& sfc_source,
@@ -340,10 +340,6 @@ void Radiation_solver<TF>::solve_longwave(
     const int n_bnd = this->kdist_lw->get_nband();
 
     const BOOL_TYPE top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
-
-    // CvH: this is not a solid solution: what if col_dry is in the NetCDF file?
-    Array<TF,2> col_dry({n_col, n_lay});
-    Gas_optics_rrtmgp<TF>::get_col_dry(col_dry, this->get_vmr("h2o"), p_lev);
 
     constexpr int n_col_block = 4;
 
@@ -379,16 +375,24 @@ void Radiation_solver<TF>::solve_longwave(
         const int n_col_in = col_e_in - col_s_in + 1;
         Gas_concs<TF> gas_concs_subset(this->gas_concs, col_s_in, n_col_in);
 
+        auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});
+
+        Array<TF,2> col_dry_subset({n_col_in, n_lay});
+        if (col_dry.size() == 0)
+            Gas_optics_rrtmgp<TF>::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
+        else
+            col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
+
         kdist_lw->gas_optics(
                 p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-                p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }}),
+                p_lev_subset,
                 t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                 t_sfc.subset({{ {col_s_in, col_e_in} }}),
                 gas_concs_subset,
                 optical_props_subset_in,
                 sources_subset_in,
-                col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-                t_lev  .subset({{ {col_s_in, col_e_in}, {1, n_lev} }}) );
+                col_dry_subset,
+                t_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }}) );
 
         // Store the optical properties, if desired.
         if (sw_output_optical)
