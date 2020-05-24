@@ -203,11 +203,11 @@ void solve_radiation()
     output_nc.add_dimension("band", n_bnd);
     output_nc.add_dimension("pair", 2);
 
-    auto nc_lay = output_nc.add_variable<TF>("lay", {"lay"});
-    auto nc_lev = output_nc.add_variable<TF>("lev", {"lev"});
+    auto nc_lay = output_nc.add_variable<TF>("p_lay", {"lay", "col"});
+    auto nc_lev = output_nc.add_variable<TF>("p_lev", {"lev", "col"});
 
-    nc_lay.insert(p_lay.v(), {0});
-    nc_lev.insert(p_lev.v(), {0});
+    nc_lay.insert(p_lay.v(), {0, 0});
+    nc_lev.insert(p_lev.v(), {0, 0});
 
     auto nc_band_lims_wvn = output_nc.add_variable<TF>("band_lims_wvn", {"band", "pair"});
     nc_band_lims_wvn.insert(radiation.get_band_lims_wavenumber().v(), {0, 0});
