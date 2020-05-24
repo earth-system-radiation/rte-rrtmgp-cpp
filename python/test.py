@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import timeit
 import radiation
 
-print('CvH0')
 
 # Read the input data.
 nc_file = nc.Dataset('rte_rrtmgp_input.nc', 'r')
@@ -30,7 +29,6 @@ gas_concs.set_vmr(b'ch4', vmr_ch4)
 gas_concs.set_vmr(b'o2' , vmr_o2 )
 gas_concs.set_vmr(b'n2' , vmr_n2 )
 
-print('CvH1')
 
 # Load the thermodynamic variables.
 p_lay = nc_file.variables['lay'][:]
@@ -44,6 +42,7 @@ emis_sfc = nc_file.variables['emis_sfc'][:]
 nc_file.close()
 
 col_dry = np.zeros((0,0))
+
 
 # Create the output arrays.
 tau = np.zeros((0,0,0))
@@ -60,11 +59,9 @@ lw_bnd_flux_dn  = np.zeros((0,0,0))
 lw_bnd_flux_net = np.zeros((0,0,0))
 
 
-print('CvH2')
 # Initialize the solver.
 rad = radiation.Radiation_solver_wrapper(gas_concs, b'coefficients_lw.nc')
 
-print('CvH3')
 
 # Solve the radiation fluxes.
 start = timeit.default_timer()
@@ -85,6 +82,7 @@ rad.solve(
 
 end = timeit.default_timer()
 print('Duration: {} s'.format(end-start))
+
 
 # Plot some output.
 plt.figure()
