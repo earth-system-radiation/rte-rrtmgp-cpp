@@ -40,7 +40,7 @@
 template<typename TF>
 void read_and_set_vmr(
         const std::string& gas_name, const int n_col, const int n_lay,
-        const Netcdf_handle& input_nc, Radiation_solver<TF>& radiation)
+        const Netcdf_handle& input_nc, Gas_concs<TF>& gas_concs)
 {
     const std::string vmr_gas_name = "vmr_" + gas_name;
 
@@ -52,12 +52,12 @@ void read_and_set_vmr(
 
         if (n_dims == 0)
         {
-            radiation.set_vmr(gas_name, input_nc.get_variable<TF>(vmr_gas_name));
+            gas_concs.set_vmr(gas_name, input_nc.get_variable<TF>(vmr_gas_name));
         }
         else if (n_dims == 1)
         {
             if (dims.at("lay") == n_lay)
-                radiation.set_vmr(gas_name,
+                gas_concs.set_vmr(gas_name,
                         Array<TF,1>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay}), {n_lay}));
             else
                 throw std::runtime_error("Illegal dimensions of gas \"" + gas_name + "\" in input");
@@ -65,7 +65,7 @@ void read_and_set_vmr(
         else if (n_dims == 2)
         {
             if (dims.at("lay") == n_lay && dims.at("col") == n_col)
-                radiation.set_vmr(gas_name,
+                gas_concs.set_vmr(gas_name,
                         Array<TF,2>(input_nc.get_variable<TF>(vmr_gas_name, {n_lay, n_col}), {n_col, n_lay}));
             else
                 throw std::runtime_error("Illegal dimensions of gas \"" + gas_name + "\" in input");
@@ -86,11 +86,6 @@ void solve_radiation()
     const bool sw_output_bnd_fluxes = false;
 
 
-    ////// INITIALIZE THE SOLVER //////
-    Status::print_message("Initializing the solver.");
-    Radiation_solver<TF> radiation;
-
-
     ////// READ THE ATMOSPHERIC DATA //////
     Status::print_message("Reading atmospheric input data from NetCDF.");
 
@@ -106,19 +101,22 @@ void solve_radiation()
     Array<TF,2> p_lev(input_nc.get_variable<TF>("lev"  , {n_lev, n_col}), {n_col, n_lev});
     Array<TF,2> t_lev(input_nc.get_variable<TF>("t_lev", {n_lev, n_col}), {n_col, n_lev});
 
-    read_and_set_vmr("h2o", n_col, n_lay, input_nc, radiation);
-    read_and_set_vmr("co2", n_col, n_lay, input_nc, radiation);
-    read_and_set_vmr("o3" , n_col, n_lay, input_nc, radiation);
-    read_and_set_vmr("n2o", n_col, n_lay, input_nc, radiation);
-    read_and_set_vmr("co" , n_col, n_lay, input_nc, radiation);
-    read_and_set_vmr("ch4", n_col, n_lay, input_nc, radiation);
-    read_and_set_vmr("o2" , n_col, n_lay, input_nc, radiation);
-    read_and_set_vmr("n2" , n_col, n_lay, input_nc, radiation);
+    // Create container for the gas concentrations and read gases.
+    Gas_concs<TF> gas_concs;
+
+    read_and_set_vmr("h2o", n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("co2", n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("o3" , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("n2o", n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("co" , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("ch4", n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("o2" , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("n2" , n_col, n_lay, input_nc, gas_concs);
 
 
-    ////// INITIALIZE THE K-DISTRIBUTION //////
-    Status::print_message("Initializing the k-distribution after gases are read.");
-    radiation.load_kdistribution_longwave("coefficients_lw.nc");
+    ////// INITIALIZE THE SOLVER AND INIT K-DISTRIBUTION //////
+    Status::print_message("Initializing the solver.");
+    Radiation_solver<TF> radiation(gas_concs, "coefficients_lw.nc");
 
 
     ////// READ THE SURFACE DATA //////
@@ -179,6 +177,7 @@ void solve_radiation()
     radiation.solve_longwave(
             sw_output_optical,
             sw_output_bnd_fluxes,
+            gas_concs,
             p_lay, p_lev,
             t_lay, t_lev,
             col_dry,

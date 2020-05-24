@@ -295,7 +295,8 @@ namespace
 }
 
 template<typename TF>
-void Radiation_solver<TF>::load_kdistribution_longwave(const std::string& file_name)
+Radiation_solver<TF>::Radiation_solver(
+        const Gas_concs<TF>& gas_concs, const std::string& file_name)
 {
     // Construct the gas optics classes for the solver.
     this->kdist_lw = std::make_unique<Gas_optics_rrtmgp<TF>>(
@@ -303,27 +304,10 @@ void Radiation_solver<TF>::load_kdistribution_longwave(const std::string& file_n
 }
 
 template<typename TF>
-void Radiation_solver<TF>::set_vmr(const std::string& name, const TF value)
-{
-    this->gas_concs.set_vmr(name, value);
-}
-
-template<typename TF>
-void Radiation_solver<TF>::set_vmr(const std::string& name, const Array<TF,1>& value)
-{
-    this->gas_concs.set_vmr(name, value);
-}
-
-template<typename TF>
-void Radiation_solver<TF>::set_vmr(const std::string& name, const Array<TF,2>& value)
-{
-    this->gas_concs.set_vmr(name, value);
-}
-
-template<typename TF>
 void Radiation_solver<TF>::solve_longwave(
         const bool sw_output_optical,
         const bool sw_output_bnd_fluxes,
+        const Gas_concs<TF>& gas_concs,
         const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
         const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
         const Array<TF,2>& col_dry,
@@ -331,7 +315,7 @@ void Radiation_solver<TF>::solve_longwave(
         Array<TF,3>& tau, Array<TF,3>& lay_source,
         Array<TF,3>& lev_source_inc, Array<TF,3>& lev_source_dec, Array<TF,2>& sfc_source,
         Array<TF,2>& lw_flux_up, Array<TF,2>& lw_flux_dn, Array<TF,2>& lw_flux_net,
-        Array<TF,3>& lw_bnd_flux_up, Array<TF,3>& lw_bnd_flux_dn, Array<TF,3>& lw_bnd_flux_net)
+        Array<TF,3>& lw_bnd_flux_up, Array<TF,3>& lw_bnd_flux_dn, Array<TF,3>& lw_bnd_flux_net) const
 {
     const int n_col = p_lay.dim(1);
     const int n_lay = p_lay.dim(2);
@@ -373,7 +357,7 @@ void Radiation_solver<TF>::solve_longwave(
             Fluxes_broadband<TF>& bnd_fluxes)
     {
         const int n_col_in = col_e_in - col_s_in + 1;
-        Gas_concs<TF> gas_concs_subset(this->gas_concs, col_s_in, n_col_in);
+        Gas_concs<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
         auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});
 
