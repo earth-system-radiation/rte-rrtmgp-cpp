@@ -199,8 +199,6 @@ void solve_radiation()
     output_nc.add_dimension("col", n_col);
     output_nc.add_dimension("lay", n_lay);
     output_nc.add_dimension("lev", n_lev);
-    output_nc.add_dimension("gpt", n_gpt);
-    output_nc.add_dimension("band", n_bnd);
     output_nc.add_dimension("pair", 2);
 
     auto nc_lay = output_nc.add_variable<TF>("p_lay", {"lay", "col"});
@@ -209,23 +207,26 @@ void solve_radiation()
     nc_lay.insert(p_lay.v(), {0, 0});
     nc_lev.insert(p_lev.v(), {0, 0});
 
-    auto nc_band_lims_wvn = output_nc.add_variable<TF>("band_lims_wvn", {"band", "pair"});
+    output_nc.add_dimension("gpt_lw", n_gpt);
+    output_nc.add_dimension("band_lw", n_bnd);
+
+    auto nc_band_lims_wvn = output_nc.add_variable<TF>("lw_band_lims_wvn", {"band_lw", "pair"});
     nc_band_lims_wvn.insert(radiation.get_band_lims_wavenumber().v(), {0, 0});
 
     if (sw_output_optical)
     {
-        auto nc_band_lims_gpt = output_nc.add_variable<int>("band_lims_gpt", {"band", "pair"});
-        nc_band_lims_gpt.insert(radiation.get_band_lims_gpoint().v()    , {0, 0});
+        auto nc_band_lims_gpt = output_nc.add_variable<int>("lw_band_lims_gpt", {"band_lw", "pair"});
+        nc_band_lims_gpt.insert(radiation.get_band_lims_gpoint().v(), {0, 0});
 
-        auto nc_tau = output_nc.add_variable<TF>("tau", {"gpt", "lay", "col"});
+        auto nc_tau = output_nc.add_variable<TF>("lw_tau", {"gpt_lw", "lay", "col"});
         nc_tau.insert(tau.v(), {0, 0, 0});
 
         // Second, store the sources.
-        auto nc_lay_source     = output_nc.add_variable<TF>("lay_source"    , {"gpt", "lay", "col"});
-        auto nc_lev_source_inc = output_nc.add_variable<TF>("lev_source_inc", {"gpt", "lay", "col"});
-        auto nc_lev_source_dec = output_nc.add_variable<TF>("lev_source_dec", {"gpt", "lay", "col"});
+        auto nc_lay_source     = output_nc.add_variable<TF>("lay_source"    , {"gpt_lw", "lay", "col"});
+        auto nc_lev_source_inc = output_nc.add_variable<TF>("lev_source_inc", {"gpt_lw", "lay", "col"});
+        auto nc_lev_source_dec = output_nc.add_variable<TF>("lev_source_dec", {"gpt_lw", "lay", "col"});
 
-        auto nc_sfc_source = output_nc.add_variable<TF>("sfc_source", {"gpt", "col"});
+        auto nc_sfc_source = output_nc.add_variable<TF>("sfc_source", {"gpt_lw", "col"});
 
         nc_lay_source.insert    (lay_source.v()    , {0, 0, 0});
         nc_lev_source_inc.insert(lev_source_inc.v(), {0, 0, 0});
@@ -245,9 +246,9 @@ void solve_radiation()
 
     if (sw_output_bnd_fluxes)
     {
-        auto nc_bnd_flux_up  = output_nc.add_variable<TF>("lw_bnd_flux_up" , {"band", "lev", "col"});
-        auto nc_bnd_flux_dn  = output_nc.add_variable<TF>("lw_bnd_flux_dn" , {"band", "lev", "col"});
-        auto nc_bnd_flux_net = output_nc.add_variable<TF>("lw_bnd_flux_net", {"band", "lev", "col"});
+        auto nc_bnd_flux_up  = output_nc.add_variable<TF>("lw_bnd_flux_up" , {"band_lw", "lev", "col"});
+        auto nc_bnd_flux_dn  = output_nc.add_variable<TF>("lw_bnd_flux_dn" , {"band_lw", "lev", "col"});
+        auto nc_bnd_flux_net = output_nc.add_variable<TF>("lw_bnd_flux_net", {"band_lw", "lev", "col"});
 
         nc_bnd_flux_up .insert(lw_bnd_flux_up .v(), {0, 0, 0});
         nc_bnd_flux_dn .insert(lw_bnd_flux_dn .v(), {0, 0, 0});
