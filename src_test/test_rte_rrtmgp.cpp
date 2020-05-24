@@ -214,17 +214,17 @@ void solve_radiation()
         nc_tau.insert(tau.v(), {0, 0, 0});
 
         // Second, store the sources.
-        auto nc_lay_src     = output_nc.add_variable<TF>("lay_src"    , {"gpt", "lay", "col"});
-        auto nc_lev_src_inc = output_nc.add_variable<TF>("lev_src_inc", {"gpt", "lay", "col"});
-        auto nc_lev_src_dec = output_nc.add_variable<TF>("lev_src_dec", {"gpt", "lay", "col"});
+        auto nc_lay_source     = output_nc.add_variable<TF>("lay_source"    , {"gpt", "lay", "col"});
+        auto nc_lev_source_inc = output_nc.add_variable<TF>("lev_source_inc", {"gpt", "lay", "col"});
+        auto nc_lev_source_dec = output_nc.add_variable<TF>("lev_source_dec", {"gpt", "lay", "col"});
 
-        auto nc_sfc_src = output_nc.add_variable<TF>("sfc_src", {"gpt", "col"});
+        auto nc_sfc_source = output_nc.add_variable<TF>("sfc_source", {"gpt", "col"});
 
-        nc_lay_src.insert    (lay_source.v()    , {0, 0, 0});
-        nc_lev_src_inc.insert(lev_source_inc.v(), {0, 0, 0});
-        nc_lev_src_dec.insert(lev_source_dec.v(), {0, 0, 0});
+        nc_lay_source.insert    (lay_source.v()    , {0, 0, 0});
+        nc_lev_source_inc.insert(lev_source_inc.v(), {0, 0, 0});
+        nc_lev_source_dec.insert(lev_source_dec.v(), {0, 0, 0});
 
-        nc_sfc_src.insert(sfc_source.v(), {0, 0});
+        nc_sfc_source.insert(sfc_source.v(), {0, 0});
     }
 
     // Save the output of the flux calculation to disk.
