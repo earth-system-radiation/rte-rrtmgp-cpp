@@ -116,13 +116,13 @@ void solve_radiation()
 
     ////// INITIALIZE THE SOLVER AND INIT K-DISTRIBUTION //////
     Status::print_message("Initializing the solver.");
-    Radiation_solver_longwave<TF> radiation(gas_concs, "coefficients_lw.nc");
+    Radiation_solver_longwave<TF> rad_lw(gas_concs, "coefficients_lw.nc");
 
 
     ////// READ THE SURFACE DATA //////
     // Loading n_bnd and n_gpt can only be done after kdistribution is initialized.
-    const int n_bnd = radiation.get_n_bnd();
-    const int n_gpt = radiation.get_n_gpt();
+    const int n_bnd = rad_lw.get_n_bnd();
+    const int n_gpt = rad_lw.get_n_gpt();
 
     // Read the boundary conditions for longwave.
     Array<TF,2> emis_sfc(input_nc.get_variable<TF>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
@@ -174,7 +174,7 @@ void solve_radiation()
 
     auto time_start = std::chrono::high_resolution_clock::now();
 
-    radiation.solve(
+    rad_lw.solve(
             sw_output_optical,
             sw_output_bnd_fluxes,
             gas_concs,
@@ -211,12 +211,12 @@ void solve_radiation()
     output_nc.add_dimension("band_lw", n_bnd);
 
     auto nc_band_lims_wvn = output_nc.add_variable<TF>("lw_band_lims_wvn", {"band_lw", "pair"});
-    nc_band_lims_wvn.insert(radiation.get_band_lims_wavenumber().v(), {0, 0});
+    nc_band_lims_wvn.insert(rad_lw.get_band_lims_wavenumber().v(), {0, 0});
 
     if (sw_output_optical)
     {
         auto nc_band_lims_gpt = output_nc.add_variable<int>("lw_band_lims_gpt", {"band_lw", "pair"});
-        nc_band_lims_gpt.insert(radiation.get_band_lims_gpoint().v(), {0, 0});
+        nc_band_lims_gpt.insert(rad_lw.get_band_lims_gpoint().v(), {0, 0});
 
         auto nc_tau = output_nc.add_variable<TF>("lw_tau", {"gpt_lw", "lay", "col"});
         nc_tau.insert(tau.v(), {0, 0, 0});
