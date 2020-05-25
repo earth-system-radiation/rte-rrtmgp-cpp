@@ -495,9 +495,8 @@ void Radiation_solver_shortwave<TF>::solve(
         const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
         const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
         const Array<TF,2>& col_dry,
-        const Array<TF,2>& toa_src,
         const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
-        const TF tsi_scaling, const TF mu0,
+        const Array<TF,1>& mu0, const TF tsi_scaling,
         Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g,
         Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn, Array<TF,2>& sw_flux_dn_dir, Array<TF,2>& sw_flux_net,
         Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn, Array<TF,3>& sw_bnd_flux_dn_dir, Array<TF,3>& sw_bnd_flux_net) const
@@ -542,7 +541,7 @@ void Radiation_solver_shortwave<TF>::solve(
         else
             col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
-        auto toa_src_subset = toa_src.subset({{ {col_s_in, col_e_in}, {1, n_gpt} }});
+        Array<TF,2> toa_src_subset({n_col_in, n_gpt});
 
         kdist->gas_optics(
                 p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
@@ -552,6 +551,10 @@ void Radiation_solver_shortwave<TF>::solve(
                 optical_props_subset_in,
                 toa_src_subset,
                 col_dry_subset);
+
+        for (int igpt=1; igpt<=n_gpt; ++igpt)
+            for (int icol=1; icol<=n_col_in; ++icol)
+                toa_src_subset({icol, igpt}) *= tsi_scaling;
 
         // Store the optical properties, if desired.
         if (sw_output_optical)
@@ -573,10 +576,10 @@ void Radiation_solver_shortwave<TF>::solve(
         Rte_sw<TF>::rte_sw(
                 optical_props_subset_in,
                 top_at_1,
-                mu0,
-                toa_src,
-                sfc_alb_dir,
-                sfc_alb_dif,
+                mu0.subset({{ {col_s_in, col_e_in} }}),
+                toa_src_subset,
+                sfc_alb_dir.subset({{ {1, n_bnd}, {col_s_in, col_e_in} }}),
+                sfc_alb_dif.subset({{ {1, n_bnd}, {col_s_in, col_e_in} }}),
                 Array<TF,2>(), // Add an empty array, no inc_flux.
                 gpt_flux_up,
                 gpt_flux_dn,
@@ -646,6 +649,8 @@ void Radiation_solver_shortwave<TF>::solve(
 }
 #ifdef FLOAT_SINGLE_RRTMGP
 template class Radiation_solver_longwave<float>;
+template class Radiation_solver_shortwave<float>;
 #else
 template class Radiation_solver_longwave<double>;
+template class Radiation_solver_shortwave<double>;
 #endif

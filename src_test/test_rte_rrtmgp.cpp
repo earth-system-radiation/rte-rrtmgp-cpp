@@ -22,6 +22,7 @@
  *
  */
 
+#include <cmath>
 
 #include "Status.h"
 #include "Netcdf_interface.h"
@@ -34,7 +35,6 @@
 #else
 #define FLOAT_TYPE double
 #endif
-
 
 
 template<typename TF>
@@ -101,6 +101,14 @@ void solve_radiation()
     Array<TF,2> p_lev(input_nc.get_variable<TF>("lev"  , {n_lev, n_col}), {n_col, n_lev});
     Array<TF,2> t_lev(input_nc.get_variable<TF>("t_lev", {n_lev, n_col}), {n_col, n_lev});
 
+    // Fetch the col_dry in case present.
+    Array<TF,2> col_dry;
+    if (input_nc.variable_exists("col_dry"))
+    {
+        col_dry.set_dims({n_col, n_lay});
+        col_dry = std::move(input_nc.get_variable<TF>("col_dry", {n_lay, n_col}));
+    }
+
     // Create container for the gas concentrations and read gases.
     Gas_concs<TF> gas_concs;
 
@@ -115,42 +123,59 @@ void solve_radiation()
 
 
     ////// INITIALIZE THE SOLVER AND INIT K-DISTRIBUTION //////
-    Status::print_message("Initializing the solver.");
+    Status::print_message("Initializing the solvers.");
     Radiation_solver_longwave<TF> rad_lw(gas_concs, "coefficients_lw.nc");
+    Radiation_solver_shortwave<TF> rad_sw(gas_concs, "coefficients_sw.nc");
 
 
     ////// READ THE SURFACE DATA //////
-    // Loading n_bnd and n_gpt can only be done after kdistribution is initialized.
-    const int n_bnd = rad_lw.get_n_bnd();
-    const int n_gpt = rad_lw.get_n_gpt();
-
     // Read the boundary conditions for longwave.
-    Array<TF,2> emis_sfc(input_nc.get_variable<TF>("emis_sfc", {n_col, n_bnd}), {n_bnd, n_col});
+    const int n_bnd_lw = rad_lw.get_n_bnd();
+    const int n_gpt_lw = rad_lw.get_n_gpt();
+
+    Array<TF,2> emis_sfc(input_nc.get_variable<TF>("emis_sfc", {n_col, n_bnd_lw}), {n_bnd_lw, n_col});
     Array<TF,1> t_sfc(input_nc.get_variable<TF>("t_sfc", {n_col}), {n_col});
 
-    // Fetch the col_dry in case present.
-    Array<TF,2> col_dry;
-    if (input_nc.variable_exists("col_dry"))
+    // Read the boundary conditions for shortwave.
+    // CvH: HARDCODE RCEMIP FOR TESTING
+    const int n_bnd_sw = rad_sw.get_n_bnd();
+    const int n_gpt_sw = rad_sw.get_n_gpt();
+
+    Array<TF,1> sza({n_col});
+    Array<TF,2> sfc_alb_dir({n_bnd_sw, n_col});
+    Array<TF,2> sfc_alb_dif({n_bnd_sw, n_col});
+
+    sza({1}) = TF(0.7339109504636155);
+
+    for (int ibnd=1; ibnd<=n_bnd_sw; ++ibnd)
     {
-        col_dry.set_dims({n_col, n_lay});
-        col_dry = std::move(input_nc.get_variable<TF>("col_dry", {n_lay, n_col}));
+        sfc_alb_dir({ibnd, 1}) = 0.07;
+        sfc_alb_dif({ibnd, 1}) = 0.07;
     }
+
+    Array<TF,1> mu0({n_col});
+    mu0({1}) = std::cos(sza({1}));
+    const TF tsi_scaling = 0.4053176301654965;
 
 
     ////// CREATE THE OUTPUT ARRAYS //////
-    Array<TF,3> tau;
+    Array<TF,3> lw_tau;
     Array<TF,3> lay_source;
     Array<TF,3> lev_source_inc;
     Array<TF,3> lev_source_dec;
     Array<TF,2> sfc_source;
 
+    Array<TF,3> sw_tau;
+    Array<TF,3> ssa;
+    Array<TF,3> g;
+
     if (sw_output_optical)
     {
-        tau           .set_dims({n_col, n_lay, n_gpt});
-        lay_source    .set_dims({n_col, n_lay, n_gpt});
-        lev_source_inc.set_dims({n_col, n_lay, n_gpt});
-        lev_source_dec.set_dims({n_col, n_lay, n_gpt});
-        sfc_source    .set_dims({n_col, n_gpt});
+        lw_tau        .set_dims({n_col, n_lay, n_gpt_lw});
+        lay_source    .set_dims({n_col, n_lay, n_gpt_lw});
+        lev_source_inc.set_dims({n_col, n_lay, n_gpt_lw});
+        lev_source_dec.set_dims({n_col, n_lay, n_gpt_lw});
+        sfc_source    .set_dims({n_col, n_gpt_lw});
     }
 
     Array<TF,2> lw_flux_up ({n_col, n_lev});
@@ -163,10 +188,20 @@ void solve_radiation()
 
     if (sw_output_bnd_fluxes)
     {
-        lw_bnd_flux_up .set_dims({n_col, n_lev, n_bnd});
-        lw_bnd_flux_dn .set_dims({n_col, n_lev, n_bnd});
-        lw_bnd_flux_net.set_dims({n_col, n_lev, n_bnd});
+        lw_bnd_flux_up .set_dims({n_col, n_lev, n_bnd_lw});
+        lw_bnd_flux_dn .set_dims({n_col, n_lev, n_bnd_lw});
+        lw_bnd_flux_net.set_dims({n_col, n_lev, n_bnd_lw});
     }
+
+    Array<TF,2> sw_flux_up    ({n_col, n_lev});
+    Array<TF,2> sw_flux_dn    ({n_col, n_lev});
+    Array<TF,2> sw_flux_dn_dir({n_col, n_lev});
+    Array<TF,2> sw_flux_net   ({n_col, n_lev});
+
+    Array<TF,3> sw_bnd_flux_up;
+    Array<TF,3> sw_bnd_flux_dn;
+    Array<TF,3> sw_bnd_flux_dn_dir;
+    Array<TF,3> sw_bnd_flux_net;
 
 
     ////// SOLVE THE RADIATION //////
@@ -182,15 +217,37 @@ void solve_radiation()
             t_lay, t_lev,
             col_dry,
             t_sfc, emis_sfc,
-            tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
+            lw_tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
             lw_flux_up, lw_flux_dn, lw_flux_net,
             lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
 
     auto time_end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
 
-    Status::print_message("Duration solver: " + std::to_string(duration) + " (ms)");
+    Status::print_message("Duration: " + std::to_string(duration) + " (ms)");
 
+    // Solving the shortwave radiation
+    Status::print_message("Solving the shortwave radiation.");
+
+    time_start = std::chrono::high_resolution_clock::now();
+
+    rad_sw.solve(
+            sw_output_optical,
+            sw_output_bnd_fluxes,
+            gas_concs,
+            p_lay, p_lev,
+            t_lay, t_lev,
+            col_dry,
+            sfc_alb_dir, sfc_alb_dif,
+            mu0, tsi_scaling,
+            sw_tau, ssa, g,
+            sw_flux_up, sw_flux_dn, sw_flux_dn_dir, sw_flux_net,
+            sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dn_dir, sw_bnd_flux_net);
+
+    time_end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+
+    Status::print_message("Duration: " + std::to_string(duration) + " (ms)");
 
     ////// SAVING THE OUTPUT TO NETCDF //////
     Status::print_message("Saving the output to NetCDF.");
@@ -207,8 +264,8 @@ void solve_radiation()
     nc_lay.insert(p_lay.v(), {0, 0});
     nc_lev.insert(p_lev.v(), {0, 0});
 
-    output_nc.add_dimension("gpt_lw", n_gpt);
-    output_nc.add_dimension("band_lw", n_bnd);
+    output_nc.add_dimension("gpt_lw", n_gpt_lw);
+    output_nc.add_dimension("band_lw", n_bnd_lw);
 
     auto nc_band_lims_wvn = output_nc.add_variable<TF>("lw_band_lims_wvn", {"band_lw", "pair"});
     nc_band_lims_wvn.insert(rad_lw.get_band_lims_wavenumber().v(), {0, 0});
@@ -218,8 +275,8 @@ void solve_radiation()
         auto nc_band_lims_gpt = output_nc.add_variable<int>("lw_band_lims_gpt", {"band_lw", "pair"});
         nc_band_lims_gpt.insert(rad_lw.get_band_lims_gpoint().v(), {0, 0});
 
-        auto nc_tau = output_nc.add_variable<TF>("lw_tau", {"gpt_lw", "lay", "col"});
-        nc_tau.insert(tau.v(), {0, 0, 0});
+        auto nc_lw_tau = output_nc.add_variable<TF>("lw_tau", {"gpt_lw", "lay", "col"});
+        nc_lw_tau.insert(lw_tau.v(), {0, 0, 0});
 
         // Second, store the sources.
         auto nc_lay_source     = output_nc.add_variable<TF>("lay_source"    , {"gpt_lw", "lay", "col"});
