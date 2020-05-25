@@ -77,8 +77,10 @@ class Radiation_solver_shortwave
                 const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
                 const Array<TF,1>& mu0, const TF tsi_scaling,
                 Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g,
-                Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn, Array<TF,2>& sw_flux_dn_dir, Array<TF,2>& sw_flux_net,
-                Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn, Array<TF,3>& sw_bnd_flux_dn_dir, Array<TF,3>& sw_bnd_flux_net) const;
+                Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn,
+                Array<TF,2>& sw_flux_dn_dir, Array<TF,2>& sw_flux_net,
+                Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn,
+                Array<TF,3>& sw_bnd_flux_dn_dir, Array<TF,3>& sw_bnd_flux_net) const;
 
         int get_n_gpt() const { return this->kdist->get_ngpt(); };
         int get_n_bnd() const { return this->kdist->get_nband(); };

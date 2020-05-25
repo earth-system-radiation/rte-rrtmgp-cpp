@@ -498,8 +498,10 @@ void Radiation_solver_shortwave<TF>::solve(
         const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
         const Array<TF,1>& mu0, const TF tsi_scaling,
         Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g,
-        Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn, Array<TF,2>& sw_flux_dn_dir, Array<TF,2>& sw_flux_net,
-        Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn, Array<TF,3>& sw_bnd_flux_dn_dir, Array<TF,3>& sw_bnd_flux_net) const
+        Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn,
+        Array<TF,2>& sw_flux_dn_dir, Array<TF,2>& sw_flux_net,
+        Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn,
+        Array<TF,3>& sw_bnd_flux_dn_dir, Array<TF,3>& sw_bnd_flux_net) const
 {
     const int n_col = p_lay.dim(1);
     const int n_lay = p_lay.dim(2);
@@ -585,7 +587,7 @@ void Radiation_solver_shortwave<TF>::solve(
                 gpt_flux_dn,
                 gpt_flux_dn_dir);
 
-        fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
+        fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
 
         // Copy the data to the output.
         for (int ilev=1; ilev<=n_lev; ++ilev)
