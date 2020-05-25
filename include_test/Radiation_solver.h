@@ -60,4 +60,37 @@ class Radiation_solver_longwave
     private:
         std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist;
 };
+
+template<typename TF>
+class Radiation_solver_shortwave
+{
+    public:
+        Radiation_solver_shortwave(const Gas_concs<TF>& gas_concs, const std::string& file_name);
+
+        void solve(
+                const bool sw_output_optical,
+                const bool sw_output_bnd_fluxes,
+                const Gas_concs<TF>& gas_concs,
+                const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
+                const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
+                const Array<TF,2>& col_dry,
+                const Array<TF,2>& toa_src,
+                const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
+                const TF tsi_scaling, const TF mu0,
+                Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g,
+                Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn, Array<TF,2>& sw_flux_dn_dir, Array<TF,2>& sw_flux_net,
+                Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn, Array<TF,3>& sw_bnd_flux_dn_dir, Array<TF,3>& sw_bnd_flux_net) const;
+
+        int get_n_gpt() const { return this->kdist->get_ngpt(); };
+        int get_n_bnd() const { return this->kdist->get_nband(); };
+
+        Array<int,2> get_band_lims_gpoint() const
+        { return this->kdist->get_band_lims_gpoint(); }
+
+        Array<TF,2> get_band_lims_wavenumber() const
+        { return this->kdist->get_band_lims_wavenumber(); }
+
+    private:
+        std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist;
+};
 #endif
