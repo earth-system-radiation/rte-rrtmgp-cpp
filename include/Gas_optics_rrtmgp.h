@@ -135,6 +135,8 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
         int get_ntemp() const { return kmajor.dim(4); }
         int get_nPlanckTemp() const { return totplnk.dim(1); }
 
+        TF get_tsi() const;
+
         // Longwave variant.
         void gas_optics(
                 const Array<TF,2>& play,

@@ -1302,6 +1302,18 @@ void Gas_optics_rrtmgp<TF>::source(
     // reorder123x321_test(sources.get_lev_source_dec().ptr(), lev_source_dec_t.ptr(), ngpt, nlay, ncol);
 }
 
+template<typename TF>
+TF Gas_optics_rrtmgp<TF>::get_tsi() const
+{
+    const int n_gpt = this->get_ngpt();
+
+    TF tsi = 0.;
+    for (int igpt=1; igpt<n_gpt; ++igpt)
+        tsi += this->solar_source({igpt});
+
+    return tsi;
+}
+
 #ifdef FLOAT_SINGLE_RRTMGP
 template class Gas_optics_rrtmgp<float>;
 #else

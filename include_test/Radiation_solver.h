@@ -86,6 +86,8 @@ class Radiation_solver_shortwave
         int get_n_gpt() const { return this->kdist->get_ngpt(); };
         int get_n_bnd() const { return this->kdist->get_nband(); };
 
+        TF get_tsi() const { return this->kdist->get_tsi(); };
+
         Array<int,2> get_band_lims_gpoint() const
         { return this->kdist->get_band_lims_gpoint(); }
 
