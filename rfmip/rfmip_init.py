@@ -2,54 +2,68 @@ import numpy as np
 import netCDF4 as nc
 
 # Settings
-float_type = "f8"
+float_type = 'f8'
 
-site = 0
-expt = 0
+expt = 0 # Do not allow cross experiment runs
+band_lw = 16
+band_sw = 14
 
 # Save all the input data to NetCDF
-nc_file = nc.Dataset("rfmip_input.nc", mode="w", datamodel="NETCDF4", clobber=True)
-nc_file_rfmip = nc.Dataset("rfmip.nc", mode="r", datamodel="NETCDF4", clobber=False)
+nc_file = nc.Dataset('rte_rrtmgp_input.nc', mode='w', datamodel='NETCDF4', clobber=True)
+nc_file_rfmip = nc.Dataset('multiple_input4MIPs_radiation_RFMIP_UColorado-RFMIP-1-2_none.nc', mode='r', datamodel='NETCDF4', clobber=False)
 
 # Create a group for the radiation and set up the values.
-nc_group_radiation = nc_file.createGroup("radiation")
-nc_group_radiation.createDimension("level", nc_file_rfmip.dimensions["level"].size)
-nc_group_radiation.createDimension("layer", nc_file_rfmip.dimensions["layer"].size)
-nc_group_radiation.createDimension("col", 1)
+nc_file.createDimension('lev', nc_file_rfmip.dimensions['level'].size)
+nc_file.createDimension('lay', nc_file_rfmip.dimensions['layer'].size)
+nc_file.createDimension('col', 1)
+nc_file.createDimension('band_lw', band_lw)
+nc_file.createDimension('band_sw', band_sw)
 
-nc_pres_level = nc_group_radiation.createVariable("pres_level", float_type, ("level"))
-nc_pres_layer = nc_group_radiation.createVariable("pres_layer", float_type, ("layer"))
-nc_temp_level = nc_group_radiation.createVariable("temp_level", float_type, ("level"))
-nc_temp_layer = nc_group_radiation.createVariable("temp_layer", float_type, ("layer"))
+nc_pres_level = nc_file.createVariable('lev', float_type, ('lev', 'col'))
+nc_pres_layer = nc_file.createVariable('lay', float_type, ('lay', 'col'))
+nc_temp_level = nc_file.createVariable('t_lev', float_type, ('lev', 'col'))
+nc_temp_layer = nc_file.createVariable('t_lay', float_type, ('lay', 'col'))
 
-nc_pres_level[:] = nc_file_rfmip.variables["pres_level"][site,:]
-nc_pres_layer[:] = nc_file_rfmip.variables["pres_layer"][site,:]
-nc_temp_level[:] = nc_file_rfmip.variables["temp_level"][expt,site,:]
-nc_temp_layer[:] = nc_file_rfmip.variables["temp_layer"][expt,site,:]
+nc_pres_level[:] = nc_file_rfmip.variables['pres_level'][site,:]
+nc_pres_layer[:] = nc_file_rfmip.variables['pres_layer'][site,:]
+nc_temp_level[:] = nc_file_rfmip.variables['temp_level'][expt,site,:]
+nc_temp_layer[:] = nc_file_rfmip.variables['temp_layer'][expt,site,:]
 
-nc_surface_emissivity = nc_group_radiation.createVariable("surface_emissivity", float_type)
-nc_surface_temperature = nc_group_radiation.createVariable("surface_temperature", float_type)
+nc_surface_emissivity = nc_file.createVariable('emis_sfc', float_type, ('col', 'band_lw'))
+nc_surface_temperature = nc_file.createVariable('t_sfc', float_type, 'col')
 
-nc_surface_emissivity[:] = nc_file_rfmip.variables["surface_emissivity"][site]
-nc_surface_temperature[:] = nc_file_rfmip.variables["surface_temperature"][expt,site]
+nc_surface_emissivity[:] = nc_file_rfmip.variables['surface_emissivity'][site]
+nc_surface_temperature[:] = nc_file_rfmip.variables['surface_temperature'][expt,site]
 
-nc_h2o = nc_group_radiation.createVariable("h2o", float_type, ("layer"))
-nc_o3  = nc_group_radiation.createVariable("o3" , float_type, ("layer"))
-nc_co2 = nc_group_radiation.createVariable("co2", float_type)
-nc_n2o = nc_group_radiation.createVariable("n2o", float_type)
-nc_co  = nc_group_radiation.createVariable("co" , float_type)
-nc_ch4 = nc_group_radiation.createVariable("ch4", float_type)
-nc_o2  = nc_group_radiation.createVariable("o2" , float_type)
-nc_n2  = nc_group_radiation.createVariable("n2" , float_type)
+nc_surface_albedo_dir = nc_file.createVariable('sfc_alb_dir', float_type, ('col', 'band_sw'))
+nc_surface_albedo_dif = nc_file.createVariable('sfc_alb_dif', float_type, ('col', 'band_sw'))
 
-nc_h2o[:] = nc_file_rfmip.variables["water_vapor"][expt,site,:] * float(nc_file_rfmip.variables["water_vapor"].units)
-nc_o3 [:] = nc_file_rfmip.variables["ozone"][expt,site,:]       * float(nc_file_rfmip.variables["ozone"].units)
-nc_co2[:] = nc_file_rfmip.variables["carbon_dioxide_GM"][expt]  * float(nc_file_rfmip.variables["carbon_dioxide_GM"].units)
-nc_n2o[:] = nc_file_rfmip.variables["nitrous_oxide_GM"][expt]   * float(nc_file_rfmip.variables["nitrous_oxide_GM"].units)
-nc_co [:] = nc_file_rfmip.variables["carbon_monoxide_GM"][expt] * float(nc_file_rfmip.variables["carbon_monoxide_GM"].units)
-nc_ch4[:] = nc_file_rfmip.variables["methane_GM"][expt]         * float(nc_file_rfmip.variables["methane_GM"].units)
-nc_o2 [:] = nc_file_rfmip.variables["oxygen_GM"][expt]          * float(nc_file_rfmip.variables["oxygen_GM"].units)
-nc_n2 [:] = nc_file_rfmip.variables["nitrogen_GM"][expt]        * float(nc_file_rfmip.variables["nitrogen_GM"].units)
+nc_surface_albedo_dir[:] = nc_file_rfmip.variables['surface_albedo'][site]
+nc_surface_albedo_dif[:] = nc_file_rfmip.variables['surface_albedo'][site]
+
+nc_mu0 = nc_file.createVariable('mu0', float_type, ('col'))
+nc_mu0[:] = np.cos(nc_file_rfmip.variables['solar_zenith_angle'][site])
+
+nc_tsi_scaling = nc_file.createVariable('tsi_scaling', float_type, ('col'))
+nc_tsi_scaling[:] = 1. #nc_file_rfmip.variables['total_solar_irradiance'][site]
+
+nc_h2o = nc_file.createVariable('vmr_h2o', float_type, ('lay', 'col'))
+nc_o3  = nc_file.createVariable('vmr_o3' , float_type, ('lay', 'col'))
+nc_co2 = nc_file.createVariable('vmr_co2', float_type)
+nc_n2o = nc_file.createVariable('vmr_n2o', float_type)
+nc_co  = nc_file.createVariable('vmr_co' , float_type)
+nc_ch4 = nc_file.createVariable('vmr_ch4', float_type)
+nc_o2  = nc_file.createVariable('vmr_o2' , float_type)
+nc_n2  = nc_file.createVariable('vmr_n2' , float_type)
+
+nc_h2o[:] = nc_file_rfmip.variables['water_vapor'][expt,site,:] * float(nc_file_rfmip.variables['water_vapor'].units)
+nc_o3 [:] = nc_file_rfmip.variables['ozone'][expt,site,:]       * float(nc_file_rfmip.variables['ozone'].units)
+nc_co2[:] = nc_file_rfmip.variables['carbon_dioxide_GM'][expt]  * float(nc_file_rfmip.variables['carbon_dioxide_GM'].units)
+nc_n2o[:] = nc_file_rfmip.variables['nitrous_oxide_GM'][expt]   * float(nc_file_rfmip.variables['nitrous_oxide_GM'].units)
+nc_co [:] = nc_file_rfmip.variables['carbon_monoxide_GM'][expt] * float(nc_file_rfmip.variables['carbon_monoxide_GM'].units)
+nc_ch4[:] = nc_file_rfmip.variables['methane_GM'][expt]         * float(nc_file_rfmip.variables['methane_GM'].units)
+nc_o2 [:] = nc_file_rfmip.variables['oxygen_GM'][expt]          * float(nc_file_rfmip.variables['oxygen_GM'].units)
+nc_n2 [:] = nc_file_rfmip.variables['nitrogen_GM'][expt]        * float(nc_file_rfmip.variables['nitrogen_GM'].units)
 
 nc_file_rfmip.close()
 nc_file.close()
