@@ -81,8 +81,8 @@ nc_z_lev = nc_file.createVariable("z_lev", float_type, ("lev"))
 nc_z_lay[:] = z [:]
 nc_z_lev[:] = zh[:]
 
-nc_p_lay = nc_file.createVariable("lay", float_type, ("lay", "col"))
-nc_p_lev = nc_file.createVariable("lev", float_type, ("lev", "col"))
+nc_p_lay = nc_file.createVariable("p_lay", float_type, ("lay", "col"))
+nc_p_lev = nc_file.createVariable("p_lev", float_type, ("lev", "col"))
 nc_p_lay[:,:] = np.tile(p_lay[:,None], (1, n_col))
 nc_p_lev[:,:] = np.tile(p_lev[:,None], (1, n_col))
 
