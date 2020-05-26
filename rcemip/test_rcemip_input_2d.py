@@ -3,7 +3,8 @@ import netCDF4 as nc
 
 float_type = "f8"
 n_col = 1
-n_band = 16
+n_bnd_lw = 16
+n_bnd_sw = 14
 
 nc_file = nc.Dataset("rte_rrtmgp_input.nc", mode="w", datamodel="NETCDF4", clobber=True)
 
@@ -72,7 +73,8 @@ o3 = g1 * p_hpa**g2 * np.exp(-p_hpa/g3) * 1e-6
 nc_file.createDimension("col", n_col)
 nc_file.createDimension("lay", p_lay.size)
 nc_file.createDimension("lev", p_lev.size)
-nc_file.createDimension("band", n_band)
+nc_file.createDimension("band_lw", n_bnd_lw)
+nc_file.createDimension("band_sw", n_bnd_sw)
 
 nc_z_lay = nc_file.createVariable("z_lay", float_type, ("lay"))
 nc_z_lev = nc_file.createVariable("z_lev", float_type, ("lev"))
@@ -105,7 +107,8 @@ nc_H2O[:,:] = np.tile(h2o[:,None], (1, n_col))
 nc_N2 [:] = n2
 nc_O2 [:] = o2
 
-nc_emis_sfc = nc_file.createVariable("emis_sfc" , float_type, ("col", "band"))
+# Longwave boundary conditions.
+nc_emis_sfc = nc_file.createVariable("emis_sfc" , float_type, ("col", "band_lw"))
 nc_t_sfc = nc_file.createVariable("t_sfc" , float_type, ("col"))
 
 emis_sfc = 1.
@@ -113,5 +116,24 @@ t_sfc = 300.
 
 nc_emis_sfc[:,:] = emis_sfc
 nc_t_sfc[:] = t_sfc
+
+# Shortwave boundary conditions.
+solar_zenith_angle = np.deg2rad(42.05);
+mu0 = np.cos(solar_zenith_angle)
+
+sfc_alb_dir = np.ones((n_col, n_bnd_sw))*0.07
+sfc_alb_dif = np.ones((n_col, n_bnd_sw))*0.07
+
+total_solar_irradiance_scaling = 0.4053176301654965;
+
+nc_mu0 = nc_file.createVariable("mu0", float_type, ("col"))
+nc_sfc_alb_dir = nc_file.createVariable("sfc_alb_dir", float_type, ("col", "band_sw"))
+nc_sfc_alb_dif = nc_file.createVariable("sfc_alb_dif", float_type, ("col", "band_sw"))
+nc_tsi = nc_file.createVariable("tsi_scaling", float_type, ("col"))
+
+nc_mu0[:] = mu0
+nc_sfc_alb_dir[:,:] = sfc_alb_dir[:,:]
+nc_sfc_alb_dif[:,:] = sfc_alb_dif[:,:]
+nc_tsi[:] = total_solar_irradiance_scaling
 
 nc_file.close()

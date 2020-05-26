@@ -137,25 +137,13 @@ void solve_radiation()
     Array<TF,1> t_sfc(input_nc.get_variable<TF>("t_sfc", {n_col}), {n_col});
 
     // Read the boundary conditions for shortwave.
-    // CvH: HARDCODE RCEMIP FOR TESTING
     const int n_bnd_sw = rad_sw.get_n_bnd();
     const int n_gpt_sw = rad_sw.get_n_gpt();
 
-    Array<TF,1> sza({n_col});
-    Array<TF,2> sfc_alb_dir({n_bnd_sw, n_col});
-    Array<TF,2> sfc_alb_dif({n_bnd_sw, n_col});
-
-    sza({1}) = TF(0.7339109504636155);
-
-    for (int ibnd=1; ibnd<=n_bnd_sw; ++ibnd)
-    {
-        sfc_alb_dir({ibnd, 1}) = 0.07;
-        sfc_alb_dif({ibnd, 1}) = 0.07;
-    }
-
-    Array<TF,1> mu0({n_col});
-    mu0({1}) = std::cos(sza({1}));
-    const TF tsi_scaling = 0.4053176301654965;
+    Array<TF,1> mu0(input_nc.get_variable<TF>("mu0", {n_col}), {n_col});
+    Array<TF,2> sfc_alb_dir(input_nc.get_variable<TF>("sfc_alb_dir", {n_col, n_bnd_sw}), {n_bnd_sw, n_col});
+    Array<TF,2> sfc_alb_dif(input_nc.get_variable<TF>("sfc_alb_dir", {n_col, n_bnd_sw}), {n_bnd_sw, n_col});
+    Array<TF,1> tsi_scaling(input_nc.get_variable<TF>("tsi_scaling", {n_col}), {n_col});
 
 
     ////// CREATE THE OUTPUT ARRAYS //////
