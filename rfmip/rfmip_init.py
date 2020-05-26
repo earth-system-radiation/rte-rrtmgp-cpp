@@ -44,8 +44,8 @@ nc_surface_albedo_dif[:,:] = np.tile( (nc_file_rfmip.variables['surface_albedo']
 nc_mu0 = nc_file.createVariable('mu0', float_type, ('col'))
 nc_mu0[:] = np.cos(nc_file_rfmip.variables['solar_zenith_angle'][:])
 
-nc_tsi_scaling = nc_file.createVariable('tsi_scaling', float_type, ('col'))
-nc_tsi_scaling[:] = 1. #nc_file_rfmip.variables['total_solar_irradiance'][site]
+nc_tsi = nc_file.createVariable('tsi', float_type, ('col'))
+nc_tsi[:] = nc_file_rfmip.variables['total_solar_irradiance'][:]
 
 nc_h2o = nc_file.createVariable('vmr_h2o', float_type, ('lay', 'col'))
 nc_o3  = nc_file.createVariable('vmr_o3' , float_type, ('lay', 'col'))

@@ -124,7 +124,6 @@ mu0 = np.cos(solar_zenith_angle)
 sfc_alb_dir = np.ones((n_col, n_bnd_sw))*0.07
 sfc_alb_dif = np.ones((n_col, n_bnd_sw))*0.07
 
-# total_solar_irradiance_scaling = 0.4053176301654965;
 total_solar_irradiance = 551.58
 
 nc_mu0 = nc_file.createVariable("mu0", float_type, ("col"))
