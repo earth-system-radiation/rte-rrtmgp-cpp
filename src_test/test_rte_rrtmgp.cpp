@@ -241,7 +241,7 @@ void solve_radiation()
             t_lay, t_lev,
             col_dry,
             sfc_alb_dir, sfc_alb_dif,
-            mu0, tsi_scaling,
+            tsi_scaling, mu0,
             sw_tau, ssa, g,
             toa_source,
             sw_flux_up, sw_flux_dn,

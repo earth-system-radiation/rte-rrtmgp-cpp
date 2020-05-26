@@ -496,7 +496,7 @@ void Radiation_solver_shortwave<TF>::solve(
         const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
         const Array<TF,2>& col_dry,
         const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
-        const Array<TF,1>& mu0, const TF tsi_scaling,
+        const Array<TF,1>& tsi_scaling, const Array<TF,1>& mu0,
         Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g,
         Array<TF,2>& toa_src,
         Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn,
@@ -557,7 +557,7 @@ void Radiation_solver_shortwave<TF>::solve(
 
         for (int igpt=1; igpt<=n_gpt; ++igpt)
             for (int icol=1; icol<=n_col_in; ++icol)
-                toa_src_subset({icol, igpt}) *= tsi_scaling;
+                toa_src_subset({icol, igpt}) *= tsi_scaling({icol});
 
         // Store the optical properties, if desired.
         if (sw_output_optical)
