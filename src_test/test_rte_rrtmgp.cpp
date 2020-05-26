@@ -145,11 +145,16 @@ void solve_radiation()
     Array<TF,2> sfc_alb_dif(input_nc.get_variable<TF>("sfc_alb_dir", {n_col, n_bnd_sw}), {n_bnd_sw, n_col});
 
     Array<TF,1> tsi_scaling({n_col});
-    Array<TF,1> tsi(input_nc.get_variable<TF>("tsi", {n_col}), {n_col});
-
-    const TF tsi_ref = rad_sw.get_tsi();
-    for (int icol=1; icol<=n_col; ++icol)
-        tsi_scaling({icol}) = tsi({icol}) / tsi_ref;
+    if (input_nc.variable_exists("tsi"))
+    {
+        Array<TF,1> tsi(input_nc.get_variable<TF>("tsi", {n_col}), {n_col});
+        const TF tsi_ref = rad_sw.get_tsi();
+        for (int icol=1; icol<=n_col; ++icol)
+            tsi_scaling({icol}) = tsi({icol}) / tsi_ref;
+    }
+    else
+        for (int icol=1; icol<=n_col; ++icol)
+            tsi_scaling({icol}) = TF(1.);
 
 
     ////// CREATE THE OUTPUT ARRAYS //////
