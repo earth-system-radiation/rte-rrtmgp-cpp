@@ -168,6 +168,7 @@ void solve_radiation()
     Array<TF,3> sw_tau;
     Array<TF,3> ssa;
     Array<TF,3> g;
+    Array<TF,2> toa_source;
 
     if (sw_output_optical)
     {
@@ -177,9 +178,10 @@ void solve_radiation()
         lev_source_dec.set_dims({n_col, n_lay, n_gpt_lw});
         sfc_source    .set_dims({n_col, n_gpt_lw});
 
-        sw_tau        .set_dims({n_col, n_lay, n_gpt_sw});
-        ssa           .set_dims({n_col, n_lay, n_gpt_sw});
-        g             .set_dims({n_col, n_lay, n_gpt_sw});
+        sw_tau    .set_dims({n_col, n_lay, n_gpt_sw});
+        ssa       .set_dims({n_col, n_lay, n_gpt_sw});
+        g         .set_dims({n_col, n_lay, n_gpt_sw});
+        toa_source.set_dims({n_col, n_gpt_sw});
     }
 
     Array<TF,2> lw_flux_up ({n_col, n_lev});
@@ -253,6 +255,7 @@ void solve_radiation()
             sfc_alb_dir, sfc_alb_dif,
             mu0, tsi_scaling,
             sw_tau, ssa, g,
+            toa_source,
             sw_flux_up, sw_flux_dn,
             sw_flux_dn_dir, sw_flux_net,
             sw_bnd_flux_up, sw_bnd_flux_dn,
@@ -321,6 +324,9 @@ void solve_radiation()
         nc_sw_tau.insert(sw_tau.v(), {0, 0, 0});
         nc_ssa   .insert(ssa   .v(), {0, 0, 0});
         nc_g     .insert(g     .v(), {0, 0, 0});
+
+        auto nc_toa_source = output_nc.add_variable<TF>("toa_source", {"gpt_sw", "col"});
+        nc_toa_source.insert(toa_source.v(), {0, 0});
     }
 
     // Save the output of the flux calculation to disk.

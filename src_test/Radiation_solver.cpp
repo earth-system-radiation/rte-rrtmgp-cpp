@@ -498,6 +498,7 @@ void Radiation_solver_shortwave<TF>::solve(
         const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
         const Array<TF,1>& mu0, const TF tsi_scaling,
         Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g,
+        Array<TF,2>& toa_src,
         Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn,
         Array<TF,2>& sw_flux_dn_dir, Array<TF,2>& sw_flux_net,
         Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn,
@@ -569,6 +570,10 @@ void Radiation_solver_shortwave<TF>::solve(
                         ssa({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_ssa()({icol, ilay, igpt});
                         g  ({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_g  ()({icol, ilay, igpt});
                     }
+
+            for (int igpt=1; igpt<=n_gpt; ++igpt)
+                for (int icol=1; icol<=n_col_in; ++icol)
+                    toa_src({icol+col_s_in-1, igpt}) = toa_src_subset({icol, igpt});
         }
 
         Array<TF,3> gpt_flux_up    ({n_col_in, n_lev, n_gpt});
