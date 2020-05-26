@@ -555,9 +555,11 @@ void Radiation_solver_shortwave<TF>::solve(
                 toa_src_subset,
                 col_dry_subset);
 
+        auto tsi_scaling_subset = tsi_scaling.subset({{ {col_s_in, col_e_in} }});
+
         for (int igpt=1; igpt<=n_gpt; ++igpt)
             for (int icol=1; icol<=n_col_in; ++icol)
-                toa_src_subset({icol, igpt}) *= tsi_scaling({icol});
+                toa_src_subset({icol, igpt}) *= tsi_scaling_subset({icol});
 
         // Store the optical properties, if desired.
         if (sw_output_optical)
