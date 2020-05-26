@@ -22,7 +22,7 @@
  *
  */
 
-#include <cmath>
+#include <chrono>
 
 #include "Status.h"
 #include "Netcdf_interface.h"
