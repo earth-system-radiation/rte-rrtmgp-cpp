@@ -8,15 +8,15 @@ expts = 18
 
 # Run the experiments.
 for expt in range(expts):
-    shutil.copyfile('rte_rrtmgp_input_expt_{}.nc'.format(expt), 'rte_rrtmgp_input.nc')
+    shutil.copyfile('rte_rrtmgp_input_expt_{:02d}.nc'.format(expt), 'rte_rrtmgp_input.nc')
     subprocess.run(['./test_rte_rrtmgp'])
-    shutil.move('rte_rrtmgp_output.nc', 'rte_rrtmgp_output_expt_{}.nc'.format(expt))
+    shutil.move('rte_rrtmgp_output.nc', 'rte_rrtmgp_output_expt_{:02d}.nc'.format(expt))
 
 
 # Prepare the output file.
 for expt in range(expts):
     # Save all the input data to NetCDF
-    nc_file = nc.Dataset('rte_rrtmgp_output_expt_{}.nc'.format(expt), mode='r')
+    nc_file = nc.Dataset('rte_rrtmgp_output_expt_{:02d}.nc'.format(expt), mode='r')
     
     nc_file_rld = nc.Dataset('rld_Efx_RTE-RRTMGP-181204_rad-irf_r1i1p1f1_gn.nc', mode='a')
     nc_file_rlu = nc.Dataset('rlu_Efx_RTE-RRTMGP-181204_rad-irf_r1i1p1f1_gn.nc', mode='a')
