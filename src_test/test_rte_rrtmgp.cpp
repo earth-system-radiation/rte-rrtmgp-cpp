@@ -121,6 +121,18 @@ void solve_radiation()
     read_and_set_vmr("o2" , n_col, n_lay, input_nc, gas_concs);
     read_and_set_vmr("n2" , n_col, n_lay, input_nc, gas_concs);
 
+    read_and_set_vmr("ccl4"   , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("cfc11"  , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("cfc12"  , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("cfc22"  , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("hfc143a", n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("hfc125" , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("hfc23"  , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("hfc32"  , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("hfc134a", n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("cf4"    , n_col, n_lay, input_nc, gas_concs);
+    read_and_set_vmr("no2"    , n_col, n_lay, input_nc, gas_concs);
+
 
     ////// INITIALIZE THE SOLVER AND INIT K-DISTRIBUTION //////
     Status::print_message("Initializing the solvers.");
