@@ -27,6 +27,10 @@ for expt in range(expts):
     
     nc_pres_layer[:,:] = nc_file_rfmip.variables['pres_layer'][:,:].transpose()
     nc_pres_level[:,:] = nc_file_rfmip.variables['pres_level'][:,:].transpose()
+
+    nc_pres_layer[:,:] = np.maximum(nc_pres_layer[:,:], 1.005183574463)
+    nc_pres_level[:,:] = np.maximum(nc_pres_level[:,:], 1.005183574463)
+
     nc_temp_layer[:,:] = (nc_file_rfmip.variables['temp_layer'][expt,:,:]).transpose()
     nc_temp_level[:,:] = (nc_file_rfmip.variables['temp_level'][expt,:,:]).transpose()
     

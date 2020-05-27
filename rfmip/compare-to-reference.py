@@ -38,7 +38,7 @@ if __name__ == '__main__':
     # Download reference data
     #    If versions of all files exist in the reference directory, no need to download (can be over-ridden)
     if not all([os.path.exists(os.path.join(args.ref_dir, v + rrtmgp_suffix)) for v in vars]) or args.download_reference:
-        print("Dowloading reference data")
+        print("Downloading reference data")
         os.makedirs(args.ref_dir, exist_ok=True)
         for v in vars:
             urllib.request.urlretrieve(construct_esgf_file(v), os.path.join(args.ref_dir, v+rrtmgp_suffix))
