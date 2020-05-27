@@ -656,6 +656,7 @@ void Radiation_solver_shortwave<TF>::solve(
                 *bnd_fluxes_residual);
     }
 }
+
 #ifdef FLOAT_SINGLE_RRTMGP
 template class Radiation_solver_longwave<float>;
 template class Radiation_solver_shortwave<float>;

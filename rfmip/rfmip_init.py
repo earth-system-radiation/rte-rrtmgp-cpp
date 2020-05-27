@@ -42,7 +42,7 @@ nc_surface_albedo_dir[:,:] = np.tile( (nc_file_rfmip.variables['surface_albedo']
 nc_surface_albedo_dif[:,:] = np.tile( (nc_file_rfmip.variables['surface_albedo'][:]) [:,None], (1, band_sw) )
 
 nc_mu0 = nc_file.createVariable('mu0', float_type, ('col'))
-nc_mu0[:] = np.cos(nc_file_rfmip.variables['solar_zenith_angle'][:])
+nc_mu0[:] = np.maximum(0., np.cos( np.deg2rad(nc_file_rfmip.variables['solar_zenith_angle'][:]) ) )
 
 nc_tsi = nc_file.createVariable('tsi', float_type, ('col'))
 nc_tsi[:] = nc_file_rfmip.variables['total_solar_irradiance'][:]
