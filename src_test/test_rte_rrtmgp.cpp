@@ -49,7 +49,6 @@ void read_and_set_vmr(
         std::map<std::string, int> dims = input_nc.get_variable_dimensions(vmr_gas_name);
         const int n_dims = dims.size();
 
-
         if (n_dims == 0)
         {
             gas_concs.set_vmr(gas_name, input_nc.get_variable<TF>(vmr_gas_name));
