@@ -24,6 +24,7 @@
 
 #include <cmath>
 #include <numeric>
+#include <iomanip>
 #include <boost/algorithm/string.hpp>
 // #include <xtensor/xarray.hpp>
 // #include <xtensor/xadapt.hpp>
@@ -37,8 +38,9 @@
 
 #include "rrtmgp_kernels.h"
 // CUDA TEST
-#include "rrtmgp_kernels_cuda.h"
+#include "rrtmgp_kernel_launcher_cuda.h"
 // END CUDA TEST
+
 #define restrict __restrict__
 
 namespace
@@ -1029,18 +1031,6 @@ namespace rrtmgp_kernel_launcher
                 &ncol, &nlay, &ngpt,
                 const_cast<TF*>(tau_local.ptr()), const_cast<TF*>(tau_rayleigh.ptr()),
                 tau.ptr(), ssa.ptr(), g.ptr());
-
-        // CUDA TEST.
-        // Make new arrays for output comparison.
-        Array<TF,3> tau_gpu(tau);
-        Array<TF,3> ssa_gpu(ssa);
-        Array<TF,3> g_gpu(g);
-
-        rrtmgp_kernels_cuda::combine_and_reorder_2str<TF>(
-                ncol, nlay, ngpt,
-                tau.ptr(), tau_rayleigh.ptr(),
-                tau_gpu.ptr(), ssa_gpu.ptr(), g_gpu.ptr());
-        // END CUDA TEST.
     }
 
     template<typename TF>
@@ -1259,6 +1249,28 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
                 ncol, nlay, ngpt,
                 tau, tau_rayleigh,
                 optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
+
+        // CUDA TEST.
+        // Make new arrays for output comparison.
+        Array<TF,3> tau_gpu(optical_props->get_tau());
+        Array<TF,3> ssa_gpu(optical_props->get_ssa());
+        Array<TF,3> g_gpu(optical_props->get_g());
+
+        rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<TF>(
+                ncol, nlay, ngpt,
+                tau, tau_rayleigh,
+                tau_gpu, ssa_gpu, g_gpu);
+
+        // Print the output to the screen.
+        // for (int igpt=1; igpt<=tau.dim(3); ++igpt)
+        for (int igpt=1; igpt<=1; ++igpt) // Print only one band for now.
+            for (int ilay=1; ilay<=tau_gpu.dim(2); ++ilay)
+                for (int icol=1; icol<=tau_gpu.dim(1); ++icol)
+                {
+                    std::cout << std::setprecision(16) << "tau (" << icol << "," << ilay << "," << igpt << ") = " <<
+                        tau_gpu({icol, ilay, igpt}) << ", " << optical_props->get_tau()({icol, ilay, igpt}) << std::endl;
+                }
+        // END CUDA TEST.
     }
 }
 

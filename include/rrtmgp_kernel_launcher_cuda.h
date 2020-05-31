@@ -25,12 +25,14 @@
 #ifndef RRTMGP_KERNELS_CUDA_H
 #define RRTMGP_KERNELS_CUDA_H
 
-namespace rrtmgp_kernels_cuda
+#include "Array.h"
+
+namespace rrtmgp_kernel_launcher_cuda
 {
     template<typename TF>
     void combine_and_reorder_2str(
             const int ncol, const int nlay, const int ngpt,
-            const TF* tau_local, const TF* tau_rayleigh,
-            TF* tau, TF* ssa, TF* g);
+            const Array<TF,3>& tau_local, const Array<TF,3>& tau_rayleigh,
+            Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g);
 }
 #endif
