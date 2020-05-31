@@ -81,8 +81,8 @@ template<typename TF>
 void solve_radiation()
 {
     ////// FLOW CONTROL SWITCHES //////
-    const bool sw_output_optical = true;
-    const bool sw_output_bnd_fluxes = true;
+    const bool sw_output_optical = false;
+    const bool sw_output_bnd_fluxes = false;
 
 
     ////// READ THE ATMOSPHERIC DATA //////
