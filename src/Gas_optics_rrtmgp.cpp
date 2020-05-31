@@ -1251,6 +1251,7 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
                 optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
 
         // CUDA TEST.
+        #ifdef USECUDA
         // Make new arrays for output comparison.
         Array<TF,3> tau_gpu(optical_props->get_tau());
         Array<TF,3> ssa_gpu(optical_props->get_ssa());
@@ -1270,6 +1271,7 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
                     std::cout << std::setprecision(16) << "tau (" << icol << "," << ilay << "," << igpt << ") = " <<
                         tau_gpu({icol, ilay, igpt}) << ", " << optical_props->get_tau()({icol, ilay, igpt}) << std::endl;
                 }
+        #endif
         // END CUDA TEST.
     }
 }
