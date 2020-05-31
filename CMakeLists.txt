@@ -76,7 +76,7 @@ else()
 endif()
 
 # Start the project only after the system specific settings are loaded.
-project(rte-rrtmgp-cpp CXX Fortran)
+project(rte-rrtmgp-cpp C CXX Fortran)
 
 # Display status messages for MPI set precompiler flags.
 if(USEMPI)
@@ -141,6 +141,12 @@ if(USECUDA)
   message(STATUS "NVCC flags: " ${CUDA_NVCC_FLAGS})
 endif()
 
+# Compile the kernels first.
 add_subdirectory(src_fortran)
+if(USECUDA)
+  add_subdirectory(src_cuda)
+endif()
+
+# Compile the other code.
 add_subdirectory(src)
 add_subdirectory(src_test)

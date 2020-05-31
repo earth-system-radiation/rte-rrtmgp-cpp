@@ -36,6 +36,9 @@
 #include "Source_functions.h"
 
 #include "rrtmgp_kernels.h"
+// CUDA TEST
+#include "rrtmgp_kernels_cuda.h"
+// END CUDA TEST
 #define restrict __restrict__
 
 namespace
@@ -1026,6 +1029,18 @@ namespace rrtmgp_kernel_launcher
                 &ncol, &nlay, &ngpt,
                 const_cast<TF*>(tau_local.ptr()), const_cast<TF*>(tau_rayleigh.ptr()),
                 tau.ptr(), ssa.ptr(), g.ptr());
+
+        // CUDA TEST.
+        // Make new arrays for output comparison.
+        Array<TF,3> tau_gpu(tau);
+        Array<TF,3> ssa_gpu(ssa);
+        Array<TF,3> g_gpu(g);
+
+        rrtmgp_kernels_cuda::combine_and_reorder_2str<TF>(
+                ncol, nlay, ngpt,
+                tau.ptr(), tau_rayleigh.ptr(),
+                tau_gpu.ptr(), ssa_gpu.ptr(), g_gpu.ptr());
+        // END CUDA TEST.
     }
 
     template<typename TF>
