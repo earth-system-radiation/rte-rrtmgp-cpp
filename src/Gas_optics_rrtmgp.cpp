@@ -1265,8 +1265,8 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
         // Print the output to the screen.
         // for (int igpt=1; igpt<=tau.dim(3); ++igpt)
         for (int igpt=1; igpt<=1; ++igpt) // Print only one band for now.
-            for (int ilay=1; ilay<=tau_gpu.dim(2); ++ilay)
-                for (int icol=1; icol<=tau_gpu.dim(1); ++icol)
+            for (int ilay=1; ilay<=nlay; ++ilay)
+                for (int icol=1; icol<=ncol; ++icol)
                 {
                     std::cout << std::setprecision(16) << "tau (" << icol << "," << ilay << "," << igpt << ") = " <<
                         tau_gpu({icol, ilay, igpt}) << ", " << optical_props->get_tau()({icol, ilay, igpt}) << std::endl;
