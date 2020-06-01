@@ -22,7 +22,7 @@ namespace
             const int idx_in  = igpt + ilay*ngpt + icol*(ngpt*nlay);
             const int idx_out = icol + ilay*ncol + igpt*(ncol*nlay);
 
-            // tau[idx_out] = tau_abs[idx_in] + TF(100.)*ilay;
+            tau[idx_out] = tau_abs[idx_in] + TF(100.)*(ilay+1);
         }
     }
 }
@@ -70,14 +70,21 @@ namespace rrtmgp_kernel_launcher_cuda
 
         combine_and_reorder_2str_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt,
-                tau_abs.ptr(), tau_rayleigh.ptr(),
-                tau.ptr(), ssa.ptr(), g.ptr());
+                tau_abs_gpu, tau_rayleigh_gpu,
+                tau_gpu, ssa_gpu, g_gpu);
         cuda_check_error();
 
         // Copy back the results.
         cuda_safe_call(cudaMemcpy(tau.ptr(), tau_gpu, array_size, cudaMemcpyDeviceToHost));
         cuda_safe_call(cudaMemcpy(ssa.ptr(), ssa_gpu, array_size, cudaMemcpyDeviceToHost));
         cuda_safe_call(cudaMemcpy(g.ptr(), g_gpu, array_size, cudaMemcpyDeviceToHost));
+
+        // Deallocate a CUDA array.
+        cuda_safe_call(cudaFree(tau_abs_gpu));
+        cuda_safe_call(cudaFree(tau_rayleigh_gpu));
+        cuda_safe_call(cudaFree(tau_gpu));
+        cuda_safe_call(cudaFree(ssa_gpu));
+        cuda_safe_call(cudaFree(g_gpu));
     }
 }
 
