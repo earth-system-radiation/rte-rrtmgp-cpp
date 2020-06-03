@@ -1,3 +1,6 @@
+#
+# This file is part of a C++ interface to the Radiative Transfer for Energetics (RTE)
+#
 FILE(GLOB sourcefiles "../src/*.cpp")
 include_directories("../include" SYSTEM ${INCLUDE_DIRS})
 
