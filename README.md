@@ -15,6 +15,10 @@ email: chiel.vanheerwaarden@wur.nl
 Use and duplication is permitted under the terms of the
 BSD 3-clause license, see http://opensource.org/licenses/BSD-3-Clause
 
+The source code of the testing executable in the `src_test` and
+`include_test` directory is released under the GPLv3 license,
+see https://www.gnu.org/licenses/gpl-3.0.en.html
+
 In order to check out the code including the `rte-rrtmgp` submodule, use:
 
     git clone --recurse-submodules https://github.com/microhh/rte-rrtmgp-cpp
