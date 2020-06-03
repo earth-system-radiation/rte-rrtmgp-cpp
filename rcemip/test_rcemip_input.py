@@ -2,7 +2,7 @@ import numpy as np
 import netCDF4 as nc
 
 float_type = "f8"
-n_col = 1
+n_col = 32**2
 n_bnd_lw = 16
 n_bnd_sw = 14
 

@@ -95,6 +95,6 @@ class Radiation_solver_shortwave
         { return this->kdist->get_band_lims_wavenumber(); }
 
     private:
-        std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist;
+        std::unique_ptr<Gas_optics<TF>> kdist;
 };
 #endif
