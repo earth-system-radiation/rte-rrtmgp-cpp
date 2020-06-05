@@ -3,6 +3,7 @@ import netCDF4 as nc
 
 # Settings
 float_type = 'f8'
+ncol = 2
 
 band_lw = 16
 band_sw = 14
@@ -14,7 +15,7 @@ nc_file_garand = nc.Dataset('garand-atmos-1.nc', mode='r', datamodel='NETCDF4', 
 # Create a group for the radiation and set up the values.
 nc_file.createDimension('lay', nc_file_garand.dimensions['lay'].size)
 nc_file.createDimension('lev', nc_file_garand.dimensions['lev'].size)
-nc_file.createDimension('col', nc_file_garand.dimensions['col'].size)
+nc_file.createDimension('col', ncol)
 nc_file.createDimension('band_lw', band_lw)
 nc_file.createDimension('band_sw', band_sw)
 

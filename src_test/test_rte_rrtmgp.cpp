@@ -129,8 +129,8 @@ void solve_radiation()
 
     ////// INITIALIZE THE SOLVER AND INIT K-DISTRIBUTION //////
     Status::print_message("Initializing the solvers.");
-    Radiation_solver_longwave<TF> rad_lw(gas_concs, "coefficients_lw.nc");
-    Radiation_solver_shortwave<TF> rad_sw(gas_concs, "coefficients_sw.nc");
+    Radiation_solver_longwave<TF> rad_lw(gas_concs, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
+    Radiation_solver_shortwave<TF> rad_sw(gas_concs, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
 
 
     ////// READ THE SURFACE DATA //////

@@ -23,12 +23,16 @@
 #include "Array.h"
 #include "Gas_concs.h"
 #include "Gas_optics_rrtmgp.h"
+#include "Cloud_optics.h"
 
 template<typename TF>
 class Radiation_solver_longwave
 {
     public:
-        Radiation_solver_longwave(const Gas_concs<TF>& gas_concs, const std::string& file_name);
+        Radiation_solver_longwave(
+                const Gas_concs<TF>& gas_concs,
+                const std::string& file_name_gas,
+                const std::string& file_name_cloud);
 
         void solve(
                 const bool sw_output_optical,
@@ -54,13 +58,17 @@ class Radiation_solver_longwave
 
     private:
         std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist;
+        std::unique_ptr<Cloud_optics<TF>> cloud;
 };
 
 template<typename TF>
 class Radiation_solver_shortwave
 {
     public:
-        Radiation_solver_shortwave(const Gas_concs<TF>& gas_concs, const std::string& file_name);
+        Radiation_solver_shortwave(
+                const Gas_concs<TF>& gas_concs,
+                const std::string& file_name_gas,
+                const std::string& file_name_cloud);
 
         void solve(
                 const bool sw_output_optical,
@@ -91,5 +99,6 @@ class Radiation_solver_shortwave
 
     private:
         std::unique_ptr<Gas_optics<TF>> kdist;
+        std::unique_ptr<Cloud_optics<TF>> cloud;
 };
 #endif
