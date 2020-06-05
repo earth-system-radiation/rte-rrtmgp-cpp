@@ -18,20 +18,20 @@ nc_file.createDimension('col', nc_file_garand.dimensions['col'].size)
 nc_file.createDimension('band_lw', band_lw)
 nc_file.createDimension('band_sw', band_sw)
 
-nc_pres_layer = nc_file.createVariable('p_lay', float_type, ('lay', 'col'))
-nc_pres_level = nc_file.createVariable('p_lev', float_type, ('lev', 'col'))
-nc_temp_layer = nc_file.createVariable('t_lay', float_type, ('lay', 'col'))
-nc_temp_level = nc_file.createVariable('t_lev', float_type, ('lev', 'col'))
+nc_p_lay = nc_file.createVariable('p_lay', float_type, ('lay', 'col'))
+nc_p_lev = nc_file.createVariable('p_lev', float_type, ('lev', 'col'))
+nc_t_lay = nc_file.createVariable('t_lay', float_type, ('lay', 'col'))
+nc_t_lev = nc_file.createVariable('t_lev', float_type, ('lev', 'col'))
 
-nc_pres_layer[:,:] = nc_file_garand.variables['p_lay'][:,:]
-nc_pres_level[:,:] = nc_file_garand.variables['p_lev'][:,:]
+nc_p_lay[:,:] = nc_file_garand.variables['p_lay'][:,:]
+nc_p_lev[:,:] = nc_file_garand.variables['p_lev'][:,:]
 
 # Make sure the top edge does not exceed the minimum tolerable pressure
 # of the coefficient files.
-nc_pres_level[:,:] = np.maximum(nc_pres_level[:,:], np.nextafter(1.005183574463, 1.))
+nc_p_lev[:,:] = np.maximum(nc_p_lev[:,:], np.nextafter(1.005183574463, 1.))
 
-nc_temp_layer[:,:] = nc_file_garand.variables['t_lay'][:,:]
-nc_temp_level[:,:] = nc_file_garand.variables['t_lev'][:,:]
+nc_t_lay[:,:] = nc_file_garand.variables['t_lay'][:,:]
+nc_t_lev[:,:] = nc_file_garand.variables['t_lev'][:,:]
 
 nc_col_dry = nc_file.createVariable('col_dry', float_type, ('lay', 'col'))
 nc_col_dry[:,:] = nc_file_garand.variables['col_dry'][:,:]
@@ -40,7 +40,7 @@ nc_surface_emissivity = nc_file.createVariable('emis_sfc', float_type, ('col', '
 nc_surface_temperature = nc_file.createVariable('t_sfc', float_type, 'col')
 
 nc_surface_emissivity[:,:] = 0.98
-nc_surface_temperature[:] = nc_temp_level[0,:]
+nc_surface_temperature[:] = nc_t_lev[0,:]
 
 nc_surface_albedo_dir = nc_file.createVariable('sfc_alb_dir', float_type, ('col', 'band_sw'))
 nc_surface_albedo_dif = nc_file.createVariable('sfc_alb_dif', float_type, ('col', 'band_sw'))
@@ -70,5 +70,27 @@ nc_ch4[:,:] = nc_file_garand.variables['vmr_ch4'][:,:]
 nc_o2 [:,:] = nc_file_garand.variables['vmr_o2' ][:,:]
 nc_n2 [:,:] = nc_file_garand.variables['vmr_n2' ][:,:]
 
+# Clouds
+nc_lwp = nc_file.createVariable('lwp', float_type, ('lay', 'col'))
+nc_iwp = nc_file.createVariable('iwp', float_type, ('lay', 'col'))
+nc_rel = nc_file.createVariable('rel', float_type, ('lay', 'col'))
+nc_rei = nc_file.createVariable('rei', float_type, ('lay', 'col'))
+nc_cloud_mask = nc_file.createVariable('cloud_mask', float_type, ('lay', 'col'))
+
+#rel_val = 0.5 * (cloud_optics%get_min_radius_liq() + cloud_optics%get_max_radius_liq())
+#rei_val = 0.5 * (cloud_optics%get_min_radius_ice() + cloud_optics%get_max_radius_ice())
+rel_val = 10.
+rei_val = 100.
+
+nlay, ncol = nc_p_lay[:,:].shape[0], nc_p_lay[:,:].shape[1]
+
+for ilay in range(nlay):
+    for icol in range(ncol):
+        nc_cloud_mask[ilay, icol] = (nc_p_lay[ilay, icol] > 1.e4) and (nc_p_lay[ilay, icol] < 9.e4) and (icol%3 != 0)
+        nc_lwp[ilay, icol] = 10. if (nc_cloud_mask[ilay, icol] and (nc_t_lay[ilay, icol] > 263.)) else 0.
+        nc_iwp[ilay, icol] = 10. if (nc_cloud_mask[ilay, icol] and (nc_t_lay[ilay, icol] < 273.)) else 0.
+        nc_rel[ilay, icol] = rel_val if nc_cloud_mask[ilay, icol] else 0.
+        nc_rei[ilay, icol] = rei_val if nc_cloud_mask[ilay, icol] else 0.
+ 
 nc_file_garand.close()
 nc_file.close()
