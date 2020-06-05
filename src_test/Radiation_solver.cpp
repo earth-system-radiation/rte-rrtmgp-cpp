@@ -345,7 +345,7 @@ Radiation_solver_longwave<TF>::Radiation_solver_longwave(
     this->kdist = std::make_unique<Gas_optics_rrtmgp<TF>>(
             load_and_init_gas_optics<TF>(gas_concs, file_name_gas));
 
-    this->cloud = std::make_unique<Cloud_optics<TF>>(
+    this->cloud_optics = std::make_unique<Cloud_optics<TF>>(
             load_and_init_cloud_optics<TF>(file_name_cloud));
 }
 
@@ -401,9 +401,9 @@ void Radiation_solver_longwave<TF>::solve(
 
     if (sw_cloud_optics)
     {
-        cloud_optical_props_subset = std::make_unique<Optical_props_1scl<TF>>(n_col_block, n_lay, *cloud);
+        cloud_optical_props_subset = std::make_unique<Optical_props_1scl<TF>>(n_col_block, n_lay, *cloud_optics);
         if (n_col_block_residual > 0)
-            cloud_optical_props_residual = std::make_unique<Optical_props_1scl<TF>>(n_col_block_residual, n_lay, *cloud);
+            cloud_optical_props_residual = std::make_unique<Optical_props_1scl<TF>>(n_col_block_residual, n_lay, *cloud_optics);
     }
 
     // Lambda function for solving optical properties subset.
@@ -440,19 +440,20 @@ void Radiation_solver_longwave<TF>::solve(
 
         if (sw_cloud_optics)
         {
-            cloud->cloud_optics(
+            cloud_optics->cloud_optics(
                     lwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     iwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     rel.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     rei.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     *cloud_optical_props_subset_in);
 
+            // cloud->delta_scale();
+
             // Add the cloud optical props to the gas optical properties.
             add_to(
                     dynamic_cast<Optical_props_1scl<double>&>(*optical_props_subset_in),
                     dynamic_cast<Optical_props_1scl<double>&>(*cloud_optical_props_subset_in));
         }
-
 
         // Store the optical properties, if desired.
         if (sw_output_optical)
@@ -566,7 +567,7 @@ Radiation_solver_shortwave<TF>::Radiation_solver_shortwave(
     this->kdist = std::make_unique<Gas_optics_rrtmgp<TF>>(
             load_and_init_gas_optics<TF>(gas_concs, file_name_gas));
 
-    this->cloud = std::make_unique<Cloud_optics<TF>>(
+    this->cloud_optics = std::make_unique<Cloud_optics<TF>>(
             load_and_init_cloud_optics<TF>(file_name_cloud));
 }
 
@@ -616,9 +617,9 @@ void Radiation_solver_shortwave<TF>::solve(
 
     if (sw_cloud_optics)
     {
-        cloud_optical_props_subset = std::make_unique<Optical_props_2str<TF>>(n_col_block, n_lay, *cloud);
+        cloud_optical_props_subset = std::make_unique<Optical_props_2str<TF>>(n_col_block, n_lay, *cloud_optics);
         if (n_col_block_residual > 0)
-            cloud_optical_props_residual = std::make_unique<Optical_props_2str<TF>>(n_col_block_residual, n_lay, *cloud);
+            cloud_optical_props_residual = std::make_unique<Optical_props_2str<TF>>(n_col_block_residual, n_lay, *cloud_optics);
     }
 
     // Lambda function for solving optical properties subset.
@@ -662,12 +663,14 @@ void Radiation_solver_shortwave<TF>::solve(
             Array<int,2> cld_mask_liq({n_col_in, n_lay});
             Array<int,2> cld_mask_ice({n_col_in, n_lay});
 
-            cloud->cloud_optics(
+            cloud_optics->cloud_optics(
                     lwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     iwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     rel.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     rei.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     *cloud_optical_props_subset_in);
+
+            cloud_optical_props_subset_in->delta_scale();
 
             // Add the cloud optical props to the gas optical properties.
             add_to(

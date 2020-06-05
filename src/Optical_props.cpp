@@ -143,6 +143,11 @@ void Optical_props_2str<TF>::get_subset(
             }
 }
 
+template<typename TF>
+void Optical_props_2str<TF>::delta_scale(const Array<TF,3>& forward_frac)
+{
+}
+
 namespace rrtmgp_kernel_launcher
 {
     template<typename TF> void increment_1scalar_by_1scalar(
