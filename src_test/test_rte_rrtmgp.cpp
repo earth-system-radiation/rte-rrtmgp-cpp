@@ -75,6 +75,8 @@ template<typename TF>
 void solve_radiation()
 {
     ////// FLOW CONTROL SWITCHES //////
+    const bool sw_cloud_optics = true;
+
     const bool sw_output_optical = false;
     const bool sw_output_bnd_fluxes = false;
 
@@ -125,6 +127,30 @@ void solve_radiation()
     read_and_set_vmr("hfc134a", n_col, n_lay, input_nc, gas_concs);
     read_and_set_vmr("cf4"    , n_col, n_lay, input_nc, gas_concs);
     read_and_set_vmr("no2"    , n_col, n_lay, input_nc, gas_concs);
+
+    Array<TF,2> lwp;
+    Array<TF,2> iwp;
+    Array<TF,2> rel;
+    Array<TF,2> rei;
+    Array<TF,2> cloud_mask;
+
+    if (sw_cloud_optics)
+    {
+        lwp.set_dims({n_col, n_lay});
+        lwp = std::move(input_nc.get_variable<TF>("lwp", {n_lay, n_col}));
+
+        iwp.set_dims({n_col, n_lay});
+        iwp = std::move(input_nc.get_variable<TF>("iwp", {n_lay, n_col}));
+
+        rel.set_dims({n_col, n_lay});
+        rel = std::move(input_nc.get_variable<TF>("rel", {n_lay, n_col}));
+
+        rei.set_dims({n_col, n_lay});
+        rei = std::move(input_nc.get_variable<TF>("rei", {n_lay, n_col}));
+
+        cloud_mask.set_dims({n_col, n_lay});
+        cloud_mask = std::move(input_nc.get_variable<TF>("cloud_mask", {n_lay, n_col}));
+    }
 
 
     ////// INITIALIZE THE SOLVER AND INIT K-DISTRIBUTION //////
