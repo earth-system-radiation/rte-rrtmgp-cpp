@@ -276,6 +276,7 @@ void solve_radiation()
     time_start = std::chrono::high_resolution_clock::now();
 
     rad_sw.solve(
+            sw_cloud_optics,
             sw_output_optical,
             sw_output_bnd_fluxes,
             gas_concs,
@@ -284,6 +285,8 @@ void solve_radiation()
             col_dry,
             sfc_alb_dir, sfc_alb_dif,
             tsi_scaling, mu0,
+            lwp, iwp,
+            rel, rei,
             sw_tau, ssa, g,
             toa_source,
             sw_flux_up, sw_flux_dn,

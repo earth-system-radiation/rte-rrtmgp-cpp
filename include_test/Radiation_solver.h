@@ -71,6 +71,7 @@ class Radiation_solver_shortwave
                 const std::string& file_name_cloud);
 
         void solve(
+                const bool sw_cloud_optics,
                 const bool sw_output_optical,
                 const bool sw_output_bnd_fluxes,
                 const Gas_concs<TF>& gas_concs,
@@ -79,6 +80,8 @@ class Radiation_solver_shortwave
                 const Array<TF,2>& col_dry,
                 const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
                 const Array<TF,1>& tsi_scaling, const Array<TF,1>& mu0,
+                const Array<TF,2>& lwp, const Array<TF,2>& iwp,
+                const Array<TF,2>& rel, const Array<TF,2>& rei,
                 Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g,
                 Array<TF,2>& toa_src,
                 Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn,
