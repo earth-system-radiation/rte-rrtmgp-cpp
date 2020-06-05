@@ -35,6 +35,7 @@ class Radiation_solver_longwave
                 const std::string& file_name_cloud);
 
         void solve(
+                const bool sw_cloud_optics,
                 const bool sw_output_optical,
                 const bool sw_output_bnd_fluxes,
                 const Gas_concs<TF>& gas_concs,
@@ -42,6 +43,8 @@ class Radiation_solver_longwave
                 const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
                 const Array<TF,2>& col_dry,
                 const Array<TF,1>& t_sfc, const Array<TF,2>& emis_sfc,
+                const Array<TF,2>& lwp, const Array<TF,2>& iwp,
+                const Array<TF,2>& rel, const Array<TF,2>& rei,
                 Array<TF,3>& tau, Array<TF,3>& lay_source,
                 Array<TF,3>& lev_source_inc, Array<TF,3>& lev_source_dec, Array<TF,2>& sfc_source,
                 Array<TF,2>& lw_flux_up, Array<TF,2>& lw_flux_dn, Array<TF,2>& lw_flux_net,
