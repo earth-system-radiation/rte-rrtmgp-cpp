@@ -79,8 +79,11 @@ nc_rei = nc_file.createVariable('rei', float_type, ('lay', 'col'))
 
 #rel_val = 0.5 * (cloud_optics%get_min_radius_liq() + cloud_optics%get_max_radius_liq())
 #rei_val = 0.5 * (cloud_optics%get_min_radius_ice() + cloud_optics%get_max_radius_ice())
-rel_val = 10.
-rei_val = 100.
+min_rel, max_rel = 2.5, 21.5
+min_rei, max_rei = 10., 180.
+
+rel_val = 0.5*(min_rel + max_rel)
+rei_val = 0.5*(min_rei + max_rei)
 
 nlay, ncol = nc_p_lay[:,:].shape[0], nc_p_lay[:,:].shape[1]
 cloud_mask = np.zeros((nlay, ncol))
