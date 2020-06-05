@@ -83,15 +83,15 @@ rel_val = 0.5*(min_rel + max_rel)
 rei_val = 0.5*(min_rei + max_rei)
 
 nlay, ncol = nc_p_lay[:,:].shape[0], nc_p_lay[:,:].shape[1]
-cloud_mask = np.zeros((nlay, ncol))
+cloud_mask = np.zeros((nlay, ncol), dtype=np.bool)
 
 for ilay in range(nlay):
     for icol in range(ncol):
         cloud_mask[ilay, icol] = (nc_p_lay[ilay, icol] > 1.e4) and (nc_p_lay[ilay, icol] < 9.e4) and ((icol+1)%3 != 0)
         nc_lwp[ilay, icol] = 10. if (cloud_mask[ilay, icol] and (nc_t_lay[ilay, icol] > 263.)) else 0.
         nc_iwp[ilay, icol] = 10. if (cloud_mask[ilay, icol] and (nc_t_lay[ilay, icol] < 273.)) else 0.
-        nc_rel[ilay, icol] = rel_val if cloud_mask[ilay, icol] else 0.
-        nc_rei[ilay, icol] = rei_val if cloud_mask[ilay, icol] else 0.
+        nc_rel[ilay, icol] = rel_val if nc_lwp[ilay, icol] > 0. else 0.
+        nc_rei[ilay, icol] = rei_val if nc_iwp[ilay, icol] > 0. else 0.
  
 nc_file_garand.close()
 nc_file.close()
