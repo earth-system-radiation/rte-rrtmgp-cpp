@@ -132,7 +132,6 @@ void solve_radiation()
     Array<TF,2> iwp;
     Array<TF,2> rel;
     Array<TF,2> rei;
-    Array<TF,2> cloud_mask;
 
     if (sw_cloud_optics)
     {
@@ -147,9 +146,6 @@ void solve_radiation()
 
         rei.set_dims({n_col, n_lay});
         rei = std::move(input_nc.get_variable<TF>("rei", {n_lay, n_col}));
-
-        cloud_mask.set_dims({n_col, n_lay});
-        cloud_mask = std::move(input_nc.get_variable<TF>("cloud_mask", {n_lay, n_col}));
     }
 
 

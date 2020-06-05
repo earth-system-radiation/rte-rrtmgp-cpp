@@ -70,7 +70,7 @@ Cloud_optics<TF>::Cloud_optics(
 template<typename TF>
 void compute_from_table(
         const int ncol, const int nlay, const int nbnd,
-        const Array<int,2>& mask, const Array<TF,2>& size, const int nsteps,
+        const Array<BOOL_TYPE,2>& mask, const Array<TF,2>& size, const int nsteps,
         const TF step_size, const TF offset, const Array<TF,2>& table,
         Array<TF,3>& out)
 {
@@ -98,7 +98,6 @@ void compute_from_table(
 // Two-stream variant of cloud optics.
 template<typename TF>
 void Cloud_optics<TF>::cloud_optics(
-        const Array<int,2>& liqmsk, const Array<int,2>& icemsk,
         const Array<TF,2>& clwp, const Array<TF,2>& ciwp,
         const Array<TF,2>& reliq, const Array<TF,2>& reice,
         Optical_props_2str<TF>& optical_props)
@@ -109,6 +108,16 @@ void Cloud_optics<TF>::cloud_optics(
 
     Optical_props_2str<TF> clouds_liq(ncol, nlay, optical_props);
     Optical_props_2str<TF> clouds_ice(ncol, nlay, optical_props);
+
+    // Set the mask.
+    constexpr TF mask_min_value = TF(0.);
+    Array<BOOL_TYPE,2> liqmsk({ncol, nlay});
+    for (int i=0; i<liqmsk.size(); ++i)
+        liqmsk.v()[i] = clwp.v()[i] > mask_min_value;
+
+    Array<BOOL_TYPE,2> icemsk({ncol, nlay});
+    for (int i=0; i<icemsk.size(); ++i)
+        icemsk.v()[i] = ciwp.v()[i] > mask_min_value;
 
     // Liquid water.
     compute_from_table(
@@ -180,7 +189,6 @@ void Cloud_optics<TF>::cloud_optics(
 // 1scl variant of cloud optics.
 template<typename TF>
 void Cloud_optics<TF>::cloud_optics(
-        const Array<int,2>& liqmsk, const Array<int,2>& icemsk,
         const Array<TF,2>& clwp, const Array<TF,2>& ciwp,
         const Array<TF,2>& reliq, const Array<TF,2>& reice,
         Optical_props_1scl<TF>& optical_props)
@@ -191,6 +199,16 @@ void Cloud_optics<TF>::cloud_optics(
 
     Optical_props_1scl<TF> clouds_liq(ncol, nlay, optical_props);
     Optical_props_1scl<TF> clouds_ice(ncol, nlay, optical_props);
+
+    // Set the mask.
+    constexpr TF mask_min_value = TF(0.);
+    Array<BOOL_TYPE,2> liqmsk({ncol, nlay});
+    for (int i=0; i<liqmsk.size(); ++i)
+        liqmsk.v()[i] = clwp.v()[i] > mask_min_value;
+
+    Array<BOOL_TYPE,2> icemsk({ncol, nlay});
+    for (int i=0; i<icemsk.size(); ++i)
+        icemsk.v()[i] = ciwp.v()[i] > mask_min_value;
 
     // Liquid water.
     compute_from_table(

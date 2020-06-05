@@ -631,8 +631,6 @@ void Radiation_solver_shortwave<TF>::solve(
             Array<int,2> cld_mask_ice({n_col_in, n_lay});
 
             cloud->cloud_optics(
-                    cld_mask_liq,
-                    cld_mask_ice,
                     lwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     iwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     rel.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),

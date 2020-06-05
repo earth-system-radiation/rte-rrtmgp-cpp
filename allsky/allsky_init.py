@@ -76,7 +76,6 @@ nc_lwp = nc_file.createVariable('lwp', float_type, ('lay', 'col'))
 nc_iwp = nc_file.createVariable('iwp', float_type, ('lay', 'col'))
 nc_rel = nc_file.createVariable('rel', float_type, ('lay', 'col'))
 nc_rei = nc_file.createVariable('rei', float_type, ('lay', 'col'))
-nc_cloud_mask = nc_file.createVariable('cloud_mask', float_type, ('lay', 'col'))
 
 #rel_val = 0.5 * (cloud_optics%get_min_radius_liq() + cloud_optics%get_max_radius_liq())
 #rei_val = 0.5 * (cloud_optics%get_min_radius_ice() + cloud_optics%get_max_radius_ice())
@@ -84,14 +83,15 @@ rel_val = 10.
 rei_val = 100.
 
 nlay, ncol = nc_p_lay[:,:].shape[0], nc_p_lay[:,:].shape[1]
+cloud_mask = np.zeros((nlay, ncol))
 
 for ilay in range(nlay):
     for icol in range(ncol):
-        nc_cloud_mask[ilay, icol] = (nc_p_lay[ilay, icol] > 1.e4) and (nc_p_lay[ilay, icol] < 9.e4) and (icol%3 != 0)
-        nc_lwp[ilay, icol] = 10. if (nc_cloud_mask[ilay, icol] and (nc_t_lay[ilay, icol] > 263.)) else 0.
-        nc_iwp[ilay, icol] = 10. if (nc_cloud_mask[ilay, icol] and (nc_t_lay[ilay, icol] < 273.)) else 0.
-        nc_rel[ilay, icol] = rel_val if nc_cloud_mask[ilay, icol] else 0.
-        nc_rei[ilay, icol] = rei_val if nc_cloud_mask[ilay, icol] else 0.
+        cloud_mask[ilay, icol] = (nc_p_lay[ilay, icol] > 1.e4) and (nc_p_lay[ilay, icol] < 9.e4) and (icol%3 != 0)
+        nc_lwp[ilay, icol] = 10. if (cloud_mask[ilay, icol] and (nc_t_lay[ilay, icol] > 263.)) else 0.
+        nc_iwp[ilay, icol] = 10. if (cloud_mask[ilay, icol] and (nc_t_lay[ilay, icol] < 273.)) else 0.
+        nc_rel[ilay, icol] = rel_val if cloud_mask[ilay, icol] else 0.
+        nc_rei[ilay, icol] = rei_val if cloud_mask[ilay, icol] else 0.
  
 nc_file_garand.close()
 nc_file.close()
