@@ -7,6 +7,6 @@ Follow the steps:
 
 1. `python allsky_init.py`          (preparing the model input data)
 2. `python allsky_run.py`           (run the model and prepare the file for comparison)
-3. `python compare-to_reference.py` (compare output to reference file)
+3. `python compare-to_reference.py` (download reference file and compare output)
 4. `python allsky_plot.py`          (plot the fluxes for clear and cloudy skies)
 
