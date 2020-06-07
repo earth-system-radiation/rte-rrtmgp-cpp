@@ -34,8 +34,8 @@ nc_p_lev[:,:] = np.maximum(nc_p_lev[:,:], np.nextafter(1.005183574463, 1.))
 nc_t_lay[:,:] = np.tile( nc_file_garand.variables['t_lay'][:,0][:,None], (1, ncol) )
 nc_t_lev[:,:] = np.tile( nc_file_garand.variables['t_lev'][:,0][:,None], (1, ncol) )
 
-nc_col_dry = nc_file.createVariable('col_dry', float_type, ('lay', 'col'))
-nc_col_dry[:,:] = np.tile( nc_file_garand.variables['col_dry'][:,0][:,None], (1, ncol) )
+# nc_col_dry = nc_file.createVariable('col_dry', float_type, ('lay', 'col'))
+# nc_col_dry[:,:] = np.tile( nc_file_garand.variables['col_dry'][:,0][:,None], (1, ncol) )
 
 nc_surface_emissivity = nc_file.createVariable('emis_sfc', float_type, ('col', 'band_lw'))
 nc_surface_emissivity[:,:] = 0.98

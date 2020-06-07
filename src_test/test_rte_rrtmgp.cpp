@@ -77,7 +77,7 @@ void solve_radiation()
     ////// FLOW CONTROL SWITCHES //////
     const bool sw_cloud_optics = true;
 
-    const bool sw_output_optical = true;
+    const bool sw_output_optical = false;
     const bool sw_output_bnd_fluxes = false;
 
 
