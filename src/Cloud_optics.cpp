@@ -165,8 +165,8 @@ void Cloud_optics<TF>::cloud_optics(
                 const TF taussag = ltaussag({icol, ilay, ibnd}) + itaussag({icol, ilay, ibnd});
 
                 optical_props.get_tau()({icol, ilay, ibnd}) = tau;
-                optical_props.get_ssa()({icol, ilay, ibnd}) = taussa / (tau + eps);
-                optical_props.get_g  ()({icol, ilay, ibnd}) = taussag / (taussa + eps);
+                optical_props.get_ssa()({icol, ilay, ibnd}) = taussa / std::max(tau, eps);
+                optical_props.get_g  ()({icol, ilay, ibnd}) = taussag / std::max(taussa, eps);
             }
 }
 
@@ -185,7 +185,7 @@ void Cloud_optics<TF>::cloud_optics(
     Optical_props_1scl<TF> clouds_ice(ncol, nlay, optical_props);
 
     // Set the mask.
-    constexpr TF mask_min_value = TF(0.);
+    constexpr TF mask_min_value = static_cast<TF>(0.);
     Array<BOOL_TYPE,2> liqmsk({ncol, nlay});
     for (int i=0; i<liqmsk.size(); ++i)
         liqmsk.v()[i] = clwp.v()[i] > mask_min_value;
