@@ -86,11 +86,11 @@ void compute_all_from_table(
                     const TF fint = (re({icol, ilay}) - offset) / step_size - (index-1);
 
                     const TF tau_local = cwp({icol, ilay}) *
-                        tau_table({index, ibnd}) + fint * (tau_table({index+1, ibnd}) - tau_table({index, ibnd}));
+                        (tau_table({index, ibnd}) + fint * (tau_table({index+1, ibnd}) - tau_table({index, ibnd})));
                     const TF taussa_local = tau_local *
-                        ssa_table({index, ibnd}) + fint * (ssa_table({index+1, ibnd}) - ssa_table({index, ibnd}));
+                        (ssa_table({index, ibnd}) + fint * (ssa_table({index+1, ibnd}) - ssa_table({index, ibnd})));
                     const TF taussag_local = taussa_local *
-                        asy_table({index, ibnd}) + fint * (asy_table({index+1, ibnd}) - asy_table({index, ibnd}));
+                        (asy_table({index, ibnd}) + fint * (asy_table({index+1, ibnd}) - asy_table({index, ibnd})));
 
                     tau    ({icol, ilay, ibnd}) = tau_local;
                     taussa ({icol, ilay, ibnd}) = taussa_local;
