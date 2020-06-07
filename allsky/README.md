@@ -5,8 +5,9 @@ files into this directory as `coefficients_lw.nc`, `coefficients_sw.nc`,
 
 Follow the steps:
 
-1. `python allsky_init.py`          (preparing the model input data)
-2. `python allsky_run.py`           (run the model and prepare the file for comparison)
-3. `python compare-to_reference.py` (download reference file and compare output)
-4. `python allsky_plot.py`          (plot the fluxes for clear and cloudy skies)
+1. `./make_links.sh`                (link the executable, coefficients, and Python scripts)
+2. `python allsky_init.py`          (preparing the model input data)
+3. `python allsky_run.py`           (run the model and prepare the file for comparison)
+4. `python compare-to_reference.py` (download reference file and compare output)
+5. `python allsky_plot.py`          (plot the fluxes for clear and cloudy skies)
 
