@@ -82,11 +82,9 @@ min_rei, max_rei = 10., 180.
 rel_val = 0.5*(min_rel + max_rel)
 rei_val = 0.5*(min_rei + max_rei)
 
-nlay, ncol = nc_p_lay[:,:].shape[0], nc_p_lay[:,:].shape[1]
-cloud_mask = np.zeros((nlay, ncol), dtype=np.bool)
-
-cloud_flag = np.arange(1, ncol+1)%3
+cloud_flag = (np.arange(1, ncol+1)%3 > 0)
 cloud_mask = np.where((nc_p_lay[:,:] > 1.e4) & (nc_p_lay[:,:] < 9.e4) & cloud_flag[None,:], True, False)
+
 nc_lwp[:,:] = np.where(cloud_mask & (nc_t_lay[:,:] > 263.), 10., 0.)
 nc_iwp[:,:] = np.where(cloud_mask & (nc_t_lay[:,:] < 273.), 10., 0.)
 nc_rel[:,:] = np.where(nc_lwp[:,:] > 0., rel_val, 0.)
