@@ -82,7 +82,7 @@ void compute_all_from_table(
                 if (mask({icol, ilay}))
                 {
                     const int index = std::min(
-                            static_cast<int>((re({icol, ilay}) - offset) / step_size) + 1, nsteps-1);
+                            static_cast<int>((re({icol, ilay}) - offset) / step_size)+1, nsteps-1);
                     const TF fint = (re({icol, ilay}) - offset) / step_size - (index-1);
 
                     const TF tau_local = cwp({icol, ilay}) *
