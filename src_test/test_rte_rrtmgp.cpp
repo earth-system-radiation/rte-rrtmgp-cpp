@@ -75,10 +75,10 @@ template<typename TF>
 void solve_radiation()
 {
     ////// FLOW CONTROL SWITCHES //////
-    const bool sw_cloud_optics = true;
+    const bool switch_cloud_optics = true;
 
-    const bool sw_output_optical = false;
-    const bool sw_output_bnd_fluxes = false;
+    const bool switch_output_optical = false;
+    const bool switch_output_bnd_fluxes = false;
 
 
     ////// READ THE ATMOSPHERIC DATA //////
@@ -133,7 +133,7 @@ void solve_radiation()
     Array<TF,2> rel;
     Array<TF,2> rei;
 
-    if (sw_cloud_optics)
+    if (switch_cloud_optics)
     {
         lwp.set_dims({n_col, n_lay});
         lwp = std::move(input_nc.get_variable<TF>("lwp", {n_lay, n_col}));
@@ -196,7 +196,7 @@ void solve_radiation()
     Array<TF,3> g;
     Array<TF,2> toa_source;
 
-    if (sw_output_optical)
+    if (switch_output_optical)
     {
         lw_tau        .set_dims({n_col, n_lay, n_gpt_lw});
         lay_source    .set_dims({n_col, n_lay, n_gpt_lw});
@@ -218,7 +218,7 @@ void solve_radiation()
     Array<TF,3> lw_bnd_flux_dn;
     Array<TF,3> lw_bnd_flux_net;
 
-    if (sw_output_bnd_fluxes)
+    if (switch_output_bnd_fluxes)
     {
         lw_bnd_flux_up .set_dims({n_col, n_lev, n_bnd_lw});
         lw_bnd_flux_dn .set_dims({n_col, n_lev, n_bnd_lw});
@@ -235,7 +235,7 @@ void solve_radiation()
     Array<TF,3> sw_bnd_flux_dn_dir;
     Array<TF,3> sw_bnd_flux_net;
 
-    if (sw_output_bnd_fluxes)
+    if (switch_output_bnd_fluxes)
     {
         sw_bnd_flux_up    .set_dims({n_col, n_lev, n_bnd_sw});
         sw_bnd_flux_dn    .set_dims({n_col, n_lev, n_bnd_sw});
@@ -250,9 +250,9 @@ void solve_radiation()
     auto time_start = std::chrono::high_resolution_clock::now();
 
     rad_lw.solve(
-            sw_cloud_optics,
-            sw_output_optical,
-            sw_output_bnd_fluxes,
+            switch_cloud_optics,
+            switch_output_optical,
+            switch_output_bnd_fluxes,
             gas_concs,
             p_lay, p_lev,
             t_lay, t_lev,
@@ -275,9 +275,9 @@ void solve_radiation()
     time_start = std::chrono::high_resolution_clock::now();
 
     rad_sw.solve(
-            sw_cloud_optics,
-            sw_output_optical,
-            sw_output_bnd_fluxes,
+            switch_cloud_optics,
+            switch_output_optical,
+            switch_output_bnd_fluxes,
             gas_concs,
             p_lay, p_lev,
             t_lay, t_lev,
@@ -325,7 +325,7 @@ void solve_radiation()
     auto nc_sw_band_lims_wvn = output_nc.add_variable<TF>("sw_band_lims_wvn", {"band_sw", "pair"});
     nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber().v(), {0, 0});
 
-    if (sw_output_optical)
+    if (switch_output_optical)
     {
         auto nc_lw_band_lims_gpt = output_nc.add_variable<int>("lw_band_lims_gpt", {"band_lw", "pair"});
         nc_lw_band_lims_gpt.insert(rad_lw.get_band_lims_gpoint().v(), {0, 0});
@@ -370,7 +370,7 @@ void solve_radiation()
     nc_lw_flux_dn .insert(lw_flux_dn .v(), {0, 0});
     nc_lw_flux_net.insert(lw_flux_net.v(), {0, 0});
 
-    if (sw_output_bnd_fluxes)
+    if (switch_output_bnd_fluxes)
     {
         auto nc_lw_bnd_flux_up  = output_nc.add_variable<TF>("lw_bnd_flux_up" , {"band_lw", "lev", "col"});
         auto nc_lw_bnd_flux_dn  = output_nc.add_variable<TF>("lw_bnd_flux_dn" , {"band_lw", "lev", "col"});
@@ -391,7 +391,7 @@ void solve_radiation()
     nc_sw_flux_dn_dir.insert(sw_flux_dn_dir.v(), {0, 0});
     nc_sw_flux_net   .insert(sw_flux_net   .v(), {0, 0});
 
-    if (sw_output_bnd_fluxes)
+    if (switch_output_bnd_fluxes)
     {
         auto nc_sw_bnd_flux_up     = output_nc.add_variable<TF>("sw_bnd_flux_up"    , {"band_sw", "lev", "col"});
         auto nc_sw_bnd_flux_dn     = output_nc.add_variable<TF>("sw_bnd_flux_dn"    , {"band_sw", "lev", "col"});
