@@ -16,7 +16,9 @@
  * along with this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boost/algorithm/string.hpp>
 #include <chrono>
+#include <iomanip>
 
 #include "Status.h"
 #include "Netcdf_interface.h"
@@ -70,15 +72,90 @@ void read_and_set_vmr(
     }
 }
 
+bool parse_command_line_options(
+        std::map<std::string, std::pair<bool, std::string>>& command_line_options,
+        int argc, char** argv)
+{
+    for (int i=1; i<argc; ++i)
+    {
+        std::string argument(argv[i]);
+        boost::trim(argument);
+
+        if (argument == "-h" || argument == "--help")
+        {
+            Status::print_message("Possible usage:");
+            for (const auto& clo : command_line_options)
+            {
+                std::ostringstream ss;
+                ss << std::left << std::setw(30) << ("--" + clo.first);
+                ss << clo.second.second << std::endl;
+                Status::print_message(ss);
+            }
+            return true;
+        }
+
+        // Check if option starts with --
+        if (argument[0] != '-' || argument[1] != '-')
+        {
+            std::string error = argument + " is an illegal command line option.";
+            throw std::runtime_error(error);
+        }
+        else
+            argument.erase(0, 2);
+
+        // Check if option has prefix no-
+        bool enable = true;
+        if (argument[0] == 'n' && argument[1] == 'o' && argument[2] == '-')
+        {
+            enable = false;
+            argument.erase(0, 3);
+        }
+
+        if (command_line_options.find(argument) == command_line_options.end())
+        {
+            std::string error = argument + " is an illegal command line option.";
+            throw std::runtime_error(error);
+        }
+        else
+            command_line_options.at(argument).first = enable;
+    }
+
+    return false;
+}
+
+void print_command_line_options(
+        const std::map<std::string, std::pair<bool, std::string>>& command_line_options)
+{
+    Status::print_message("Solver settings:");
+    for (const auto& option : command_line_options)
+    {
+        std::ostringstream ss;
+        ss << std::left << std::setw(20) << (option.first);
+        ss << " = " << std::boolalpha << option.second.first << std::endl;
+        Status::print_message(ss);
+    }
+}
+
 
 template<typename TF>
-void solve_radiation()
+void solve_radiation(int argc, char** argv)
 {
     ////// FLOW CONTROL SWITCHES //////
-    const bool switch_cloud_optics = true;
+    // Parse the command line options.
+    std::map<std::string, std::pair<bool, std::string>> command_line_options {
+        {"cloud-optics"     , { false, "Enable cloud optics."                }},
+        {"output-optical"   , { false, "Enable output of optical properties."}},
+        {"output-bnd-fluxes", { false, "Enable output of band fluxes."       }} };
 
-    const bool switch_output_optical = false;
-    const bool switch_output_bnd_fluxes = false;
+    if (parse_command_line_options(command_line_options, argc, argv))
+        return;
+
+    const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
+    const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
+    const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
+
+    // Print the options to the screen.
+    print_command_line_options(command_line_options);
 
 
     ////// READ THE ATMOSPHERIC DATA //////
@@ -407,11 +484,11 @@ void solve_radiation()
     Status::print_message("Finished.");
 }
 
-int main()
+int main(int argc, char** argv)
 {
     try
     {
-        solve_radiation<FLOAT_TYPE>();
+        solve_radiation<FLOAT_TYPE>(argc, argv);
     }
 
     // Catch any exceptions and return 1.
