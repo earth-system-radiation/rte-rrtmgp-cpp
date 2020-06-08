@@ -16,7 +16,9 @@
  * along with this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boost/algorithm/string.hpp>
 #include <chrono>
+#include <iomanip>
 
 #include "Status.h"
 #include "Netcdf_interface.h"
@@ -70,13 +72,90 @@ void read_and_set_vmr(
     }
 }
 
+bool parse_command_line_options(
+        std::map<std::string, std::pair<bool, std::string>>& command_line_options,
+        int argc, char** argv)
+{
+    for (int i=1; i<argc; ++i)
+    {
+        std::string argument(argv[i]);
+        boost::trim(argument);
+
+        if (argument == "-h" || argument == "--help")
+        {
+            Status::print_message("Possible usage:");
+            for (const auto& clo : command_line_options)
+            {
+                std::ostringstream ss;
+                ss << std::left << std::setw(30) << ("--" + clo.first);
+                ss << clo.second.second << std::endl;
+                Status::print_message(ss);
+            }
+            return true;
+        }
+
+        // Check if option starts with --
+        if (argument[0] != '-' || argument[1] != '-')
+        {
+            std::string error = argument + " is an illegal command line option.";
+            throw std::runtime_error(error);
+        }
+        else
+            argument.erase(0, 2);
+
+        // Check if option has prefix no-
+        bool enable = true;
+        if (argument[0] == 'n' && argument[1] == 'o' && argument[2] == '-')
+        {
+            enable = false;
+            argument.erase(0, 3);
+        }
+
+        if (command_line_options.find(argument) == command_line_options.end())
+        {
+            std::string error = argument + " is an illegal command line option.";
+            throw std::runtime_error(error);
+        }
+        else
+            command_line_options.at(argument).first = enable;
+    }
+
+    return false;
+}
+
+void print_command_line_options(
+        const std::map<std::string, std::pair<bool, std::string>>& command_line_options)
+{
+    Status::print_message("Solver settings:");
+    for (const auto& option : command_line_options)
+    {
+        std::ostringstream ss;
+        ss << std::left << std::setw(20) << (option.first);
+        ss << " = " << std::boolalpha << option.second.first << std::endl;
+        Status::print_message(ss);
+    }
+}
+
 
 template<typename TF>
-void solve_radiation()
+void solve_radiation(int argc, char** argv)
 {
     ////// FLOW CONTROL SWITCHES //////
-    const bool sw_output_optical = false;
-    const bool sw_output_bnd_fluxes = false;
+    // Parse the command line options.
+    std::map<std::string, std::pair<bool, std::string>> command_line_options {
+        {"cloud-optics"     , { false, "Enable cloud optics."                }},
+        {"output-optical"   , { false, "Enable output of optical properties."}},
+        {"output-bnd-fluxes", { false, "Enable output of band fluxes."       }} };
+
+    if (parse_command_line_options(command_line_options, argc, argv))
+        return;
+
+    const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
+    const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
+    const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
+
+    // Print the options to the screen.
+    print_command_line_options(command_line_options);
 
 
     ////// READ THE ATMOSPHERIC DATA //////
@@ -126,11 +205,31 @@ void solve_radiation()
     read_and_set_vmr("cf4"    , n_col, n_lay, input_nc, gas_concs);
     read_and_set_vmr("no2"    , n_col, n_lay, input_nc, gas_concs);
 
+    Array<TF,2> lwp;
+    Array<TF,2> iwp;
+    Array<TF,2> rel;
+    Array<TF,2> rei;
+
+    if (switch_cloud_optics)
+    {
+        lwp.set_dims({n_col, n_lay});
+        lwp = std::move(input_nc.get_variable<TF>("lwp", {n_lay, n_col}));
+
+        iwp.set_dims({n_col, n_lay});
+        iwp = std::move(input_nc.get_variable<TF>("iwp", {n_lay, n_col}));
+
+        rel.set_dims({n_col, n_lay});
+        rel = std::move(input_nc.get_variable<TF>("rel", {n_lay, n_col}));
+
+        rei.set_dims({n_col, n_lay});
+        rei = std::move(input_nc.get_variable<TF>("rei", {n_lay, n_col}));
+    }
+
 
     ////// INITIALIZE THE SOLVER AND INIT K-DISTRIBUTION //////
     Status::print_message("Initializing the solvers.");
-    Radiation_solver_longwave<TF> rad_lw(gas_concs, "coefficients_lw.nc");
-    Radiation_solver_shortwave<TF> rad_sw(gas_concs, "coefficients_sw.nc");
+    Radiation_solver_longwave<TF> rad_lw(gas_concs, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
+    Radiation_solver_shortwave<TF> rad_sw(gas_concs, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
 
 
     ////// READ THE SURFACE DATA //////
@@ -174,7 +273,7 @@ void solve_radiation()
     Array<TF,3> g;
     Array<TF,2> toa_source;
 
-    if (sw_output_optical)
+    if (switch_output_optical)
     {
         lw_tau        .set_dims({n_col, n_lay, n_gpt_lw});
         lay_source    .set_dims({n_col, n_lay, n_gpt_lw});
@@ -196,7 +295,7 @@ void solve_radiation()
     Array<TF,3> lw_bnd_flux_dn;
     Array<TF,3> lw_bnd_flux_net;
 
-    if (sw_output_bnd_fluxes)
+    if (switch_output_bnd_fluxes)
     {
         lw_bnd_flux_up .set_dims({n_col, n_lev, n_bnd_lw});
         lw_bnd_flux_dn .set_dims({n_col, n_lev, n_bnd_lw});
@@ -213,7 +312,7 @@ void solve_radiation()
     Array<TF,3> sw_bnd_flux_dn_dir;
     Array<TF,3> sw_bnd_flux_net;
 
-    if (sw_output_bnd_fluxes)
+    if (switch_output_bnd_fluxes)
     {
         sw_bnd_flux_up    .set_dims({n_col, n_lev, n_bnd_sw});
         sw_bnd_flux_dn    .set_dims({n_col, n_lev, n_bnd_sw});
@@ -228,13 +327,16 @@ void solve_radiation()
     auto time_start = std::chrono::high_resolution_clock::now();
 
     rad_lw.solve(
-            sw_output_optical,
-            sw_output_bnd_fluxes,
+            switch_cloud_optics,
+            switch_output_optical,
+            switch_output_bnd_fluxes,
             gas_concs,
             p_lay, p_lev,
             t_lay, t_lev,
             col_dry,
             t_sfc, emis_sfc,
+            lwp, iwp,
+            rel, rei,
             lw_tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
             lw_flux_up, lw_flux_dn, lw_flux_net,
             lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
@@ -250,14 +352,17 @@ void solve_radiation()
     time_start = std::chrono::high_resolution_clock::now();
 
     rad_sw.solve(
-            sw_output_optical,
-            sw_output_bnd_fluxes,
+            switch_cloud_optics,
+            switch_output_optical,
+            switch_output_bnd_fluxes,
             gas_concs,
             p_lay, p_lev,
             t_lay, t_lev,
             col_dry,
             sfc_alb_dir, sfc_alb_dif,
             tsi_scaling, mu0,
+            lwp, iwp,
+            rel, rei,
             sw_tau, ssa, g,
             toa_source,
             sw_flux_up, sw_flux_dn,
@@ -297,7 +402,7 @@ void solve_radiation()
     auto nc_sw_band_lims_wvn = output_nc.add_variable<TF>("sw_band_lims_wvn", {"band_sw", "pair"});
     nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber().v(), {0, 0});
 
-    if (sw_output_optical)
+    if (switch_output_optical)
     {
         auto nc_lw_band_lims_gpt = output_nc.add_variable<int>("lw_band_lims_gpt", {"band_lw", "pair"});
         nc_lw_band_lims_gpt.insert(rad_lw.get_band_lims_gpoint().v(), {0, 0});
@@ -342,7 +447,7 @@ void solve_radiation()
     nc_lw_flux_dn .insert(lw_flux_dn .v(), {0, 0});
     nc_lw_flux_net.insert(lw_flux_net.v(), {0, 0});
 
-    if (sw_output_bnd_fluxes)
+    if (switch_output_bnd_fluxes)
     {
         auto nc_lw_bnd_flux_up  = output_nc.add_variable<TF>("lw_bnd_flux_up" , {"band_lw", "lev", "col"});
         auto nc_lw_bnd_flux_dn  = output_nc.add_variable<TF>("lw_bnd_flux_dn" , {"band_lw", "lev", "col"});
@@ -363,7 +468,7 @@ void solve_radiation()
     nc_sw_flux_dn_dir.insert(sw_flux_dn_dir.v(), {0, 0});
     nc_sw_flux_net   .insert(sw_flux_net   .v(), {0, 0});
 
-    if (sw_output_bnd_fluxes)
+    if (switch_output_bnd_fluxes)
     {
         auto nc_sw_bnd_flux_up     = output_nc.add_variable<TF>("sw_bnd_flux_up"    , {"band_sw", "lev", "col"});
         auto nc_sw_bnd_flux_dn     = output_nc.add_variable<TF>("sw_bnd_flux_dn"    , {"band_sw", "lev", "col"});
@@ -379,11 +484,11 @@ void solve_radiation()
     Status::print_message("Finished.");
 }
 
-int main()
+int main(int argc, char** argv)
 {
     try
     {
-        solve_radiation<FLOAT_TYPE>();
+        solve_radiation<FLOAT_TYPE>(argc, argv);
     }
 
     // Catch any exceptions and return 1.
