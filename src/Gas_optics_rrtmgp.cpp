@@ -23,6 +23,7 @@
  */
 
 #include <cmath>
+#include <chrono>
 #include <numeric>
 #include <iomanip>
 #include <boost/algorithm/string.hpp>
@@ -1245,10 +1246,15 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
         // rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
 
         // In case of 2str type
+        auto time_start = std::chrono::high_resolution_clock::now();
         rrtmgp_kernel_launcher::combine_and_reorder_2str(
                 ncol, nlay, ngpt,
                 tau, tau_rayleigh,
                 optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
+        auto time_end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+
+        std::cout<<"CPU kernel "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
         // CUDA TEST.
         #ifdef USECUDA
@@ -1256,7 +1262,6 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
         Array<TF,3> tau_gpu(optical_props->get_tau());
         Array<TF,3> ssa_gpu(optical_props->get_ssa());
         Array<TF,3> g_gpu(optical_props->get_g());
-
         rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<TF>(
                 ncol, nlay, ngpt,
                 tau, tau_rayleigh,
@@ -1268,8 +1273,8 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
             for (int ilay=1; ilay<=nlay; ++ilay)
                 for (int icol=1; icol<=ncol; ++icol)
                 {
-                    std::cout << std::setprecision(16) << "tau (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        tau_gpu({icol, ilay, igpt}) << ", " << optical_props->get_tau()({icol, ilay, igpt}) << std::endl;
+                    std::cout << std::setprecision(16) << "ssa (" << icol << "," << ilay << "," << igpt << ") = " <<
+                        ssa_gpu({icol, ilay, igpt}) << ", " << optical_props->get_ssa()({icol, ilay, igpt}) << std::endl;
                 }
         #endif
         // END CUDA TEST.

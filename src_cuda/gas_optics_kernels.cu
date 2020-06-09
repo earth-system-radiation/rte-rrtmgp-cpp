@@ -2,13 +2,14 @@
 #include "tools_gpu.h"
 
 #include "Array.h"
+#include "chrono"
 
 namespace
 {
     // Add the kernel here.
     template<typename TF>__global__
     void combine_and_reorder_2str_kernel(
-            const int ncol, const int nlay, const int ngpt,
+            const int ncol, const int nlay, const int ngpt, const TF tmin,
             const TF* __restrict__ tau_abs, const TF* __restrict__ tau_rayleigh,
             TF* __restrict__ tau, TF* __restrict__ ssa, TF* __restrict__ g)
     {
@@ -21,8 +22,15 @@ namespace
         {
             const int idx_in  = igpt + ilay*ngpt + icol*(ngpt*nlay);
             const int idx_out = icol + ilay*ncol + igpt*(ncol*nlay);
-
-            tau[idx_out] = tau_abs[idx_in] + TF(100.)*(ilay+1);
+	   
+	    const TF tau_tot = tau_abs[idx_in] + tau_rayleigh[idx_in];
+	    tau[idx_out] = tau_tot;
+            g  [idx_out] = TF(0.);
+	    if (tau_tot>(TF(2.)*tmin))
+                ssa[idx_out] = tau_rayleigh[idx_in]/tau_tot;
+            else
+                ssa[idx_out] = 0.;
+		
         }
     }
 }
@@ -43,6 +51,7 @@ namespace rrtmgp_kernel_launcher_cuda
         TF* tau_gpu;
         TF* ssa_gpu;
         TF* g_gpu;
+        TF tmin = std::numeric_limits<TF>::min();
 
         // Allocate a CUDA array.
         cuda_safe_call(cudaMalloc((void**)&tau_abs_gpu, array_size));
@@ -54,6 +63,7 @@ namespace rrtmgp_kernel_launcher_cuda
         // Copy the data to the GPU.
         cuda_safe_call(cudaMemcpy(tau_abs_gpu, tau_abs.ptr(), array_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(tau_rayleigh_gpu, tau_rayleigh.ptr(), array_size, cudaMemcpyHostToDevice));
+        auto time_start = std::chrono::high_resolution_clock::now();
 
         // Call the kernel.
         // CvH: THIS KERNEL IS JUST SOME RANDOM CODE, IT NEEDS TO BE IMPLEMENTED.
@@ -69,10 +79,13 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 block_gpu(block_gpt, block_lay, block_col);
 
         combine_and_reorder_2str_kernel<<<grid_gpu, block_gpu>>>(
-                ncol, nlay, ngpt,
+                ncol, nlay, ngpt, tmin,
                 tau_abs_gpu, tau_rayleigh_gpu,
                 tau_gpu, ssa_gpu, g_gpu);
         cuda_check_error();
+        auto time_end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+        std::cout<<"GPU kernel "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
         // Copy back the results.
         cuda_safe_call(cudaMemcpy(tau.ptr(), tau_gpu, array_size, cudaMemcpyDeviceToHost));
