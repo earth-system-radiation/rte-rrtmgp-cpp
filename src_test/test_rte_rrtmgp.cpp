@@ -72,6 +72,7 @@ void read_and_set_vmr(
     }
 }
 
+
 bool parse_command_line_options(
         std::map<std::string, std::pair<bool, std::string>>& command_line_options,
         int argc, char** argv)
@@ -122,6 +123,7 @@ bool parse_command_line_options(
 
     return false;
 }
+
 
 void print_command_line_options(
         const std::map<std::string, std::pair<bool, std::string>>& command_line_options)
@@ -230,7 +232,7 @@ void solve_radiation(int argc, char** argv)
     }
 
 
-    ////// SAVING THE OUTPUT TO NETCDF //////
+    ////// CREATE THE OUTPUT FILE //////
     // Create the general dimensions and arrays.
     Status::print_message("Preparing NetCDF output file.");
 
@@ -247,13 +249,14 @@ void solve_radiation(int argc, char** argv)
     nc_lev.insert(p_lev.v(), {0, 0});
 
 
-    ////// INITIALIZE THE LONGWAVE SOLVER, LOAD ITS BOUNDARY CONDITIONS, AND CREATE OUTPUT ARRAYS //////
+    ////// RUN THE LONGWAVE SOLVER //////
     if (switch_longwave)
     {
+        // Initialize the solver.
         Status::print_message("Initializing the longwave solver.");
         Radiation_solver_longwave<TF> rad_lw(gas_concs, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
 
-        // Read the boundary conditions for longwave.
+        // Read the boundary conditions.
         const int n_bnd_lw = rad_lw.get_n_bnd();
         const int n_gpt_lw = rad_lw.get_n_gpt();
 
@@ -291,7 +294,8 @@ void solve_radiation(int argc, char** argv)
             lw_bnd_flux_net.set_dims({n_col, n_lev, n_bnd_lw});
         }
 
-        ////// SOLVE THE LONGWAVE RADIATION //////
+
+        // Solve the radiation.
         Status::print_message("Solving the longwave radiation.");
 
         auto time_start = std::chrono::high_resolution_clock::now();
@@ -316,7 +320,10 @@ void solve_radiation(int argc, char** argv)
 
         Status::print_message("Duration longwave solver: " + std::to_string(duration) + " (ms)");
 
-        // Store the longwave output.
+
+        // Store the output.
+        Status::print_message("Storing the longwave output.");
+
         output_nc.add_dimension("gpt_lw", n_gpt_lw);
         output_nc.add_dimension("band_lw", n_bnd_lw);
 
@@ -364,10 +371,13 @@ void solve_radiation(int argc, char** argv)
         }
     }
 
+
+    ////// RUN THE SHORTWAVE SOLVER //////
     if (switch_shortwave)
     {
-        ////// INITIALIZE THE SHORTWAVE SOLVER, LOAD ITS BOUNDARY CONDITIONS, AND CREATE OUTPUT ARRAYS //////
+        // Initialize the solver.
         Status::print_message("Initializing the shortwave solver.");
+
         Radiation_solver_shortwave<TF> rad_sw(gas_concs, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
 
         // Read the boundary conditions.
@@ -389,7 +399,6 @@ void solve_radiation(int argc, char** argv)
         else
             for (int icol=1; icol<=n_col; ++icol)
                 tsi_scaling({icol}) = TF(1.);
-
 
         // Create output arrays.
         Array<TF,3> sw_tau;
@@ -423,7 +432,8 @@ void solve_radiation(int argc, char** argv)
             sw_bnd_flux_net   .set_dims({n_col, n_lev, n_bnd_sw});
         }
 
-        ////// SOLVE THE LONGWAVE RADIATION //////
+
+        // Solve the radiation.
         Status::print_message("Solving the shortwave radiation.");
 
         auto time_start = std::chrono::high_resolution_clock::now();
@@ -452,7 +462,10 @@ void solve_radiation(int argc, char** argv)
 
         Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
 
-        // Store the shortwave output.
+
+        // Store the output.
+        Status::print_message("Storing the shortwave output.");
+
         output_nc.add_dimension("gpt_sw", n_gpt_sw);
         output_nc.add_dimension("band_sw", n_bnd_sw);
 
@@ -502,6 +515,7 @@ void solve_radiation(int argc, char** argv)
 
     Status::print_message("Finished.");
 }
+
 
 int main(int argc, char** argv)
 {
