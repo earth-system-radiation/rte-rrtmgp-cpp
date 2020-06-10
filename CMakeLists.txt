@@ -72,6 +72,11 @@ if(USECUDA)
   message(STATUS "CUDA: Enabled.")
   find_package(CUDA)
   add_definitions("-DUSECUDA")
+
+  # Add CUDA debug definition, to enforce CUDA API and kernel checks.
+  if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
+    add_definitions("-DCUDACHECKS")
+  endif()
 else()
   message(STATUS "CUDA: Disabled.")
 endif()
@@ -85,6 +90,7 @@ if(NOT HASCACHE)
     "Flags used by the C-compiler during debug builds." FORCE)
   set(CMAKE_C_FLAGS_RELEASE ${USER_C_FLAGS_RELEASE} CACHE STRING
     "Flags used by the C-compiler during release builds." FORCE)
+
   set(CMAKE_CXX_FLAGS ${USER_CXX_FLAGS} CACHE STRING
     "Flags used by the CXX-compiler during all build types." FORCE)
   set(CMAKE_CXX_FLAGS_DEBUG ${USER_CXX_FLAGS_DEBUG} CACHE STRING
@@ -93,11 +99,20 @@ if(NOT HASCACHE)
     "Flags used by the CXX-compiler during release builds." FORCE)
 
   set(CMAKE_Fortran_FLAGS ${USER_FC_FLAGS} CACHE STRING
-    "Flags used by the CXX-compiler during all build types." FORCE)
+    "Flags used by the Fortran-compiler during all build types." FORCE)
   set(CMAKE_Fortran_FLAGS_DEBUG ${USER_FC_FLAGS_DEBUG} CACHE STRING
-    "Flags used by the CXX-compiler during debug builds." FORCE)
+    "Flags used by the Fortran-compiler during debug builds." FORCE)
   set(CMAKE_Fortran_FLAGS_RELEASE ${USER_FC_FLAGS_RELEASE} CACHE STRING
-    "Flags used by the CXX-compiler during release builds." FORCE)
+    "Flags used by the Fortran-compiler during release builds." FORCE)
+
+  if(USECUDA)
+    set(CUDA_NVCC_FLAGS ${USER_CUDA_NVCC_FLAGS} CACHE STRING
+      "Flags used by the CXX-compiler during all build types." FORCE)
+    set(CUDA_NVCC_FLAGS_DEBUG ${USER_CUDA_NVCC_FLAGS_DEBUG} CACHE STRING
+      "Flags used by the CXX-compiler during debug builds." FORCE)
+    set(CUDA_NVCC_FLAGS_RELEASE ${USER_CUDA_NVCC_FLAGS_RELEASE} CACHE STRING
+      "Flags used by the CXX-compiler during release builds." FORCE)
+  endif()
 
   message(STATUS "Build Type: " ${CMAKE_BUILD_TYPE})
   set(HASCACHE TRUE CACHE BOOL "CMakeCache.txt created." FORCE)
@@ -108,17 +123,18 @@ endif()
 
 # Print the C++ and CUDA compiler flags to the screen.
 if(CMAKE_BUILD_TYPE STREQUAL "RELEASE")
-  message(STATUS "Compiler flags: " ${CMAKE_CXX_FLAGS} " " ${CMAKE_CXX_FLAGS_RELEASE})
+  message(STATUS "CXX-compiler flags: " ${CMAKE_CXX_FLAGS} " " ${CMAKE_CXX_FLAGS_RELEASE})
+  message(STATUS "Fortran-compiler flags: " ${CMAKE_CXX_FLAGS} " " ${CMAKE_CXX_FLAGS_RELEASE})
 else()
-  message(STATUS "Compiler flags: " ${CMAKE_CXX_FLAGS} " " ${CMAKE_CXX_FLAGS_DEBUG})
+  message(STATUS "CXX-compiler flags: " ${CMAKE_CXX_FLAGS} " " ${CMAKE_CXX_FLAGS_DEBUG})
+  message(STATUS "Fortran-compiler flags: " ${CMAKE_CXX_FLAGS} " " ${CMAKE_CXX_FLAGS_DEBUG})
 endif()
-
 if(USECUDA)
-  # Add CUDA debug definition, to enforce CUDA API and kernel checks.
-  if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
-    add_definitions("-DCUDACHECKS")
+  if(CMAKE_BUILD_TYPE STREQUAL "RELEASE")
+    message(STATUS "NVCC-compiler flags: " ${CUDA_NVCC_FLAGS} " " ${CUDA_NVCC_FLAGS_RELEASE})
+  else()
+    message(STATUS "NVCC-compiler flags: " ${CUDA_NVCC_FLAGS} " " ${CUDA_NVCC_FLAGS_DEBUG})
   endif()
-  message(STATUS "NVCC flags: " ${CUDA_NVCC_FLAGS})
 endif()
 
 # Compile the kernels first.
