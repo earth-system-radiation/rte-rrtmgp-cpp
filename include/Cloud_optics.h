@@ -27,6 +27,7 @@
 
 #include "Array.h"
 #include "Optical_props.h"
+#include "define_bool.h"
 
 // Forward declarations.
 template<typename TF> class Optical_props;

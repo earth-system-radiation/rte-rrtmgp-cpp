@@ -26,6 +26,7 @@
 #define FLUXES_H
 
 #include <memory>
+#include "define_bool.h"
 
 // Forward declarations.
 template<typename TF, int> class Array;

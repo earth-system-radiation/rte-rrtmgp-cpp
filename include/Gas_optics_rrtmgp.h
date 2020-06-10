@@ -29,6 +29,7 @@
 
 #include "Array.h"
 #include "Gas_optics.h"
+#include "define_bool.h"
 
 // Forward declarations.
 // template<typename TF> class Gas_optics;
