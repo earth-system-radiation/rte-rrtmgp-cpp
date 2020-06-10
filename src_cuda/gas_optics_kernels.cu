@@ -1,8 +1,8 @@
+#include <chrono>
+
 #include "rrtmgp_kernel_launcher_cuda.h"
 #include "tools_gpu.h"
-
 #include "Array.h"
-#include "chrono"
 
 namespace
 {

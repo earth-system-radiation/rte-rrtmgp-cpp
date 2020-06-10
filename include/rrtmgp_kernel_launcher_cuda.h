@@ -26,6 +26,7 @@
 #define RRTMGP_KERNELS_CUDA_H
 
 #include "Array.h"
+#include "define_bool.h"
 
 namespace rrtmgp_kernel_launcher_cuda
 {
