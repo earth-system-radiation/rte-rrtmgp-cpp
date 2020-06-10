@@ -34,5 +34,16 @@ namespace rrtmgp_kernel_launcher_cuda
             const int ncol, const int nlay, const int ngpt,
             const Array<TF,3>& tau_local, const Array<TF,3>& tau_rayleigh,
             Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g);
+    
+    template<typename TF>
+    void compute_tau_rayleigh(
+            const int ncol, const int nlay, const int nband, const int ngpt,
+            const int ngas, const int nflav, const int neta, const int ntmp,
+            const Array<int, 2>& gpoint_flavor,
+            const Array<int, 2>& band_lims_gpt,
+            int idx_h2o, const Array<TF,2>& col_dry, const Array<TF,3>& col_gas,
+            const Array<TF,5>& fminor, const Array<int,4>& jeta,
+            const Array<BOOL_TYPE,2>& tropo, const Array<int,2>& jtemp,
+            Array<TF,3>& tau_rayleigh)
 }
 #endif

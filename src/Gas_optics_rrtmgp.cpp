@@ -1269,12 +1269,12 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
 
         // Print the output to the screen.
         // for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-        for (int igpt=1; igpt<=1; ++igpt) // Print only one band for now.
-            for (int ilay=1; ilay<=nlay; ++ilay)
-                for (int icol=1; icol<=ncol; ++icol)
+        for (int igpt=1; igpt<=5; ++igpt) // Print only one band for now.
+            for (int ilay=1; ilay<=5; ++ilay)
+                for (int icol=1; icol<=5; ++icol)
                 {
-                    std::cout << std::setprecision(16) << "ssa (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        ssa_gpu({icol, ilay, igpt}) << ", " << optical_props->get_ssa()({icol, ilay, igpt}) << std::endl;
+    //                std::cout << std::setprecision(16) << "ssa (" << icol << "," << ilay << "," << igpt << ") = " <<
+    //                    tau_gpu({icol, ilay, igpt}) << ", " << optical_props->get_tau()({icol, ilay, igpt}) << std::endl;
                 }
         #endif
         // END CUDA TEST.

@@ -14,9 +14,9 @@ namespace
             TF* __restrict__ tau, TF* __restrict__ ssa, TF* __restrict__ g)
     {
         // Fetch the three coordinates.
-        const int igpt = blockIdx.x*blockDim.x + threadIdx.x;
-        const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-        const int icol = blockIdx.z*blockDim.z + threadIdx.z;
+        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+        const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+        const int ilay = blockIdx.z*blockDim.z + threadIdx.z;
 
         if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
         {
@@ -52,7 +52,6 @@ namespace rrtmgp_kernel_launcher_cuda
         TF* ssa_gpu;
         TF* g_gpu;
         TF tmin = std::numeric_limits<TF>::min();
-
         // Allocate a CUDA array.
         cuda_safe_call(cudaMalloc((void**)&tau_abs_gpu, array_size));
         cuda_safe_call(cudaMalloc((void**)&tau_rayleigh_gpu, array_size));
@@ -63,29 +62,35 @@ namespace rrtmgp_kernel_launcher_cuda
         // Copy the data to the GPU.
         cuda_safe_call(cudaMemcpy(tau_abs_gpu, tau_abs.ptr(), array_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(tau_rayleigh_gpu, tau_rayleigh.ptr(), array_size, cudaMemcpyHostToDevice));
-        auto time_start = std::chrono::high_resolution_clock::now();
+        cudaEvent_t startEvent, stopEvent;
+        float dt1;
+        cudaEventCreate(&startEvent);
+        cudaEventCreate(&stopEvent);
 
+        cudaEventRecord(startEvent, 0);
         // Call the kernel.
-        // CvH: THIS KERNEL IS JUST SOME RANDOM CODE, IT NEEDS TO BE IMPLEMENTED.
-        const int block_gpt = 1;
+        const int block_col = 32;
+        const int block_gpt = 32;
         const int block_lay = 1;
-        const int block_col = 1;
 
+        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
         const int grid_gpt  = ngpt/block_gpt + (ngpt%block_gpt > 0);
         const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
 
-        dim3 grid_gpu(grid_gpt, grid_lay, grid_col);
-        dim3 block_gpu(block_gpt, block_lay, block_col);
+        dim3 grid_gpu(grid_col, grid_gpt, grid_lay);
+        dim3 block_gpu(block_col, block_gpt, block_lay);
 
         combine_and_reorder_2str_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, tmin,
                 tau_abs_gpu, tau_rayleigh_gpu,
                 tau_gpu, ssa_gpu, g_gpu);
         cuda_check_error();
-        auto time_end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
-        std::cout<<"GPU kernel "<<std::to_string(duration)<<" (ms)"<<std::endl;
+        cuda_safe_call(cudaDeviceSynchronize());
+        cudaEventRecord(stopEvent, 0);
+        cudaEventSynchronize(stopEvent);
+        cudaEventElapsedTime(&dt1,startEvent,stopEvent);
+
+        std::cout<<"GPU kernel "<<dt1<<" (ms)"<<std::endl;
 
         // Copy back the results.
         cuda_safe_call(cudaMemcpy(tau.ptr(), tau_gpu, array_size, cudaMemcpyDeviceToHost));
@@ -99,6 +104,50 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaFree(ssa_gpu));
         cuda_safe_call(cudaFree(g_gpu));
     }
+    
+    template<typename TF>
+    void compute_tau_rayleigh(
+            const int ncol, const int nlay, const int nband, const int ngpt,
+            const int ngas, const int nflav, const int neta, const int ntmp,
+            const Array<int, 2>& gpoint_flavor,
+            const Array<int, 2>& band_lims_gpt,
+            int idx_h2o, const Array<TF,2>& col_dry, const Array<TF,3>& col_gas,
+            const Array<TF,5>& fminor, const Array<int,4>& jeta,
+            const Array<BOOL_TYPE,2>& tropo, const Array<int,2>& jtemp,
+            Array<TF,3>& tau_rayleigh)
+    {
+        const int array_size = tau_abs.size()*sizeof(TF);
+
+        int* gpoint_flavor_gpu;
+        int* band_lims_gpt_gpu;
+        int* jet_gpu;
+        int* jtemp_gpu;
+        BOOL_TYPE* tropo_gpu;
+        TF* col_dry_gpu;
+        TF* col_gas_gpu;
+        TF* fminor_gpu;
+        TF* tau_rayleigh_gpu;
+        TF tmin = std::numeric_limits<TF>::min();
+        // Allocate a CUDA array.
+        cuda_safe_call(cudaMalloc((void**)&gpoint_flavor, array_size));
+        cuda_safe_call(cudaMalloc((void**)&band_lims_gpt, array_size));
+        cuda_safe_call(cudaMalloc((void**)&jeta, array_size));
+        cuda_safe_call(cudaMalloc((void**)&jtemp, array_size));
+        cuda_safe_call(cudaMalloc((void**)&tropo, array_size));
+        cuda_safe_call(cudaMalloc((void**)&col_dry, array_size));
+        cuda_safe_call(cudaMalloc((void**)&col_gas, array_size));
+        cuda_safe_call(cudaMalloc((void**)&fminor, array_size));
+        cuda_safe_call(cudaMalloc((void**)&tau_rayleigh, array_size));
+
+        // Copy the data to the GPU.
+        cuda_safe_call(cudaMemcpy(tau_abs_gpu, tau_abs.ptr(), array_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(tau_rayleigh_gpu, tau_rayleigh.ptr(), array_size, cudaMemcpyHostToDevice));
+
+
+
+
+    }
+    
 }
 
 #ifdef FLOAT_SINGLE_RRTMGP
