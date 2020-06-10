@@ -75,7 +75,7 @@ namespace
         int nm = minor_gases_atm.dim(1);
         int tot_g = 0;
 
-        Array<int,1> gas_is_present({nm});
+        Array<BOOL_TYPE,1> gas_is_present({nm});
 
         for (int i=1; i<=nm; ++i)
         {
@@ -191,7 +191,7 @@ namespace
             const Array<std::string,1>& gas_names_red,
             const Array<int,3>& key_species,
             Array<int,3>& key_species_red,
-            Array<int,1>& key_species_present_init)
+            Array<BOOL_TYPE,1>& key_species_present_init)
     {
         const int np = key_species.dim(1);
         const int na = key_species.dim(2);
@@ -222,7 +222,7 @@ namespace
 
     void check_key_species_present_init(
             const Array<std::string,1>& gas_names,
-            const Array<int,1>& key_species_present_init
+            const Array<BOOL_TYPE,1>& key_species_present_init
             )
     {
         for (int i=1; i<=key_species_present_init.dim(1); ++i)
@@ -690,8 +690,8 @@ void Gas_optics_rrtmgp<TF>::init_abs_coeffs(
 
     // Create flavor list.
     // Reduce (remap) key_species list; checks that all key gases are present in incoming
-    Array<int, 3> key_species_red;
-    Array<int, 1> key_species_present_init; // CvH bool or int?
+    Array<int,3> key_species_red;
+    Array<BOOL_TYPE,1> key_species_present_init;
 
     create_key_species_reduce(
             gas_names, this->gas_names, key_species, key_species_red, key_species_present_init);
