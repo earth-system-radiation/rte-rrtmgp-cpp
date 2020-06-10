@@ -14,10 +14,10 @@
 set(ENV{CC}  gcc) # C compiler for serial build
 set(ENV{CXX} g++) # C++ compiler for serial build
 
-set(USER_CXX_FLAGS "-std=c++14 -DBOOL_TYPE=\"signed char\"")
+set(USER_CXX_FLAGS "-std=c++14")
 set(USER_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
 set(USER_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wno-unknown-pragmas")
-set(USER_FC_FLAGS "-std=f2003 -fdefault-real-8 -fdefault-double-8 -fPIC -ffixed-line-length-none -fno-range-check -DUSE_CBOOL")
+set(USER_FC_FLAGS "-std=f2003 -fdefault-real-8 -fdefault-double-8 -fPIC -ffixed-line-length-none -fno-range-check")
 set(USER_FC_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
 set(USER_FC_FLAGS_DEBUG "-O0 -g -Wall -Wno-unknown-pragmas")
 
@@ -30,9 +30,9 @@ if(USECUDA)
   set(CUDA_PROPAGATE_HOST_FLAGS OFF)
   set(CUFFT_LIB "/cm/shared/apps/cuda/10.1/lib64/libcufft.so")
   set(LIBS ${LIBS} ${CUFFT_LIB} -rdynamic )
-  set(USER_CUDA_NVCC_FLAGS "-arch=sm_70")
-  list(APPEND CUDA_NVCC_FLAGS " -std=c++14")
+  set(USER_CUDA_NVCC_FLAGS "-arch=sm_70 -std=c++14")
   set(USER_CUDA_NVCC_FLAGS_RELEASE "-Xptxas -O3 -DNDEBUG")
 endif()
 
 add_definitions(-DRESTRICTKEYWORD=__restrict__)
+add_definitions(-DUSE_CBOOL)
