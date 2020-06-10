@@ -31,7 +31,7 @@ if(USECUDA)
   set(CUFFT_LIB "/cm/shared/apps/cuda/10.1/lib64/libcufft.so")
   set(LIBS ${LIBS} ${CUFFT_LIB} -rdynamic )
   set(USER_CUDA_NVCC_FLAGS "-arch=sm_70")
-  list(APPEND CUDA_NVCC_FLAGS " -std=c++14")
+  list(APPEND CUDA_NVCC_FLAGS " -std=c++14 -DBOOL_TYPE=\"signed char\"")
   set(USER_CUDA_NVCC_FLAGS_RELEASE "-Xptxas -O3 -DNDEBUG")
 endif()
 

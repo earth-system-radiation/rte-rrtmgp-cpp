@@ -8,29 +8,31 @@ namespace
 {
     // Add the kernels here.
     template<typename TF>__global__
-    interpolate2D_byflav(const TF* __restrict__ fminor,
-                         const TF* __restrict__ krayl
+    void interpolate2D_byflav(const TF* __restrict__ fminor,
+                         const TF* __restrict__ krayl,
                          const int gptS, const int gptE,
                          TF* __restrict__ k,
                          const TF* __restrict__ jeta,
-                         const int* __restrict__ jtemp)
+                         const int jtemp)
     {
         const int ngpt = gptE-gptS;
+        const int jeta_size = 2;
         for (int igpt=gptS; igpt<gptE; ++igpt)
         {
-            k[igpt-gptS] = fminor[0] * krayl[igpt + jeta[0]*ngpt     + jtemp    *jeta.size()*ngpt] +
-                           fminor[1] * krayl[igpt + (jeta[0]+1)*ngpt + jtemp    *jeta.size()*ngpt] +
-                           fminor[2] * krayl[igpt + jeta[1]*ngpt     + (jtemp+1)*jeta.size()*ngpt] +
-                           fminor[3] * krayl[igpt + (jeta[1]+1)*ngpt + (jtemp+1)*jeta.size()*ngpt] +
+            k[igpt-gptS] = fminor[0] * krayl[igpt + jeta[0]*ngpt     + jtemp    *jeta_size*ngpt] +
+                           fminor[1] * krayl[igpt + (jeta[0]+1)*ngpt + jtemp    *jeta_size*ngpt] +
+                           fminor[2] * krayl[igpt + jeta[1]*ngpt     + (jtemp+1)*jeta_size*ngpt] +
+                           fminor[3] * krayl[igpt + (jeta[1]+1)*ngpt + (jtemp+1)*jeta_size*ngpt]; 
         }
     }
 
     template<typename TF>__global__
     void compute_tau_rayleigh(
-            const int ncol, const int nlay, const int nband, const int ngpt,
-            const int ngas, const int nflav, const int neta, const int ntmp,
+            const int ncol, const int nlay, const int nbnd, const int ngpt,
+            const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
             const int* __restrict__ gpoint_flavor,
             const int* __restrict__ band_lims_gpt,
+            const TF* __restrict__ krayl,
             int idx_h2o, const int* __restrict__ col_dry, const int* __restrict__ col_gas,
             const TF* __restrict__ fminor, const TF* __restrict__ jeta,
             const BOOL_TYPE* __restrict__ tropo, const int* __restrict__ jtemp,
@@ -50,20 +52,20 @@ namespace
             const int gptS = band_lims_gpt[ibnd]-1;
             const int gptE = band_lims_gpt[ibnd+nbnd];
             const int iflav = gpoint_flavor[itropo+2*gptS]-1;
-            const idx_fminor = 2*2*(iflay + icol*nflav; + ilay*ncol*nflav);
-            const idx_jeta   = 2*(iflay + icol*nflav; + ilay*ncol*nflav);
-            const idx_krayl  = gptS+ngpt*neta*ntemp*itropo
+            const int idx_fminor = 2*2*(iflav + icol*nflav + ilay*ncol*nflav);
+            const int idx_jeta   = 2*(iflav + icol*nflav + ilay*ncol*nflav);
+            const int idx_krayl  = gptS+ngpt*neta*ntemp*itropo;
 
-            TF k[gptE-gptS]
+            TF k[gptE-gptS];
             interpolate2D_byflav(fminor[idx_fminor],
                                  krayl[idx_krayl],
-                                 gptS, gptE, k
+                                 gptS, gptE, k,
                                  jeta[idx_jeta],
-                                 jtemp[idx_collay])
+                                 jtemp[idx_collay]);
             for (int igpt=gptS; igpt<gptE; ++igpt)
             {
                 const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
-                tau_rayleigh[idxout] = k[igpt]*(col_gas[idx_collaywv]+col_dry[idx_collay]);
+                tau_rayleigh[idx_out] = k[igpt]*(col_gas[idx_collaywv]+col_dry[idx_collay]);
             }
         }
     }
@@ -151,7 +153,7 @@ namespace rrtmgp_kernel_launcher_cuda
         cudaEventSynchronize(stopEvent);
         cudaEventElapsedTime(&dt1,startEvent,stopEvent);
 
-        std::cout<<"GPU kernel "<<dt1<<" (ms)"<<std::endl;
+//        std::cout<<"GPU kernel "<<dt1<<" (ms)"<<std::endl;
 
         // Copy back the results.
         cuda_safe_call(cudaMemcpy(tau.ptr(), tau_gpu, array_size, cudaMemcpyDeviceToHost));
@@ -168,8 +170,8 @@ namespace rrtmgp_kernel_launcher_cuda
     
     template<typename TF>
     void compute_tau_rayleigh(
-            const int ncol, const int nlay, const int nband, const int ngpt,
-            const int ngas, const int nflav, const int neta, const int ntmp,
+            const int ncol, const int nlay, const int nbnd, const int ngpt,
+            const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
             const Array<int, 2>& gpoint_flavor,
             const Array<int, 2>& band_lims_gpt,
             const Array<TF,4>& krayl,
@@ -179,20 +181,20 @@ namespace rrtmgp_kernel_launcher_cuda
             Array<TF,3>& tau_rayleigh)
     {
         float elapsedtime;
-        const int gpoint_flavor_size = gpoint_flavor.size()*sizeof(int)))
-        const int band_lims_gpt_size = band_lims_gpt.size()*sizeof(int)));
-        const int krayl = krayl.size()*sizeof(TF)));
-        const int col_dry_size = col_dry.size()*sizeof(TF)));
-        const int col_gas_size = col_gas.size()*sizeof(TF)));
-        const int fminor_size = fminor.size()*sizeof(TF)));
-        const int jeta_size = jeta.size()*sizeof(int)));
-        const int tropo_size = tropo.size()*sizeof(BOOL_TYPE)));
-        const int jtemp_size = jtemp.size()*sizeof(int)));
-        const int tau_rayleigh_size = tau_rayleigh.size()*sizeof(TF)));
+        const int gpoint_flavor_size = gpoint_flavor.size()*sizeof(int);
+        const int band_lims_gpt_size = band_lims_gpt.size()*sizeof(int);
+        const int krayl_size = krayl.size()*sizeof(TF);
+        const int col_dry_size = col_dry.size()*sizeof(TF);
+        const int col_gas_size = col_gas.size()*sizeof(TF);
+        const int fminor_size = fminor.size()*sizeof(TF);
+        const int jeta_size = jeta.size()*sizeof(int);
+        const int tropo_size = tropo.size()*sizeof(BOOL_TYPE);
+        const int jtemp_size = jtemp.size()*sizeof(int);
+        const int tau_rayleigh_size = tau_rayleigh.size()*sizeof(TF);
 
         int* gpoint_flavor_gpu;
         int* band_lims_gpt_gpu;
-        int* jet_gpu;
+        int* jeta_gpu;
         int* jtemp_gpu;
         BOOL_TYPE* tropo_gpu;
         TF* krayl_gpu;
@@ -219,11 +221,11 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaMemcpy(band_lims_gpt_gpu, band_lims_gpt.ptr(), band_lims_gpt_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(krayl_gpu, krayl.ptr(), krayl_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(col_dry_gpu, col_dry.ptr(), col_dry_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(col_gas_gpu, col_gas.ptr() col_gas_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(fminor_gpu, fminor.ptr() fminor_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(col_gas_gpu, col_gas.ptr(), col_gas_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(fminor_gpu, fminor.ptr(), fminor_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(jeta_gpu, jeta.ptr(), jeta_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(tropo_gpu, tropo.ptr(), tropo_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(jtemp_gpu, jtemp.ptr() jtemp_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(jtemp_gpu, jtemp.ptr(), jtemp_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(tau_rayleigh_gpu, tau_rayleigh.ptr(), tau_rayleigh_size, cudaMemcpyHostToDevice));
 
         cudaEvent_t startEvent, stopEvent;
@@ -244,8 +246,8 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 block_gpu(block_col, block_bnd, block_lay);
 
         compute_tau_rayleigh_kernel<<<grid_gpu, block_gpu>>>(
-                ncol, nlay, nband, ngpt,
-                ngas, nflav, neta, ntmp,
+                ncol, nlay, nbnd, ngpt,
+                ngas, nflav, neta, npres, ntemp,
                 gpoint_flavor_gpu,
                 band_lims_gpt_gpu,
                 krayl_gpu,
@@ -282,7 +284,20 @@ namespace rrtmgp_kernel_launcher_cuda
 #ifdef FLOAT_SINGLE_RRTMGP
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<float>(
         const int, const int, const int, const Array<float,3>&, const Array<float,3>&, Array<float,3>&, Array<float,3>&, Array<float,3>&);
+template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float(
+        const int, const int, const int, const int, const int, const int, const int, const int, const int,
+
 #else
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<double>(
         const int, const int, const int, const Array<double,3>&, const Array<double,3>&, Array<double,3>&, Array<double,3>&, Array<double,3>&);
 #endif
+
+
+
+            const Array<int, 2>& gpoint_flavor,
+            const Array<int, 2>& band_lims_gpt,
+            const Array<TF,4>& krayl,
+            int idx_h2o, const Array<TF,2>& col_dry, const Array<TF,3>& col_gas,
+            const Array<TF,5>& fminor, const Array<int,4>& jeta,
+            const Array<BOOL_TYPE,2>& tropo, const Array<int,2>& jtemp,
+            Array<TF,3>& tau_rayleigh)

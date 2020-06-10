@@ -1206,6 +1206,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 
     if (has_rayleigh)
     {
+        auto time_start = std::chrono::high_resolution_clock::now();
         rrtmgp_kernel_launcher::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
@@ -1215,6 +1216,45 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
                 idx_h2o, col_dry, col_gas,
                 fminor, jeta, tropo, jtemp,
                 tau_rayleigh);
+
+        auto time_end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+
+        std::cout<<"CPU kernel "<<std::to_string(duration)<<" (ms)"<<std::endl;
+
+        // CUDA TEST.
+        #ifdef USECUDA
+        // Make new arrays for output comparison.
+        Array<TF,3> tau_rayleigh_gpu(tau_rayleigh);
+        rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
+                ncol, nlay, nband, ngpt,
+                ngas, nflav, neta, npres, ntemp,
+                this->gpoint_flavor,
+                this->get_band_lims_gpoint(),
+                this->krayl,
+                idx_h2o, col_dry, col_gas,
+                fminor, jeta, tropo, jtemp,
+                tau_rayleigh_gpu);
+
+        // Print the output to the screen.
+        // for (int igpt=1; igpt<=tau.dim(3); ++igpt)
+        for (int icol=1; icol<=5; ++icol)
+            for (int ilay=1; ilay<=5; ++ilay)
+                for (int igpt=1; igpt<=5; ++igpt) // Print only one band for now.
+                {
+                    std::cout << std::setprecision(16) << "taur (" << icol << "," << ilay << "," << igpt << ") = " <<
+                        tau_rayleigh_gpu({igpt, ilay, icol}) << ", " << tau_rayleigh({igpt, ilay, icol}) << std::endl;
+                }
+        #endif
+
+
+
+
+
+
+
+
+
     }
 
     combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
@@ -1246,15 +1286,15 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
         // rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
 
         // In case of 2str type
-        auto time_start = std::chrono::high_resolution_clock::now();
+        //auto time_start = std::chrono::high_resolution_clock::now();
         rrtmgp_kernel_launcher::combine_and_reorder_2str(
                 ncol, nlay, ngpt,
                 tau, tau_rayleigh,
                 optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
-        auto time_end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+        //auto time_end = std::chrono::high_resolution_clock::now();
+        //auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
 
-        std::cout<<"CPU kernel "<<std::to_string(duration)<<" (ms)"<<std::endl;
+        //std::cout<<"CPU kernel "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
         // CUDA TEST.
         #ifdef USECUDA
