@@ -85,7 +85,7 @@ const Array<TF,2>& Gas_concs<TF>::get_vmr(const std::string& name) const
 
 // Check if gas exists in map.
 template<typename TF>
-bool Gas_concs<TF>::exists(const std::string& name) const
+BOOL_TYPE Gas_concs<TF>::exists(const std::string& name) const
 { 
     return gas_concs_map.count(name) != 0;
 }
