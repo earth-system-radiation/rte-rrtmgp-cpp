@@ -44,6 +44,6 @@ namespace rrtmgp_kernel_launcher_cuda
             int idx_h2o, const Array<TF,2>& col_dry, const Array<TF,3>& col_gas,
             const Array<TF,5>& fminor, const Array<int,4>& jeta,
             const Array<BOOL_TYPE,2>& tropo, const Array<int,2>& jtemp,
-            Array<TF,3>& tau_rayleigh)
+            Array<TF,3>& tau_rayleigh);
 }
 #endif
