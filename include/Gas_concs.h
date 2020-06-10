@@ -26,6 +26,7 @@
 #define GAS_CONCS_H
 
 #include <map>
+#include "define_bool.h"
 
 template<typename, int> class Array;
 
@@ -46,7 +47,7 @@ class Gas_concs
         const Array<TF,2>& get_vmr(const std::string& name) const;
 
         // Check if gas exists in map.
-        bool exists(const std::string& name) const;
+        BOOL_TYPE exists(const std::string& name) const;
 
     private:
         std::map<std::string, Array<TF,2>> gas_concs_map;
