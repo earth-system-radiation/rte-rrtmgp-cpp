@@ -351,9 +351,10 @@ Radiation_solver_longwave<TF>::Radiation_solver_longwave(
 
 template<typename TF>
 void Radiation_solver_longwave<TF>::solve(
-        const bool sw_cloud_optics,
-        const bool sw_output_optical,
-        const bool sw_output_bnd_fluxes,
+        const bool switch_fluxes,
+        const bool switch_cloud_optics,
+        const bool switch_output_optical,
+        const bool switch_output_bnd_fluxes,
         const Gas_concs<TF>& gas_concs,
         const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
         const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
@@ -399,7 +400,7 @@ void Radiation_solver_longwave<TF>::solve(
     std::unique_ptr<Optical_props_1scl<TF>> cloud_optical_props_subset;
     std::unique_ptr<Optical_props_1scl<TF>> cloud_optical_props_residual;
 
-    if (sw_cloud_optics)
+    if (switch_cloud_optics)
     {
         cloud_optical_props_subset = std::make_unique<Optical_props_1scl<TF>>(n_col_block, n_lay, *cloud_optics);
         if (n_col_block_residual > 0)
@@ -438,7 +439,7 @@ void Radiation_solver_longwave<TF>::solve(
                 col_dry_subset,
                 t_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }}) );
 
-        if (sw_cloud_optics)
+        if (switch_cloud_optics)
         {
             cloud_optics->cloud_optics(
                     lwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
@@ -456,7 +457,7 @@ void Radiation_solver_longwave<TF>::solve(
         }
 
         // Store the optical properties, if desired.
-        if (sw_output_optical)
+        if (switch_output_optical)
         {
             for (int igpt=1; igpt<=n_gpt; ++igpt)
                 for (int ilay=1; ilay<=n_lay; ++ilay)
@@ -472,6 +473,9 @@ void Radiation_solver_longwave<TF>::solve(
                 for (int icol=1; icol<=n_col_in; ++icol)
                     sfc_source({icol+col_s_in-1, igpt}) = sources_subset_in.get_sfc_source()({icol, igpt});
         }
+
+        if (!switch_fluxes)
+            return;
 
         Array<TF,3> gpt_flux_up({n_col_in, n_lev, n_gpt});
         Array<TF,3> gpt_flux_dn({n_col_in, n_lev, n_gpt});
@@ -498,7 +502,7 @@ void Radiation_solver_longwave<TF>::solve(
                 lw_flux_net({icol+col_s_in-1, ilev}) = fluxes.get_flux_net()({icol, ilev});
             }
 
-        if (sw_output_bnd_fluxes)
+        if (switch_output_bnd_fluxes)
         {
             bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
 
@@ -573,9 +577,10 @@ Radiation_solver_shortwave<TF>::Radiation_solver_shortwave(
 
 template<typename TF>
 void Radiation_solver_shortwave<TF>::solve(
-        const bool sw_cloud_optics,
-        const bool sw_output_optical,
-        const bool sw_output_bnd_fluxes,
+        const bool switch_fluxes,
+        const bool switch_cloud_optics,
+        const bool switch_output_optical,
+        const bool switch_output_bnd_fluxes,
         const Gas_concs<TF>& gas_concs,
         const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
         const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
@@ -615,7 +620,7 @@ void Radiation_solver_shortwave<TF>::solve(
     std::unique_ptr<Optical_props_2str<TF>> cloud_optical_props_subset;
     std::unique_ptr<Optical_props_2str<TF>> cloud_optical_props_residual;
 
-    if (sw_cloud_optics)
+    if (switch_cloud_optics)
     {
         cloud_optical_props_subset = std::make_unique<Optical_props_2str<TF>>(n_col_block, n_lay, *cloud_optics);
         if (n_col_block_residual > 0)
@@ -658,7 +663,7 @@ void Radiation_solver_shortwave<TF>::solve(
             for (int icol=1; icol<=n_col_in; ++icol)
                 toa_src_subset({icol, igpt}) *= tsi_scaling_subset({icol});
 
-        if (sw_cloud_optics)
+        if (switch_cloud_optics)
         {
             Array<int,2> cld_mask_liq({n_col_in, n_lay});
             Array<int,2> cld_mask_ice({n_col_in, n_lay});
@@ -679,7 +684,7 @@ void Radiation_solver_shortwave<TF>::solve(
         }
 
         // Store the optical properties, if desired.
-        if (sw_output_optical)
+        if (switch_output_optical)
         {
             for (int igpt=1; igpt<=n_gpt; ++igpt)
                 for (int ilay=1; ilay<=n_lay; ++ilay)
@@ -694,6 +699,9 @@ void Radiation_solver_shortwave<TF>::solve(
                 for (int icol=1; icol<=n_col_in; ++icol)
                     toa_src({icol+col_s_in-1, igpt}) = toa_src_subset({icol, igpt});
         }
+
+        if (!switch_fluxes)
+            return;
 
         Array<TF,3> gpt_flux_up    ({n_col_in, n_lev, n_gpt});
         Array<TF,3> gpt_flux_dn    ({n_col_in, n_lev, n_gpt});
@@ -723,7 +731,7 @@ void Radiation_solver_shortwave<TF>::solve(
                 sw_flux_net    ({icol+col_s_in-1, ilev}) = fluxes.get_flux_net   ()({icol, ilev});
             }
 
-        if (sw_output_bnd_fluxes)
+        if (switch_output_bnd_fluxes)
         {
             bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
 
