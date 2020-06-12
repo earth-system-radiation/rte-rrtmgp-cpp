@@ -28,13 +28,13 @@ script:
   - python3 stage_files.py
   - python3 rfmip_init.py
   - python3 rfmip_run.py
-  - python3 compare-to_reference.py
+  - python3 compare-to-reference.py
   - cd ..
   - cd allsky
   - ./make_links.sh
-  - python allsky_init.py
-  - python allsky_run.py
-  - python compare-to_reference.py
+  - python3 allsky_init.py
+  - python3 allsky_run.py
+  - python3 compare-to-reference.py
 
 #notifications:
 #  slack: microhh:hA8nIix9Z34cn6uG8xnz8Uiu
