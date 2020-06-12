@@ -28,7 +28,7 @@ script:
   - python3 stage_files.py
   - python3 rfmip_init.py
   - python3 rfmip_run.py
-  - python3 compare-to-reference.py
+  - python3 compare-to-reference.py --fail=7.e-4
   - cd ..
   - cd allsky
   - ./make_links.sh
