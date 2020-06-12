@@ -142,6 +142,8 @@ void print_command_line_options(
 template<typename TF>
 void solve_radiation(int argc, char** argv)
 {
+    Status::print_message("###### Starting RTE+RRTMGP solver ######");
+
     ////// FLOW CONTROL SWITCHES //////
     // Parse the command line options.
     std::map<std::string, std::pair<bool, std::string>> command_line_options {
@@ -538,7 +540,7 @@ void solve_radiation(int argc, char** argv)
         }
     }
 
-    Status::print_message("Finished.");
+    Status::print_message("###### Finished RTE+RRTMGP solver ######");
 }
 
 
