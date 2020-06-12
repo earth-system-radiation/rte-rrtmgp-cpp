@@ -12,7 +12,7 @@ compiler:
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -y gfortran libnetcdf-dev cmake libboost-dev python3-pip python3-setuptools
+  - sudo apt-get install -y gfortran libnetcdf-dev cmake libboost-dev python3-pip python3-setuptools nco
   - pip3 install --user numpy netcdf4 dask[array] xarray
 
 before_script:
