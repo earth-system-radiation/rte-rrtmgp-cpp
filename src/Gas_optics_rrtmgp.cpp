@@ -1224,7 +1224,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         // CUDA TEST.
         #ifdef USECUDA
         // Make new arrays for output comparison.
-        Array<TF,3> tau_rayleigh_gpu(tau_rayleigh)
+        Array<TF,3> tau_rayleigh_gpu(tau_rayleigh);
         rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
@@ -1303,7 +1303,7 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
             for (int ilay=1; ilay<=nlay; ++ilay)
                 for (int icol=1; icol<=ncol; ++icol)
                 {
-                    if (ssa_gpu{(icol, ilay, igpt)}) != optical_props->get_ssa()({icol, ilay, igpt}))
+                    if (ssa_gpu({icol, ilay, igpt}) != optical_props->get_ssa()({icol, ilay, igpt}))
                         std::cout << std::setprecision(16) << "ssa (" << icol << "," << ilay << "," << igpt << ") = " <<
                             ssa_gpu({icol, ilay, igpt}) << ", " << optical_props->get_ssa()({icol, ilay, igpt}) << std::endl;
                 }

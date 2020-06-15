@@ -42,9 +42,9 @@ namespace
             TF* __restrict__ tau_rayleigh, TF* __restrict__ k)
     {
         // Fetch the three coordinates.
-        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-        const int ibnd = blockIdx.y*blockDim.y + threadIdx.y;
-        const int ilay = blockIdx.z*blockDim.z + threadIdx.z;
+        const int ibnd = blockIdx.x*blockDim.x + threadIdx.x;
+        const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+        const int icol = blockIdx.z*blockDim.z + threadIdx.z;
 
         if ( (icol < ncol) && (ilay < nlay) && (ibnd < nbnd) )
         {
@@ -238,16 +238,16 @@ namespace rrtmgp_kernel_launcher_cuda
         cudaEventRecord(startEvent, 0);
 
         // Call the kernel.
-        const int block_col = 32;
         const int block_bnd = 14;
         const int block_lay = 1;
+        const int block_col = 32;
 
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
         const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
         const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
 
-        dim3 grid_gpu(grid_col, grid_bnd, grid_lay);
-        dim3 block_gpu(block_col, block_bnd, block_lay);
+        dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
+        dim3 block_gpu(block_bnd, block_lay, block_col);
 
         compute_tau_rayleigh_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, nbnd, ngpt,
