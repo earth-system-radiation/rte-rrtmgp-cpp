@@ -1,4 +1,8 @@
 # C++ interface of RTE+RRTMGP
+-----------------------------
+
+[![Build Status](https://travis-ci.com/microhh/rte-rrtmgp-cpp.svg?token=q2woef1eZnvzVmpfCTXK&branch=master)](https://travis-ci.com/microhh/rte-rrtmgp-cpp)
+
 This is a C++ interface to the Radiative Transfer for Energetics (RTE)
 and Rapid Radiative Transfer Model for GCM applications Parallel (RRTMGP).
 
