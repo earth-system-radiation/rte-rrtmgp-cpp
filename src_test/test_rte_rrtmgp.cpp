@@ -412,8 +412,10 @@ void solve_radiation(int argc, char** argv)
                 tsi_scaling({icol}) = tsi({icol}) / tsi_ref;
         }
         else
+        {
             for (int icol=1; icol<=n_col; ++icol)
                 tsi_scaling({icol}) = TF(1.);
+        }
 
         // Create output arrays.
         Array<TF,3> sw_tau;
