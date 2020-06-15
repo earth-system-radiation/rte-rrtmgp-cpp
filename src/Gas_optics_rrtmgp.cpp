@@ -1373,7 +1373,7 @@ TF Gas_optics_rrtmgp<TF>::get_tsi() const
     const int n_gpt = this->get_ngpt();
 
     TF tsi = 0.;
-    for (int igpt=1; igpt<n_gpt; ++igpt)
+    for (int igpt=1; igpt<=n_gpt; ++igpt)
         tsi += this->solar_source({igpt});
 
     return tsi;
