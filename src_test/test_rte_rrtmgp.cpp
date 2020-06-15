@@ -401,7 +401,7 @@ void solve_radiation(int argc, char** argv)
 
         Array<TF,1> mu0(input_nc.get_variable<TF>("mu0", {n_col}), {n_col});
         Array<TF,2> sfc_alb_dir(input_nc.get_variable<TF>("sfc_alb_dir", {n_col, n_bnd_sw}), {n_bnd_sw, n_col});
-        Array<TF,2> sfc_alb_dif(input_nc.get_variable<TF>("sfc_alb_dir", {n_col, n_bnd_sw}), {n_bnd_sw, n_col});
+        Array<TF,2> sfc_alb_dif(input_nc.get_variable<TF>("sfc_alb_dif", {n_col, n_bnd_sw}), {n_bnd_sw, n_col});
 
         Array<TF,1> tsi_scaling({n_col});
         if (input_nc.variable_exists("tsi"))
