@@ -1221,7 +1221,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
 
         std::cout<<"CPU kernel "<<std::to_string(duration)<<" (ms)"<<std::endl;
-
         // CUDA TEST.
         #ifdef USECUDA
         // Make new arrays for output comparison.
@@ -1242,18 +1241,10 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
             for (int ilay=1; ilay<=5; ++ilay)
                 for (int igpt=1; igpt<=5; ++igpt) // Print only one band for now.
                 {
-                    std::cout << std::setprecision(16) << "taur (" << icol << "," << ilay << "," << igpt << ") = " <<
+                    std::cout << std::setprecision(16) << "tau_rayleigh (" << icol << "," << ilay << "," << igpt << ") = " <<
                         tau_rayleigh_gpu({igpt, ilay, icol}) << ", " << tau_rayleigh({igpt, ilay, icol}) << std::endl;
                 }
         #endif
-
-
-
-
-
-
-
-
 
     }
 
