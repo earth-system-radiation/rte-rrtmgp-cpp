@@ -18,12 +18,14 @@ namespace
                                      const int neta)
     {
         const int band_gpt = gptE-gptS;
+        const int j0 = jeta[0];
+        const int j1 = jeta[1];
         for (int igpt=0; igpt<band_gpt; ++igpt)
         {
-            k[igpt] = fminor[0] * krayl[igpt + (jeta[0]-1)*ngpt + (jtemp-1)*neta*ngpt] +
-                      fminor[1] * krayl[igpt +  jeta[0]    *ngpt + (jtemp-1)*neta*ngpt] +
-                      fminor[2] * krayl[igpt + (jeta[1]-1)*ngpt + jtemp    *neta*ngpt] +
-                      fminor[3] * krayl[igpt +  jeta[1]    *ngpt + jtemp    *neta*ngpt]; 
+            k[igpt] = fminor[0] * krayl[igpt + (j0-1)*ngpt + (jtemp-1)*neta*ngpt] +
+                      fminor[1] * krayl[igpt +  j0   *ngpt + (jtemp-1)*neta*ngpt] +
+                      fminor[2] * krayl[igpt + (j1-1)*ngpt + jtemp    *neta*ngpt] +
+                      fminor[3] * krayl[igpt +  j1   *ngpt + jtemp    *neta*ngpt];
         }
     }
 
@@ -55,7 +57,7 @@ namespace
             const int iflav = gpoint_flavor[itropo+2*gptS]-1;
             const int idx_fminor = 2*2*(iflav + icol*nflav + ilay*ncol*nflav);
             const int idx_jeta   = 2*(iflav + icol*nflav + ilay*ncol*nflav);
-            const int idx_krayl  = gptS+ngpt*neta*ntemp*itropo;
+            const int idx_krayl  = gptS + ngpt*neta*ntemp*itropo;
             const int idx_k = gptS + ilay*ngpt + icol*nlay*ngpt;
             interpolate2D_byflav_kernel(&fminor[idx_fminor],
                                         &krayl[idx_krayl],
@@ -88,14 +90,13 @@ namespace
             const int idx_in  = igpt + ilay*ngpt + icol*(ngpt*nlay);
             const int idx_out = icol + ilay*ncol + igpt*(ncol*nlay);
 	   
-	    const TF tau_tot = tau_abs[idx_in] + tau_rayleigh[idx_in];
-	    tau[idx_out] = tau_tot;
+            const TF tau_tot = tau_abs[idx_in] + tau_rayleigh[idx_in];
+            tau[idx_out] = tau_tot;
             g  [idx_out] = TF(0.);
             if (tau_tot>(TF(2.)*tmin))
                 ssa[idx_out] = tau_rayleigh[idx_in]/tau_tot;
             else
                 ssa[idx_out] = 0.;
-		
         }
     }
 }
@@ -156,8 +157,7 @@ namespace rrtmgp_kernel_launcher_cuda
         cudaEventRecord(stopEvent, 0);
         cudaEventSynchronize(stopEvent);
         cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-
-//        std::cout<<"GPU kernel "<<elapsedtime<<" (ms)"<<std::endl;
+        std::cout<<"GPU combine_and_reorder_2str: "<<elapsedtime<<" (ms)"<<std::endl;
 
         // Copy back the results.
         cuda_safe_call(cudaMemcpy(tau.ptr(), tau_gpu, array_size, cudaMemcpyDeviceToHost));
@@ -265,7 +265,7 @@ namespace rrtmgp_kernel_launcher_cuda
         cudaEventRecord(stopEvent, 0);
         cudaEventSynchronize(stopEvent);
         cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-        std::cout<<"GPU kernel "<<elapsedtime<<" (ms)"<<std::endl;
+        std::cout<<"GPU compute_tau_rayleigh: "<<elapsedtime<<" (ms)"<<std::endl;
 
         // Copy back the results.
         cuda_safe_call(cudaMemcpy(tau_rayleigh.ptr(), tau_rayleigh_gpu, tau_rayleigh_size, cudaMemcpyDeviceToHost));

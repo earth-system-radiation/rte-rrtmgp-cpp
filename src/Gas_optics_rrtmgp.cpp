@@ -1219,12 +1219,12 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 
         auto time_end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+        std::cout<<"CPU compute_tau_rayleigh: "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
-        std::cout<<"CPU kernel "<<std::to_string(duration)<<" (ms)"<<std::endl;
         // CUDA TEST.
         #ifdef USECUDA
         // Make new arrays for output comparison.
-        Array<TF,3> tau_rayleigh_gpu(tau_rayleigh);
+        Array<TF,3> tau_rayleigh_gpu(tau_rayleigh)
         rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
@@ -1237,12 +1237,13 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 
         // Print the output to the screen.
         // for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-        for (int icol=1; icol<=5; ++icol)
-            for (int ilay=1; ilay<=5; ++ilay)
-                for (int igpt=1; igpt<=5; ++igpt) // Print only one band for now.
+        for (int icol=1; icol<=ncol; ++icol)
+            for (int ilay=1; ilay<=nlay; ++ilay)
+                for (int igpt=1; igpt<=ngpt; ++igpt)
                 {
-                    std::cout << std::setprecision(16) << "tau_rayleigh (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        tau_rayleigh_gpu({igpt, ilay, icol}) << ", " << tau_rayleigh({igpt, ilay, icol}) << std::endl;
+                    if (tau_rayleigh_gpu({igpt, ilay, icol}) != tau_rayleigh({igpt, ilay, icol}))
+                        std::cout << std::setprecision(16) << "tau_rayleigh (" << icol << "," << ilay << "," << igpt << ") = " <<
+                            tau_rayleigh_gpu({igpt, ilay, icol}) << ", " << tau_rayleigh({igpt, ilay, icol}) << std::endl;
                 }
         #endif
 
@@ -1277,15 +1278,14 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
         // rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
 
         // In case of 2str type
-        //auto time_start = std::chrono::high_resolution_clock::now();
+        auto time_start = std::chrono::high_resolution_clock::now();
         rrtmgp_kernel_launcher::combine_and_reorder_2str(
                 ncol, nlay, ngpt,
                 tau, tau_rayleigh,
                 optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
-        //auto time_end = std::chrono::high_resolution_clock::now();
-        //auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
-
-        //std::cout<<"CPU kernel "<<std::to_string(duration)<<" (ms)"<<std::endl;
+        auto time_end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+        std::cout<<"CPU combine_and_reorder_2str: "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
         // CUDA TEST.
         #ifdef USECUDA
@@ -1299,13 +1299,13 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
                 tau_gpu, ssa_gpu, g_gpu);
 
         // Print the output to the screen.
-        // for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-        for (int igpt=1; igpt<=5; ++igpt) // Print only one band for now.
-            for (int ilay=1; ilay<=5; ++ilay)
-                for (int icol=1; icol<=5; ++icol)
+        for (int igpt=1; igpt<=ngpt; ++igpt)
+            for (int ilay=1; ilay<=nlay; ++ilay)
+                for (int icol=1; icol<=ncol; ++icol)
                 {
-    //                std::cout << std::setprecision(16) << "ssa (" << icol << "," << ilay << "," << igpt << ") = " <<
-    //                    tau_gpu({icol, ilay, igpt}) << ", " << optical_props->get_tau()({icol, ilay, igpt}) << std::endl;
+                    if (ssa_gpu{(icol, ilay, igpt)}) != optical_props->get_ssa()({icol, ilay, igpt}))
+                        std::cout << std::setprecision(16) << "ssa (" << icol << "," << ilay << "," << igpt << ") = " <<
+                            ssa_gpu({icol, ilay, igpt}) << ", " << optical_props->get_ssa()({icol, ilay, igpt}) << std::endl;
                 }
         #endif
         // END CUDA TEST.
