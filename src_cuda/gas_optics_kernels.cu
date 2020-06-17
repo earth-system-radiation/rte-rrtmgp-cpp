@@ -6,30 +6,31 @@
 
 namespace
 {
-    // Add the kernels here.
-    template<typename TF>__device__
-    void interpolate2D_byflav_kernel(const TF* __restrict__ fminor,
-                                     const TF* __restrict__ krayl,
-                                     const int gptS, const int gptE,
-                                     TF* __restrict__ k,
-                                     const int* __restrict__ jeta,
-                                     const int jtemp,
-                                     const int ngpt,
-                                     const int neta)
+    template<typename TF> __device__
+    void interpolate_2d_byflav_kernel(
+            const TF* __restrict__ fminor,
+            const TF* __restrict__ krayl,
+            const int gptS, const int gptE,
+            TF* __restrict__ k,
+            const int* __restrict__ jeta,
+            const int jtemp,
+            const int ngpt,
+            const int neta)
     {
         const int band_gpt = gptE-gptS;
         const int j0 = jeta[0];
         const int j1 = jeta[1];
+
         for (int igpt=0; igpt<band_gpt; ++igpt)
         {
-            k[igpt] = fminor[0] * krayl[igpt + (j0-1)*ngpt + (jtemp-1)*neta*ngpt] +
-                      fminor[1] * krayl[igpt +  j0   *ngpt + (jtemp-1)*neta*ngpt] +
-                      fminor[2] * krayl[igpt + (j1-1)*ngpt + jtemp    *neta*ngpt] +
-                      fminor[3] * krayl[igpt +  j1   *ngpt + jtemp    *neta*ngpt];
+            k[igpt] = fminor[0] * krayl[igpt + (j0-1)*ngpt + (jtemp-1)*neta*ngpt]
+                    + fminor[1] * krayl[igpt +  j0   *ngpt + (jtemp-1)*neta*ngpt]
+                    + fminor[2] * krayl[igpt + (j1-1)*ngpt + jtemp    *neta*ngpt]
+                    + fminor[3] * krayl[igpt +  j1   *ngpt + jtemp    *neta*ngpt];
         }
     }
 
-    template<typename TF>__global__
+    template<typename TF> __global__
     void compute_tau_rayleigh_kernel(
             const int ncol, const int nlay, const int nbnd, const int ngpt,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
@@ -56,15 +57,17 @@ namespace
             const int gptE = band_lims_gpt[2*ibnd+1];
             const int iflav = gpoint_flavor[itropo+2*gptS]-1;
             const int idx_fminor = 2*2*(iflav + icol*nflav + ilay*ncol*nflav);
-            const int idx_jeta   = 2*(iflav + icol*nflav + ilay*ncol*nflav);
-            const int idx_krayl  = gptS + ngpt*neta*ntemp*itropo;
+            const int idx_jeta = 2*(iflav + icol*nflav + ilay*ncol*nflav);
+            const int idx_krayl = gptS + ngpt*neta*ntemp*itropo;
             const int idx_k = gptS + ilay*ngpt + icol*nlay*ngpt;
-            interpolate2D_byflav_kernel(&fminor[idx_fminor],
-                                        &krayl[idx_krayl],
-                                        gptS, gptE, &k[idx_k],
-                                        &jeta[idx_jeta],
-                                        jtemp[idx_collay],
-                                        ngpt, neta);
+
+            interpolate_2d_byflav_kernel(
+                    &fminor[idx_fminor],
+                    &krayl[idx_krayl],
+                    gptS, gptE, &k[idx_k],
+                    &jeta[idx_jeta],
+                    jtemp[idx_collay],
+                    ngpt, neta);
 
             for (int igpt=gptS; igpt<gptE; ++igpt)
             {
@@ -157,12 +160,13 @@ namespace rrtmgp_kernel_launcher_cuda
         cudaEventRecord(stopEvent, 0);
         cudaEventSynchronize(stopEvent);
         cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
+
         std::cout<<"GPU combine_and_reorder_2str: "<<elapsedtime<<" (ms)"<<std::endl;
 
         // Copy back the results.
         cuda_safe_call(cudaMemcpy(tau.ptr(), tau_gpu, array_size, cudaMemcpyDeviceToHost));
         cuda_safe_call(cudaMemcpy(ssa.ptr(), ssa_gpu, array_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(g.ptr(), g_gpu, array_size, cudaMemcpyDeviceToHost));
+        cuda_safe_call(cudaMemcpy(g.ptr()  , g_gpu  , array_size, cudaMemcpyDeviceToHost));
 
         // Deallocate a CUDA array.
         cuda_safe_call(cudaFree(tau_abs_gpu));
@@ -242,9 +246,9 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay = 1;
         const int block_col = 32;
 
-        const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
-        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
 
         dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
         dim3 block_gpu(block_bnd, block_lay, block_col);
@@ -294,8 +298,6 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float>(
         const Array<int,2>&, const Array<int,2>&, const Array<float,4>&, int, const Array<float,2>&, 
         const Array<float,3>&, const Array<float,5>&, const Array<int,4>&, const Array<BOOL_TYPE,2>&, 
         const Array<int,2>&, Array<float,3>&);
-
-
 #else
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<double>(
         const int, const int, const int, const Array<double,3>&, const Array<double,3>&, Array<double,3>&, Array<double,3>&, Array<double,3>&);
@@ -306,5 +308,3 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
         const Array<double,3>&, const Array<double,5>&, const Array<int,4>&, const Array<BOOL_TYPE,2>&, 
         const Array<int,2>&, Array<double,3>&);
 #endif
-
-
