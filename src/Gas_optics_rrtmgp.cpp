@@ -1290,7 +1290,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
             for (int ilay=1; ilay<=nlay; ++ilay)
                 for (int igpt=1; igpt<=ngpt; ++igpt)
                 {
-                    if (tau_rayleigh_gpu({igpt, ilay, icol}) != tau_rayleigh({igpt, ilay, icol}))
+//                    if (tau_rayleigh_gpu({igpt, ilay, icol}) != tau_rayleigh({igpt, ilay, icol}))
 //                        std::cout << std::setprecision(16) << "tau_rayleigh (" << icol << "," << ilay << "," << igpt << ") = " <<
 //                            tau_rayleigh_gpu({igpt, ilay, icol}) << ", " << tau_rayleigh({igpt, ilay, icol}) << std::endl;
                 }
@@ -1352,7 +1352,7 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
             for (int ilay=1; ilay<=nlay; ++ilay)
                 for (int icol=1; icol<=ncol; ++icol)
                 {
-                    if (ssa_gpu({icol, ilay, igpt}) != optical_props->get_ssa()({icol, ilay, igpt}))
+//                  if (ssa_gpu({icol, ilay, igpt}) != optical_props->get_ssa()({icol, ilay, igpt}))
 //                        std::cout << std::setprecision(16) << "ssa (" << icol << "," << ilay << "," << igpt << ") = " <<
 //                            ssa_gpu({icol, ilay, igpt}) << ", " << optical_props->get_ssa()({icol, ilay, igpt}) << std::endl;
                 }

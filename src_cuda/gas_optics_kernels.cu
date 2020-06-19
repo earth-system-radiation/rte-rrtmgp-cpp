@@ -33,7 +33,7 @@ namespace
     template<typename TF>__device__
     void interpolate3D_byflav_kernel(const TF* __restrict__ scaling,
                                      const TF* __restrict__ fmajor,
-                                     const TF* __restrict__ kmajor,
+                                     const TF* __restrict__ k,
                                      const int gptS, const int gptE,
                                      const int* __restrict__ jeta,
                                      const int jtemp,
@@ -41,8 +41,7 @@ namespace
                                      const int ngpt,
                                      const int neta,
                                      const int npress,
-                                     const int* __restrict__ tau_major,
-    )
+                                     TF* __restrict__ tau_major)
     {
         const int band_gpt = gptE-gptS;
         const int j0 = jeta[0];
@@ -50,48 +49,48 @@ namespace
         for (int igpt=0; igpt<band_gpt; ++igpt)
         {
             tau_major[igpt] = scaling[0]*
-                              (fmajor[0] * krayl[igpt + (j0-1)*ngpt + (jpress-1)*neta*ngpt + (jtemp-1)*neta*ngpt*npress] +
-                               fmajor[1] * krayl[igpt +  j0   *ngpt + (jpress-1)*neta*ngpt + (jtemp-1)*neta*ngpt*npress] +
-                               fmajor[2] * krayl[igpt + (j0-1)*ngpt + jpress*neta*ngpt     + (jtemp-1)*neta*ngpt*npress] +
-                               fmajor[4] * krayl[igpt +  j0   *ngpt + jpress*neta*ngpt     + (jtemp-1)*neta*ngpt*npress])
+                              (fmajor[0] * k[igpt + (j0-1)*ngpt + (jpress-1)*neta*ngpt + (jtemp-1)*neta*ngpt*npress] +
+                               fmajor[1] * k[igpt +  j0   *ngpt + (jpress-1)*neta*ngpt + (jtemp-1)*neta*ngpt*npress] +
+                               fmajor[2] * k[igpt + (j0-1)*ngpt + jpress*neta*ngpt     + (jtemp-1)*neta*ngpt*npress] +
+                               fmajor[3] * k[igpt +  j0   *ngpt + jpress*neta*ngpt     + (jtemp-1)*neta*ngpt*npress])
                             + scaling[1]*
-                              (fmajor[5] * krayl[igpt + (j1-1)*ngpt + (jpress-1)*neta*ngpt + jtemp*neta*ngpt*npress] +
-                               fmajor[6] * krayl[igpt +  j1   *ngpt + (jpress-1)*neta*ngpt + jtemp*neta*ngpt*npress] +
-                               fmajor[7] * krayl[igpt + (j1-1)*ngpt + jpress*neta*ngpt     + jtemp*neta*ngpt*npress] +
-                               fmajor[8] * krayl[igpt +  j1   *ngpt + jpress*neta*ngpt     + jtemp*neta*ngpt*npress]);
+                              (fmajor[4] * k[igpt + (j1-1)*ngpt + (jpress-1)*neta*ngpt + jtemp*neta*ngpt*npress] +
+                               fmajor[5] * k[igpt +  j1   *ngpt + (jpress-1)*neta*ngpt + jtemp*neta*ngpt*npress] +
+                               fmajor[6] * k[igpt + (j1-1)*ngpt + jpress*neta*ngpt     + jtemp*neta*ngpt*npress] +
+                               fmajor[7] * k[igpt +  j1   *ngpt + jpress*neta*ngpt     + jtemp*neta*ngpt*npress]);
         }
     }
 
-    template<TF>__device__
-    void gas_optical_depths_major(
-            const int ncol, const int nlay, const int nband, const int ngpt,
-            const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
-            const int* __restrict__ band_lims_gpt, const TF* __restrict__ kmajor,
-            const int gptS, const int gptE, const int itropo,
-            const TF* __restrict__ col_mix, const TF* __restrict__ fmajor,
-            const int* __restrict__ jeta, const int jtemp, const int jpress,
-            TF* __restrict__ tau, TF* __restrict__ tau_major)
-    {
-        //create function below
-        interpolate3D_byflav_kernel(col_mix, fmajor, kmajor,
-                                    gptS, gptE,
-                                    jeta, jtemp, jpress+itropo,
-                                    ngpt, neta, npres,
-                                    tau_major);
+    //template<typename TF>__device__
+    //void gas_optical_depths_major(
+    //        const int ncol, const int nlay, const int nband, const int ngpt,
+    //        const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
+    //        const int* __restrict__ band_lims_gpt, const TF* __restrict__ kmajor,
+    //        const int gptS, const int gptE, const int itropo,
+    //        const TF* __restrict__ col_mix, const TF* __restrict__ fmajor,
+    //        const int* __restrict__ jeta, const int jtemp, const int jpress,
+    //        TF* __restrict__ tau, TF* __restrict__ tau_major)
+    //{
+    //    //create function below
+    //    interpolate3D_byflav_kernel(col_mix, fmajor, kmajor,
+    //                                gptS, gptE,
+    //                                jeta, jtemp, jpress+itropo,
+    //                                ngpt, neta, npres,
+    //                                tau_major);
 
-        for (int igpt=gptS; igpt<gptE; ++igpt)
-        {
-            const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
-            tau[idx_out] += tau_major[idx_out];
-        }
-    }
+    //    for (int igpt=gptS; igpt<gptE; ++igpt)
+    //    {
+    //        const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
+    //        tau[idx_out] += tau_major[idx_out];
+    //    }
+    //}
 
-    template<TF>__device__
+    template<typename TF>__device__
     int locate_val(const TF* __restrict__ arr,
                    const int ncol,
                    const int nlay,
                    const BOOL_TYPE maxmin, //False: find minimum
-                   const TF* __restrict__ mask,
+                   const BOOL_TYPE* __restrict__ mask,
                    const BOOL_TYPE maskval)
     {
         TF temp = arr[0];
@@ -118,7 +117,7 @@ namespace
     }
 
     template<typename TF>__global__
-    void compute_tau_absorption(
+    void compute_tau_absorption_kernel(
             const int ncol, const int nlay, const int nband, const int ngpt,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
             const int nminorlower, const int nminorklower,
@@ -146,8 +145,8 @@ namespace
             const TF* __restrict__ fminor, const TF* __restrict__ play,
             const TF* __restrict__ tlay, const TF* __restrict__ col_gas,
             const int* __restrict__ jeta, const int* __restrict__ jtemp,
-            const int* __restrict__ jpress, const int* __restrict__ itropo_lower,
-            const int* __restrict__ itropo_upper, TF* __restrict__ tau,
+            const int* __restrict__ jpress, int* __restrict__ itropo_lower,
+            int* __restrict__ itropo_upper, TF* __restrict__ tau,
             TF* __restrict__ tau_major)
     {
         // Fetch the three coordinates.
@@ -155,7 +154,7 @@ namespace
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
         const int icol = blockIdx.z*blockDim.z + threadIdx.z;
 
-        if ( (icol < ncol) && (ilay == 0) && (ibnd < == 0) )
+        if ( (icol < ncol) && (ilay == 0) && (ibnd == 0) )
         {
             const BOOL_TYPE top_at_1 = (play[0] < play[nlay]);
             if (top_at_1) {
@@ -177,7 +176,7 @@ namespace
 
         __syncthreads();
 
-        if ( (icol < ncol) && (ilay < nlay) && (ibnd < nbnd) ) {
+        if ( (icol < ncol) && (ilay < nlay) && (ibnd < nband) ) {
             //kernel implementation
             const int idx_collay = icol + ilay * ncol;
 //            const int idx_collaywv = icol + ilay * ncol + idx_h2o * nlay * ncol;
@@ -186,20 +185,35 @@ namespace
             const int gptE = band_lims_gpt[2 * ibnd + 1];
             const int iflav = gpoint_flavor[itropo + 2 * gptS] - 1;
             const int idx_fcl3 = 2 * 2 * 2* (iflav + icol * nflav + ilay * ncol * nflav);
-            const int idx_fcl2 = 2 * 2 * (iflav + icol * nflav + ilay * ncol * nflav);
+//            const int idx_fcl2 = 2 * 2 * (iflav + icol * nflav + ilay * ncol * nflav);
             const int idx_fcl1 = 2 * (iflav + icol * nflav + ilay * ncol * nflav);
 //            const int idx_krayl = gptS + ngpt * neta * ntemp * itropo;
             const int idx_tau = gptS + ilay * ngpt + icol * nlay * ngpt;
 
+            //major gases//
+            const TF* col_mixy = &col_mix[idx_fcl1];
+            const int ipress = jpress[idx_collay]+itropo;
+            interpolate3D_byflav_kernel(col_mixy, &fmajor[idx_fcl3],
+                                        kmajor, gptS, gptE,
+                                        &jeta[idx_fcl1], jtemp[idx_collay], 
+                                        ipress, ngpt, neta, npres,
+                                        &tau_major[idx_tau]);
+            
+            TF* tau_temp = &tau[idx_tau];
+            for (int igpt=gptS; igpt<gptE; ++igpt)
+            {
+                const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
+                tau_temp[idx_out] += tau_major[idx_out];
+            }
 
-            gas_optics_depths_major(ncol, nlay, nband, ngpt,
-                                    nflav, neta, npres, ntep,
-                                    band_lims_gpt, kmajor,
-                                    gptS, gptE, itropo,
-                                    &col_mix[idx_fcl1], &fmajor[idx_fcl3],
-                                    &jeta[idx_fcl1], jtemp[idx_collay], jpress[idx_collay],
-                                    &tau[idx_tau], &tau_major[idx_tau]);
-
+////            gas_optical_depths_major(ncol, nlay, nband, ngpt,
+////                                     ngas, nflav, neta, npres, ntemp,
+////                                     band_lims_gpt, kmajor,
+////                                     gptS, gptE, itropo,
+////                                     &col_mix[idx_fcl1], &fmajor[idx_fcl3],
+////                                     &jeta[idx_fcl1], jtemp[idx_collay], jpress[idx_collay],
+////                                     &tau[idx_tau], &tau_major[idx_tau]);
+////
             //gas_optical_depths_major
             //gas_optical_depths_minor (lower)
             //gas_optical_depths_minor (upper)
@@ -498,8 +512,6 @@ namespace rrtmgp_kernel_launcher_cuda
     {
         float elapsedtime;
         const int gpoint_flavor_size = gpoint_flavor.size()*sizeof(int);
-
-        const int gpoint_flavor_size = gpoint_flavor.size()*sizeof(int);
         const int band_lims_gpt_size = band_lims_gpt.size()*sizeof(int);
         const int kmajor_size = kmajor.size()*sizeof(TF);
         const int kminor_lower_size = kminor_lower.size()*sizeof(TF);
@@ -581,8 +593,8 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaMalloc((void**)& jeta_gpu, jeta_size));
         cuda_safe_call(cudaMalloc((void**)& jtemp_gpu, collay_int_size));
         cuda_safe_call(cudaMalloc((void**)& jpress_gpu, collay_int_size));
-        cuda_safe_call(cudaMalloc((void**)& itropo_lower, itropo_size));
-        cuda_safe_call(cudaMalloc((void**)& itropo_upper, itropo_size));
+        cuda_safe_call(cudaMalloc((void**)& itropo_lower_gpu, itropo_size));
+        cuda_safe_call(cudaMalloc((void**)& itropo_upper_gpu, itropo_size));
         cuda_safe_call(cudaMalloc((void**)& tau_gpu, tau_size));
         cuda_safe_call(cudaMalloc((void**)& tau_major_gpu, tau_size));
 
@@ -625,18 +637,18 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay = 1;
         const int block_col = 32;
 
-        const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
+        const int grid_bnd  = nband/block_bnd + (nband%block_bnd > 0);
         const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
         const int grid_col  = ncol/block_col + (ncol%block_col > 0);
 
         dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
         dim3 block_gpu(block_bnd, block_lay, block_col);
 
-        compute_tau_absorption<<<grid_gpu, block_gpu>>>(
+        compute_tau_absorption_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
-                nminorlower, nminorklower
-                nminorupper, nmiorkupper,
+                nminorlower, nminorklower,
+                nminorupper, nminorkupper,
                 idx_h2o,
                 gpoint_flavor_gpu, band_lims_gpt_gpu,
                 kmajor_gpu, kminor_lower_gpu,
@@ -649,7 +661,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 kminor_start_upper_gpu, tropo_gpu, col_mix_gpu,
                 fmajor_gpu, fminor_gpu, play_gpu, tlay_gpu,
                 col_gas_gpu, jeta_gpu, jtemp_gpu, jpress_gpu,
-                itropo_lower, itropo_upper, tau_gpu, tau_major_gpu);
+                itropo_lower_gpu, itropo_upper_gpu, tau_gpu, tau_major_gpu);
 
         cuda_check_error();
         cuda_safe_call(cudaDeviceSynchronize());
@@ -662,34 +674,34 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaMemcpy(tau.ptr(), tau_gpu, tau_size, cudaMemcpyDeviceToHost));
 
         // Deallocate a CUDA array.
-        cuda_safe_call(cudaFree(gpoint_flavor_gpu))
-        cuda_safe_call(cudaFree(band_lims_gpt_gpu))
-        cuda_safe_call(cudaFree(kmajor_gpu))
-        cuda_safe_call(cudaFree(kminor_lower_gpu))
-        cuda_safe_call(cudaFree(kminor_upper_gpu))
-        cuda_safe_call(cudaFree(minor_limits_gpt_lower_gpu))
-        cuda_safe_call(cudaFree(minor_limits_gpt_upper_gpu))
-        cuda_safe_call(cudaFree(minor_scales_with_density_lower_gpu))
-        cuda_safe_call(cudaFree(minor_scales_with_density_upper_gpu))
-        cuda_safe_call(cudaFree(scale_by_complement_lower_gpu))
-        cuda_safe_call(cudaFree(scale_by_complement_upper_gpu))
-        cuda_safe_call(cudaFree(idx_minor_lower_gpu))
-        cuda_safe_call(cudaFree(idx_minor_upper_gpu))
-        cuda_safe_call(cudaFree(idx_minor_scaling_lower_gpu))
-        cuda_safe_call(cudaFree(idx_minor_scaling_upper_gpu))
-        cuda_safe_call(cudaFree(kminor_start_lower_gpu))
-        cuda_safe_call(cudaFree(kminor_start_upper_gpu))
-        cuda_safe_call(cudaFree(tropo_gpu))
-        cuda_safe_call(cudaFree(col_mix_gpu))
-        cuda_safe_call(cudaFree(fmajor_gpu))
-        cuda_safe_call(cudaFree(fminor_gpu))
-        cuda_safe_call(cudaFree(play_gpu))
-        cuda_safe_call(cudaFree(tlay_gpu))
-        cuda_safe_call(cudaFree(col_gas_gpu))
-        cuda_safe_call(cudaFree(jeta_gpu))
-        cuda_safe_call(cudaFree(jtemp_gpu))
-        cuda_safe_call(cudaFree(jpress_gpu))
-        cuda_safe_call(cudaFree(tau_gpu))
+        cuda_safe_call(cudaFree(gpoint_flavor_gpu));
+        cuda_safe_call(cudaFree(band_lims_gpt_gpu));
+        cuda_safe_call(cudaFree(kmajor_gpu));
+        cuda_safe_call(cudaFree(kminor_lower_gpu));
+        cuda_safe_call(cudaFree(kminor_upper_gpu));
+        cuda_safe_call(cudaFree(minor_limits_gpt_lower_gpu));
+        cuda_safe_call(cudaFree(minor_limits_gpt_upper_gpu));
+        cuda_safe_call(cudaFree(minor_scales_with_density_lower_gpu));
+        cuda_safe_call(cudaFree(minor_scales_with_density_upper_gpu));
+        cuda_safe_call(cudaFree(scale_by_complement_lower_gpu));
+        cuda_safe_call(cudaFree(scale_by_complement_upper_gpu));
+        cuda_safe_call(cudaFree(idx_minor_lower_gpu));
+        cuda_safe_call(cudaFree(idx_minor_upper_gpu));
+        cuda_safe_call(cudaFree(idx_minor_scaling_lower_gpu));
+        cuda_safe_call(cudaFree(idx_minor_scaling_upper_gpu));
+        cuda_safe_call(cudaFree(kminor_start_lower_gpu));
+        cuda_safe_call(cudaFree(kminor_start_upper_gpu));
+        cuda_safe_call(cudaFree(tropo_gpu));
+        cuda_safe_call(cudaFree(col_mix_gpu));
+        cuda_safe_call(cudaFree(fmajor_gpu));
+        cuda_safe_call(cudaFree(fminor_gpu));
+        cuda_safe_call(cudaFree(play_gpu));
+        cuda_safe_call(cudaFree(tlay_gpu));
+        cuda_safe_call(cudaFree(col_gas_gpu));
+        cuda_safe_call(cudaFree(jeta_gpu));
+        cuda_safe_call(cudaFree(jtemp_gpu));
+        cuda_safe_call(cudaFree(jpress_gpu));
+        cuda_safe_call(cudaFree(tau_gpu));
     }
 }
 
@@ -704,6 +716,14 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float>(
         const Array<float,3>&, const Array<float,5>&, const Array<int,4>&, const Array<BOOL_TYPE,2>&, 
         const Array<int,2>&, Array<float,3>&);
 
+template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const int, const int, const int, const int, const int, const int, 
+	const int, const int, const int, const int, const int, const int, const int, const int,
+        const Array<int,2>&, const Array<int,2>&, const Array<float,4>&, const Array<float,3>&, const Array<float,3>&,
+        const Array<int,2>&, const Array<int,2>&, const Array<BOOL_TYPE,1>&, const Array<BOOL_TYPE,1>&,
+        const Array<BOOL_TYPE,1>&, const Array<BOOL_TYPE,1>&, const Array<int,1>&, const Array<int,1>&,
+        const Array<int,1>&, const Array<int,1>&, const Array<int,1>&, const Array<int,1>&, const Array<BOOL_TYPE,2>& tropo,
+        const Array<float,4>&, const Array<float,6>&, const Array<float,5>&, const Array<float,2>&, const Array<float,2>&, const Array<float,3>&,
+        const Array<int,4>&, const Array<int,2>&, const Array<int,2>&, Array<float,3>&);
 
 #else
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<double>(
@@ -714,6 +734,15 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
         const Array<int,2>&, const Array<int,2>&, const Array<double,4>&, int, const Array<double,2>&, 
         const Array<double,3>&, const Array<double,5>&, const Array<int,4>&, const Array<BOOL_TYPE,2>&, 
         const Array<int,2>&, Array<double,3>&);
+
+template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<double>(const int, const int, const int, const int, const int, const int, 
+	const int, const int, const int, const int, const int, const int, const int, const int,
+        const Array<int,2>&, const Array<int,2>&, const Array<double,4>&, const Array<double,3>&, const Array<double,3>&,
+        const Array<int,2>&, const Array<int,2>&, const Array<BOOL_TYPE,1>&, const Array<BOOL_TYPE,1>&,
+        const Array<BOOL_TYPE,1>&, const Array<BOOL_TYPE,1>&, const Array<int,1>&, const Array<int,1>&,
+        const Array<int,1>&, const Array<int,1>&, const Array<int,1>&, const Array<int,1>&, const Array<BOOL_TYPE,2>& tropo,
+        const Array<double,4>&, const Array<double,6>&, const Array<double,5>&, const Array<double,2>&, const Array<double,2>&, const Array<double,3>&,
+        const Array<int,4>&, const Array<int,2>&, const Array<int,2>&, Array<double,3>&);
 #endif
 
 
