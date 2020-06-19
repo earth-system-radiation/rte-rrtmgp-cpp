@@ -191,28 +191,18 @@ namespace
             const int idx_tau = gptS + ilay * ngpt + icol * nlay * ngpt;
 
             //major gases//
-            const TF* col_mixy = &col_mix[idx_fcl1];
-            const int ipress = jpress[idx_collay]+itropo;
-            interpolate3D_byflav_kernel(col_mixy, &fmajor[idx_fcl3],
-                                        kmajor, gptS, gptE,
+            interpolate3D_byflav_kernel(&col_mix[idx_fcl1], &fmajor[idx_fcl3],
+                                        &kmajor[gptS], gptS, gptE,
                                         &jeta[idx_fcl1], jtemp[idx_collay], 
-                                        ipress, ngpt, neta, npres,
+                                        jpress[idx_collay]+itropo, ngpt, neta, npres+1,
                                         &tau_major[idx_tau]);
             
             for (int igpt=gptS; igpt<gptE; ++igpt)
             {
                 const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
-                tau[idx_out] += tau_major[idx_out];
+                tau[idx_out] = tau_major[idx_out];  //should be += later on
             }
 
-////            gas_optical_depths_major(ncol, nlay, nband, ngpt,
-////                                     ngas, nflav, neta, npres, ntemp,
-////                                     band_lims_gpt, kmajor,
-////                                     gptS, gptE, itropo,
-////                                     &col_mix[idx_fcl1], &fmajor[idx_fcl3],
-////                                     &jeta[idx_fcl1], jtemp[idx_collay], jpress[idx_collay],
-////                                     &tau[idx_tau], &tau_major[idx_tau]);
-////
             //gas_optical_depths_major
             //gas_optical_depths_minor (lower)
             //gas_optical_depths_minor (upper)
@@ -700,6 +690,9 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaFree(jeta_gpu));
         cuda_safe_call(cudaFree(jtemp_gpu));
         cuda_safe_call(cudaFree(jpress_gpu));
+        cuda_safe_call(cudaFree(itropo_lower_gpu));
+        cuda_safe_call(cudaFree(itropo_upper_gpu));
+        cuda_safe_call(cudaFree(tau_major_gpu));
         cuda_safe_call(cudaFree(tau_gpu));
     }
 }
