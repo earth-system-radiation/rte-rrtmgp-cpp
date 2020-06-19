@@ -199,11 +199,10 @@ namespace
                                         ipress, ngpt, neta, npres,
                                         &tau_major[idx_tau]);
             
-            TF* tau_temp = &tau[idx_tau];
             for (int igpt=gptS; igpt<gptE; ++igpt)
             {
                 const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
-                tau_temp[idx_out] += tau_major[idx_out];
+                tau[idx_out] += tau_major[idx_out];
             }
 
 ////            gas_optical_depths_major(ncol, nlay, nband, ngpt,
