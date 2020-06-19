@@ -29,6 +29,39 @@ namespace
         }
     }
 
+    // Add the kernels here.
+    template<typename TF>__device__
+    void interpolate3D_byflav_kernel(const TF* __restrict__ scaling,
+                                     const TF* __restrict__ fmajor,
+                                     const TF* __restrict__ kmajor,
+                                     const int gptS, const int gptE,
+                                     const int* __restrict__ jeta,
+                                     const int jtemp,
+                                     const int jpress,
+                                     const int ngpt,
+                                     const int neta,
+                                     const int npress,
+                                     const int* __restrict__ tau_major,
+    )
+    {
+        const int band_gpt = gptE-gptS;
+        const int j0 = jeta[0];
+        const int j1 = jeta[1];
+        for (int igpt=0; igpt<band_gpt; ++igpt)
+        {
+            tau_major[igpt] = scaling[0]*
+                              (fmajor[0] * krayl[igpt + (j0-1)*ngpt + (jpress-1)*neta*ngpt + (jtemp-1)*neta*ngpt*npress] +
+                               fmajor[1] * krayl[igpt +  j0   *ngpt + (jpress-1)*neta*ngpt + (jtemp-1)*neta*ngpt*npress] +
+                               fmajor[2] * krayl[igpt + (j0-1)*ngpt + jpress*neta*ngpt     + (jtemp-1)*neta*ngpt*npress] +
+                               fmajor[4] * krayl[igpt +  j0   *ngpt + jpress*neta*ngpt     + (jtemp-1)*neta*ngpt*npress])
+                            + scaling[1]*
+                              (fmajor[5] * krayl[igpt + (j1-1)*ngpt + (jpress-1)*neta*ngpt + jtemp*neta*ngpt*npress] +
+                               fmajor[6] * krayl[igpt +  j1   *ngpt + (jpress-1)*neta*ngpt + jtemp*neta*ngpt*npress] +
+                               fmajor[7] * krayl[igpt + (j1-1)*ngpt + jpress*neta*ngpt     + jtemp*neta*ngpt*npress] +
+                               fmajor[8] * krayl[igpt +  j1   *ngpt + jpress*neta*ngpt     + jtemp*neta*ngpt*npress]);
+        }
+    }
+
     template<TF>__device__
     void gas_optical_depths_major(
             const int ncol, const int nlay, const int nband, const int ngpt,
@@ -43,16 +76,14 @@ namespace
         interpolate3D_byflav_kernel(col_mix, fmajor, kmajor,
                                     gptS, gptE,
                                     jeta, jtemp, jpress+itropo,
+                                    ngpt, neta, npres,
                                     tau_major);
 
         for (int igpt=gptS; igpt<gptE; ++igpt)
         {
             const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
-            tau[idx_out] = tau[idx_out] + tau_major[idx_out];
+            tau[idx_out] += tau_major[idx_out];
         }
-
-
-
     }
 
     template<TF>__device__
@@ -625,7 +656,7 @@ namespace rrtmgp_kernel_launcher_cuda
         cudaEventRecord(stopEvent, 0);
         cudaEventSynchronize(stopEvent);
         cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-        std::cout<<"GPU compute_tau_absorption: "<<elapsedtime<<" (ms)"<<std::endl;
+        std::cout<<"GPU compute_tau_abs: "<<elapsedtime<<" (ms)"<<std::endl;
 
         // Copy back the results.
         cuda_safe_call(cudaMemcpy(tau.ptr(), tau_gpu, tau_size, cudaMemcpyDeviceToHost));
