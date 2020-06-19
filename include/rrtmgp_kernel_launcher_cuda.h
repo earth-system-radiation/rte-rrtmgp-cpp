@@ -47,5 +47,36 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array<TF,5>& fminor, const Array<int,4>& jeta,
             const Array<BOOL_TYPE,2>& tropo, const Array<int,2>& jtemp,
             Array<TF,3>& tau_rayleigh);
+
+    template<typename TF>
+    void compute_tau_absorption(
+            const int ncol, const int nlay, const int nband, const int ngpt,
+            const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
+            const int nminorlower, const int nminorklower,
+            const int nminorupper, const int nminorkupper,
+            const int idx_h2o,
+            const Array<int,2>& gpoint_flavor,
+            const Array<int,2>& band_lims_gpt,
+            const Array<TF,4>& kmajor,
+            const Array<TF,3>& kminor_lower,
+            const Array<TF,3>& kminor_upper,
+            const Array<int,2>& minor_limits_gpt_lower,
+            const Array<int,2>& minor_limits_gpt_upper,
+            const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
+            const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
+            const Array<BOOL_TYPE,1>& scale_by_complement_lower,
+            const Array<BOOL_TYPE,1>& scale_by_complement_upper,
+            const Array<int,1>& idx_minor_lower,
+            const Array<int,1>& idx_minor_upper,
+            const Array<int,1>& idx_minor_scaling_lower,
+            const Array<int,1>& idx_minor_scaling_upper,
+            const Array<int,1>& kminor_start_lower,
+            const Array<int,1>& kminor_start_upper,
+            const Array<BOOL_TYPE,2>& tropo,
+            const Array<TF,4>& col_mix, const Array<TF,6>& fmajor,
+            const Array<TF,5>& fminor, const Array<TF,2>& play,
+            const Array<TF,2>& tlay, const Array<TF,3>& col_gas,
+            const Array<int,4>& jeta, const Array<int,2>& jtemp,
+            const Array<int,2>& jpress, Array<TF,3>& tau);
 }
 #endif

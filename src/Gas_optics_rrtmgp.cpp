@@ -1247,7 +1247,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
                             tau_rayleigh_gpu({igpt, ilay, icol}) << ", " << tau_rayleigh({igpt, ilay, icol}) << std::endl;
                 }
         #endif
-
+        // END CUDA TEST.
     }
 
     combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
