@@ -31,6 +31,28 @@
 namespace rrtmgp_kernel_launcher_cuda
 {
     template<typename TF>
+    void interpolation(
+            const int ncol, const int nlay,
+            const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
+            const Array<int,2>& flavor,
+            const Array<TF,1>& press_ref_log,
+            const Array<TF,1>& temp_ref,
+            TF press_ref_log_delta,
+            TF temp_ref_min,
+            TF temp_ref_delta,
+            TF press_ref_trop_log,
+            const Array<TF,3>& vmr_ref,
+            const Array<TF,2>& play,
+            const Array<TF,2>& tlay,
+            Array<TF,3>& col_gas,
+            Array<int,2>& jtemp,
+            Array<TF,6>& fmajor, Array<TF,5>& fminor,
+            Array<TF,4>& col_mix,
+            Array<BOOL_TYPE,2>& tropo,
+            Array<int,4>& jeta,
+            Array<int,2>& jpress);
+
+    template<typename TF>
     void combine_and_reorder_2str(
             const int ncol, const int nlay, const int ngpt,
             const Array<TF,3>& tau_local, const Array<TF,3>& tau_rayleigh,

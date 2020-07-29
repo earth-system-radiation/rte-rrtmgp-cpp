@@ -1143,6 +1143,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     // Call the fortran kernels
     rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, tau);
 
+    auto time_start = std::chrono::high_resolution_clock::now();
     rrtmgp_kernel_launcher::interpolation(
             ncol, nlay,
             ngas, nflav, neta, npres, ntemp,
@@ -1162,6 +1163,53 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
             col_mix,
             tropo,
             jeta, jpress);
+    auto time_end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+    std::cout<<"CPU interpolation: "<<std::to_string(duration)<<" (ms)"<<std::endl;
+
+    // CUDA TEST.
+    #ifdef USECUDA
+    // Make new arrays for output comparison.
+    Array<TF,3> jtemp_gpu(jtemp);
+    Array<TF,3> jpress_gpu(jpress);
+    Array<TF,3> tropo_gpu(tropo);
+    Array<TF,3> jeta_gpu(jeta);
+    Array<TF,3> col+mix_gpu(col+mix);
+    Array<TF,3> fmajor_gpu(fmajor);
+    Array<TF,3> fminor_gpu(fminor);
+
+    rrtmgp_kernel_launcher_cuda::interpolation(
+            ncol, nlay,
+            ngas, nflav, neta, npres, ntemp,
+            this->flavor,
+            this->press_ref_log,
+            this->temp_ref,
+            this->press_ref_log_delta,
+            this->temp_ref_min,
+            this->temp_ref_delta,
+            this->press_ref_trop_log,
+            this->vmr_ref,
+            play,
+            tlay,
+            col_gas,
+            jtemp_gpu,
+            fmajor_gpu, fminor_gpu,
+            col_mix_gpu,
+            tropo_gpu,
+            jeta_gpu, jpress_gpu);
+
+    for (int icol=1; icol<=ncol; ++icol)
+        for (int ilay=1; ilay<=nlay; ++ilay)
+            for (int igpt=1; igpt<=ngpt; ++igpt)
+            {
+                if (fminor_gpu({igpt, ilay, icol}) != fminor({igpt, ilay, icol}))
+                    std::cout << std::setprecision(16) << "fminor (" << icol << "," << ilay << "," << igpt << ") = " <<
+                        fminor_gpu({igpt, ilay, icol}) << ", " << fminor({igpt, ilay, icol}) << std::endl;
+                if (fmajor_gpu({igpt, ilay, icol}) != fmajor({igpt, ilay, icol}))
+                    std::cout << std::setprecision(16) << "fmajor (" << icol << "," << ilay << "," << igpt << ") = " <<
+                        fmajor_gpu({igpt, ilay, icol}) << ", " << fmajor({igpt, ilay, icol}) << std::endl;            }
+    #endif
+    // END CUDA TEST.
 
     int idx_h2o = -1;
     for (int i=1; i<=this->gas_names.dim(1); ++i)
