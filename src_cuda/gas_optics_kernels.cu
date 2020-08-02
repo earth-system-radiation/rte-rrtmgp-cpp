@@ -118,7 +118,7 @@ namespace
         const int ilay = blockIdx.x*blockDim.x + threadIdx.x;
         const int icol = blockIdx.y*blockDim.y + threadIdx.y;
 
-        if ( (icol < ncol) && (ilay == 0) )
+        if ( (icol < ncol) && (ilay <==> 0) )
         {
             const int idx = icol + ilay*ncol;
 
@@ -136,17 +136,17 @@ namespace
             for (int iflav=0; iflav<nflav; ++iflav)
             {
                 const int gas1 = flavor[2*nflav];
-                const int gas2 = flavor[2*nflav_1];
+                const int gas2 = flavor[2*nflav+1];
                 for (int itemp=0; itemp<2; ++itemp)
                 {
                     const int vmr_base_idx = itropo + (jtemp[idx]+itemp-1) * (ngas+1) * 2;
                     const int colmix_idx = itemp + 2*(iflav + nflav*icol + nflav*ncol*ilay);
-                    const int colgas1_idx = icol * ilay*ncol + gas1*nlay*ncol;
-                    const int colgas2_idx = icol * ilay*ncol + gas2*nlay*ncol;
+                    const int colgas1_idx = icol + ilay*ncol + gas1*nlay*ncol;
+                    const int colgas2_idx = icol + ilay*ncol + gas2*nlay*ncol;
                     TF eta;
                     const TF ratio_eta_half = vmr_ref[vmr_base_idx + 2 * gas1] /
                                               vmr_ref[vmr_base_idx + 2 * gas2];
-                    col_mix[colmix_idx] = col_gas[colgas1_idx] + ratio_eta_half[colgas2_idx];
+                    col_mix[colmix_idx] = col_gas[colgas1_idx] + ratio_eta_half * col_gas[colgas2_idx];
                     if (col_mix[colmix_idx] > TF(2.)*tmin)
                     {
                         eta = col_gas[colgas1_idx] / col_mix[colmix_idx];
@@ -157,17 +157,17 @@ namespace
                     const TF loceta = eta * TF(neta-1);
                     jeta[colmix_idx] = min(int(loceta)+1, neta-1);
                     const TF feta = fmod(loceta, TF(1.));
-                    const TF ftemp_term  = TF(1-itemp) + TF(2*itemp-1)*ftemp[idx];
+                    const TF ftemp_term  = TF(1-itemp) + TF(2*itemp-1)*ftemp;
                     // compute interpolation fractions needed for minot species
                     const int fminor_idx = 2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*flav));
                     fminor[fminor_idx] = (TF(1.0)-feta) * ftemp_term;
                     fminor[fminor_idx+1] = feta * ftemp_term;
                     // compute interpolation fractions needed for major species
                     const int fmajor_idx = 2*2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*flav));
-                    fmajor[fmajor_idx] = (TF(1.0)-fpress[idx]) * fminor[fminor_idx];
-                    fmajor[fmajor_idx+1] = (TF(1.0)-fpress[idx]) * fminor[fminor_idx+1];
-                    fmajor[fmajor_idx+2] = fpress[idx] * fminor[fminor_idx];
-                    fmajor[fmajor_idx+3] = fpress[idx] * fminor[fminor_idx+1];
+                    fmajor[fmajor_idx] = (TF(1.0)-fpress) * fminor[fminor_idx];
+                    fmajor[fmajor_idx+1] = (TF(1.0)-fpress) * fminor[fminor_idx+1];
+                    fmajor[fmajor_idx+2] = fpress * fminor[fminor_idx];
+                    fmajor[fmajor_idx+3] = fpress * fminor[fminor_idx+1];
 
                 }
             }
@@ -374,28 +374,28 @@ namespace rrtmgp_kernel_launcher_cuda
         const int collay_tf_size = ncol * nlay * sizeof(TF);
         const int collay_int_size = ncol * nlay * sizeof(int);
         const int col_gas_size = col_gas.size() * sizeof(TF);
-        const int jtemp_size = jtemp_size() * sizeof(int);
-        const int fmajor_size = fmajor_size() * sizeof(TF);
-        const int fminor_size = fminor_size() * sizeof(TF);
-        const int col_mix_size = col_mix_size() * sizeof(TF);
-        const int tropo_size = tropo_size() * sizeof(BOOL_TYPE);
-        const int jeta_size = jeta_size() * sizeof(int);
-        const int jpress_size = jpress_size() * sizeof(int);
+        const int jtemp_size = jtemp.size() * sizeof(int);
+        const int fmajor_size = fmajor.size() * sizeof(TF);
+        const int fminor_size = fminor.size() * sizeof(TF);
+        const int col_mix_size = col_mix.size() * sizeof(TF);
+        const int tropo_size = tropo.size() * sizeof(BOOL_TYPE);
+        const int jeta_size = jeta.size() * sizeof(int);
+        const int jpress_size = jpress.size() * sizeof(int);
 
-        int* flavor;
-        TF* press_ref_log;
-        TF* temp_ref;
-        TF* vmr_ref;
-        TF* play;
-        TF* tlay;
-        TF* col_gas;
-        int* jtemp;
-        TF* fmajor;
-        TF* fminor;
-        TF* col_mix;
-        BOOL_TYPE* tropo;
-        int* jeta;
-        int* jpress;
+        int* flavor_gpu;
+        TF* press_ref_log_gpu;
+        TF* temp_ref_gpu;
+        TF* vmr_ref_gpu;
+        TF* play_gpu;
+        TF* tlay_gpu;
+        TF* col_gas_gpu;
+        int* jtemp_gpu;
+        TF* fmajor_gpu;
+        TF* fminor_gpu;
+        TF* col_mix_gpu;
+        BOOL_TYPE* tropo_gpu;
+        int* jeta_gpu;
+        int* jpress_gpu;
 
         cuda_safe_call(cudaMalloc((void **) &flavor_gpu, flavor_size));
         cuda_safe_call(cudaMalloc((void **) &press_ref_log_gpu, press_ref_log_size));
@@ -424,6 +424,7 @@ namespace rrtmgp_kernel_launcher_cuda
         float elapsedtime;
         cudaEventCreate(&startEvent);
         cudaEventCreate(&stopEvent)
+        cudaEventRecord(startEvent, 0);
 
         const int block_lay = 16;
         const int block_col = 32;
@@ -431,8 +432,8 @@ namespace rrtmgp_kernel_launcher_cuda
         const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
         const int grid_col  = ncol/block_col + (ncol%block_col > 0);
 
-        dim2 grid_gpu(grid_lay, grid_col);
-        dim2 block_gpu(block_lay, block_col);
+        dim3 grid_gpu(grid_lay, grid_col);
+        dim3 block_gpu(block_lay, block_col);
 
         TF tmin = std::numeric_limits<TF>::min();
         interpolation_kernel<<<grid_gpu, block_gpu>>>(
@@ -890,6 +891,13 @@ namespace rrtmgp_kernel_launcher_cuda
 
 
 #ifdef FLOAT_SINGLE_RRTMGP
+template void rrtmgp_kernel_launcher_cuda::interpolation(
+        const int, const int, const int, const int, const int, const int, const int,
+        const Array<int,2>&, const Array<single,1>&, const Array<single,1>&,
+        single, single, single, single, const Array<single,3>&, const Array<single,2>&,
+        const Array<single,2>&, Array<single,3>&, Array<int,2>&, Array<single,6>&, Array<single,5>&,
+        Array<single,4>&, Array<BOOL_TYPE,2>&, Array<int,4>&, Array<int,2>&);
+
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<float>(
         const int, const int, const int, const Array<float,3>&, const Array<float,3>&, Array<float,3>&, Array<float,3>&, Array<float,3>&);
 
@@ -909,6 +917,13 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const i
         const Array<int,4>&, const Array<int,2>&, const Array<int,2>&, Array<float,3>&);
 
 #else
+template void rrtmgp_kernel_launcher_cuda::interpolation(
+        const int, const int, const int, const int, const int, const int, const int,
+        const Array<int,2>&, const Array<double,1>&, const Array<double,1>&,
+        double, double, double, double, const Array<double,3>&, const Array<double,2>&,
+        const Array<double,2>&, Array<double,3>&, Array<int,2>&, Array<double,6>&, Array<double,5>&,
+        Array<double,4>&, Array<BOOL_TYPE,2>&, Array<int,4>&, Array<int,2>&);
+
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<double>(
         const int, const int, const int, const Array<double,3>&, const Array<double,3>&, Array<double,3>&, Array<double,3>&, Array<double,3>&);
 

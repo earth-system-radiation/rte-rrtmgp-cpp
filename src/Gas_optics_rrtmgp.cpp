@@ -1170,13 +1170,13 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     // CUDA TEST.
     #ifdef USECUDA
     // Make new arrays for output comparison.
-    Array<TF,3> jtemp_gpu(jtemp);
-    Array<TF,3> jpress_gpu(jpress);
-    Array<TF,3> tropo_gpu(tropo);
-    Array<TF,3> jeta_gpu(jeta);
-    Array<TF,3> col+mix_gpu(col+mix);
-    Array<TF,3> fmajor_gpu(fmajor);
-    Array<TF,3> fminor_gpu(fminor);
+    Array<int,2> jtemp_gpu(jtemp);
+    Array<int,2> jpress_gpu(jpress);
+    Array<BOOL_TYPE,2> tropo_gpu(tropo);
+    Array<int,4> jeta_gpu(jeta);
+    Array<TF,4> col_mix_gpu(col_mix);
+    Array<TF,6> fmajor_gpu(fmajor);
+    Array<TF,5> fminor_gpu(fminor);
 
     rrtmgp_kernel_launcher_cuda::interpolation(
             ncol, nlay,
@@ -1200,14 +1200,16 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 
     for (int icol=1; icol<=ncol; ++icol)
         for (int ilay=1; ilay<=nlay; ++ilay)
-            for (int igpt=1; igpt<=ngpt; ++igpt)
+            for (int iflv=1; iflv<=ngpt; ++iflv)
+            for (int ii=1; ii<=ngpt; ++ii)
+            for (int ij=1; ij<=ngpt; ++ij)
             {
-                if (fminor_gpu({igpt, ilay, icol}) != fminor({igpt, ilay, icol}))
+                if (fminor_gpu({ii, ij, iflv, ilay, icol}) != fminor({ii, ij, iflv, ilay, icol}))
                     std::cout << std::setprecision(16) << "fminor (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        fminor_gpu({igpt, ilay, icol}) << ", " << fminor({igpt, ilay, icol}) << std::endl;
-                if (fmajor_gpu({igpt, ilay, icol}) != fmajor({igpt, ilay, icol}))
+                        fminor_gpu({ii, ij, iflv, ilay, icol}) << ", " << fminor({ii, ij, iflv, ilay, icol}) << std::endl;
+                if (fmajor_gpu({ii, ij, iflv, ilay, icol}) != fmajor({ii, ij, iflv, ilay, icol}))
                     std::cout << std::setprecision(16) << "fmajor (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        fmajor_gpu({igpt, ilay, icol}) << ", " << fmajor({igpt, ilay, icol}) << std::endl;            }
+                        fmajor_gpu({ii, ij, iflv, ilay, icol}) << ", " << fmajor({ii, ij, iflv, ilay, icol}) << std::endl;            }
     #endif
     // END CUDA TEST.
 
