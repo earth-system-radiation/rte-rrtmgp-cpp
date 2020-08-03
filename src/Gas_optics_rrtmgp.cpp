@@ -1201,15 +1201,19 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     for (int icol=1; icol<=ncol; ++icol)
         for (int ilay=1; ilay<=nlay; ++ilay)
             for (int iflv=1; iflv<=ngpt; ++iflv)
-            for (int ii=1; ii<=ngpt; ++ii)
-            for (int ij=1; ij<=ngpt; ++ij)
+            for (int ii=1; ii<=2; ++ii)
+            for (int ij=1; ij<=2; ++ij)
             {
                 if (fminor_gpu({ii, ij, iflv, ilay, icol}) != fminor({ii, ij, iflv, ilay, icol}))
-                    std::cout << std::setprecision(16) << "fminor (" << icol << "," << ilay << "," << igpt << ") = " <<
+                    std::cout << std::setprecision(16) << "fminor (" << icol << "," << ilay << "," << iflv << ") = " <<
                         fminor_gpu({ii, ij, iflv, ilay, icol}) << ", " << fminor({ii, ij, iflv, ilay, icol}) << std::endl;
-                if (fmajor_gpu({ii, ij, iflv, ilay, icol}) != fmajor({ii, ij, iflv, ilay, icol}))
-                    std::cout << std::setprecision(16) << "fmajor (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        fmajor_gpu({ii, ij, iflv, ilay, icol}) << ", " << fmajor({ii, ij, iflv, ilay, icol}) << std::endl;            }
+                for (int ik=1; ik<=2; ++ik)
+                {
+                    if (fmajor_gpu({ik,ii, ij, iflv, ilay, icol}) != fmajor({ik,ii, ij, iflv, ilay, icol}))
+                    {    std::cout << std::setprecision(16) << "fmajor (" << icol << "," << ilay << "," << iflv << ") = " <<
+                            fmajor_gpu({ik,ii, ij, iflv, ilay, icol}) << ", " << fmajor({ik,ii, ij, iflv, ilay, icol}) << std::endl;            }
+                }
+            }
     #endif
     // END CUDA TEST.
 
@@ -1224,7 +1228,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     if (idx_h2o == -1)
         throw std::runtime_error("idx_h2o cannot be found");
 
-    auto time_start = std::chrono::high_resolution_clock::now();
+    time_start = std::chrono::high_resolution_clock::now();
     rrtmgp_kernel_launcher::compute_tau_absorption(
             ncol, nlay, nband, ngpt,
             ngas, nflav, neta, npres, ntemp,
@@ -1253,8 +1257,8 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
             play, tlay, col_gas,
             jeta, jtemp, jpress,
             tau);
-    auto time_end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+    time_end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
     std::cout<<"CPU compute_tau_abs: "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
     // CUDA TEST.

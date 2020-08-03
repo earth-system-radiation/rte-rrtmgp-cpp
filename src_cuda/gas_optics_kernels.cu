@@ -94,7 +94,7 @@ namespace
     }
 
     template<typename TF>__global__
-    void interpolation(
+    void interpolation_kernel(
             const int ncol, const int nlay, const int ngas, const int nflav,
             const int neta, const int npres, const int ntemp, const TF tmin,
             const int* __restrict__ flavor,
@@ -118,7 +118,7 @@ namespace
         const int ilay = blockIdx.x*blockDim.x + threadIdx.x;
         const int icol = blockIdx.y*blockDim.y + threadIdx.y;
 
-        if ( (icol < ncol) && (ilay <==> 0) )
+        if ( (icol < ncol) && (ilay < nlay) )
         {
             const int idx = icol + ilay*ncol;
 
@@ -135,8 +135,8 @@ namespace
 
             for (int iflav=0; iflav<nflav; ++iflav)
             {
-                const int gas1 = flavor[2*nflav];
-                const int gas2 = flavor[2*nflav+1];
+                const int gas1 = flavor[2*iflav];
+                const int gas2 = flavor[2*iflav+1];
                 for (int itemp=0; itemp<2; ++itemp)
                 {
                     const int vmr_base_idx = itropo + (jtemp[idx]+itemp-1) * (ngas+1) * 2;
@@ -159,11 +159,11 @@ namespace
                     const TF feta = fmod(loceta, TF(1.));
                     const TF ftemp_term  = TF(1-itemp) + TF(2*itemp-1)*ftemp;
                     // compute interpolation fractions needed for minot species
-                    const int fminor_idx = 2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*flav));
+                    const int fminor_idx = 2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*nflav));
                     fminor[fminor_idx] = (TF(1.0)-feta) * ftemp_term;
                     fminor[fminor_idx+1] = feta * ftemp_term;
                     // compute interpolation fractions needed for major species
-                    const int fmajor_idx = 2*2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*flav));
+                    const int fmajor_idx = 2*2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*nflav));
                     fmajor[fmajor_idx] = (TF(1.0)-fpress) * fminor[fminor_idx];
                     fmajor[fmajor_idx+1] = (TF(1.0)-fpress) * fminor[fminor_idx+1];
                     fmajor[fmajor_idx+2] = fpress * fminor[fminor_idx];
@@ -416,14 +416,14 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaMemcpy(press_ref_log_gpu, press_ref_log.ptr(), press_ref_log_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(temp_ref_gpu, temp_ref.ptr(), temp_ref_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(vmr_ref_gpu, vmr_ref.ptr(), vmr_ref_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(play_gpu, play.ptr(), play_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(tlay_gpu, tlay.ptr(), tlay_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(play_gpu, play.ptr(), collay_tf_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(tlay_gpu, tlay.ptr(), collay_tf_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(col_gas_gpu, col_gas.ptr(), col_gas_size, cudaMemcpyHostToDevice));
 
         cudaEvent_t startEvent, stopEvent;
         float elapsedtime;
         cudaEventCreate(&startEvent);
-        cudaEventCreate(&stopEvent)
+        cudaEventCreate(&stopEvent);
         cudaEventRecord(startEvent, 0);
 
         const int block_lay = 16;
@@ -440,7 +440,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 ncol, nlay, ngas, nflav, neta, npres, ntemp, tmin,
                 flavor_gpu, press_ref_log_gpu, temp_ref_gpu,
                 press_ref_log_delta, temp_ref_min,
-                temp_ref_deta, press_ref_trop_log,
+                temp_ref_delta, press_ref_trop_log,
                 vmr_ref_gpu, play_gpu, tlay_gpu,
                 col_gas_gpu, jtemp_gpu, fmajor_gpu,
                 fminor_gpu, col_mix_gpu, tropo_gpu,
