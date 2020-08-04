@@ -843,18 +843,18 @@ namespace rrtmgp_kernel_launcher_cuda
         cudaEventRecord(startEvent, 0);
 
         // Call the kernel.
-        const int block_bnd = 14;
-        const int block_lay = 1;
-        const int block_col = 32;
+        const int block_bnd_maj = 14;
+        const int block_lay_maj = 1;
+        const int block_col_maj = 32;
 
-        const int grid_bnd  = nband/block_bnd + (nband%block_bnd > 0);
-        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_bnd_maj  = nband/block_bnd_maj + (nband%block_bnd_maj > 0);
+        const int grid_lay_maj  = nlay/block_lay_maj + (nlay%block_lay_maj > 0);
+        const int grid_col_maj  = ncol/block_col_maj + (ncol%block_col_maj > 0);
 
-        dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
-        dim3 block_gpu(block_bnd, block_lay, block_col);
+        dim3 grid_gpu_maj(grid_bnd_maj, grid_lay_maj, grid_col_maj);
+        dim3 block_gpu_maj(block_bnd_maj, block_lay_maj, block_col_maj);
 
-        compute_tau_major_absorption_kernel<<<grid_gpu, block_gpu>>>(
+        compute_tau_major_absorption_kernel<<<grid_gpu_maj, block_gpu_maj>>>(
                 ncol, nlay, nband, ngpt,
                 nflav, neta, npres, ntemp,
                 gpoint_flavor_gpu, band_lims_gpt_gpu,
@@ -863,16 +863,16 @@ namespace rrtmgp_kernel_launcher_cuda
                 tau_gpu, tau_major_gpu);
 
         const int nscale = scale_by_complement_lower.dim(1);
-        const int block_lay = 1;
-        const int block_col = 32;
+        const int block_lay_min = 1;
+        const int block_col_min = 32;
 
-        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_lay_min  = nlay/block_lay_min + (nlay%block_lay_min > 0);
+        const int grid_col_min  = ncol/block_col_min + (ncol%block_col_min > 0);
 
-        dim3 grid_gpu(grid_lay, grid_col);
-        dim3 block_gpu(block_lay, block_col);
+        dim3 grid_gpu_min(grid_lay_min, grid_col_min);
+        dim3 block_gpu_min(block_lay_min, block_col_min);
 
-        compute_tau_minor_absorption_kernel<<<grid_gpu, block_gpu>>>(
+        compute_tau_minor_absorption_kernel<<<grid_gpu_min, block_gpu_min>>>(
                 ncol, nlay, ngpt, nscale
                 ngas, nflav, ntemp, neta,
                 nminorlower, nminorklower,
