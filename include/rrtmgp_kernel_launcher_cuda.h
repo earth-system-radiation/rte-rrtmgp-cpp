@@ -31,6 +31,9 @@
 namespace rrtmgp_kernel_launcher_cuda
 {
     template<typename TF>
+    void zero_array(const int ni, const int nj, const int nk, Array<TF,3>& arr)
+
+    template<typename TF>
     void interpolation(
             const int ncol, const int nlay,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,

@@ -1141,9 +1141,29 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
                 col_gas({icol, ilay, igas}) = vmr({icol, ilay, igas}) * col_dry({icol, ilay});
 
     // Call the fortran kernels
-    rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, tau);
-
     auto time_start = std::chrono::high_resolution_clock::now();
+    rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, tau);
+    auto time_end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+    std::cout<<"CPU zero_array: "<<std::to_string(duration)<<" (ms)"<<std::endl;
+
+    #ifdef USECUDA
+    Array<TF,3> tau_gpu(tau);
+
+    rrtmgp_kernel_launcher_cuda::zero_array(ngpt, nlay, ncol, tau_gpu);
+    for (int icol=1; icol<=ncol; ++icol)
+        for (int ilay=1; ilay<=nlay; ++ilay)
+            for (int igpt=1; igpt<=ngpt; ++igpt)
+            {
+                if (tau_gpu({igpt, ilay, icol}) != tau({igpt, ilay, icol}))
+                {
+                    std::cout << std::setprecision(16) << "tau_zero (" << icol << "," << ilay << "," << iflv << ") = " <<
+                        tau_gpu({igpt, ilay, icol}) << ", " << tau({igpt, ilay, icol}) << std::endl;            }
+                }
+            }
+    #endif
+
+    time_start = std::chrono::high_resolution_clock::now();
     rrtmgp_kernel_launcher::interpolation(
             ncol, nlay,
             ngas, nflav, neta, npres, ntemp,
@@ -1163,8 +1183,8 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
             col_mix,
             tropo,
             jeta, jpress);
-    auto time_end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+    time_end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
     std::cout<<"CPU interpolation: "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
     // CUDA TEST.

@@ -92,6 +92,21 @@ namespace
     }
 
     template<typename TF>__global__
+    void zero_array_kernel(
+            const int ni, const int nj, const int nk, TF* __restrict__ arr)
+    {
+        const int ii = blockIdx.x*blockDim.x + threadIdx.x;
+        const int ij = blockIdx.y*blockDim.y + threadIdx.y;
+        const int ik = blockIdx.z*blockDim.z + threadIdx.z;
+        if ( (ii < ni) && (ij < nj) && (ik < nk))
+        {
+            const int idx = ii + ij*ni + ik*nj*ni
+            arr[idx] = TF(0.)
+        }
+
+    }
+
+    template<typename TF>__global__
     void interpolation_kernel(
             const int ncol, const int nlay, const int ngas, const int nflav,
             const int neta, const int npres, const int ntemp, const TF tmin,
@@ -426,6 +441,44 @@ namespace
 namespace rrtmgp_kernel_launcher_cuda
 {
     template<typename TF>
+    void zero_array(const int ni, const int nj, const int nk, Array<TF,3>& arr)
+    {
+        const int arr_size = arr.size() * sizeof(TF);
+        TF* arr_gpu;
+        cuda_safe_call(cudaMalloc((void **) &arr_gpu, arr_size));
+
+        cudaEvent_t startEvent, stopEvent;
+        float elapsedtime;
+        cudaEventCreate(&startEvent);
+        cudaEventCreate(&stopEvent);
+        cudaEventRecord(startEvent, 0);
+
+        const int block_i = 32;
+        const int block_j = 16;
+        const int block_k = 1;
+
+        const int grid_i  = ni/block_i + (ni%block_i > 0);
+        const int grid_j  = nj/block_j + (nj%block_j > 0);
+        const int grid_k  = nk/block_k + (nk%block_k > 0);
+
+        dim3 grid_gpu(grid_i, grid_j, grid_k);
+        dim3 block_gpu(block_i, block_j, block_k);
+
+        TF tmin = std::numeric_limits<TF>::min();
+        zero_array_kernel<<<grid_gpu, block_gpu>>>(
+                ni, nj, nk, arr_gpu);
+
+        cuda_check_error();
+        cuda_safe_call(cudaDeviceSynchronize());
+        cudaEventRecord(stopEvent, 0);
+        cudaEventSynchronize(stopEvent);
+        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
+        std::cout<<"GPU zero_array: "<<elapsedtime<<" (ms)"<<std::endl;
+
+        cuda_safe_call(cudaMemcpy(arr.ptr(), arr_gpu, arr_size, cudaMemcpyDeviceToHost));
+        cuda_safe_call(cudaFree(arr_gpu));
+    }
+
     void interpolation(
             const int ncol, const int nlay,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
@@ -993,12 +1046,14 @@ namespace rrtmgp_kernel_launcher_cuda
 
 
 #ifdef FLOAT_SINGLE_RRTMGP
+template void zero_array(const int, const int, const int, Array<float,3>&);
+
 template void rrtmgp_kernel_launcher_cuda::interpolation(
         const int, const int, const int, const int, const int, const int, const int,
-        const Array<int,2>&, const Array<single,1>&, const Array<single,1>&,
-        single, single, single, single, const Array<single,3>&, const Array<single,2>&,
-        const Array<single,2>&, Array<single,3>&, Array<int,2>&, Array<single,6>&, Array<single,5>&,
-        Array<single,4>&, Array<BOOL_TYPE,2>&, Array<int,4>&, Array<int,2>&);
+        const Array<int,2>&, const Array<float,1>&, const Array<float,1>&,
+        float, float, float, float, const Array<float,3>&, const Array<float,2>&,
+        const Array<float,2>&, Array<float,3>&, Array<int,2>&, Array<float,6>&, Array<float,5>&,
+        Array<float,4>&, Array<BOOL_TYPE,2>&, Array<int,4>&, Array<int,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<float>(
         const int, const int, const int, const Array<float,3>&, const Array<float,3>&, Array<float,3>&, Array<float,3>&, Array<float,3>&);
@@ -1019,6 +1074,8 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const i
         const Array<int,4>&, const Array<int,2>&, const Array<int,2>&, Array<float,3>&);
 
 #else
+template void zero_array(const int, const int, const int, Array<double,3>&);
+
 template void rrtmgp_kernel_launcher_cuda::interpolation(
         const int, const int, const int, const int, const int, const int, const int,
         const Array<int,2>&, const Array<double,1>&, const Array<double,1>&,
