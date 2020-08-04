@@ -1298,7 +1298,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         for (int ilay=1; ilay<=nlay; ++ilay)
             for (int igpt=1; igpt<=ngpt; ++igpt)
             {
-                if (tau_gpu({igpt, ilay, icol}) != tau({igpt, ilay, icol}))
+                if (float(tau_gpu({igpt, ilay, icol})) != float(tau({igpt, ilay, icol})))
                     std::cout << std::setprecision(16) << "tau absorption (" << icol << "," << ilay << "," << igpt << ") = " <<
                         tau_gpu({igpt, ilay, icol}) << ", " << tau({igpt, ilay, icol}) << std::endl;
             }

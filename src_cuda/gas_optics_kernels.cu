@@ -266,7 +266,7 @@ namespace
             {
                 for (int imnr = 0; imnr < nscale_lower; ++imnr)
                 {
-                    TF scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
+                    TF scaling = col_gas[idx_collay + idx_minor_lower[imnr] * ncl];
                     if (minor_scales_with_density_lower[imnr])
                     {
                         scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
@@ -291,7 +291,7 @@ namespace
                     const int idx_fcl1 = 2 * (iflav + icol * nflav + ilay * ncol * nflav);
                     const int idx_tau = gpt_start + ilay*ngpt + icol*nlay*ngpt;
 
-                    interpolate2D_byflav_kernel(&fminor[idx_fcl2], &kminor[kminor_start_lower[imnr]-1],
+                    interpolate2D_byflav_kernel(&fminor[idx_fcl2], &kminor_lower[kminor_start_lower[imnr]-1],
                                                 kminor_start_lower[imnr]-1, kminor_start_lower[imnr]-1 + (gpt_end - gpt_start),
                                                 &tau_minor[idx_tau], &jeta[idx_fcl1],
                                                 jtemp[idx_collay], nminork_lower, neta);
@@ -307,7 +307,7 @@ namespace
             {
                 for (int imnr = 0; imnr < nscale_upper; ++imnr)
                 {
-                    TF scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
+                    TF scaling = col_gas[idx_collay + idx_minor_upper[imnr] * ncl];
                     if (minor_scales_with_density_upper[imnr])
                     {
                         scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
@@ -332,7 +332,7 @@ namespace
                     const int idx_fcl1 = 2 * (iflav + icol * nflav + ilay * ncol * nflav);
                     const int idx_tau = gpt_start + ilay*ngpt + icol*nlay*ngpt;
 
-                    interpolate2D_byflav_kernel(&fminor[idx_fcl2], &kminor[kminor_start_upper[imnr]-1],
+                    interpolate2D_byflav_kernel(&fminor[idx_fcl2], &kminor_upper[kminor_start_upper[imnr]-1],
                                                 kminor_start_upper[imnr]-1, kminor_start_upper[imnr]-1 + (gpt_end - gpt_start),
                                                 &tau_minor[idx_tau], &jeta[idx_fcl1],
                                                 jtemp[idx_collay], nminork_upper, neta);
@@ -917,7 +917,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
         const int nscale_lower = scale_by_complement_lower.dim(1);
         const int nscale_upper = scale_by_complement_upper.dim(1);
-        const int block_lay_min = 14;
+        const int block_lay_min = 32;
         const int block_col_min = 32;
 
         const int grid_lay_min  = nlay/block_lay_min + (nlay%block_lay_min > 0);
@@ -929,14 +929,14 @@ namespace rrtmgp_kernel_launcher_cuda
         compute_tau_minor_absorption_kernel<<<grid_gpu_min, block_gpu_min>>>(
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
-                nscale_lower, nscale_upper
+                nscale_lower, nscale_upper,
                 nminorlower, nminorupper,
                 nminorklower,nminorkupper,
                 idx_h2o,
                 gpoint_flavor_gpu,
                 kminor_lower_gpu, kminor_upper_gpu,
                 minor_limits_gpt_lower_gpu, minor_limits_gpt_upper_gpu,
-                minor_scales_with_density_lower_gpu, inor_scales_with_density_upper_gpu,
+                minor_scales_with_density_lower_gpu, minor_scales_with_density_upper_gpu,
                 scale_by_complement_lower_gpu, scale_by_complement_upper_gpu,
                 idx_minor_lower_gpu, idx_minor_upper_gpu,
                 idx_minor_scaling_lower_gpu, idx_minor_scaling_upper_gpu,
