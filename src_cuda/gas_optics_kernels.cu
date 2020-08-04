@@ -60,8 +60,6 @@ namespace
         }
     }
 
-
-
     template<typename TF>__device__
     int locate_val(const TF* __restrict__ arr,
                    const int ncol,
@@ -219,18 +217,30 @@ namespace
 
     template<typename TF>__global__
     void compute_tau_minor_absorption_kernel(
-            const int ncol, const int nlay, const int ngpt, const int nscale,
+            const int ncol, const int nlay, const int ngpt,
             const int ngas, const int nflav, const int ntemp, const int neta,
-            const int nminor, const int nminork,
+            const int nscale_lower,
+            const int nscale_upper,
+            const int nminor_lower,
+            const int nminor_upper,
+            const int nminork_lower,
+            const int nminork_upper,
             const int idx_h2o,
             const int* __restrict__ gpoint_flavor,
-            const TF* __restrict__ kminor,
-            const int* __restrict__ minor_limits_gpt,
-            const BOOL_TYPE* __restrict__ minor_scales_with_density,
-            const BOOL_TYPE* __restrict__ scale_by_complement,
-            const int* __restrict__ idx_minor,
-            const int* __restrict__ idx_minor_scaling,
-            const int* __restrict__ kminor_start,
+            const TF* __restrict__ kminor_lower,
+            const TF* __restrict__ kminor_upper,
+            const int* __restrict__ minor_limits_gpt_lower,
+            const int* __restrict__ minor_limits_gpt_upper,
+            const BOOL_TYPE* __restrict__ minor_scales_with_density_lower,
+            const BOOL_TYPE* __restrict__ minor_scales_with_density_upper,
+            const BOOL_TYPE* __restrict__ scale_by_complement_lower,
+            const BOOL_TYPE* __restrict__ scale_by_complement_upper,
+            const int* __restrict__ idx_minor_lower,
+            const int* __restrict__ idx_minor_upper,
+            const int* __restrict__ idx_minor_scaling_lower,
+            const int* __restrict__ idx_minor_scaling_upper,
+            const int* __restrict__ kminor_start_lower,
+            const int* __restrict__ kminor_start_upper,
             const TF* __restrict__ play,
             const TF* __restrict__ tlay,
             const TF* __restrict__ col_gas,
@@ -254,34 +264,78 @@ namespace
 
             if (tropo[idx_collay] == 1) 
             {
-                for (int imnr = 0; imnr < nscale; ++imnr) {
+                for (int imnr = 0; imnr < nscale_lower; ++imnr)
+                {
                     TF scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
-                    if (minor_scales_with_density[imnr]) {
+                    if (minor_scales_with_density_lower[imnr])
+                    {
                         scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
-                        if (idx_minor_scaling[imnr] > 0) {
+                        if (idx_minor_scaling_lower[imnr] > 0)
+                        {
                             TF vmr_fact = TF(1.) / col_gas[idx_collay];
                             TF dry_fact = TF(1.) / (TF(1.) + col_gas[idx_collaywv] * vmr_fact);
-                            if (scale_by_complement[imnr])
+                            if (scale_by_complement_lower[imnr])
                             {
-                                scaling *= (TF(1.) - col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact);
+                                scaling *= (TF(1.) - col_gas[idx_collay + idx_minor_scaling_lower[imnr] * ncl] * vmr_fact * dry_fact);
                             } 
                             else
                             {
-                                scaling *= col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact;
+                                scaling *= col_gas[idx_collay + idx_minor_scaling_lower[imnr] * ncl] * vmr_fact * dry_fact;
                             }
                         }
                     }
-                    const int gpt_start = minor_limits_gpt[2*imnr]-1;
-                    const int gpt_end = minor_limits_gpt[2*imnr + 1];
-                    const int iflav = gpoint_flavor[2 * gpt_start]-1;
+                    const int gpt_start = minor_limits_gpt_lower[2*imnr]-1;
+                    const int gpt_end = minor_limits_gpt_lower[2*imnr+1];
+                    const int iflav = gpoint_flavor[2*gpt_start]-1;
                     const int idx_fcl2 = 2 * 2 * (iflav + icol * nflav + ilay * ncol * nflav);
                     const int idx_fcl1 = 2 * (iflav + icol * nflav + ilay * ncol * nflav);
                     const int idx_tau = gpt_start + ilay*ngpt + icol*nlay*ngpt;
 
-                    interpolate2D_byflav_kernel(&fminor[idx_fcl2], &kminor[kminor_start[imnr]-1],
-                                                kminor_start[imnr]-1, kminor_start[imnr]-1 + (gpt_end - gpt_start),
+                    interpolate2D_byflav_kernel(&fminor[idx_fcl2], &kminor[kminor_start_lower[imnr]-1],
+                                                kminor_start_lower[imnr]-1, kminor_start_lower[imnr]-1 + (gpt_end - gpt_start),
                                                 &tau_minor[idx_tau], &jeta[idx_fcl1],
-                                                jtemp[idx_collay], nminork, neta);
+                                                jtemp[idx_collay], nminork_lower, neta);
+
+                    for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
+                    {
+                        const int idx_out = igpt + ilay * ngpt + icol * nlay * ngpt;
+                        tau[idx_out] += tau_minor[idx_out] * scaling;
+                    }
+                }
+            }
+            else
+            {
+                for (int imnr = 0; imnr < nscale_upper; ++imnr)
+                {
+                    TF scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
+                    if (minor_scales_with_density_upper[imnr])
+                    {
+                        scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
+                        if (idx_minor_scaling_upper[imnr] > 0)
+                        {
+                            TF vmr_fact = TF(1.) / col_gas[idx_collay];
+                            TF dry_fact = TF(1.) / (TF(1.) + col_gas[idx_collaywv] * vmr_fact);
+                            if (scale_by_complement_upper[imnr])
+                            {
+                                scaling *= (TF(1.) - col_gas[idx_collay + idx_minor_scaling_upper[imnr] * ncl] * vmr_fact * dry_fact);
+                            }
+                            else
+                            {
+                                scaling *= col_gas[idx_collay + idx_minor_scaling_upper[imnr] * ncl] * vmr_fact * dry_fact;
+                            }
+                        }
+                    }
+                    const int gpt_start = minor_limits_gpt_upper[2*imnr]-1;
+                    const int gpt_end = minor_limits_gpt_upper[2*imnr+1];
+                    const int iflav = gpoint_flavor[2*gpt_start+1]-1;
+                    const int idx_fcl2 = 2 * 2 * (iflav + icol * nflav + ilay * ncol * nflav);
+                    const int idx_fcl1 = 2 * (iflav + icol * nflav + ilay * ncol * nflav);
+                    const int idx_tau = gpt_start + ilay*ngpt + icol*nlay*ngpt;
+
+                    interpolate2D_byflav_kernel(&fminor[idx_fcl2], &kminor[kminor_start_upper[imnr]-1],
+                                                kminor_start_upper[imnr]-1, kminor_start_upper[imnr]-1 + (gpt_end - gpt_start),
+                                                &tau_minor[idx_tau], &jeta[idx_fcl1],
+                                                jtemp[idx_collay], nminork_upper, neta);
 
                     for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
                     {
@@ -861,7 +915,8 @@ namespace rrtmgp_kernel_launcher_cuda
                 tropo_gpu, jtemp_gpu, jpress_gpu,
                 tau_gpu, tau_major_gpu);
 
-        const int nscale = scale_by_complement_lower.dim(1);
+        const int nscale_lower = scale_by_complement_lower.dim(1);
+        const int nscale_upper = scale_by_complement_upper.dim(1);
         const int block_lay_min = 14;
         const int block_col_min = 32;
 
@@ -872,17 +927,20 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 block_gpu_min(block_lay_min, block_col_min);
 
         compute_tau_minor_absorption_kernel<<<grid_gpu_min, block_gpu_min>>>(
-                ncol, nlay, ngpt, nscale,
+                ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
-                nminorlower, nminorklower,
+                nscale_lower, nscale_upper
+                nminorlower, nminorupper,
+                nminorklower,nminorkupper,
                 idx_h2o,
-                gpoint_flavor_gpu, kminor_lower_gpu,
-                minor_limits_gpt_lower_gpu,
-                minor_scales_with_density_lower_gpu,
-                scale_by_complement_lower_gpu,
-                idx_minor_lower_gpu,
-                idx_minor_scaling_lower_gpu,
-                kminor_start_lower_gpu,
+                gpoint_flavor_gpu,
+                kminor_lower_gpu, kminor_upper_gpu,
+                minor_limits_gpt_lower_gpu, minor_limits_gpt_upper_gpu,
+                minor_scales_with_density_lower_gpu, inor_scales_with_density_upper_gpu,
+                scale_by_complement_lower_gpu, scale_by_complement_upper_gpu,
+                idx_minor_lower_gpu, idx_minor_upper_gpu,
+                idx_minor_scaling_lower_gpu, idx_minor_scaling_upper_gpu,
+                kminor_start_lower_gpu, kminor_start_upper_gpu,
                 play_gpu, tlay_gpu, col_gas_gpu,
                 fminor_gpu, jeta_gpu, jtemp_gpu,
                 tropo_gpu, tau_gpu, tau_minor_gpu);
