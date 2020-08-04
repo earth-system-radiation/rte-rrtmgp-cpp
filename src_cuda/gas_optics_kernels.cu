@@ -100,8 +100,8 @@ namespace
         const int ik = blockIdx.z*blockDim.z + threadIdx.z;
         if ( (ii < ni) && (ij < nj) && (ik < nk))
         {
-            const int idx = ii + ij*ni + ik*nj*ni
-            arr[idx] = TF(0.)
+            const int idx = ii + ij*ni + ik*nj*ni;
+            arr[idx] = TF(0.);
         }
 
     }
@@ -479,6 +479,7 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaFree(arr_gpu));
     }
 
+    template<typename TF>
     void interpolation(
             const int ncol, const int nlay,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
@@ -1046,7 +1047,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
 
 #ifdef FLOAT_SINGLE_RRTMGP
-template void zero_array(const int, const int, const int, Array<float,3>&);
+template void rrtmgp_kernel_launcher_cuda::zero_array(const int, const int, const int, Array<float,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::interpolation(
         const int, const int, const int, const int, const int, const int, const int,
@@ -1074,7 +1075,7 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const i
         const Array<int,4>&, const Array<int,2>&, const Array<int,2>&, Array<float,3>&);
 
 #else
-template void zero_array(const int, const int, const int, Array<double,3>&);
+template void rrtmgp_kernel_launcher_cuda::zero_array(const int, const int, const int, Array<double,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::interpolation(
         const int, const int, const int, const int, const int, const int, const int,

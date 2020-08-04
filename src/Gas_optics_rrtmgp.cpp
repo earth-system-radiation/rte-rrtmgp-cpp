@@ -1149,7 +1149,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 
     #ifdef USECUDA
     Array<TF,3> tau_gpu(tau);
-
     rrtmgp_kernel_launcher_cuda::zero_array(ngpt, nlay, ncol, tau_gpu);
     for (int icol=1; icol<=ncol; ++icol)
         for (int ilay=1; ilay<=nlay; ++ilay)
@@ -1157,8 +1156,8 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
             {
                 if (tau_gpu({igpt, ilay, icol}) != tau({igpt, ilay, icol}))
                 {
-                    std::cout << std::setprecision(16) << "tau_zero (" << icol << "," << ilay << "," << iflv << ") = " <<
-                        tau_gpu({igpt, ilay, icol}) << ", " << tau({igpt, ilay, icol}) << std::endl;            }
+                    std::cout << std::setprecision(16) << "tau_zero (" << icol << "," << ilay << "," << igpt << ") = " <<
+                        tau_gpu({igpt, ilay, icol}) << ", " << tau({igpt, ilay, icol}) << std::endl;            
                 }
             }
     #endif
@@ -1284,7 +1283,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     // CUDA TEST.
     #ifdef USECUDA
     // Make new arrays for output comparison.
-    Array<TF,3> tau_gpu(tau);
+    //Array<TF,3> tau_gpu(tau);
     rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
             ncol, nlay, nband, ngpt,
             ngas, nflav, neta, npres, ntemp,
