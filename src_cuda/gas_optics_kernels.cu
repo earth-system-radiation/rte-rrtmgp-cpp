@@ -60,35 +60,42 @@ namespace
         }
     }
 
-    template<typename TF>__device__
-    int locate_val(const TF* __restrict__ arr,
-                   const int ncol,
-                   const int nlay,
-                   const BOOL_TYPE maxmin, //False: find minimum
-                   const BOOL_TYPE* __restrict__ mask,
-                   const BOOL_TYPE maskval)
+
+    template<typename TF>__global__
+    void fill_gases_kernel(
+            const int ncol, const int nlay, const int ngas, const int dim1, const int dim2, 
+            TF* __restrict__ vmr_out, const TF* __restrict__ vmr_in,
+            TF* __restrict__ col_gas, const TF* __restrict__ col_dry)
     {
-        TF temp = arr[0];
-        for (int i=0; i<nlay; ++i)
+        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+        const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+        const int igas = blockIdx.z*blockDim.z + threadIdx.z;
+        if ( (icol < ncol) && (ilay < nlay) && (igas < (ngas+1)))
         {
-            const int ii = i*ncol;
-            if (mask[ii]==maskval)
+            const int idx_in = icol + ilay*ncol;
+            if (igas > 0)
             {
-                temp = arr[ii];
-                break;
+                const int idx_out = icol + ilay*ncol + (igas-1)*nlay*ncol;
+                if (dim1 == 1 && dim2 == 1)
+                { 
+                     vmr_out[idx_out] = vmr_in[0];
+                }
+                else if (dim1 == 1)
+                {
+                     vmr_out[idx_out] = vmr_in[ilay];
+                }
+                else
+                {
+                    vmr_out[idx_out] = vmr_in[idx_in];
+                }
+                col_gas[idx_out+nlay*ncol] = vmr_out[idx_out] * col_dry[idx_in];
+            }
+            else if (igas == 0)
+            {
+                const int idx_out = icol + ilay*ncol + igas*nlay*ncol;
+                col_gas[idx_out] = col_dry[idx_in];
             }
         }
-        int idx = 0;
-        for (int i=0; i<nlay; ++i)
-        {
-            const int ii = i*ncol;
-            if ((arr[ii]>temp) == maxmin and mask[ii]==maskval)
-            {
-                idx = i;
-                temp = arr[ii];
-            }
-        }
-        return idx;
     }
 
     template<typename TF>__global__
@@ -441,6 +448,70 @@ namespace
 namespace rrtmgp_kernel_launcher_cuda
 {
     template<typename TF>
+    void fill_gases(
+            const int ncol, const int nlay, const int ngas, 
+            Array<TF,3>& vmr_out, const Array<TF,2>& vmr_in,
+            Array<TF,3>& col_gas, const Array<TF,2>& col_dry,
+            const Gas_concs<TF>& gas_desc, const Array<std::string,1>& gas_names)
+    {
+        const int arr_in_size = vmr_in.size() * sizeof(TF);
+        const int vmr_out_size = vmr_out.size() * sizeof(TF);
+        const int gas_out_size = col_gas.size() * sizeof(TF);
+        const int dim1 = vmr_in.dim(1);
+        const int dim2 = vmr_in.dim(2);
+
+        TF* vmr_out_gpu;
+        TF* vmr_in_gpu;
+        TF* col_gas_gpu;
+        TF* col_dry_gpu;
+        
+        cuda_safe_call(cudaMalloc((void **) &vmr_out_gpu, vmr_out_size));
+        cuda_safe_call(cudaMalloc((void **) &vmr_in_gpu, arr_in_size));
+        cuda_safe_call(cudaMalloc((void **) &col_gas_gpu, gas_out_size));
+        cuda_safe_call(cudaMalloc((void **) &col_dry_gpu, arr_in_size));
+
+        cuda_safe_call(cudaMemcpy(vmr_in_gpu, vmr_in.ptr(), arr_in_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(col_dry_gpu, col_dry.ptr(), arr_in_size, cudaMemcpyHostToDevice));
+        
+        cudaEvent_t startEvent, stopEvent;
+        float elapsedtime;
+        cudaEventCreate(&startEvent);
+        cudaEventCreate(&stopEvent);
+        cudaEventRecord(startEvent, 0);
+
+        const int block_col = 32;
+        const int block_lay = 16;
+        const int block_gas = 1;
+
+        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_gas  = ngas/block_gas + (ngas%block_gas > 0);
+
+        dim3 grid_gpu(grid_col, grid_lay, grid_gas);
+        dim3 block_gpu(block_col, block_lay, block_gas);
+
+        fill_gases_kernel<<<grid_gpu, block_gpu>>>(
+                ncol, nlay, ngas, dim1, dim2, 
+                vmr_out_gpu, vmr_in_gpu,
+                col_gas_gpu, col_dry_gpu);
+        
+        cuda_check_error();
+        cuda_safe_call(cudaDeviceSynchronize());
+        cudaEventRecord(stopEvent, 0);
+        cudaEventSynchronize(stopEvent);
+        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
+        std::cout<<"GPU fill gases: "<<elapsedtime<<" (ms)"<<std::endl;
+
+        cuda_safe_call(cudaMemcpy(vmr_out.ptr(), vmr_out_gpu, vmr_out_size, cudaMemcpyDeviceToHost));
+        cuda_safe_call(cudaMemcpy(col_gas.ptr(), col_gas_gpu, gas_out_size, cudaMemcpyDeviceToHost));
+
+        cuda_safe_call(cudaFree(vmr_out_gpu));
+        cuda_safe_call(cudaFree(vmr_in_gpu));
+        cuda_safe_call(cudaFree(col_gas_gpu));
+        cuda_safe_call(cudaFree(col_dry_gpu));
+    }
+
+    template<typename TF>
     void zero_array(const int ni, const int nj, const int nk, Array<TF,3>& arr)
     {
         const int arr_size = arr.size() * sizeof(TF);
@@ -464,7 +535,6 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 grid_gpu(grid_i, grid_j, grid_k);
         dim3 block_gpu(block_i, block_j, block_k);
 
-        TF tmin = std::numeric_limits<TF>::min();
         zero_array_kernel<<<grid_gpu, block_gpu>>>(
                 ni, nj, nk, arr_gpu);
 
@@ -1047,9 +1117,14 @@ namespace rrtmgp_kernel_launcher_cuda
 
 
 #ifdef FLOAT_SINGLE_RRTMGP
-template void rrtmgp_kernel_launcher_cuda::zero_array(const int, const int, const int, Array<float,3>&);
+template void rrtmgp_kernel_launcher_cuda::fill_gases<float>(
+            const int ncol, const int nlay, const int ngas, 
+            Array<float,3>&, const Array<float,2>&,
+            Array<float,3>&, const Array<float,2>&);
 
-template void rrtmgp_kernel_launcher_cuda::interpolation(
+template void rrtmgp_kernel_launcher_cuda::zero_array<float>(const int, const int, const int, Array<float,3>&);
+
+template void rrtmgp_kernel_launcher_cuda::interpolation<float>(
         const int, const int, const int, const int, const int, const int, const int,
         const Array<int,2>&, const Array<float,1>&, const Array<float,1>&,
         float, float, float, float, const Array<float,3>&, const Array<float,2>&,
@@ -1075,9 +1150,15 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const i
         const Array<int,4>&, const Array<int,2>&, const Array<int,2>&, Array<float,3>&);
 
 #else
-template void rrtmgp_kernel_launcher_cuda::zero_array(const int, const int, const int, Array<double,3>&);
+template void rrtmgp_kernel_launcher_cuda::fill_gases<double>(
+            const int ncol, const int nlay, const int ngas, 
+            Array<double,3>&, const Array<double,2>&,
+            Array<double,3>&, const Array<double,2>&,
+            const Gas_concs<double>&, const Array<std::string,1>&);
 
-template void rrtmgp_kernel_launcher_cuda::interpolation(
+template void rrtmgp_kernel_launcher_cuda::zero_array<double>(const int, const int, const int, Array<double,3>&);
+
+template void rrtmgp_kernel_launcher_cuda::interpolation<double>(
         const int, const int, const int, const int, const int, const int, const int,
         const Array<int,2>&, const Array<double,1>&, const Array<double,1>&,
         double, double, double, double, const Array<double,3>&, const Array<double,2>&,
