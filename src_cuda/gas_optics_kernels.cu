@@ -106,9 +106,9 @@ namespace
         const int ij = blockIdx.y*blockDim.y + threadIdx.y;
         if ( (ii < ni) && (ij < nj))
         {
-            const int idx_in = ii + ij*ni;
-            const int idx_out = ij + ii*nj;
-            arr[idx_out] = arr[idx_in];
+            const int idx_out = ii + ij*ni;
+            const int idx_in = ij + ii*nj;
+            arr_out[idx_out] = arr_in[idx_in];
         }
     }
 
@@ -122,16 +122,16 @@ namespace
         const int ik = blockIdx.z*blockDim.z + threadIdx.z;
         if ( (ii < ni) && (ij < nj) && (ik < nk))
         {
-            const int idx_in = ii + ij*ni + ik*nj*ni;
-            const int idx_out = ik + ij*nk + ii*nj*nk;
-            arr[idx_out] = arr[idx_in];
+            const int idx_out = ii + ij*ni + ik*nj*ni;
+            const int idx_in = ik + ij*nk + ii*nj*nk;
+            arr_out[idx_out] = arr_in[idx_in];
         }
     }
 
     template<typename TF>__global__
     void zero_array_kernel(
             const int ni, const int nj, const int nk,
-            TF* __restrict__ arr_in)
+            TF* __restrict__ arr)
     {
         const int ii = blockIdx.x*blockDim.x + threadIdx.x;
         const int ij = blockIdx.y*blockDim.y + threadIdx.y;
@@ -562,15 +562,15 @@ namespace rrtmgp_kernel_launcher_cuda
 
     template<typename TF>
     void reorder123x321(const int ni, const int nj, const int nk,
-                        Array<TF,3>& arr_in, Array<TF,3>& arr_out)
+                        const Array<TF,3>& arr_in, Array<TF,3>& arr_out)
     {
-        const int arr_size = arr.size() * sizeof(TF);
+        const int arr_size = arr_in.size() * sizeof(TF);
         TF* arr_in_gpu;
         TF* arr_out_gpu;
         cuda_safe_call(cudaMalloc((void **) &arr_in_gpu, arr_size));
         cuda_safe_call(cudaMalloc((void **) &arr_out_gpu, arr_size));
 
-        cuda_safe_call(cudaMemcpy(arr_in.ptr(), arr_in_gpu, arr_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(arr_in_gpu, arr_in.ptr(), arr_size, cudaMemcpyHostToDevice));
 
         cudaEvent_t startEvent, stopEvent;
         float elapsedtime;
@@ -589,7 +589,7 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 grid_gpu(grid_i, grid_j, grid_k);
         dim3 block_gpu(block_i, block_j, block_k);
 
-        reorder123x321<<<grid_gpu, block_gpu>>>(
+        reorder123x321_kernel<<<grid_gpu, block_gpu>>>(
                 ni, nj, nk, arr_in_gpu, arr_out_gpu);
 
         cuda_check_error();
@@ -606,15 +606,15 @@ namespace rrtmgp_kernel_launcher_cuda
 
     template<typename TF>
     void reorder12x21(const int ni, const int nj,
-                        Array<TF,3>& arr_in, Array<TF,3>& arr_out)
+                        const Array<TF,3>& arr_in, Array<TF,3>& arr_out)
     {
-        const int arr_size = arr.size() * sizeof(TF);
+        const int arr_size = arr_in.size() * sizeof(TF);
         TF* arr_in_gpu;
         TF* arr_out_gpu;
         cuda_safe_call(cudaMalloc((void **) &arr_in_gpu, arr_size));
         cuda_safe_call(cudaMalloc((void **) &arr_out_gpu, arr_size));
 
-        cuda_safe_call(cudaMemcpy(arr_in.ptr(), arr_in_gpu, arr_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(arr_in_gpu, arr_in.ptr(), arr_size, cudaMemcpyHostToDevice));
 
         cudaEvent_t startEvent, stopEvent;
         float elapsedtime;
@@ -631,7 +631,7 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 grid_gpu(grid_i, grid_j);
         dim3 block_gpu(block_i, block_j);
 
-        reorder12x21<<<grid_gpu, block_gpu>>>(
+        reorder12x21_kernel<<<grid_gpu, block_gpu>>>(
                 ni, nj, arr_in_gpu, arr_out_gpu);
 
         cuda_check_error();
@@ -1257,8 +1257,8 @@ template void rrtmgp_kernel_launcher_cuda::fill_gases<float>(
             Array<float,3>&, const Array<float,2>&,
             Array<float,3>&, const Array<float,2>&);
 
-template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, Array<float,3>&, Array<float,3>&);
-template void rrtmgp_kernel_launcher_cuda::reorder12x21<float>(const int, const int, const int, Array<float,3>&, Array<float,3>&);
+template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, const Array<float,3>&, Array<float,3>&);
+template void rrtmgp_kernel_launcher_cuda::reorder12x21<float>(const int, const int, const Array<float,3>&, Array<float,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::zero_array<float>(const int, const int, const int, Array<float,3>&);
 
@@ -1294,8 +1294,8 @@ template void rrtmgp_kernel_launcher_cuda::fill_gases<double>(
             Array<double,3>&, const Array<double,2>&,
             const Gas_concs<double>&, const Array<std::string,1>&);
 
-template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, Array<double,3>&, Array<double,3>&);
-template void rrtmgp_kernel_launcher_cuda::reorder12x21<double>(const int, const int, const int, Array<double,3>&, Array<double,3>&);
+template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array<double,3>&, Array<double,3>&);
+template void rrtmgp_kernel_launcher_cuda::reorder12x21<double>(const int, const int, const Array<double,3>&, Array<double,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::zero_array<double>(const int, const int, const int, Array<double,3>&);
 

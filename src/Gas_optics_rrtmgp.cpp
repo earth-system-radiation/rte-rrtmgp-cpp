@@ -1419,7 +1419,7 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
         #ifdef USECUDA
         // Make new arrays for output comparison.
         Array<TF,3> tau_gpu(optical_props->get_tau());
-        rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<TF>(
+        rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
                 ncol, nlay, ngpt,
                 tau, tau_gpu);
 
