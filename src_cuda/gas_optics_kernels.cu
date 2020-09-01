@@ -104,7 +104,7 @@ namespace
     {
         const int ii = blockIdx.x*blockDim.x + threadIdx.x;
         const int ij = blockIdx.y*blockDim.y + threadIdx.y;
-        if ( (ii < ni) && (ij < nj))
+        if ( (ii < ni) && (ij < nj) )
         {
             const int idx_out = ii + ij*ni;
             const int idx_in = ij + ii*nj;
@@ -140,6 +140,58 @@ namespace
         {
             const int idx = ii + ij*ni + ik*nj*ni;
             arr[idx] = TF(0.);
+        }
+    }
+
+    template<typename TF>__global__
+    void Planck_source_kernel(
+            const int ncol, const int nlay, const int nbnd, const int ngpt,
+            const int nflav, const int neta, const int npres, const int ntemp,
+            const int nPlanckTemp,
+            const TF* __restrict__ tlay, const TF* __restrict__ tlev,
+            const TF* __restrict__ tsfc,
+            const int sfc_lay,
+            const TF* __restrict__ fmajor, const int* __restrict__ jeta,
+            const BOOL_TYPE* __restrict__ tropo, const int* __restrict__ jtemp,
+            const int* __restrict__ jpress, const int* __restrict__ gpoint_bands,
+            const int* __restrict__ band_lims_gpt, const int* __restrict__ pfracin,
+            const TF temp_ref_min, const TF totplnk_delta,
+            const TF* __restrict__ totplnk, const int* __restrict__ gpoint_flavor,
+            TF* __restrict__ sfc_src, TF* __restrict__ lay_src,
+            TF* __restrict__ lev_src_inc, TF* __restrict__ lev_src_dec,
+            TF* __restrict__ sfc_src_jac, TF* __restrict__ pfrac)
+    {
+        const int ibnd = blockIdx.x*blockDim.x + threadIdx.x;
+        const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+        const int icol = blockIdx.z*blockDim.z + threadIdx.z;
+
+        if ( (icol < ncol) && (ilay < nlay) && (ibnd < nband))
+        {
+            const int idx_collay = icol + ilay * ncol;
+            const int itropo = !tropo[idx_collay];
+            const int gpt_start = band_lims_gpt[2 * ibnd] - 1;
+            const int gpt_end = band_lims_gpt[2 * ibnd + 1];
+            const int iflav = gpoint_flavor[itropo + 2 * gpt_start] - 1;
+            const int idx_fcl3 = 2 * 2 * 2* (iflav + icol * nflav + ilay * ncol * nflav);
+            const int idx_fcl1 = 2 * (iflav + icol * nflav + ilay * ncol * nflav);
+            const int idx_tau = gpt_start + ilay * ngpt + icol * nlay * ngpt;
+
+            //major gases//
+            interpolate3D_byflav_kernel(ones, &fmajor[idx_fcl3],
+                                        &pfracin[gpt_start], gpt_start, gpt_end,
+                                        &jeta[idx_fcl1], jtemp[idx_collay],
+                                        jpress[idx_collay]+itropo, ngpt, neta, npres+1,
+                                        &pfrac[idx_tau]);
+
+            for (int igpt=gpt_start; igpt<gpt_end; ++igpt)
+            {
+                const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
+                tau[idx_out] = tau_major[idx_out];
+                //should be '+=' later on, but we first need the zero_arrays for that
+            }
+
+
+
         }
     }
 
