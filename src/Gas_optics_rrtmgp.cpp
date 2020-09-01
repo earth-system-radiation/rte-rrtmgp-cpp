@@ -1144,24 +1144,24 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
     std::cout<<"CPU fill gases: "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
-    #ifdef USECUDA
-    Array<TF,3> vmr_gpu(vmr);
-    Array<TF,3> col_gas_gpu(col_gas);
-    col_gas_gpu.set_offsets({0, 0, -1});
-    rrtmgp_kernel_launcher_cuda::fill_gases( 
-            ncol, nlay, ngas+1, vmr_gpu, vmr_2d, col_gas_gpu, col_dry, gas_desc, this->gas_names)
-    
-    for (int igas=1; igas<=ngas; ++igas)
-        for (int ilay=1; ilay<=nlay; ++ilay)
-            for (int icol=1; icol<=ncol; ++icol)
-            {
-                if (vmr_gpu({icol, ilay, igas}) != vmr({icol, ilay, igas}))
-                {
-                    std::cout << std::setprecision(16) << "vmr (" << icol << "," << ilay << "," << igas << ") = " <<
-                        vmr_gpu({igpt, ilay, icol}) << ", " << vmr({igpt, ilay, icol}) << std::endl;            
-                }
-            }
-    #endif
+    //#ifdef USECUDA
+    //Array<TF,3> vmr_gpu(vmr);
+    //Array<TF,3> col_gas_gpu(col_gas);
+    //col_gas_gpu.set_offsets({0, 0, -1});
+    //rrtmgp_kernel_launcher_cuda::fill_gases( 
+    //        ncol, nlay, ngas, vmr_gpu, col_gas_gpu, col_dry, gas_desc, this->gas_names);
+
+    //for (int igas=1; igas<=ngas; ++igas)
+    //    for (int ilay=1; ilay<=nlay; ++ilay)
+    //        for (int icol=1; icol<=ncol; ++icol)
+    //        {
+    //            if (vmr_gpu({icol, ilay, igas}) != vmr({icol, ilay, igas}))
+    //            {
+    //                std::cout << std::setprecision(16) << "vmr (" << icol << "," << ilay << "," << igas << ") = " <<
+    //                    vmr_gpu({icol, ilay, igas}) << ", " << vmr({icol, ilay, igas}) << std::endl;            
+    //            }
+    //        }
+    //#endif
 
     // Call the fortran kernels
     time_start = std::chrono::high_resolution_clock::now();

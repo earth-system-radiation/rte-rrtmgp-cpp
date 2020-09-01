@@ -63,19 +63,18 @@ namespace
 
     template<typename TF>__global__
     void fill_gases_kernel(
-            const int ncol, const int nlay, const int ngas, const int dim1, const int dim2, 
-            TF* __restrict__ vmr_out, const TF* __restrict__ vmr_in,
+            const int ncol, const int nlay, const int ngas, const int igas, const int dim1, const int dim2, 
+            TF* __restrict__ vmr_out, TF* __restrict__ vmr_in,
             TF* __restrict__ col_gas, const TF* __restrict__ col_dry)
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-        const int igas = blockIdx.z*blockDim.z + threadIdx.z;
-        if ( (icol < ncol) && (ilay < nlay) && (igas < (ngas+1)))
+        if ( ( icol < ncol) && (ilay < nlay) )
         {
             const int idx_in = icol + ilay*ncol;
+            const int idx_out = icol + ilay*ncol;
             if (igas > 0)
             {
-                const int idx_out = icol + ilay*ncol + (igas-1)*nlay*ncol;
                 if (dim1 == 1 && dim2 == 1)
                 { 
                      vmr_out[idx_out] = vmr_in[0];
@@ -88,11 +87,10 @@ namespace
                 {
                     vmr_out[idx_out] = vmr_in[idx_in];
                 }
-                col_gas[idx_out+nlay*ncol] = vmr_out[idx_out] * col_dry[idx_in];
+                col_gas[idx_out] = vmr_out[idx_out] * col_dry[idx_in];
             }
             else if (igas == 0)
             {
-                const int idx_out = icol + ilay*ncol + igas*nlay*ncol;
                 col_gas[idx_out] = col_dry[idx_in];
             }
         }
@@ -450,27 +448,25 @@ namespace rrtmgp_kernel_launcher_cuda
     template<typename TF>
     void fill_gases(
             const int ncol, const int nlay, const int ngas, 
-            Array<TF,3>& vmr_out, const Array<TF,2>& vmr_in,
+            Array<TF,3>& vmr_out, 
             Array<TF,3>& col_gas, const Array<TF,2>& col_dry,
             const Gas_concs<TF>& gas_desc, const Array<std::string,1>& gas_names)
     {
-        const int arr_in_size = vmr_in.size() * sizeof(TF);
+        const int arr_in_size = col_dry.size() * sizeof(TF);
         const int vmr_out_size = vmr_out.size() * sizeof(TF);
         const int gas_out_size = col_gas.size() * sizeof(TF);
-        const int dim1 = vmr_in.dim(1);
-        const int dim2 = vmr_in.dim(2);
-
+        int dim1;
+        int dim2;
         TF* vmr_out_gpu;
         TF* vmr_in_gpu;
         TF* col_gas_gpu;
         TF* col_dry_gpu;
-        
+
         cuda_safe_call(cudaMalloc((void **) &vmr_out_gpu, vmr_out_size));
         cuda_safe_call(cudaMalloc((void **) &vmr_in_gpu, arr_in_size));
         cuda_safe_call(cudaMalloc((void **) &col_gas_gpu, gas_out_size));
         cuda_safe_call(cudaMalloc((void **) &col_dry_gpu, arr_in_size));
 
-        cuda_safe_call(cudaMemcpy(vmr_in_gpu, vmr_in.ptr(), arr_in_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(col_dry_gpu, col_dry.ptr(), arr_in_size, cudaMemcpyHostToDevice));
         
         cudaEvent_t startEvent, stopEvent;
@@ -479,31 +475,52 @@ namespace rrtmgp_kernel_launcher_cuda
         cudaEventCreate(&stopEvent);
         cudaEventRecord(startEvent, 0);
 
-        const int block_col = 32;
+        const int block_col = 16;
         const int block_lay = 16;
-        const int block_gas = 1;
 
         const int grid_col  = ncol/block_col + (ncol%block_col > 0);
         const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_gas  = ngas/block_gas + (ngas%block_gas > 0);
 
-        dim3 grid_gpu(grid_col, grid_lay, grid_gas);
-        dim3 block_gpu(block_col, block_lay, block_gas);
-
-        fill_gases_kernel<<<grid_gpu, block_gpu>>>(
-                ncol, nlay, ngas, dim1, dim2, 
+        dim3 grid_gpu(grid_col, grid_lay);
+        dim3 block_gpu(block_col, block_lay);
+        std::cout<<ngas<<std::endl;
+        for (int igas = 0; igas<=ngas; ++igas)
+        {
+            if (igas > 0)
+            { 
+                std::cout<<"#gas" <<igas<<std::endl;
+                cuda_safe_call(cudaMemcpy(vmr_in_gpu, gas_desc.get_vmr(gas_names({igas})).ptr(), arr_in_size, cudaMemcpyHostToDevice));
+                dim1 = gas_desc.get_vmr(gas_names({igas})).dim(1);
+                dim2 = gas_desc.get_vmr(gas_names({igas})).dim(2);
+            }
+            else
+            {
+                dim1 = 1;
+                dim2 = 1;
+            }
+            std::cout<<"#gas" <<igas<<std::endl;
+            fill_gases_kernel<<<grid_gpu, block_gpu>>>(
+                ncol, nlay, ngas, igas, dim1, dim2, 
                 vmr_out_gpu, vmr_in_gpu,
                 col_gas_gpu, col_dry_gpu);
-        
-        cuda_check_error();
-        cuda_safe_call(cudaDeviceSynchronize());
+            std::cout<<"#gas" <<igas<<std::endl;
+            if (igas > 0)
+                cuda_safe_call(cudaMemcpy(&vmr_out.v()[(igas-1)*ncol*nlay],vmr_out_gpu, vmr_out_size, cudaMemcpyDeviceToHost));
+            cuda_safe_call(cudaMemcpy(&col_gas.v()[igas*ncol*nlay],col_gas_gpu, gas_out_size, cudaMemcpyDeviceToHost));
+            std::cout<<"#gas" <<igas<<std::endl;
+            cuda_check_error();
+            cuda_safe_call(cudaDeviceSynchronize());
+        }
+        std::cout<<"#gas" <<std::endl;
+
+        //cuda_check_error();
+        //cuda_safe_call(cudaDeviceSynchronize());
+        std::cout<<"#gas" <<std::endl;
         cudaEventRecord(stopEvent, 0);
         cudaEventSynchronize(stopEvent);
         cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
         std::cout<<"GPU fill gases: "<<elapsedtime<<" (ms)"<<std::endl;
 
-        cuda_safe_call(cudaMemcpy(vmr_out.ptr(), vmr_out_gpu, vmr_out_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(col_gas.ptr(), col_gas_gpu, gas_out_size, cudaMemcpyDeviceToHost));
 
         cuda_safe_call(cudaFree(vmr_out_gpu));
         cuda_safe_call(cudaFree(vmr_in_gpu));
@@ -1152,7 +1169,7 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const i
 #else
 template void rrtmgp_kernel_launcher_cuda::fill_gases<double>(
             const int ncol, const int nlay, const int ngas, 
-            Array<double,3>&, const Array<double,2>&,
+            Array<double,3>&,
             Array<double,3>&, const Array<double,2>&,
             const Gas_concs<double>&, const Array<std::string,1>&);
 
