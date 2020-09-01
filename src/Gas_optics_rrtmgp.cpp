@@ -1393,7 +1393,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         #endif
         // END CUDA TEST.
     }
-
     combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
 }
 
@@ -1411,7 +1410,31 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
     if (!has_rayleigh)
     {
         // CvH for 2 stream and n-stream zero the g and ssa
+        auto time_start = std::chrono::high_resolution_clock::now();
         rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
+        auto time_end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+        std::cout<<"CPU reorder123x321: "<<std::to_string(duration)<<" (ms)"<<std::endl;
+
+        #ifdef USECUDA
+        // Make new arrays for output comparison.
+        Array<TF,3> tau_gpu(optical_props->get_tau());
+        rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<TF>(
+                ncol, nlay, ngpt,
+                tau, tau_gpu);
+
+        // Print the output to the screen.
+        for (int igpt=1; igpt<=ngpt; ++igpt)
+            for (int ilay=1; ilay<=nlay; ++ilay)
+                for (int icol=1; icol<=ncol; ++icol)
+                {
+                  if (tau_gpu({icol, ilay, igpt}) != optical_props->get_tau()({icol, ilay, igpt}))
+                        std::cout << std::setprecision(16) << "tau (" << icol << "," << ilay << "," << igpt << ") = " <<
+                            tau_gpu({icol, ilay, igpt}) << ", " << optical_props->get_tau()({icol, ilay, igpt}) << std::endl;
+                }
+        #endif
+        // END CUDA TEST.
+        //
         // reorder123x321_test(optical_props->get_tau().ptr(), tau.ptr(), ngpt, nlay, ncol);
 
         // rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, optical_props->get_ssa());

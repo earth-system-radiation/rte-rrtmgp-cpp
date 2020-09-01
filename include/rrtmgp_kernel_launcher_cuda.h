@@ -39,6 +39,12 @@ namespace rrtmgp_kernel_launcher_cuda
             const Gas_concs<TF>& gas_desc, const Array<std::string,1>& gas_names);
 
     template<typename TF>
+    void reorder123x321(const int ni, const int nj, const int nk, Array<TF,3>& arr_in, Array<TF,3>& arr_out);
+
+    template<typename TF>
+    void reorder12x21(const int ni, const int nj, Array<TF,3>& arr_in, Array<TF,3>& arr_out);
+
+    template<typename TF>
     void zero_array(const int ni, const int nj, const int nk, Array<TF,3>& arr);
 
     template<typename TF>
