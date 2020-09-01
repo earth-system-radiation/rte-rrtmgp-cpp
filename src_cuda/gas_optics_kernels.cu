@@ -606,7 +606,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
     template<typename TF>
     void reorder12x21(const int ni, const int nj,
-                        const Array<TF,3>& arr_in, Array<TF,3>& arr_out)
+                        const Array<TF,2>& arr_in, Array<TF,2>& arr_out)
     {
         const int arr_size = arr_in.size() * sizeof(TF);
         TF* arr_in_gpu;
@@ -1258,7 +1258,7 @@ template void rrtmgp_kernel_launcher_cuda::fill_gases<float>(
             Array<float,3>&, const Array<float,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, const Array<float,3>&, Array<float,3>&);
-template void rrtmgp_kernel_launcher_cuda::reorder12x21<float>(const int, const int, const Array<float,3>&, Array<float,3>&);
+template void rrtmgp_kernel_launcher_cuda::reorder12x21<float>(const int, const int, const Array<float,2>&, Array<float,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::zero_array<float>(const int, const int, const int, Array<float,3>&);
 
@@ -1295,7 +1295,7 @@ template void rrtmgp_kernel_launcher_cuda::fill_gases<double>(
             const Gas_concs<double>&, const Array<std::string,1>&);
 
 template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array<double,3>&, Array<double,3>&);
-template void rrtmgp_kernel_launcher_cuda::reorder12x21<double>(const int, const int, const Array<double,3>&, Array<double,3>&);
+template void rrtmgp_kernel_launcher_cuda::reorder12x21<double>(const int, const int, const Array<double,2>&, Array<double,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::zero_array<double>(const int, const int, const int, Array<double,3>&);
 

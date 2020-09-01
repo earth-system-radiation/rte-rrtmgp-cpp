@@ -1526,6 +1526,32 @@ void Gas_optics_rrtmgp<TF>::source(
             sources.get_sfc_source    ()({j, i}) = sfc_source_t  ({i, j});
             sources.get_sfc_source_jac()({j, i}) = sfc_source_jac({i, j});
         }
+    
+    #ifdef USECUDA
+    // Make new arrays for output comparison.
+    Array<TF,2> sfc_source_gpu(sources.get_sfc_source());
+    Array<TF,2> sfc_source_jac_gpu(sources.get_sfc_source_jac());
+    
+    rrtmgp_kernel_launcher_cuda::reorder12x21<TF>(
+            ncol, ngpt,
+            sfc_source_t, sfc_source_gpu);
+    rrtmgp_kernel_launcher_cuda::reorder12x21<TF>(
+            ncol, ngpt, 
+            sfc_source_jac, sfc_source_jac_gpu);
+
+    // Print the output to the screen.
+        for (int igpt=1; igpt<=ngpt; ++igpt)
+            for (int icol=1; icol<=ncol; ++icol)
+            {
+              if (sfc_source_gpu({icol, igpt}) != sources.get_sfc_source()({icol, igpt}))
+                    std::cout << std::setprecision(16) << "src sfc (" << icol << "," << igpt <<  ") = " <<
+                        sfc_source_gpu({icol, igpt}) << ", " << sources.get_sfc_source()({icol, igpt}) << std::endl;
+              if (sfc_source_jac_gpu({icol, igpt}) != sources.get_sfc_source_jac()({icol, igpt}))
+                    std::cout << std::setprecision(16) << "jac sfc (" << icol << "," << igpt << ") = " <<
+                        sfc_source_jac_gpu({icol, igpt}) << ", " << sources.get_sfc_source_jac()({icol, igpt}) << std::endl;
+            }
+
+    #endif
 
     rrtmgp_kernel_launcher::reorder123x321(lay_source_t, sources.get_lay_source());
     rrtmgp_kernel_launcher::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());
@@ -1533,6 +1559,40 @@ void Gas_optics_rrtmgp<TF>::source(
     // reorder123x321_test(sources.get_lay_source    ().ptr(), lay_source_t    .ptr(), ngpt, nlay, ncol);
     // reorder123x321_test(sources.get_lev_source_inc().ptr(), lev_source_inc_t.ptr(), ngpt, nlay, ncol);
     // reorder123x321_test(sources.get_lev_source_dec().ptr(), lev_source_dec_t.ptr(), ngpt, nlay, ncol);
+    
+    #ifdef USECUDA
+    // Make new arrays for output comparison.
+    Array<TF,3> lay_source_t_gpu(sources.get_lay_source());
+    Array<TF,3> lev_source_inc_t_gpu(sources.get_lev_source_inc());
+    Array<TF,3> lev_source_dec_t_gpu(sources.get_lev_source_dec());
+    
+    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
+            ncol, nlay, ngpt,
+            lay_source_t, lay_source_t_gpu);
+    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
+            ncol, nlay, ngpt,
+            lev_source_inc_t, lev_source_inc_t_gpu);
+    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
+            ncol, nlay, ngpt,
+            lev_source_dec_t, lev_source_dec_t_gpu);
+
+    // Print the output to the screen.
+    for (int igpt=1; igpt<=ngpt; ++igpt)
+        for (int ilay=1; ilay<=nlay; ++ilay)
+            for (int icol=1; icol<=ncol; ++icol)
+            {
+              if (lay_source_t_gpu({icol, ilay, igpt}) != sources.get_lay_source()({icol, ilay, igpt}))
+                    std::cout << std::setprecision(16) << "lay sfc (" << icol << "," << ilay << "," << igpt << ") = " <<
+                        lay_source_t_gpu({icol, ilay, igpt}) << ", " << sources.get_lay_source()({icol, ilay, igpt}) << std::endl;
+              if (lev_source_inc_t_gpu({icol, ilay, igpt}) != sources.get_lev_source_inc()({icol, ilay, igpt}))
+                    std::cout << std::setprecision(16) << "lay sfc (" << icol << "," << ilay << "," << igpt << ") = " <<
+                        lev_source_inc_t_gpu({icol, ilay, igpt}) << ", " << sources.get_lev_source_inc()({icol, ilay, igpt}) << std::endl;
+              if (lev_source_dec_t_gpu({icol, ilay, igpt}) != sources.get_lev_source_dec()({icol, ilay, igpt}))
+                    std::cout << std::setprecision(16) << "lay sfc (" << icol << "," << ilay << "," << igpt << ") = " <<
+                        lev_source_dec_t_gpu({icol, ilay, igpt}) << ", " << sources.get_lev_source_dec()({icol, ilay, igpt}) << std::endl;
+            }
+
+    #endif
 }
 
 template<typename TF>
