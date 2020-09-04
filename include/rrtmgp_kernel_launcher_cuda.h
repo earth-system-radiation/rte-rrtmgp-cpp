@@ -117,5 +117,34 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array<TF,2>& tlay, const Array<TF,3>& col_gas,
             const Array<int,4>& jeta, const Array<int,2>& jtemp,
             const Array<int,2>& jpress, Array<TF,3>& tau);
+
+    template<typename TF>
+    void Planck_source(
+            const int ncol, const int nlay, const int nbnd, const int ngpt,
+            const int nflav, const int neta, const int npres, const int ntemp,
+            const int nPlanckTemp,
+            const Array<TF,2>& tlay, 
+            const Array<TF,2>& tlev,
+            const Array<TF,1>& tsfc,
+            const int sfc_lay,
+            const Array<TF,6>& fmajor, 
+            const Array<int,4>& jeta,
+            const Array<BOOL_TYPE,2>& tropo, 
+            const Array<int,2>& jtemp,
+            const Array<int,2>& jpress, 
+            const Array<int,1>& gpoint_bands,
+            const Array<int,2>& band_lims_gpt, 
+            const Array<TF,4>& pfracin,
+            const TF temp_ref_min, const TF totplnk_delta,
+            const Array<TF,2>& totplnk, 
+            const Array<int,2>& gpoint_flavor,
+            const TF delta_Tsurf,
+            Array<TF,2>& sfc_src, 
+            Array<TF,3>& lay_src,
+            Array<TF,3>& lev_src_inc, 
+            Array<TF,3>& lev_src_dec,
+            Array<TF,2>& sfc_src_jac, 
+            Array<TF,3>& pfrac);
+            
 }
 #endif
