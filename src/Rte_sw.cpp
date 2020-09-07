@@ -120,6 +120,7 @@ void Rte_sw<TF>::rte_sw(
 
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat
+    auto time_start = std::chrono::high_resolution_clock::now();
     rrtmgp_kernel_launcher::sw_solver_2stream(
             ncol, nlay, ngpt, top_at_1,
             optical_props->get_tau(),
@@ -128,9 +129,33 @@ void Rte_sw<TF>::rte_sw(
             mu0,
             sfc_alb_dir_gpt, sfc_alb_dif_gpt,
             gpt_flux_up, gpt_flux_dn, gpt_flux_dir);
-
+    auto time_end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+    std::cout<<"CPU sw_twostream: "<<std::to_string(duration)<<" (ms)"<<std::endl;
     // CvH: The original fortran code had a call to the reduce here.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
+
+    #ifdef USECUDA
+    Array<TF,3> gpt_flux_up_gpu(gpt_flux_up);
+    Array<TF,3> gpt_flux_dn_gpu(gpt_flux_dn);
+    Array<TF,3> gpt_flux_dir_gpu(gpt_flux_dir);
+    rte_kernel_launcer_cuda::sw_solver_2stream(
+                ncol, nlay, ngpt, top_at_1,
+                optical_props->get_tau(),
+                optical_props->get_ssa(),
+                optical_props->get_g  (),
+                mu0, sfc_alb_dir_gpt, sfc_alb_dif_gpt,
+                gpt_flux_up_gpu, gpt_flux_dn_gpu, gpt_flux_dir_gpu);
+    for (int igpt=1; igpt<=ngpt; ++igpt)
+        for (int ilay=1; ilay<=nlay; ++ilay)
+            for (int icol=1; icol<=ncol; ++icol)
+            {
+                if (gpt_flux_dn_gpu({icol, ilay, igpt}) != gpt_flux_dn({icol, ilay, igpt}))
+                    std::cout << std::setprecision(16) << "flux down (" << icol << "," << ilay <<"," << igpt <<  ") = " <<
+                        gpt_flux_dn_gpu({icol, ilay, igpt}) << ", " << gpt_flux_dn({icol, ilay, igpt}) << std::endl;
+            }
+
+#endif
 }
 
 template<typename TF>

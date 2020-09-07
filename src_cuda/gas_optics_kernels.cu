@@ -1371,26 +1371,26 @@ namespace rrtmgp_kernel_launcher_cuda
         float elapsedtime; 
         const int ones_size = 2 * sizeof(TF);
         const int tlay_size = tlay.size() * sizeof(TF);
-	const int tlev_size = tlev.size() * sizeof(TF);
-	const int tsfc_size = tsfc.size() * sizeof(TF);
-	const int fmajor_size = fmajor.size() * sizeof(TF);
-	const int pfracin_size = pfracin.size() * sizeof(TF);
-	const int totplnk_size = totplnk.size() * sizeof(TF);
-	const int sfc_src_size = sfc_src.size() * sizeof(TF);
-	const int lay_src_size = lay_src.size() * sizeof(TF);
-	const int lev_src_inc_size = lev_src_inc.size() * sizeof(TF);
-	const int lev_src_dec_size = lev_src_dec.size() * sizeof(TF);
-	const int sfc_src_jac_size = sfc_src_jac.size() * sizeof(TF);
-	const int pfrac_size = pfrac.size() * sizeof(TF);
-	const int jeta_size = jeta.size() * sizeof(int);
-	const int jtemp_size = jtemp.size() * sizeof(int);
-	const int jpress_size = jpress.size() * sizeof(int);
-	const int gpoint_bands_size = gpoint_bands.size() * sizeof(int);
-	const int band_lims_gpt_size = band_lims_gpt.size() * sizeof(int);
-	const int gpoint_flavor_size = gpoint_flavor.size() * sizeof(int);
-	const int tropo_size = tropo.size() * sizeof(BOOL_TYPE);
-        
-	TF* tlay_gpu;
+        const int tlev_size = tlev.size() * sizeof(TF);
+        const int tsfc_size = tsfc.size() * sizeof(TF);
+        const int fmajor_size = fmajor.size() * sizeof(TF);
+        const int pfracin_size = pfracin.size() * sizeof(TF);
+        const int totplnk_size = totplnk.size() * sizeof(TF);
+        const int sfc_src_size = sfc_src.size() * sizeof(TF);
+        const int lay_src_size = lay_src.size() * sizeof(TF);
+        const int lev_src_inc_size = lev_src_inc.size() * sizeof(TF);
+        const int lev_src_dec_size = lev_src_dec.size() * sizeof(TF);
+        const int sfc_src_jac_size = sfc_src_jac.size() * sizeof(TF);
+        const int pfrac_size = pfrac.size() * sizeof(TF);
+        const int jeta_size = jeta.size() * sizeof(int);
+        const int jtemp_size = jtemp.size() * sizeof(int);
+        const int jpress_size = jpress.size() * sizeof(int);
+        const int gpoint_bands_size = gpoint_bands.size() * sizeof(int);
+        const int band_lims_gpt_size = band_lims_gpt.size() * sizeof(int);
+        const int gpoint_flavor_size = gpoint_flavor.size() * sizeof(int);
+        const int tropo_size = tropo.size() * sizeof(BOOL_TYPE);
+
+        TF* tlay_gpu;
         TF* tlev_gpu;
         TF* tsfc_gpu;
         TF* fmajor_gpu;
@@ -1412,41 +1412,41 @@ namespace rrtmgp_kernel_launcher_cuda
         BOOL_TYPE* tropo_gpu;
 
         cuda_safe_call(cudaMalloc((void**)& tlay_gpu, tlay_size));
-	cuda_safe_call(cudaMalloc((void**)& tlev_gpu, tlev_size));
-	cuda_safe_call(cudaMalloc((void**)& tsfc_gpu, tsfc_size));
-	cuda_safe_call(cudaMalloc((void**)& fmajor_gpu, fmajor_size));
-	cuda_safe_call(cudaMalloc((void**)& pfracin_gpu, pfracin_size));
-	cuda_safe_call(cudaMalloc((void**)& totplnk_gpu, totplnk_size));
-	cuda_safe_call(cudaMalloc((void**)& sfc_src_gpu, sfc_src_size));
-	cuda_safe_call(cudaMalloc((void**)& lay_src_gpu, lay_src_size));
-	cuda_safe_call(cudaMalloc((void**)& lev_src_inc_gpu, lev_src_inc_size));
-	cuda_safe_call(cudaMalloc((void**)& lev_src_dec_gpu, lev_src_dec_size));
-	cuda_safe_call(cudaMalloc((void**)& sfc_src_jac_gpu, sfc_src_jac_size));
-	cuda_safe_call(cudaMalloc((void**)& pfrac_gpu, pfrac_size));
-	cuda_safe_call(cudaMalloc((void**)& ones_gpu, ones_size));
-	cuda_safe_call(cudaMalloc((void**)& jeta_gpu, jeta_size));
-	cuda_safe_call(cudaMalloc((void**)& jtemp_gpu, jtemp_size));
-	cuda_safe_call(cudaMalloc((void**)& jpress_gpu, jpress_size));
-	cuda_safe_call(cudaMalloc((void**)& gpoint_bands_gpu, gpoint_bands_size));
-	cuda_safe_call(cudaMalloc((void**)& band_lims_gpt_gpu, band_lims_gpt_size));
-	cuda_safe_call(cudaMalloc((void**)& gpoint_flavor_gpu, gpoint_flavor_size));
-	cuda_safe_call(cudaMalloc((void**)& tropo_gpu, tropo_size));
+        cuda_safe_call(cudaMalloc((void**)& tlev_gpu, tlev_size));
+        cuda_safe_call(cudaMalloc((void**)& tsfc_gpu, tsfc_size));
+        cuda_safe_call(cudaMalloc((void**)& fmajor_gpu, fmajor_size));
+        cuda_safe_call(cudaMalloc((void**)& pfracin_gpu, pfracin_size));
+        cuda_safe_call(cudaMalloc((void**)& totplnk_gpu, totplnk_size));
+        cuda_safe_call(cudaMalloc((void**)& sfc_src_gpu, sfc_src_size));
+        cuda_safe_call(cudaMalloc((void**)& lay_src_gpu, lay_src_size));
+        cuda_safe_call(cudaMalloc((void**)& lev_src_inc_gpu, lev_src_inc_size));
+        cuda_safe_call(cudaMalloc((void**)& lev_src_dec_gpu, lev_src_dec_size));
+        cuda_safe_call(cudaMalloc((void**)& sfc_src_jac_gpu, sfc_src_jac_size));
+        cuda_safe_call(cudaMalloc((void**)& pfrac_gpu, pfrac_size));
+        cuda_safe_call(cudaMalloc((void**)& ones_gpu, ones_size));
+        cuda_safe_call(cudaMalloc((void**)& jeta_gpu, jeta_size));
+        cuda_safe_call(cudaMalloc((void**)& jtemp_gpu, jtemp_size));
+        cuda_safe_call(cudaMalloc((void**)& jpress_gpu, jpress_size));
+        cuda_safe_call(cudaMalloc((void**)& gpoint_bands_gpu, gpoint_bands_size));
+        cuda_safe_call(cudaMalloc((void**)& band_lims_gpt_gpu, band_lims_gpt_size));
+        cuda_safe_call(cudaMalloc((void**)& gpoint_flavor_gpu, gpoint_flavor_size));
+        cuda_safe_call(cudaMalloc((void**)& tropo_gpu, tropo_size));
 
         // Copy the data to the GPU.
         cuda_safe_call(cudaMemcpy(ones_gpu, ones, ones_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(tlay_gpu, tlay.ptr(), tlay_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(tlev_gpu, tlev.ptr(), tlev_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(tsfc_gpu, tsfc.ptr(), tsfc_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(fmajor_gpu, fmajor.ptr(), fmajor_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(pfracin_gpu, pfracin.ptr(), pfracin_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(totplnk_gpu, totplnk.ptr(), totplnk_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(jeta_gpu, jeta.ptr(), jeta_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(jtemp_gpu, jtemp.ptr(), jtemp_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(jpress_gpu, jpress.ptr(), jpress_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(gpoint_bands_gpu, gpoint_bands.ptr(), gpoint_bands_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(band_lims_gpt_gpu, band_lims_gpt.ptr(), band_lims_gpt_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(gpoint_flavor_gpu, gpoint_flavor.ptr(), gpoint_flavor_size, cudaMemcpyHostToDevice));
-	cuda_safe_call(cudaMemcpy(tropo_gpu, tropo.ptr(), tropo_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(tlay_gpu, tlay.ptr(), tlay_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(tlev_gpu, tlev.ptr(), tlev_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(tsfc_gpu, tsfc.ptr(), tsfc_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(fmajor_gpu, fmajor.ptr(), fmajor_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(pfracin_gpu, pfracin.ptr(), pfracin_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(totplnk_gpu, totplnk.ptr(), totplnk_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(jeta_gpu, jeta.ptr(), jeta_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(jtemp_gpu, jtemp.ptr(), jtemp_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(jpress_gpu, jpress.ptr(), jpress_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(gpoint_bands_gpu, gpoint_bands.ptr(), gpoint_bands_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(band_lims_gpt_gpu, band_lims_gpt.ptr(), band_lims_gpt_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(gpoint_flavor_gpu, gpoint_flavor.ptr(), gpoint_flavor_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(tropo_gpu, tropo.ptr(), tropo_size, cudaMemcpyHostToDevice));
 
         cudaEvent_t startEvent, stopEvent;
         cudaEventCreate(&startEvent);
@@ -1486,35 +1486,35 @@ namespace rrtmgp_kernel_launcher_cuda
 
         // Copy back the results.
         cuda_safe_call(cudaMemcpy(sfc_src.ptr(), sfc_src_gpu, sfc_src_size, cudaMemcpyDeviceToHost));
-	cuda_safe_call(cudaMemcpy(lay_src.ptr(), lay_src_gpu, lay_src_size, cudaMemcpyDeviceToHost));
-	cuda_safe_call(cudaMemcpy(lev_src_inc.ptr(), lev_src_inc_gpu, lev_src_inc_size, cudaMemcpyDeviceToHost));
-	cuda_safe_call(cudaMemcpy(lev_src_dec.ptr(), lev_src_dec_gpu, lev_src_dec_size, cudaMemcpyDeviceToHost));
-	cuda_safe_call(cudaMemcpy(sfc_src_jac.ptr(), sfc_src_jac_gpu, sfc_src_jac_size, cudaMemcpyDeviceToHost));
-	cuda_safe_call(cudaMemcpy(pfrac.ptr(), pfrac_gpu, pfrac_size, cudaMemcpyDeviceToHost));	
+        cuda_safe_call(cudaMemcpy(lay_src.ptr(), lay_src_gpu, lay_src_size, cudaMemcpyDeviceToHost));
+        cuda_safe_call(cudaMemcpy(lev_src_inc.ptr(), lev_src_inc_gpu, lev_src_inc_size, cudaMemcpyDeviceToHost));
+        cuda_safe_call(cudaMemcpy(lev_src_dec.ptr(), lev_src_dec_gpu, lev_src_dec_size, cudaMemcpyDeviceToHost));
+        cuda_safe_call(cudaMemcpy(sfc_src_jac.ptr(), sfc_src_jac_gpu, sfc_src_jac_size, cudaMemcpyDeviceToHost));
+        cuda_safe_call(cudaMemcpy(pfrac.ptr(), pfrac_gpu, pfrac_size, cudaMemcpyDeviceToHost));
 
         // Deallocate a CUDA array.
-	cuda_safe_call(cudaFree(tlay_gpu));
-	cuda_safe_call(cudaFree(tlev_gpu));
-	cuda_safe_call(cudaFree(tsfc_gpu));
-	cuda_safe_call(cudaFree(fmajor_gpu));
-	cuda_safe_call(cudaFree(pfracin_gpu));
-	cuda_safe_call(cudaFree(totplnk_gpu));
-	cuda_safe_call(cudaFree(sfc_src_gpu));
-	cuda_safe_call(cudaFree(lay_src_gpu));
-	cuda_safe_call(cudaFree(lev_src_inc_gpu));
-	cuda_safe_call(cudaFree(lev_src_dec_gpu));
-	cuda_safe_call(cudaFree(sfc_src_jac_gpu));
-	cuda_safe_call(cudaFree(pfrac_gpu));
-	cuda_safe_call(cudaFree(ones_gpu));
-	cuda_safe_call(cudaFree(jeta_gpu));
-	cuda_safe_call(cudaFree(jtemp_gpu));
-	cuda_safe_call(cudaFree(jpress_gpu));
-	cuda_safe_call(cudaFree(gpoint_bands_gpu));
-	cuda_safe_call(cudaFree(band_lims_gpt_gpu));
-	cuda_safe_call(cudaFree(gpoint_flavor_gpu));
-	cuda_safe_call(cudaFree(tropo_gpu));
+        cuda_safe_call(cudaFree(tlay_gpu));
+        cuda_safe_call(cudaFree(tlev_gpu));
+        cuda_safe_call(cudaFree(tsfc_gpu));
+        cuda_safe_call(cudaFree(fmajor_gpu));
+        cuda_safe_call(cudaFree(pfracin_gpu));
+        cuda_safe_call(cudaFree(totplnk_gpu));
+        cuda_safe_call(cudaFree(sfc_src_gpu));
+        cuda_safe_call(cudaFree(lay_src_gpu));
+        cuda_safe_call(cudaFree(lev_src_inc_gpu));
+        cuda_safe_call(cudaFree(lev_src_dec_gpu));
+        cuda_safe_call(cudaFree(sfc_src_jac_gpu));
+        cuda_safe_call(cudaFree(pfrac_gpu));
+        cuda_safe_call(cudaFree(ones_gpu));
+        cuda_safe_call(cudaFree(jeta_gpu));
+        cuda_safe_call(cudaFree(jtemp_gpu));
+        cuda_safe_call(cudaFree(jpress_gpu));
+        cuda_safe_call(cudaFree(gpoint_bands_gpu));
+        cuda_safe_call(cudaFree(band_lims_gpt_gpu));
+        cuda_safe_call(cudaFree(gpoint_flavor_gpu));
+        cuda_safe_call(cudaFree(tropo_gpu));
     }
-    
+
 }
 
 
