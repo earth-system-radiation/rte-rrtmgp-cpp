@@ -1563,7 +1563,7 @@ template void rrtmgp_kernel_launcher_cuda::Planck_source<float>(const int ncol, 
         const Array<float,4>& pfracin, const float temp_ref_min, const float totplnk_delta,
         const Array<float,2>& totplnk, const Array<int,2>& gpoint_flavor, const float delta_Tsurf,
         Array<float,2>& sfc_src,  Array<float,3>& lay_src, Array<float,3>& lev_src_inc, 
-        Array<float,3>& lev_src_dec, Array<float,2>& sfc_src_jac, Array<float,3>& pfrac)
+        Array<float,3>& lev_src_dec, Array<float,2>& sfc_src_jac, Array<float,3>& pfrac);
 	    
 #else
 template void rrtmgp_kernel_launcher_cuda::fill_gases<double>(

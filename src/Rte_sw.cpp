@@ -26,8 +26,12 @@
 #include "Array.h"
 #include "Optical_props.h"
 #include "Fluxes.h"
-
+#include <iomanip>
+#include <chrono>
 #include "rrtmgp_kernels.h"
+// CUDA TEST
+#include "rte_kernel_launcher_cuda.h"
+// END CUDA TEST
 
 namespace rrtmgp_kernel_launcher
 {
@@ -136,23 +140,32 @@ void Rte_sw<TF>::rte_sw(
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
 
     #ifdef USECUDA
-    Array<TF,3> gpt_flux_up_gpu(gpt_flux_up);
-    Array<TF,3> gpt_flux_dn_gpu(gpt_flux_dn);
-    Array<TF,3> gpt_flux_dir_gpu(gpt_flux_dir);
-    rte_kernel_launcer_cuda::sw_solver_2stream(
+    Array<TF,3> gpt_flux_up_gpu ({ncol,nlay+1,ngpt});
+    Array<TF,3> gpt_flux_dn_gpu ({ncol,nlay+1,ngpt});
+    Array<TF,3> gpt_flux_dir_gpu({ncol,nlay+1,ngpt});
+    rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dir, mu0, gpt_flux_dir_gpu);
+    if (inc_flux_dif.size() == 0)
+        rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn_gpu);
+    else
+        rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif, gpt_flux_dn_gpu);
+    rte_kernel_launcher_cuda::sw_solver_2stream(
                 ncol, nlay, ngpt, top_at_1,
                 optical_props->get_tau(),
                 optical_props->get_ssa(),
                 optical_props->get_g  (),
                 mu0, sfc_alb_dir_gpt, sfc_alb_dif_gpt,
                 gpt_flux_up_gpu, gpt_flux_dn_gpu, gpt_flux_dir_gpu);
+
     for (int igpt=1; igpt<=ngpt; ++igpt)
-        for (int ilay=1; ilay<=nlay; ++ilay)
+        for (int ilay=1; ilay<=nlay+1; ++ilay)
             for (int icol=1; icol<=ncol; ++icol)
             {
-                if (gpt_flux_dn_gpu({icol, ilay, igpt}) != gpt_flux_dn({icol, ilay, igpt}))
+                if (float(gpt_flux_dn_gpu({icol, ilay, igpt})) != float(gpt_flux_dn({icol, ilay, igpt})))
                     std::cout << std::setprecision(16) << "flux down (" << icol << "," << ilay <<"," << igpt <<  ") = " <<
                         gpt_flux_dn_gpu({icol, ilay, igpt}) << ", " << gpt_flux_dn({icol, ilay, igpt}) << std::endl;
+                if (float(gpt_flux_up_gpu({icol, ilay, igpt})) != float(gpt_flux_up({icol, ilay, igpt})))
+                    std::cout << std::setprecision(16) << "flux up   (" << icol << "," << ilay <<"," << igpt <<  ") = " <<
+                        gpt_flux_up_gpu({icol, ilay, igpt}) << ", " << gpt_flux_up({icol, ilay, igpt}) << std::endl;
             }
 
 #endif
