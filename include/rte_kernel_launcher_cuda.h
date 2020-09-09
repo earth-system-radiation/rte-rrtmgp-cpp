@@ -37,5 +37,11 @@ namespace rte_kernel_launcher_cuda
                            const Array<TF,1>& mu0, const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
                            const Array<TF,2>& inc_flux_dir, const Array<TF,2>& inc_flux_dif, const int dif_len,
                            Array<TF,3>& flux_up, Array<TF,3>& flux_dn, Array<TF,3>& flux_dir);
+    template<typename TF>
+    void lw_solver_noscat_gaussquad(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,  
+                                    const Array<TF,2>& ds, const Array<TF,2>& weights, const Array<TF,3>& tau, const Array<TF,3> lay_source,
+                                    const Array<TF,3>& lev_source_inc, const Array<TF,3>& lev_source_dec, const Array<TF,2>& sfc_emis,
+                                    const Array<TF,2>& sfc_src, Array<TF,3>& flux_up, Array<TF,3>& flux_dn,
+                                    const Array<TF,2>& sfc_src_jac, Array<TF,3>& flux_up_jac);
 }
 #endif

@@ -27,8 +27,12 @@
 #include "Optical_props.h"
 #include "Source_functions.h"
 #include "Fluxes.h"
+#include <iomanip>
 
 #include "rrtmgp_kernels.h"
+// CUDA TEST
+#include "rte_kernel_launcher_cuda.h"
+// END CUDA TEST
 
 namespace rrtmgp_kernel_launcher
 {
@@ -144,6 +148,25 @@ void Rte_lw<TF>::rte_lw(
             gpt_flux_up, gpt_flux_dn,
             sfc_src_jac, gpt_flux_up_jac);
 
+    #ifdef USECUDA
+    Array<TF,3> gpt_flux_up_gpu ({ncol,nlay+1,ngpt});
+    Array<TF,3> gpt_flux_dn_gpu ({ncol,nlay+1,ngpt});
+    Array<TF,3> gpt_flux_up_jac_gpu ({ncol,nlay+1,ngpt});
+    rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad(ncol, nlay, ngpt, top_at_1, n_quad_angs, gauss_Ds_subset, gauss_wts_subset,  
+                               optical_props->get_tau(), sources.get_lay_source(), 
+                               sources.get_lev_source_inc(), sources.get_lev_source_dec(),
+                               sfc_emis_gpt, sources.get_sfc_source(), 
+                               gpt_flux_up_gpu, gpt_flux_dn_gpu, 
+                               sfc_src_jac, gpt_flux_up_jac_gpu);
+    for (int igpt=1; igpt<=ngpt; ++igpt)
+        for (int ilay=1; ilay<=nlay+1; ++ilay)
+            for (int icol=1; icol<=ncol; ++icol)
+            {
+                if (float(gpt_flux_dn_gpu({icol, ilay, igpt})) != float(gpt_flux_dn({icol, ilay, igpt})))
+                    std::cout << std::setprecision(16) << "flux down (" << icol << "," << ilay <<"," << igpt <<  ") = " <<
+                        gpt_flux_dn_gpu({icol, ilay, igpt}) << ", " << gpt_flux_dn({icol, ilay, igpt}) << std::endl;
+            }
+    #endif
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);
 }
