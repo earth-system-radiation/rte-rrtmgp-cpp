@@ -135,6 +135,70 @@ namespace
 
     }
 
+    template<typename TF>__global__ //apply_BC_gpt
+    void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const TF* __restrict__ inc_flux, TF* __restrict__ flux_dn)
+    {
+        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+        const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+        if ( (icol < ncol) && (igpt < ngpt) )
+        {
+            if (top_at_1)
+            {
+                const int idx_out = icol + igpt*ncol*(nlay+1);
+                const int idx_in  = icol + igpt*ncol;
+                flux_dn[idx_out] = inc_flux[idx_in];
+            } 
+            else
+            {
+                const int idx_out = icol + nlay*ncol + igpt*ncol*(nlay+1);
+                const int idx_in  = icol + igpt*ncol;
+                flux_dn[idx_out] = inc_flux[idx_in];
+            }
+        }
+    }
+
+    template<typename TF>__global__ //apply_BC_factor
+    void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const TF* __restrict__ inc_flux, const TF* __restrict__ factor, TF* __restrict__ flux_dn)
+    {
+        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+        const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+        if ( (icol < ncol) && (igpt < ngpt) )
+        {
+            if (top_at_1)
+            {
+                const int idx_out = icol + igpt*ncol*(nlay+1);
+                const int idx_in  = icol + igpt*ncol;
+                flux_dn[idx_out] = inc_flux[idx_in] * factor[icol];
+            } 
+            else
+            {
+                const int idx_out = icol + nlay*ncol + igpt*ncol*(nlay+1);
+                const int idx_in  = icol + igpt*ncol;
+                flux_dn[idx_out] = inc_flux[idx_in] * factor[icol];
+            }
+        }
+    }
+    
+    template<typename TF>__global__ //apply_BC_0
+    void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, TF* __restrict__ flux_dn)
+    {
+        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+        const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+        if ( (icol < ncol) && (igpt < ngpt) )
+        {
+            if (top_at_1)
+            {
+                const int idx_out = icol + igpt*ncol*(nlay+1);
+                flux_dn[idx_out] = TF(0.);
+            } 
+            else
+            {
+                const int idx_out = icol + nlay*ncol + igpt*ncol*(nlay+1);
+                flux_dn[idx_out] = TF(0.);
+            }
+        }
+    }
+
     template<typename TF>__global__
     void sw_2stream_kernel(const int ncol, const int nlay, const int ngpt, const TF tmin,
             const TF* __restrict__ tau, const TF* __restrict__ ssa, const TF* __restrict__ g, const TF* __restrict__ mu0,
@@ -215,6 +279,7 @@ namespace rte_kernel_launcher_cuda
     void sw_solver_2stream(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
                            const Array<TF,3>& tau, const Array<TF,3>& ssa, const Array<TF,3>& g,
                            const Array<TF,1>& mu0, const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
+                           const Array<TF,2>& inc_flux_dir, const Array<TF,2>& inc_flux_dif, const int dif_len,
                            Array<TF,3>& flux_up, Array<TF,3>& flux_dn, Array<TF,3>& flux_dir)
     {
         float elapsedtime;
@@ -222,13 +287,15 @@ namespace rte_kernel_launcher_cuda
         const int mu_size  = mu0.size() * sizeof(TF);
         const int alb_size  = sfc_alb_dir.size() * sizeof(TF);
         const int flx_size  = flux_up.size() * sizeof(TF);
-
+        const int idf_size  = dif_len * sizeof(TF);
         TF* tau_gpu;
         TF* ssa_gpu;
         TF* g_gpu;
         TF* mu0_gpu;
         TF* sfc_alb_dir_gpu;
         TF* sfc_alb_dif_gpu;
+        TF* inc_flux_dir_gpu;
+        TF* inc_flux_dif_gpu;
         TF* flux_up_gpu;
         TF* flux_dn_gpu;
         TF* flux_dir_gpu;
@@ -250,6 +317,8 @@ namespace rte_kernel_launcher_cuda
         cuda_safe_call(cudaMalloc((void **) &mu0_gpu, mu_size));
         cuda_safe_call(cudaMalloc((void **) &sfc_alb_dir_gpu, alb_size));
         cuda_safe_call(cudaMalloc((void **) &sfc_alb_dif_gpu, alb_size));
+        cuda_safe_call(cudaMalloc((void **) &inc_flux_dir_gpu, alb_size));
+        cuda_safe_call(cudaMalloc((void **) &inc_flux_dif_gpu, idf_size));
         cuda_safe_call(cudaMalloc((void **) &flux_up_gpu, flx_size));
         cuda_safe_call(cudaMalloc((void **) &flux_dn_gpu, flx_size));
         cuda_safe_call(cudaMalloc((void **) &flux_dir_gpu, flx_size));
@@ -271,41 +340,57 @@ namespace rte_kernel_launcher_cuda
         cuda_safe_call(cudaMemcpy(mu0_gpu, mu0.ptr(), mu_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(sfc_alb_dir_gpu, sfc_alb_dir.ptr(), alb_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(sfc_alb_dif_gpu, sfc_alb_dif.ptr(), alb_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(flux_dn_gpu, flux_dn.ptr(), flx_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(flux_dir_gpu, flux_dir.ptr(), flx_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(inc_flux_dir_gpu, inc_flux_dir.ptr(), alb_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(inc_flux_dif_gpu, inc_flux_dif.ptr(), idf_size, cudaMemcpyHostToDevice));
+//        cuda_safe_call(cudaMemcpy(flux_dn_gpu, flux_dn.ptr(), flx_size, cudaMemcpyHostToDevice));
+//        cuda_safe_call(cudaMemcpy(flux_dir_gpu, flux_dir.ptr(), flx_size, cudaMemcpyHostToDevice));
 
         cudaEvent_t startEvent, stopEvent;
         cudaEventCreate(&startEvent);
         cudaEventCreate(&stopEvent);
         cudaEventRecord(startEvent, 0);
 
-        const int block_col1 = 32;
-        const int block_lay1 = 16;
-        const int block_gpt1 = 1;
+        const int block_col2d = 32;
+        const int block_gpt2d = 16;
 
-        const int grid_col1  = ncol/block_col1 + (ncol%block_col1 > 0);
-        const int grid_lay1  = nlay/block_lay1 + (nlay%block_lay1 > 0);
-        const int grid_gpt1  = ngpt/block_gpt1 + (ngpt%block_gpt1 > 0);
+        const int grid_col2d  = ncol/block_col2d + (ncol%block_col2d > 0);
+        const int grid_gpt2d  = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
 
-        dim3 grid_gpu1(grid_col1, grid_lay1, grid_gpt1);
-        dim3 block_gpu1(block_col1, block_lay1, block_gpt1);
+        dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
+        dim3 block_gpu2d(block_col2d, block_gpt2d);
+        
+        const int block_col3d = 32;
+        const int block_lay3d = 16;
+        const int block_gpt3d = 1;
 
+        const int grid_col3d  = ncol/block_col3d + (ncol%block_col3d > 0);
+        const int grid_lay3d  = nlay/block_lay3d + (nlay%block_lay3d > 0);
+        const int grid_gpt3d  = ngpt/block_gpt3d + (ngpt%block_gpt3d > 0);
+
+        dim3 grid_gpu3d(grid_col3d, grid_lay3d, grid_gpt3d);
+        dim3 block_gpu3d(block_col3d, block_lay3d, block_gpt3d);
+        apply_BC_kernel<<<grid_gpu2d, block_gpu2d>>>(ncol, nlay, ngpt, top_at_1, inc_flux_dir_gpu, mu0_gpu, flux_dir_gpu);
+        if (dif_len == 0)
+        {
+            apply_BC_kernel<<<grid_gpu2d, block_gpu2d>>>(ncol, nlay, ngpt, top_at_1, flux_dn_gpu);
+        }
+        else
+        {
+            apply_BC_kernel<<<grid_gpu2d, block_gpu2d>>>(ncol, nlay, ngpt, top_at_1, inc_flux_dif_gpu, flux_dn_gpu);
+        }
+   
+        cuda_check_error();
+        cuda_safe_call(cudaDeviceSynchronize());
+        
+        
         TF tmin = std::numeric_limits<TF>::min();
-        sw_2stream_kernel<<<grid_gpu1, block_gpu1>>>(
+        sw_2stream_kernel<<<grid_gpu3d, block_gpu3d>>>(
                 ncol, nlay, ngpt, tmin, tau_gpu, ssa_gpu, g_gpu, mu0_gpu, r_dif, t_dif, r_dir, t_dir, t_noscat);
         
         cuda_safe_call(cudaDeviceSynchronize());
 
-        const int block_col2 = 32;
-        const int block_gpt2 = 32;
 
-        const int grid_col2  = ncol/block_col2 + (ncol%block_col2 > 0);
-        const int grid_gpt2  = ngpt/block_gpt2 + (ngpt%block_gpt2 > 0);
-
-        dim3 grid_gpu2(grid_col2, grid_gpt2);
-        dim3 block_gpu2(block_col2, block_gpt2);
-
-        sw_source_adding_kernel<<<grid_gpu2, block_gpu2>>>(
+        sw_source_adding_kernel<<<grid_gpu2d, block_gpu2d>>>(
                 ncol, nlay, ngpt, top_at_1, sfc_alb_dir_gpu, sfc_alb_dif_gpu, r_dif, t_dif, r_dir, t_dir, t_noscat,
                 flux_up_gpu, flux_dn_gpu, flux_dir_gpu, source_up, source_dn, source_sfc, albedo, src, denom);
          
@@ -349,6 +434,7 @@ template void rte_kernel_launcher_cuda::sw_solver_2stream<float>(
             const int, const int, const int, const BOOL_TYPE,
             const Array<float,3>&, const Array<float,3>&, const Array<float,3>&,
             const Array<float,1>&, const Array<float,2>&, const Array<float,2>&,
+            const Array<float,2>&, const Array<float,2>&, cosnt int dif_len,
             Array<float,3>&, Array<float,3>&, Array<float,3>&);
 
 #else
@@ -356,5 +442,6 @@ template void rte_kernel_launcher_cuda::sw_solver_2stream<double>(
             const int, const int, const int, const BOOL_TYPE,
             const Array<double,3>&, const Array<double,3>&, const Array<double,3>&,
             const Array<double,1>&, const Array<double,2>&, const Array<double,2>&,
+            const Array<double,2>&, const Array<double,2>&, const int dif_len,
             Array<double,3>&, Array<double,3>&, Array<double,3>&);
 #endif

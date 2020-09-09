@@ -143,17 +143,18 @@ void Rte_sw<TF>::rte_sw(
     Array<TF,3> gpt_flux_up_gpu ({ncol,nlay+1,ngpt});
     Array<TF,3> gpt_flux_dn_gpu ({ncol,nlay+1,ngpt});
     Array<TF,3> gpt_flux_dir_gpu({ncol,nlay+1,ngpt});
-    rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dir, mu0, gpt_flux_dir_gpu);
-    if (inc_flux_dif.size() == 0)
-        rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn_gpu);
-    else
-        rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif, gpt_flux_dn_gpu);
+    //rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dir, mu0, gpt_flux_dir_gpu);
+    //if (inc_flux_dif.size() == 0)
+    //    rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn_gpu);
+    //else
+    //    rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif, gpt_flux_dn_gpu);
     rte_kernel_launcher_cuda::sw_solver_2stream(
                 ncol, nlay, ngpt, top_at_1,
                 optical_props->get_tau(),
                 optical_props->get_ssa(),
                 optical_props->get_g  (),
                 mu0, sfc_alb_dir_gpt, sfc_alb_dif_gpt,
+                inc_flux_dir, inc_flux_dif, inc_flux_dif.size(),
                 gpt_flux_up_gpu, gpt_flux_dn_gpu, gpt_flux_dir_gpu);
 
     for (int igpt=1; igpt<=ngpt; ++igpt)

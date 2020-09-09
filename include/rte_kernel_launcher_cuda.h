@@ -35,6 +35,7 @@ namespace rte_kernel_launcher_cuda
     void sw_solver_2stream(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
                            const Array<TF,3>& tau, const Array<TF,3>& ssa, const Array<TF,3>& g,
                            const Array<TF,1>& mu0, const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
+                           const Array<TF,2>& inc_flux_dir, const Array<TF,2>& inc_flux_dif, const int dif_len,
                            Array<TF,3>& flux_up, Array<TF,3>& flux_dn, Array<TF,3>& flux_dir);
 }
 #endif
