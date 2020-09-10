@@ -16,7 +16,7 @@ namespace
         for (int ilay=0; ilay<nlay; ++ilay)
         {
             const int idx = icol + ilay*ncol + igpt*ncol*nlay;
-            const TF fact = (tau[idx]>tau_thres) ? (TF(1.) - trans[idx]) / (tau[idx] - trans[idx]) : tau[idx] * (TF(.5) - TF(1.)/TF(3.)*tau[idx]);
+            const TF fact = (tau[idx]>tau_thres) ? (TF(1.) - trans[idx]) / tau[idx] - trans[idx] : tau[idx] * (TF(.5) - TF(1.)/TF(3.)*tau[idx]);
             source_dn[idx] = (TF(1.) - trans[idx]) * lev_source_dn[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_dn[idx]);
             source_up[idx] = (TF(1.) - trans[idx]) * lev_source_up[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_up[idx]);
         }
@@ -40,16 +40,16 @@ namespace
 
             const int idx_bot = icol + nlay*ncol + igpt*ncol*(nlay+1);
             const int idx2d = icol + igpt*ncol;
-            radn_up[idx_bot] = radn_up[idx_bot] * sfc_albedo[idx2d] + source_sfc[idx2d];
+            radn_up[idx_bot] = radn_dn[idx_bot] * sfc_albedo[idx2d] + source_sfc[idx2d];
             radn_up_jac[idx_bot] = source_sfc_jac[idx2d];
 
             for (int ilev=nlay-1; ilev>=0; --ilev)
             {
                 const int idx1 = icol + ilev*ncol + igpt*ncol*(nlay+1);
                 const int idx2 = icol + (ilev+1)*ncol + igpt*ncol*(nlay+1);
-                const int idx3 = icol + (ilev)*ncol + igpt*ncol*nlay;
+                const int idx3 = icol + ilev*ncol + igpt*ncol*nlay;
                 radn_up[idx1] = trans[idx3] * radn_up[idx2] + source_up[idx3];
-                radn_up_jac[idx1] = trans[idx3] * radn_up_jac[idx2];;
+                radn_up_jac[idx1] = trans[idx3] * radn_up_jac[idx2];
             }
         }
         else
@@ -64,7 +64,7 @@ namespace
 
             const int idx_bot = icol + igpt*ncol*(nlay+1);
             const int idx2d = icol + igpt*ncol;
-            radn_up[idx_bot] = radn_up[idx_bot] * sfc_albedo[idx2d] + source_sfc[idx2d];
+            radn_up[idx_bot] = radn_dn[idx_bot] * sfc_albedo[idx2d] + source_sfc[idx2d];
             radn_up_jac[idx_bot] = source_sfc_jac[idx2d];
 
             for (int ilev=1; ilev<(nlay+1); ++ilev)
@@ -107,7 +107,7 @@ namespace
         const int idx_top = icol + top_level*ncol + igpt*ncol*(nlay+1);
         radn_dn[idx_top] = radn_dn[idx_top] / (TF(2.) * pi * weight);
         
-        const int idx2d = icol + igpt+ncol;
+        const int idx2d = icol + igpt*ncol;
 
         for (int ilay=0; ilay<nlay; ++ilay)
         {
@@ -120,7 +120,7 @@ namespace
                          tau_loc, trans, source_dn, source_up);
    
         sfc_albedo[idx2d] = TF(1.) - sfc_emis[idx2d];
-        source_sfc[idx2d] = sfc_emis[idx2d];
+        source_sfc[idx2d] = sfc_emis[idx2d] * sfc_src[idx2d];
         source_sfc_jac[idx2d] = sfc_emis[idx2d] * sfc_src_jac[idx2d];
         
         lw_transport_noscat_kernel(icol, igpt, ncol, nlay, ngpt, top_at_1, tau, trans, sfc_albedo, source_dn, 
@@ -129,9 +129,9 @@ namespace
         for (int ilev=0; ilev<(nlay+1); ++ilev)
         {
             const int idx = icol + ilev*ncol + igpt*ncol*(nlay+1);
-            radn_up[idx] = TF(2.) * pi * weight * radn_up[idx];
-            radn_dn[idx] = TF(2.) * pi * weight * radn_dn[idx];
-            radn_up_jac[idx] = TF(2.) * pi * weight * radn_up_jac[idx];
+            radn_up[idx] *= TF(2.) * pi * weight;
+            radn_dn[idx] *= TF(2.) * pi * weight;
+            radn_up_jac[idx] *= TF(2.) * pi * weight;
         }
     }
     
@@ -519,8 +519,8 @@ namespace rte_kernel_launcher_cuda
         cuda_safe_call(cudaMemcpy(tau_gpu, tau.ptr(), opt_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(lay_source_gpu, lay_source.ptr(), opt_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(lev_source_inc_gpu, lev_source_inc.ptr(), opt_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(lev_source_dec_gpu, lev_source_inc.ptr(), opt_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(sfc_emis_gpu, sfc_src.ptr(), sfc_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(lev_source_dec_gpu, lev_source_dec.ptr(), opt_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(sfc_emis_gpu, sfc_emis.ptr(), sfc_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(sfc_src_gpu, sfc_src.ptr(), sfc_size, cudaMemcpyHostToDevice));
         cuda_safe_call(cudaMemcpy(sfc_src_jac_gpu, sfc_src_jac.ptr(), sfc_size, cudaMemcpyHostToDevice));
     
@@ -530,7 +530,7 @@ namespace rte_kernel_launcher_cuda
         cudaEventRecord(startEvent, 0);
 
         const int block_col2d = 32;
-        const int block_gpt2d = 16;
+        const int block_gpt2d = 32;
 
         const int grid_col2d  = ncol/block_col2d + (ncol%block_col2d > 0);
         const int grid_gpt2d  = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
@@ -549,8 +549,6 @@ namespace rte_kernel_launcher_cuda
         cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
 
         std::cout<<"GPU lw solver: "<<elapsedtime<<" (ms)"<<std::endl;
-        
-
 
         cuda_safe_call(cudaMemcpy(flux_dn.ptr(), flux_dn_gpu, flx_size, cudaMemcpyDeviceToHost));
         cuda_safe_call(cudaMemcpy(flux_up.ptr(), flux_up_gpu, flx_size, cudaMemcpyDeviceToHost));
