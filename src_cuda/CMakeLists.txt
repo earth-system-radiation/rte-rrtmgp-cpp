@@ -1,5 +1,4 @@
-FILE(GLOB sourcefiles
-    "../src_cuda/gas_optics_kernels.cu")
+FILE(GLOB sourcefiles "../src_cuda/*_kernels.cu" )
 include_directories("../include" SYSTEM ${INCLUDE_DIRS})
 
 if(FLOAT_TYPE STREQUAL "single")

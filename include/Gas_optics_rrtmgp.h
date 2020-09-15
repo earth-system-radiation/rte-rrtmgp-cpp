@@ -277,5 +277,6 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array<TF,6>& fmajor,
                 Source_func_lw<TF>& sources,
                 const Array<TF,2>& tlev) const;
+
 };
 #endif
