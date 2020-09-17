@@ -677,7 +677,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
         dim3 grid_gpu(grid_i, grid_j, grid_k);
         dim3 block_gpu(block_i, block_j, block_k);
-
+        
         reorder123x321_kernel<<<grid_gpu, block_gpu>>>(
                 ni, nj, nk, arr_in_gpu, arr_out_gpu);
 
@@ -986,7 +986,7 @@ namespace rrtmgp_kernel_launcher_cuda
             int idx_h2o, const Array<TF,2>& col_dry, const Array<TF,3>& col_gas,
             const Array<TF,5>& fminor, const Array<int,4>& jeta,
             const Array<BOOL_TYPE,2>& tropo, const Array<int,2>& jtemp,
-            Array<TF,3>& tau_rayleigh)
+            Array_gpu<TF,3>& tau_rayleigh)
     {
         float elapsedtime;
         const int gpoint_flavor_size = gpoint_flavor.size()*sizeof(int);
@@ -1062,7 +1062,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 idx_h2o, col_dry_gpu, col_gas_gpu,
                 fminor_gpu, jeta_gpu,
                 tropo_gpu, jtemp_gpu,
-                tau_rayleigh_gpu, k_gpu);
+                tau_rayleigh.ptr(), k_gpu);
 
         cuda_check_error();
         cuda_safe_call(cudaDeviceSynchronize());
@@ -1573,6 +1573,7 @@ template void rrtmgp_kernel_launcher_cuda::fill_gases<double>(
             const Gas_concs<double>&, const Array<std::string,1>&);
 
 template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array<double,3>&, Array<double,3>&);
+
 template void rrtmgp_kernel_launcher_cuda::reorder12x21<double>(const int, const int, const Array<double,2>&, Array<double,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::zero_array<double>(const int, const int, const int, Array<double,3>&);
@@ -1591,7 +1592,7 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
         const Array<int,2>&, const Array<int,2>&, const Array<double,4>&, int, const Array<double,2>&, 
         const Array<double,3>&, const Array<double,5>&, const Array<int,4>&, const Array<BOOL_TYPE,2>&, 
-        const Array<int,2>&, Array<double,3>&);
+        const Array<int,2>&, Array_gpu<double,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<double>(const int, const int, const int, const int, const int, const int, 
 	const int, const int, const int, const int, const int, const int, const int, const int,

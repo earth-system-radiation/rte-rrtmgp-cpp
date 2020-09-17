@@ -29,6 +29,8 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
 
 template<int N>
 inline std::array<int, N> calc_strides(const std::array<int, N>& dims)
@@ -232,12 +234,173 @@ class Array
         {
             std::fill(data.begin(), data.end(), value);
         }
-
-    private:
         std::array<int, N> dims;
         int ncells;
         std::vector<T> data;
         std::array<int, N> strides;
         std::array<int, N> offsets;
+
+    private:
 };
+
+#ifdef USECUDA
+template<typename T, int N>
+class Array_gpu
+{
+    public:
+        // Create an empty array, without dimensions.
+        Array_gpu() :
+            dims({}),
+            ncells(0)
+        {}
+
+        // Create an array of zeros with given dimensions.
+        Array_gpu(const std::array<int, N>& dims) :
+            dims(dims),
+            ncells(product<N>(dims)),
+            data(ncells),
+            strides(calc_strides<N>(dims)),
+            offsets({})
+        {}
+
+        // Create an array from copying the contents of an std::vector.
+        Array_gpu(const std::vector<T>& data, const std::array<int, N>& dims) :
+            dims(dims),
+            ncells(product<N>(dims)),
+            data(data),
+            strides(calc_strides<N>(dims)),
+            offsets({})
+        {} // CvH Do we need to size check data?
+
+        // Create an array from moving the contents of an std::vector.
+        Array_gpu(std::vector<T>&& data, const std::array<int, N>& dims) :
+            dims(dims),
+            ncells(product<N>(dims)),
+            data(data),
+            strides(calc_strides<N>(dims)),
+            offsets({})
+        {} // CvH Do we need to size check data?
+        
+        //Array_gpu(Array_gpu<T, N>&& array) = delete;
+        // Define the default copy constructor and assignment operator.
+        // Array_gpu(const Array<T, N>&) = default;
+        // Array_gpu<T,N>& operator=(const Array<T, N>&) = default; // CvH does this one need empty checking?
+
+         Array_gpu(Array<T, N>& array) :
+             dims(std::exchange(array.dims, {})),
+             ncells(std::exchange(array.ncells, 0)),
+             data(std::move(array.data)),
+             strides(std::exchange(array.strides, {})),
+             offsets(std::exchange(array.offsets, {}))
+         {}
+
+        inline void set_offsets(const std::array<int, N>& offsets)
+        {
+            this->offsets = offsets;
+        }
+
+        inline std::array<int, N> get_dims() const { return dims; }
+
+        inline void set_dims(const std::array<int, N>& dims)
+        {
+            if (this->ncells != 0)
+                throw std::runtime_error("Only arrays of size 0 can be resized");
+
+            this->dims = dims;
+            ncells = product<N>(dims);
+            data.resize(ncells);
+            strides = calc_strides<N>(dims);
+            offsets = {};
+        }
+
+        inline thrust::device_vector<T>& v() { return data; }
+        inline const thrust::device_vector<T>& v() const { return data; }
+
+        inline T* ptr() { return thrust::raw_pointer_cast(data.data()); }
+        inline const T* ptr() const { return data.data(); }
+
+        inline int size() const { return ncells; }
+
+        // inline std::array<int, N> find_indices(const T& value) const
+        // {
+        //     int pos = std::find(data.begin(), data.end(), value) - data.begin();
+        //     return calc_indices<N>(pos, strides, offsets);
+        // }
+
+        inline T max() const
+        {
+            return *std::max_element(data.begin(), data.end());
+        }
+
+        inline T min() const
+        {
+            return *std::min_element(data.begin(), data.end());
+        }
+
+        inline void operator=(thrust::device_vector<T>&& data)
+        {
+            // CvH check size.
+            this->data = data;
+        }
+
+        inline T& operator()(const std::array<int, N>& indices)
+        {
+            const int index = calc_index<N>(indices, strides, offsets);
+            return thrust::raw_pointer_cast(data[index]);
+        }
+
+        inline T operator()(const std::array<int, N>& indices) const
+        {
+            const int index = calc_index<N>(indices, strides, offsets);
+            return data[index];
+        }
+
+        inline int dim(const int i) const { return dims[i-1]; }
+        inline bool is_empty() const { return ncells == 0; }
+
+        inline Array_gpu<T, N> subset(
+                const std::array<std::pair<int, int>, N> ranges) const
+        {
+            // Calculate the dimension sizes based on the range.
+            std::array<int, N> subdims;
+            std::array<bool, N> do_spread;
+
+            for (int i=0; i<N; ++i)
+            {
+                subdims[i] = ranges[i].second - ranges[i].first + 1;
+                // CvH how flexible / tolerant are we?
+                do_spread[i] = (dims[i] == 1);
+            }
+
+            // Create the array and fill it with the subset.
+            Array_gpu<T, N> a_sub(subdims);
+            for (int i=0; i<a_sub.ncells; ++i)
+            {
+                std::array<int, N> index;
+                int ic = i;
+                for (int n=N-1; n>0; --n)
+                {
+                    index[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
+                    ic %= a_sub.strides[n];
+                }
+                index[0] = do_spread[0] ? 1 : ic + ranges[0].first;
+                a_sub.data[i] = (*this)(index);
+            }
+
+            return a_sub;
+        }
+
+        inline void fill(const T value)
+        {
+            std::fill(data.begin(), data.end(), value);
+        }
+
+    private:
+        std::array<int, N> dims;
+        int ncells;
+        thrust::device_vector<T> data;
+        std::array<int, N> strides;
+        std::array<int, N> offsets;
+};
+#endif
 #endif

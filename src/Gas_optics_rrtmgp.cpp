@@ -1370,6 +1370,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         #ifdef USECUDA
         // Make new arrays for output comparison.
         Array<TF,3> tau_rayleigh_gpu(tau_rayleigh);
+        Array_gpu<TF,3> tau_rayleigh_gpu2(tau_rayleigh);
         rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
@@ -1378,7 +1379,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
                 this->krayl,
                 idx_h2o, col_dry, col_gas,
                 fminor, jeta, tropo, jtemp,
-                tau_rayleigh_gpu);
+                tau_rayleigh_gpu2);
 
         // Print the output to the screen.
         // for (int igpt=1; igpt<=tau.dim(3); ++igpt)
