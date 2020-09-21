@@ -180,11 +180,11 @@ class Array
             return *std::min_element(data.begin(), data.end());
         }
 
-        // inline void operator=(std::vector<T>&& data)
-        // {
-        //     // CvH check size.
-        //     this->data = data;
-        // }
+         inline void operator=(std::vector<T>&& data)
+         {
+             // CvH check size.
+             this->data = data;
+         }
 
         inline T& operator()(const std::array<int, N>& indices)
         {
