@@ -30,7 +30,9 @@
 #include <algorithm>
 #include <iostream>
 
+#ifdef __CUDACC__
 #include "tools_gpu.h"
+#endif
 
 template<int N>
 inline std::array<int, N> calc_strides(const std::array<int, N>& dims)
@@ -245,7 +247,7 @@ class Array
     private:
 };
 
-#ifdef USECUDA
+#ifdef __CUDACC__
 template<typename T, int N>
 class Array_gpu
 {
