@@ -986,7 +986,7 @@ namespace rrtmgp_kernel_launcher_cuda
             int idx_h2o, const Array<TF,2>& col_dry, const Array<TF,3>& col_gas,
             const Array<TF,5>& fminor, const Array<int,4>& jeta,
             const Array<BOOL_TYPE,2>& tropo, const Array<int,2>& jtemp,
-            Array_gpu<TF,3>& tau_rayleigh)
+            Array<TF,3>& tau_rayleigh)
     {
         float elapsedtime;
         const int gpoint_flavor_size = gpoint_flavor.size()*sizeof(int);
@@ -1592,7 +1592,7 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
         const Array<int,2>&, const Array<int,2>&, const Array<double,4>&, int, const Array<double,2>&, 
         const Array<double,3>&, const Array<double,5>&, const Array<int,4>&, const Array<BOOL_TYPE,2>&, 
-        const Array<int,2>&, Array_gpu<double,3>&);
+        const Array<int,2>&, Array<double,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<double>(const int, const int, const int, const int, const int, const int, 
 	const int, const int, const int, const int, const int, const int, const int, const int,

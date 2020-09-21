@@ -251,16 +251,7 @@ void solve_radiation(int argc, char** argv)
 
     nc_lay.insert(p_lay.v(), {0, 0});
     nc_lev.insert(p_lev.v(), {0, 0});
-    std::array<int,2> XX= {5,7};
-    Array<TF,2> ptest1(XX);
-    Array_gpu<TF,2> ptest1_gpu(XX);
-    Array<TF,2> ptest2(p_lay);
-    Array_gpu<TF,2> ptest2_gpu(p_lay);
-    TF xxx = ptest2_gpu({1,1});
-    std::cout<<ptest2_gpu.v()[0]<<std::endl;
     
-    std::cout<<ptest2({1,1})<<" - "<<ptest2_gpu({1,1})<<std::endl;
-    std::cout<<ptest2({11,11})<<" - "<<ptest2_gpu({11,11})<<std::endl;
     ////// RUN THE LONGWAVE SOLVER //////
     if (switch_longwave)
     {
