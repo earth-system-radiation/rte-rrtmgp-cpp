@@ -126,17 +126,16 @@ class Array
 
         // Define the default copy constructor and assignment operator.
         Array(const Array<T, N>&) = default;
-        Array(Array<T, N>&& array) = delete;
+        Array<T,N>& operator=(const Array<T, N>&) = default; // CvH does this one need empty checking?
 
-        // Array<T,N>& operator=(const Array<T, N>&) = default; // CvH does this one need empty checking?
-
-        // Array(Array<T, N>&& array) :
-        //     dims(std::exchange(array.dims, {})),
-        //     ncells(std::exchange(array.ncells, 0)),
-        //     data(std::move(array.data)),
-        //     strides(std::exchange(array.strides, {})),
-        //     offsets(std::exchange(array.offsets, {}))
-        // {}
+        // Implement the move constructor to set ncells back to 0.
+        Array(Array<T, N>&& array) :
+            dims(std::exchange(array.dims, {})),
+            ncells(std::exchange(array.ncells, 0)),
+            data(std::move(array.data)),
+            strides(std::exchange(array.strides, {})),
+            offsets(std::exchange(array.offsets, {}))
+        {}
 
         inline void set_offsets(const std::array<int, N>& offsets)
         {
@@ -181,11 +180,11 @@ class Array
             return *std::min_element(data.begin(), data.end());
         }
 
-        inline void operator=(std::vector<T>&& data)
-        {
-            // CvH check size.
-            this->data = data;
-        }
+        // inline void operator=(std::vector<T>&& data)
+        // {
+        //     // CvH check size.
+        //     this->data = data;
+        // }
 
         inline T& operator()(const std::array<int, N>& indices)
         {
