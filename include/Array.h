@@ -246,7 +246,6 @@ class Array
     private:
 };
 
-#ifdef __CUDACC__
 template<typename T, int N>
 class Array_gpu
 {
@@ -264,6 +263,7 @@ class Array_gpu
         Array_gpu& operator=(const Array<T, N>&) = delete;
         Array_gpu& operator=(Array<T, N>&&) = delete;
 
+        #ifdef __CUDACC__
         // Create an array of zeros with given dimensions.
         Array_gpu(const std::array<int, N>& dims) :
             dims(dims),
@@ -274,7 +274,10 @@ class Array_gpu
         {
             cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells * sizeof(T)));
         }
+        #endif
 
+
+        #ifdef __CUDACC__
         Array_gpu(const Array<T, N>& array) :
             dims(array.dims),
             ncells(array.ncells),
@@ -285,6 +288,7 @@ class Array_gpu
             cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells * sizeof(T)));
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells * sizeof(T), cudaMemcpyHostToDevice));
         }
+        #endif
  
         /*
         // Create an array from copying the contents of an std::vector.
@@ -319,6 +323,7 @@ class Array_gpu
 
         inline std::array<int, N> get_dims() const { return dims; }
 
+        #ifdef __CUDACC__
         inline void set_dims(const std::array<int, N>& dims)
         {
             if ( !(this->ncells == 0 && data_ptr == nullptr) )
@@ -330,6 +335,7 @@ class Array_gpu
             strides = calc_strides<N>(dims);
             offsets = {};
         }
+        #endif
 
         inline T* ptr() { return data_ptr; }
         inline const T* ptr() const { return data_ptr; }
@@ -364,6 +370,7 @@ class Array_gpu
         //     return data[index];
         // }
 
+        #ifdef __CUDACC__
         inline T operator()(const std::array<int, N>& indices) const
         {
             const int index = calc_index<N>(indices, strides, offsets);
@@ -371,6 +378,7 @@ class Array_gpu
             cuda_safe_call(cudaMemcpy(&value, data_ptr + index, sizeof(T), cudaMemcpyDeviceToHost));
             return value;
         }
+        #endif
 
         // inline int dim(const int i) const { return dims[i-1]; }
         // inline bool is_empty() const { return ncells == 0; }
@@ -419,5 +427,4 @@ class Array_gpu
         std::array<int, N> strides;
         std::array<int, N> offsets;
 };
-#endif
 #endif

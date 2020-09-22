@@ -1062,7 +1062,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 idx_h2o, col_dry_gpu, col_gas_gpu,
                 fminor_gpu, jeta_gpu,
                 tropo_gpu, jtemp_gpu,
-                tau_rayleigh.ptr(), k_gpu);
+                tau_rayleigh_gpu, k_gpu);
 
         cuda_check_error();
         cuda_safe_call(cudaDeviceSynchronize());
