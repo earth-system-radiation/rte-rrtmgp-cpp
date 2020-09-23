@@ -487,6 +487,79 @@ void solve_radiation(int argc, char** argv)
 
         Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
 
+        #ifdef USECUDA
+        Array_gpu<TF,2> p_lay_gpu;
+        Array_gpu<TF,2> p_lev_gpu;
+        Array_gpu<TF,2> t_lay_gpu;
+        Array_gpu<TF,2> t_lev_gpu;
+        Array_gpu<TF,2> col_dry_gpu;
+        Array_gpu<TF,2> sfc_alb_dir_gpu;
+        Array_gpu<TF,2> sfc_alb_dif_gpu;
+        Array_gpu<TF,1> tsi_scaling_gpu;
+        Array_gpu<TF,1> mu0_gpu;
+        Array_gpu<TF,2> lwp_gpu;
+        Array_gpu<TF,2> iwp_gpu;
+        Array_gpu<TF,2> rel_gpu;
+        Array_gpu<TF,2> rei_gpu;
+        Array_gpu<TF,3> sw_tau_gpu;
+        Array_gpu<TF,3> ssa_gpu;
+        Array_gpu<TF,3> g_gpu;
+        Array_gpu<TF,2> toa_source_gpu;
+        Array_gpu<TF,2> sw_flux_up_gpu;
+        Array_gpu<TF,2> sw_flux_dn_gpu;
+        Array_gpu<TF,2> sw_flux_dn_dir_gpu;
+        Array_gpu<TF,2> sw_flux_net_gpu;
+        Array_gpu<TF,3> sw_bnd_flux_up_gpu;
+        Array_gpu<TF,3> sw_bnd_flux_dn_gpu;
+        Array_gpu<TF,3> sw_bnd_flux_dn_dir_gpu;
+        Array_gpu<TF,3> sw_bnd_flux_net_gpu;
+        rad_sw.array_to_gpu_2d(p_lay,p_lay_gpu);
+        rad_sw.array_to_gpu_2d(p_lev,p_lev_gpu);
+        rad_sw.array_to_gpu_2d(t_lay,t_lay_gpu);
+        rad_sw.array_to_gpu_2d(t_lev,t_lev_gpu);
+        rad_sw.array_to_gpu_2d(col_dry,col_dry_gpu);
+        rad_sw.array_to_gpu_2d(sfc_alb_dir,sfc_alb_dir_gpu);
+        rad_sw.array_to_gpu_2d(sfc_alb_dif,sfc_alb_dif_gpu);
+        rad_sw.array_to_gpu_1d(tsi_scaling,tsi_scaling_gpu);
+        rad_sw.array_to_gpu_1d(mu0,mu0_gpu);
+        rad_sw.array_to_gpu_2d(lwp,lwp_gpu);
+        rad_sw.array_to_gpu_2d(iwp,iwp_gpu);
+        rad_sw.array_to_gpu_2d(rel,rel_gpu);
+        rad_sw.array_to_gpu_2d(rei,rei_gpu);
+        rad_sw.array_to_gpu_3d(sw_tau,sw_tau_gpu);
+        rad_sw.array_to_gpu_3d(ssa,ssa_gpu);
+        rad_sw.array_to_gpu_3d(g,g_gpu);
+        rad_sw.array_to_gpu_2d(toa_source,toa_source_gpu);
+        rad_sw.array_to_gpu_2d(sw_flux_up,sw_flux_up_gpu);
+        rad_sw.array_to_gpu_2d(sw_flux_dn,sw_flux_dn_gpu);
+        rad_sw.array_to_gpu_2d(sw_flux_dn_dir,sw_flux_dn_dir_gpu);
+        rad_sw.array_to_gpu_2d(sw_flux_net,sw_flux_net_gpu);
+        rad_sw.array_to_gpu_3d(sw_bnd_flux_up,sw_bnd_flux_up_gpu);
+        rad_sw.array_to_gpu_3d(sw_bnd_flux_dn,sw_bnd_flux_dn_gpu);
+        rad_sw.array_to_gpu_3d(sw_bnd_flux_dn_dir,sw_bnd_flux_dn_dir_gpu);
+        rad_sw.array_to_gpu_3d(sw_bnd_flux_net,sw_bnd_flux_net_gpu);
+
+        rad_sw.solve_gpu(
+                switch_fluxes,
+                switch_cloud_optics,
+                switch_output_optical,
+                switch_output_bnd_fluxes,
+                gas_concs,
+                p_lay_gpu, p_lev_gpu,
+                t_lay_gpu, t_lev_gpu,
+                col_dry_gpu,
+                sfc_alb_dir_gpu, sfc_alb_dif_gpu,
+                tsi_scaling_gpu, mu0_gpu,
+                lwp_gpu, iwp_gpu,
+                rel_gpu, rei_gpu,
+                sw_tau_gpu, ssa_gpu, g_gpu,
+                toa_source_gpu,
+                sw_flux_up_gpu, sw_flux_dn_gpu,
+                sw_flux_dn_dir_gpu, sw_flux_net_gpu,
+                sw_bnd_flux_up_gpu, sw_bnd_flux_dn_gpu,
+                sw_bnd_flux_dn_dir_gpu, sw_bnd_flux_net_gpu);
+
+        #endif
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");

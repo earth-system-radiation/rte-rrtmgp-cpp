@@ -639,6 +639,7 @@ void Radiation_solver_shortwave<TF>::solve(
         Gas_concs<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
         auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});
+        std::cout<<"PCPU: "<<p_lev_subset({1,1})<<std::endl;
 
         Array<TF,2> col_dry_subset({n_col_in, n_lay});
         if (col_dry.size() == 0)

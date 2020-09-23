@@ -34,6 +34,7 @@
 #include "tools_gpu.h"
 #endif
 
+
 template<int N>
 inline std::array<int, N> calc_strides(const std::array<int, N>& dims)
 {
@@ -257,12 +258,25 @@ class Array_gpu
             data_ptr(nullptr)
         {}
 
-        Array_gpu(const Array_gpu<T, N>&) = delete;
-        Array_gpu(Array_gpu<T, N>&&) = delete;
+ //       Array_gpu(const Array_gpu<T, N>&) = delete;
+ //       Array_gpu(Array_gpu<T, N>&&) = delete;
 
-        Array_gpu& operator=(const Array<T, N>&) = delete;
-        Array_gpu& operator=(Array<T, N>&&) = delete;
+ //       Array_gpu& operator=(const Array<T, N>&) = delete;
+ //       Array_gpu& operator=(Array<T, N>&&) = delete;
 
+        #ifdef __CUDACC__
+        Array_gpu(const Array_gpu<T, N>& array) :
+            dims(dims),
+            ncells(product<N>(dims)),
+            data_ptr(nullptr),
+            strides(calc_strides<N>(dims)),
+            offsets({})
+        {
+            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells * sizeof(T)));
+            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells * sizeof(T), cudaMemcpyHostToDevice));
+        }
+        #endif
+        
         #ifdef __CUDACC__
         // Create an array of zeros with given dimensions.
         Array_gpu(const std::array<int, N>& dims) :
@@ -324,6 +338,14 @@ class Array_gpu
         inline std::array<int, N> get_dims() const { return dims; }
 
         #ifdef __CUDACC__
+        inline void set_data(const Array<T, N>& array)
+        {
+            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells * sizeof(T)));
+            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells * sizeof(T), cudaMemcpyHostToDevice));
+        }
+        #endif
+        
+        #ifdef __CUDACC__
         inline void set_dims(const std::array<int, N>& dims)
         {
             if ( !(this->ncells == 0 && data_ptr == nullptr) )
@@ -380,45 +402,57 @@ class Array_gpu
         }
         #endif
 
-        // inline int dim(const int i) const { return dims[i-1]; }
+        inline int dim(const int i) const { return dims[i-1]; }
         // inline bool is_empty() const { return ncells == 0; }
+        #ifdef __CUDACC__
 
-        // inline Array_gpu<T, N> subset(
-        //         const std::array<std::pair<int, int>, N> ranges) const
-        // {
-        //     // Calculate the dimension sizes based on the range.
-        //     std::array<int, N> subdims;
-        //     std::array<bool, N> do_spread;
+        inline Array_gpu<T, N> subset(
+                const std::array<std::pair<int, int>, N> ranges) const
+        {
+            // Calculate the dimension sizes based on the range.
+            std::array<int, N> subdims;
+            std::array<bool, N> do_spread;
 
-        //     for (int i=0; i<N; ++i)
-        //     {
-        //         subdims[i] = ranges[i].second - ranges[i].first + 1;
-        //         // CvH how flexible / tolerant are we?
-        //         do_spread[i] = (dims[i] == 1);
-        //     }
+            for (int i=0; i<N; ++i)
+            {
+                subdims[i] = ranges[i].second - ranges[i].first + 1;
+                // CvH how flexible / tolerant are we?
+                do_spread[i] = (dims[i] == 1);
+            }
 
-        //     // Create the array and fill it with the subset.
-        //     Array_gpu<T, N> a_sub(subdims);
-        //     for (int i=0; i<a_sub.ncells; ++i)
-        //     {
-        //         std::array<int, N> index;
-        //         int ic = i;
-        //         for (int n=N-1; n>0; --n)
-        //         {
-        //             index[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
-        //             ic %= a_sub.strides[n];
-        //         }
-        //         index[0] = do_spread[0] ? 1 : ic + ranges[0].first;
-        //         a_sub.data[i] = (*this)(index);
-        //     }
+            // Create the array and fill it with the subset.
+            Array_gpu<T, N> a_sub(subdims);
+            for (int i=0; i<a_sub.ncells; ++i)
+            {
+                std::array<int, N> index;
+                int ic = i;
+                for (int n=N-1; n>0; --n)
+                {
+                    index[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
+                    ic %= a_sub.strides[n];
+                }
+                index[0] = do_spread[0] ? 1 : ic + ranges[0].first;
+                for (int n=0; n<N; ++n)
+                {
+                    if (n+i > 0)
+                    {
+                        cuda_safe_call(cudaMemcpy(a_sub.data_ptr+(n+i), &data_ptr[index[n]-1], sizeof(T), cudaMemcpyDeviceToDevice));
+                    }
+                    else
+                    {
+                        cuda_safe_call(cudaMemcpy(a_sub.data_ptr, &data_ptr[index[n]-1], sizeof(T), cudaMemcpyDeviceToDevice));
+                    }
+                }
+            }
 
-        //     return a_sub;
-        // }
+            return a_sub;
+         }
 
-        // inline void fill(const T value)
-        // {
-        //     std::fill(data.begin(), data.end(), value);
-        // }
+        #endif
+         //inline void fill(const T value)
+         //{
+         //    std::fill(data.begin(), data.end(), value);
+         //}
 
     private:
         std::array<int, N> dims;
@@ -427,4 +461,11 @@ class Array_gpu
         std::array<int, N> strides;
         std::array<int, N> offsets;
 };
+
+namespace array_gpu_cpu
+{
+    template<typename T, int N>
+    Array_gpu<T,N> to_gpu(const Array<T,N> array_in);
+}
+
 #endif
