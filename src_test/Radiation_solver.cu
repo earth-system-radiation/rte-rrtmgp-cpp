@@ -576,27 +576,6 @@ Radiation_solver_shortwave<TF>::Radiation_solver_shortwave(
             load_and_init_cloud_optics<TF>(file_name_cloud));
 }
 */
-template<typename TF>
-void Radiation_solver_shortwave<TF>::array_to_gpu_1d(const Array<TF,1>& arr_in, Array_gpu<TF,1>& arr_out)
-{
-   arr_out.set_dims(arr_in.get_dims());
-   arr_out.set_data(arr_in);
-
-}
-template<typename TF>
-void Radiation_solver_shortwave<TF>::array_to_gpu_2d(const Array<TF,2>& arr_in, Array_gpu<TF,2>& arr_out)
-{
-   arr_out.set_dims(arr_in.get_dims());
-   arr_out.set_data(arr_in);
-
-}
-template<typename TF>
-void Radiation_solver_shortwave<TF>::array_to_gpu_3d(const Array<TF,3>& arr_in, Array_gpu<TF,3>& arr_out)
-{
-   arr_out.set_dims(arr_in.get_dims());
-   arr_out.set_data(arr_in);
-
-}
 
 template<typename TF>
 void Radiation_solver_shortwave<TF>::solve_gpu(
@@ -665,111 +644,111 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         const int n_col_in = col_e_in - col_s_in + 1;
         Gas_concs<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
-    //    Array<TF,2> col_dry_subset({n_col_in, n_lay});
-    //    if (col_dry.size() == 0)
-    //        Gas_optics_rrtmgp<TF>::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
-    //    else
-    //        col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
+        //  Array<TF,2> col_dry_subset({n_col_in, n_lay});
+        //  if (col_dry.size() == 0)
+        //      Gas_optics_rrtmgp<TF>::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
+        //  else
+        //      col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
-    //    Array<TF,2> toa_src_subset({n_col_in, n_gpt});
+        //  Array<TF,2> toa_src_subset({n_col_in, n_gpt});
 
-    //    kdist->gas_optics(
-    //            p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-    //            p_lev_subset,
-    //            t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-    //            gas_concs_subset,
-    //            optical_props_subset_in,
-    //            toa_src_subset,
-    //            col_dry_subset);
+        //  kdist->gas_optics(
+        //          p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+        //          p_lev_subset,
+        //          t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+        //          gas_concs_subset,
+        //          optical_props_subset_in,
+        //          toa_src_subset,
+        //          col_dry_subset);
 
-    //    auto tsi_scaling_subset = tsi_scaling.subset({{ {col_s_in, col_e_in} }});
+        //  auto tsi_scaling_subset = tsi_scaling.subset({{ {col_s_in, col_e_in} }});
 
-    //    for (int igpt=1; igpt<=n_gpt; ++igpt)
-    //        for (int icol=1; icol<=n_col_in; ++icol)
-    //            toa_src_subset({icol, igpt}) *= tsi_scaling_subset({icol});
+        //  for (int igpt=1; igpt<=n_gpt; ++igpt)
+        //      for (int icol=1; icol<=n_col_in; ++icol)
+        //          toa_src_subset({icol, igpt}) *= tsi_scaling_subset({icol});
 
-    //    if (switch_cloud_optics)
-    //    {
-    //        Array<int,2> cld_mask_liq({n_col_in, n_lay});
-    //        Array<int,2> cld_mask_ice({n_col_in, n_lay});
+        //  if (switch_cloud_optics)
+        //  {
+        //      Array<int,2> cld_mask_liq({n_col_in, n_lay});
+        //      Array<int,2> cld_mask_ice({n_col_in, n_lay});
 
-    //        cloud_optics->cloud_optics(
-    //                lwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-    //                iwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-    //                rel.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-    //                rei.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-    //                *cloud_optical_props_subset_in);
+        //      cloud_optics->cloud_optics(
+        //              lwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+        //              iwp.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+        //              rel.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+        //              rei.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+        //              *cloud_optical_props_subset_in);
 
-    //        cloud_optical_props_subset_in->delta_scale();
+        //      cloud_optical_props_subset_in->delta_scale();
 
-    //        // Add the cloud optical props to the gas optical properties.
-    //        add_to(
-    //                dynamic_cast<Optical_props_2str<double>&>(*optical_props_subset_in),
-    //                dynamic_cast<Optical_props_2str<double>&>(*cloud_optical_props_subset_in));
-    //    }
+        //      // Add the cloud optical props to the gas optical properties.
+        //      add_to(
+        //              dynamic_cast<Optical_props_2str<double>&>(*optical_props_subset_in),
+        //              dynamic_cast<Optical_props_2str<double>&>(*cloud_optical_props_subset_in));
+        //  }
 
-    //    // Store the optical properties, if desired.
-    //    if (switch_output_optical)
-    //    {
-    //        for (int igpt=1; igpt<=n_gpt; ++igpt)
-    //            for (int ilay=1; ilay<=n_lay; ++ilay)
-    //                for (int icol=1; icol<=n_col_in; ++icol)
-    //                {
-    //                    tau({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_tau()({icol, ilay, igpt});
-    //                    ssa({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_ssa()({icol, ilay, igpt});
-    //                    g  ({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_g  ()({icol, ilay, igpt});
-    //                }
+        //  // Store the optical properties, if desired.
+        //  if (switch_output_optical)
+        //  {
+        //      for (int igpt=1; igpt<=n_gpt; ++igpt)
+        //          for (int ilay=1; ilay<=n_lay; ++ilay)
+        //              for (int icol=1; icol<=n_col_in; ++icol)
+        //              {
+        //                  tau({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_tau()({icol, ilay, igpt});
+        //                  ssa({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_ssa()({icol, ilay, igpt});
+        //                  g  ({icol+col_s_in-1, ilay, igpt}) = optical_props_subset_in->get_g  ()({icol, ilay, igpt});
+        //              }
 
-    //        for (int igpt=1; igpt<=n_gpt; ++igpt)
-    //            for (int icol=1; icol<=n_col_in; ++icol)
-    //                toa_src({icol+col_s_in-1, igpt}) = toa_src_subset({icol, igpt});
-    //    }
+        //      for (int igpt=1; igpt<=n_gpt; ++igpt)
+        //          for (int icol=1; icol<=n_col_in; ++icol)
+        //              toa_src({icol+col_s_in-1, igpt}) = toa_src_subset({icol, igpt});
+        //  }
 
-    //    if (!switch_fluxes)
-    //        return;
+        //  if (!switch_fluxes)
+        //      return;
 
-    //    Array<TF,3> gpt_flux_up    ({n_col_in, n_lev, n_gpt});
-    //    Array<TF,3> gpt_flux_dn    ({n_col_in, n_lev, n_gpt});
-    //    Array<TF,3> gpt_flux_dn_dir({n_col_in, n_lev, n_gpt});
+        //  Array<TF,3> gpt_flux_up    ({n_col_in, n_lev, n_gpt});
+        //  Array<TF,3> gpt_flux_dn    ({n_col_in, n_lev, n_gpt});
+        //  Array<TF,3> gpt_flux_dn_dir({n_col_in, n_lev, n_gpt});
 
-    //    Rte_sw<TF>::rte_sw(
-    //            optical_props_subset_in,
-    //            top_at_1,
-    //            mu0.subset({{ {col_s_in, col_e_in} }}),
-    //            toa_src_subset,
-    //            sfc_alb_dir.subset({{ {1, n_bnd}, {col_s_in, col_e_in} }}),
-    //            sfc_alb_dif.subset({{ {1, n_bnd}, {col_s_in, col_e_in} }}),
-    //            Array<TF,2>(), // Add an empty array, no inc_flux.
-    //            gpt_flux_up,
-    //            gpt_flux_dn,
-    //            gpt_flux_dn_dir);
+        //  Rte_sw<TF>::rte_sw(
+        //          optical_props_subset_in,
+        //          top_at_1,
+        //          mu0.subset({{ {col_s_in, col_e_in} }}),
+        //          toa_src_subset,
+        //          sfc_alb_dir.subset({{ {1, n_bnd}, {col_s_in, col_e_in} }}),
+        //          sfc_alb_dif.subset({{ {1, n_bnd}, {col_s_in, col_e_in} }}),
+        //          Array<TF,2>(), // Add an empty array, no inc_flux.
+        //          gpt_flux_up,
+        //          gpt_flux_dn,
+        //          gpt_flux_dn_dir);
 
-    //    fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
+        //  fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
 
-    //    // Copy the data to the output.
-    //    for (int ilev=1; ilev<=n_lev; ++ilev)
-    //        for (int icol=1; icol<=n_col_in; ++icol)
-    //        {
-    //            sw_flux_up     ({icol+col_s_in-1, ilev}) = fluxes.get_flux_up    ()({icol, ilev});
-    //            sw_flux_dn     ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn    ()({icol, ilev});
-    //            sw_flux_dn_dir ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn_dir()({icol, ilev});
-    //            sw_flux_net    ({icol+col_s_in-1, ilev}) = fluxes.get_flux_net   ()({icol, ilev});
-    //        }
+        //  // Copy the data to the output.
+        //  for (int ilev=1; ilev<=n_lev; ++ilev)
+        //      for (int icol=1; icol<=n_col_in; ++icol)
+        //      {
+        //          sw_flux_up     ({icol+col_s_in-1, ilev}) = fluxes.get_flux_up    ()({icol, ilev});
+        //          sw_flux_dn     ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn    ()({icol, ilev});
+        //          sw_flux_dn_dir ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn_dir()({icol, ilev});
+        //          sw_flux_net    ({icol+col_s_in-1, ilev}) = fluxes.get_flux_net   ()({icol, ilev});
+        //      }
 
-    //    if (switch_output_bnd_fluxes)
-    //    {
-    //        bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
+        //  if (switch_output_bnd_fluxes)
+        //  {
+        //      bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
 
-    //        for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
-    //            for (int ilev=1; ilev<=n_lev; ++ilev)
-    //                for (int icol=1; icol<=n_col_in; ++icol)
-    //                {
-    //                    sw_bnd_flux_up     ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_up     ()({icol, ilev, ibnd});
-    //                    sw_bnd_flux_dn     ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn     ()({icol, ilev, ibnd});
-    //                    sw_bnd_flux_dn_dir ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn_dir ()({icol, ilev, ibnd});
-    //                    sw_bnd_flux_net    ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_net    ()({icol, ilev, ibnd});
-    //                }
-    //    }
+        //      for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
+        //          for (int ilev=1; ilev<=n_lev; ++ilev)
+        //              for (int icol=1; icol<=n_col_in; ++icol)
+        //              {
+        //                  sw_bnd_flux_up     ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_up     ()({icol, ilev, ibnd});
+        //                  sw_bnd_flux_dn     ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn     ()({icol, ilev, ibnd});
+        //                  sw_bnd_flux_dn_dir ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn_dir ()({icol, ilev, ibnd});
+        //                  sw_bnd_flux_net    ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_net    ()({icol, ilev, ibnd});
+        //              }
+        //  }
     };
 
     for (int b=1; b<=n_blocks; ++b)

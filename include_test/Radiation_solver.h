@@ -114,10 +114,6 @@ class Radiation_solver_shortwave
                 Array_gpu<TF,3>& sw_bnd_flux_up, Array_gpu<TF,3>& sw_bnd_flux_dn,
                 Array_gpu<TF,3>& sw_bnd_flux_dn_dir, Array_gpu<TF,3>& sw_bnd_flux_net) const;
 
-        void array_to_gpu_1d(const Array<TF,1>& arr_in, Array_gpu<TF,1>& arr_out);
-        void array_to_gpu_2d(const Array<TF,2>& arr_in, Array_gpu<TF,2>& arr_out);
-        void array_to_gpu_3d(const Array<TF,3>& arr_in, Array_gpu<TF,3>& arr_out);
-        
         int get_n_gpt() const { return this->kdist->get_ngpt(); };
         int get_n_bnd() const { return this->kdist->get_nband(); };
 
