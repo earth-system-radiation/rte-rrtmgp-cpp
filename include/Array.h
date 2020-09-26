@@ -221,15 +221,15 @@ class Array
             Array<T, N> a_sub(subdims);
             for (int i=0; i<a_sub.ncells; ++i)
             {
-                std::array<int, N> index;
+                std::array<int, N> indices;
                 int ic = i;
                 for (int n=N-1; n>0; --n)
                 {
-                    index[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
+                    indices[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
                     ic %= a_sub.strides[n];
                 }
-                index[0] = do_spread[0] ? 1 : ic + ranges[0].first;
-                a_sub.data[i] = (*this)(index);
+                indices[0] = do_spread[0] ? 1 : ic + ranges[0].first;
+                a_sub.data[i] = (*this)(indices);
             }
 
             return a_sub;
@@ -436,35 +436,18 @@ class Array_gpu
             Array_gpu<T, N> a_sub(subdims);
             for (int i=0; i<a_sub.ncells; ++i)
             {
-                std::array<int, N> index;
+                std::array<int, N> indices;
                 int ic = i;
                 for (int n=N-1; n>0; --n)
                 {
-                    index[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
+                    indices[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
                     ic %= a_sub.strides[n];
                 }
-                index[0] = do_spread[0] ? 1 : ic + ranges[0].first;
+                indices[0] = do_spread[0] ? 1 : ic + ranges[0].first;
 
-                const int index0 = calc_index<N>(index, strides, offsets);
-                cuda_safe_call(cudaMemcpy(&a_sub.data_ptr[i], &data_ptr[index0], sizeof(T), cudaMemcpyDeviceToDevice));
+                const int index = calc_index<N>(indices, strides, offsets);
+                cuda_safe_call(cudaMemcpy(&a_sub.data_ptr[i], &data_ptr[index], sizeof(T), cudaMemcpyDeviceToDevice));
             }
-
-            /*
-            // Create the array and fill it with the subset.
-            Array<T, N> a_sub(subdims);
-            for (int i=0; i<a_sub.ncells; ++i)
-            {
-                std::array<int, N> index;
-                int ic = i;
-                for (int n=N-1; n>0; --n)
-                {
-                    index[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
-                    ic %= a_sub.strides[n];
-                }
-                index[0] = do_spread[0] ? 1 : ic + ranges[0].first;
-                a_sub.data[i] = (*this)(index);
-            }
-            */
 
             return a_sub;
         }
