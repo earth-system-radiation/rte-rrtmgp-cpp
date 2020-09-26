@@ -120,7 +120,7 @@ class Array
         Array(std::vector<T>&& data, const std::array<int, N>& dims) :
             dims(dims),
             ncells(product<N>(dims)),
-            data(data),
+            data(std::move(data)),
             strides(calc_strides<N>(dims)),
             offsets({})
         {} // CvH Do we need to size check data?
@@ -238,14 +238,15 @@ class Array
         {
             std::fill(data.begin(), data.end(), value);
         }
+
+    private:
         std::array<int, N> dims;
         int ncells;
         std::vector<T> data;
         std::array<int, N> strides;
         std::array<int, N> offsets;
-
-    private:
 };
+
 
 template<typename T, int N>
 class Array_gpu
@@ -258,11 +259,8 @@ class Array_gpu
             data_ptr(nullptr)
         {}
 
- //       Array_gpu(const Array_gpu<T, N>&) = delete;
- //       Array_gpu(Array_gpu<T, N>&&) = delete;
-
- //       Array_gpu& operator=(const Array<T, N>&) = delete;
- //       Array_gpu& operator=(Array<T, N>&&) = delete;
+        Array_gpu& operator=(const Array<T, N>&) = delete;
+        Array_gpu& operator=(Array<T, N>&&) = delete;
 
         #ifdef __CUDACC__
         Array_gpu(const Array_gpu<T, N>& array) :
@@ -272,11 +270,21 @@ class Array_gpu
             strides(calc_strides<N>(dims)),
             offsets({})
         {
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells * sizeof(T)));
-            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells * sizeof(T), cudaMemcpyHostToDevice));
+            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
+            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
         }
         #endif
-        
+
+        #ifdef __CUDACC__
+        Array_gpu(Array_gpu<T, N>&& array) :
+            dims(std::exchange(array.dims, {})),
+            ncells(std::exchange(array.ncells, 0)),
+            data_ptr(std::exchange(array.data_ptr, nullptr)),
+            strides(std::exchange(array.strides, {})),
+            offsets(std::exchange(array.offsets, {}))
+        {}
+        #endif
+
         #ifdef __CUDACC__
         // Create an array of zeros with given dimensions.
         Array_gpu(const std::array<int, N>& dims) :
@@ -286,7 +294,7 @@ class Array_gpu
             strides(calc_strides<N>(dims)),
             offsets({})
         {
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells * sizeof(T)));
+            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
         }
         #endif
 
@@ -299,11 +307,11 @@ class Array_gpu
             strides(array.strides),
             offsets(array.offsets)
         {
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells * sizeof(T)));
-            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells * sizeof(T), cudaMemcpyHostToDevice));
+            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
+            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyHostToDevice));
         }
         #endif
- 
+
         /*
         // Create an array from copying the contents of an std::vector.
         Array_gpu(const std::vector<T>& data, const std::array<int, N>& dims) :
@@ -322,12 +330,11 @@ class Array_gpu
             strides(calc_strides<N>(dims)),
             offsets({})
         {} // CvH Do we need to size check data?
-        
+
         // Array_gpu(Array_gpu<T, N>&& array) = delete;
         // Define the default copy constructor and assignment operator.
         // Array_gpu(const Array<T, N>&) = default;
         // Array_gpu<T,N>& operator=(const Array<T, N>&) = default; // CvH does this one need empty checking?
-
         */
 
         inline void set_offsets(const std::array<int, N>& offsets)
@@ -340,11 +347,11 @@ class Array_gpu
         #ifdef __CUDACC__
         inline void set_data(const Array<T, N>& array)
         {
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells * sizeof(T)));
-            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells * sizeof(T), cudaMemcpyHostToDevice));
+            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
+            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyHostToDevice));
         }
         #endif
-        
+
         #ifdef __CUDACC__
         inline void set_dims(const std::array<int, N>& dims)
         {
@@ -353,7 +360,7 @@ class Array_gpu
 
             this->dims = dims;
             ncells = product<N>(dims);
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells * sizeof(T)));
+            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
             strides = calc_strides<N>(dims);
             offsets = {};
         }
@@ -404,8 +411,8 @@ class Array_gpu
 
         inline int dim(const int i) const { return dims[i-1]; }
         // inline bool is_empty() const { return ncells == 0; }
-        #ifdef __CUDACC__
 
+        #ifdef __CUDACC__
         inline Array_gpu<T, N> subset(
                 const std::array<std::pair<int, int>, N> ranges) const
         {
@@ -446,13 +453,13 @@ class Array_gpu
             }
 
             return a_sub;
-         }
-
+        }
         #endif
-         //inline void fill(const T value)
-         //{
-         //    std::fill(data.begin(), data.end(), value);
-         //}
+
+        // inline void fill(const T value)
+        // {
+        //     std::fill(data.begin(), data.end(), value);
+        // }
 
     private:
         std::array<int, N> dims;
@@ -461,11 +468,4 @@ class Array_gpu
         std::array<int, N> strides;
         std::array<int, N> offsets;
 };
-
-namespace array_gpu_cpu
-{
-    template<typename T, int N>
-    Array_gpu<T,N> to_gpu(const Array<T,N> array_in);
-}
-
 #endif
