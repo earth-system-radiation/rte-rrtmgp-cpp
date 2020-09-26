@@ -605,7 +605,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
     const int n_bnd = this->kdist->get_nband();
 
     const BOOL_TYPE top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
-    std::cout<<":D:D:D"<<std::endl;
+
     constexpr int n_col_block = 16;
 
     // Read the sources and create containers for the substeps.
@@ -628,7 +628,8 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         if (n_col_block_residual > 0)
             cloud_optical_props_residual = std::make_unique<Optical_props_2str<TF>>(n_col_block_residual, n_lay, *cloud_optics);
     }
-    std::cout<<":D:D:D"<<std::endl;
+
+    std::cout << ":D:D:D Starting call_kernels" << std::endl;
 
     // Lambda function for solving optical properties subset.
     auto call_kernels = [&](
@@ -638,11 +639,12 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
             Fluxes_broadband<TF>& fluxes,
             Fluxes_broadband<TF>& bnd_fluxes)
     {
-        std::cout<<"PGPU: "<<p_lev({1,1})<<" "<<p_lev({3,3})<<std::endl;
-        auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});
-        std::cout<<"PGPU: "<<p_lev_subset({1,1})<<" "<<p_lev_subset({3,3})<<std::endl;
         const int n_col_in = col_e_in - col_s_in + 1;
         Gas_concs<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
+
+        std::cout<<"PGPU: "<<p_lev({1,1})<<" "<<p_lev({3,3})<<std::endl;
+        auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});
+        std::cout<<"PGPU subset: "<<p_lev_subset({1,1})<<" "<<p_lev_subset({3,3})<<std::endl;
 
         //  Array<TF,2> col_dry_subset({n_col_in, n_lay});
         //  if (col_dry.size() == 0)

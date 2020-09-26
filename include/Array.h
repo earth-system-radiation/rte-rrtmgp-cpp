@@ -444,18 +444,27 @@ class Array_gpu
                     ic %= a_sub.strides[n];
                 }
                 index[0] = do_spread[0] ? 1 : ic + ranges[0].first;
-                for (int n=0; n<N; ++n)
-                {
-                    if (n+i > 0)
-                    {
-                        cuda_safe_call(cudaMemcpy(a_sub.data_ptr+(n+i), &data_ptr[index[n]-1], sizeof(T), cudaMemcpyDeviceToDevice));
-                    }
-                    else
-                    {
-                        cuda_safe_call(cudaMemcpy(a_sub.data_ptr, &data_ptr[index[n]-1], sizeof(T), cudaMemcpyDeviceToDevice));
-                    }
-                }
+
+                const int index0 = calc_index<N>(index, strides, offsets);
+                cuda_safe_call(cudaMemcpy(&a_sub.data_ptr[i], &data_ptr[index0], sizeof(T), cudaMemcpyDeviceToDevice));
             }
+
+            /*
+            // Create the array and fill it with the subset.
+            Array<T, N> a_sub(subdims);
+            for (int i=0; i<a_sub.ncells; ++i)
+            {
+                std::array<int, N> index;
+                int ic = i;
+                for (int n=N-1; n>0; --n)
+                {
+                    index[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
+                    ic %= a_sub.strides[n];
+                }
+                index[0] = do_spread[0] ? 1 : ic + ranges[0].first;
+                a_sub.data[i] = (*this)(index);
+            }
+            */
 
             return a_sub;
         }
