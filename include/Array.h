@@ -32,6 +32,7 @@
 
 #ifdef __CUDACC__
 #include "tools_gpu.h"
+template<typename T, int N> class Array_gpu;
 #endif
 
 
@@ -245,6 +246,10 @@ class Array
         std::vector<T> data;
         std::array<int, N> strides;
         std::array<int, N> offsets;
+
+        #ifdef __CUDACC__
+        friend class Array_gpu<T, N>;
+        #endif
 };
 
 
@@ -467,5 +472,7 @@ class Array_gpu
         T* data_ptr;
         std::array<int, N> strides;
         std::array<int, N> offsets;
+
+        friend class Array<T, N>;
 };
 #endif
