@@ -259,7 +259,7 @@ class Array
             std::ofstream binary_file(file_name, std::ios::out | std::ios::trunc | std::ios::binary);
 
             if (binary_file)
-                binary_file.write(reinterpret_cast<char*>(data.data()), ncells*sizeof(T));
+                binary_file.write(reinterpret_cast<const char*>(data.data()), ncells*sizeof(T));
             else
             {
                 std::string error = "Cannot write file \"" + file_name + "\"";

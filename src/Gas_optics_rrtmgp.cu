@@ -98,17 +98,17 @@ void Gas_optics_rrtmgp<TF>::get_col_dry_gpu(
     Array_gpu<TF,2> delta_plev({col_dry.dim(1), col_dry.dim(2)});
     Array_gpu<TF,2> m_air     ({col_dry.dim(1), col_dry.dim(2)});
 
-    const int block_lay = 32;
-    const int block_col = 32;
+    const int block_lay = 16;
+    const int block_col = 16;
 
     const int nlay = col_dry.dim(2);
     const int ncol = col_dry.dim(1);
 
-    const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
     const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+    const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
 
-    dim3 grid_gpu(grid_lay, grid_col);
-    dim3 block_gpu(block_lay, block_col);
+    dim3 grid_gpu(grid_col, grid_lay);
+    dim3 block_gpu(block_col, block_lay);
 
     compute_delta_plev<<<grid_gpu, block_gpu>>>(
             ncol, nlay,

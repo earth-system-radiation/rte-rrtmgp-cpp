@@ -629,8 +629,6 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
             cloud_optical_props_residual = std::make_unique<Optical_props_2str<TF>>(n_col_block_residual, n_lay, *cloud_optics);
     }
 
-    std::cout << ":D:D:D Starting call_kernels" << std::endl;
-
     // Lambda function for solving optical properties subset.
     auto call_kernels = [&](
             const int col_s_in, const int col_e_in,
@@ -652,7 +650,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         else
             col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
-        col_dry_subset.dump("col_dry_subset");
+        col_dry_subset.dump("col_dry_subset_gpu");
         throw 666;
 
         //  Array<TF,2> toa_src_subset({n_col_in, n_gpt});
