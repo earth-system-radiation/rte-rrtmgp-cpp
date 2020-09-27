@@ -22,12 +22,9 @@
  *
  */
 
-#include <cmath>
 #include <numeric>
+#include <cmath>
 #include <boost/algorithm/string.hpp>
-// #include <xtensor/xarray.hpp>
-// #include <xtensor/xadapt.hpp>
-// #include "xtensor/xnoalias.hpp"
 
 #include "Gas_concs.h"
 #include "Gas_optics_rrtmgp.h"
@@ -374,21 +371,6 @@ namespace
                     const int ijk_out = k + j*jj_out + i*ii_out;
                     out[ijk_out] = in[ijk_in];
                 }
-    }
-
-    template<typename TF>
-    inline void reorder123x321_test(
-            TF* out, const TF* in,
-            const size_t d1, const size_t d2, const size_t d3)
-    {
-        const size_t size = d1*d2*d3;
-        const std::array<size_t, 3> in_shape = { d1, d2, d3 };
-        const std::array<size_t, 3> out_shape = { d3, d2, d1 };
-
-        const auto a_in = xt::adapt<xt::layout_type::column_major>(in, size, xt::no_ownership(), in_shape);
-        auto a_out = xt::adapt<xt::layout_type::column_major>(out, size, xt::no_ownership(), out_shape);
-
-        xt::noalias(a_out) = xt::transpose(a_out);
     }
     */
 }
