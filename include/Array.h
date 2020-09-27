@@ -264,6 +264,8 @@ class Array_gpu
             data_ptr(nullptr)
         {}
 
+        ~Array_gpu() { cuda_safe_call(cudaFree(data_ptr)); }
+
         Array_gpu& operator=(const Array<T, N>&) = delete;
         Array_gpu& operator=(Array<T, N>&&) = delete;
 
