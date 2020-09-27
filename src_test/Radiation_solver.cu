@@ -642,9 +642,9 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         const int n_col_in = col_e_in - col_s_in + 1;
         Gas_concs_gpu<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
-        std::cout<<"PGPU: "<<p_lev({1,1})<<" "<<p_lev({3,3})<<std::endl;
+        std::cout <<"PGPU: "<<p_lev({1,1})<<" "<<p_lev({3,3})<<std::endl;
         auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});
-        std::cout<<"PGPU subset: "<<p_lev_subset({1,1})<<" "<<p_lev_subset({3,3})<<std::endl;
+        std::cout << "PGPU subset: "<<p_lev_subset({1,1})<<" "<<p_lev_subset({3,3})<<std::endl;
 
         //  Array<TF,2> col_dry_subset({n_col_in, n_lay});
         //  if (col_dry.size() == 0)

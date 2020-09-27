@@ -271,11 +271,11 @@ class Array_gpu
 
         #ifdef __CUDACC__
         Array_gpu(const Array_gpu<T, N>& array) :
-            dims(dims),
-            ncells(product<N>(dims)),
+            dims(array.dims),
+            ncells(array.ncells),
             data_ptr(nullptr),
-            strides(calc_strides<N>(dims)),
-            offsets({})
+            strides(array.strides),
+            offsets(array.offsets)
         {
             cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
