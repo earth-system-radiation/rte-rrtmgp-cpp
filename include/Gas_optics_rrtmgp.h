@@ -121,6 +121,13 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array<TF,2>& vmr_h2o,
                 const Array<TF,2>& plev);
 
+        #ifdef __CUDACC__
+        static void get_col_dry_gpu(
+                Array_gpu<TF,2>& col_dry,
+                const Array_gpu<TF,2>& vmr_h2o,
+                const Array_gpu<TF,2>& plev);
+        #endif
+
         bool source_is_internal() const { return (totplnk.size() > 0) && (planck_frac.size() > 0); }
         bool source_is_external() const { return (solar_source.size() > 0); }
 

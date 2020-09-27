@@ -29,6 +29,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 
 #ifdef __CUDACC__
 #include "tools_gpu.h"
@@ -240,6 +241,20 @@ class Array
             std::fill(data.begin(), data.end(), value);
         }
 
+        inline void dump(const std::string& name) const
+        {
+            std::string file_name = name + ".bin";
+            std::ofstream binary_file(file_name, std::ios::out | std::ios::trunc | std::ios::binary);
+
+            if (binary_file)
+                binary_file.write(data.data(), ncells*sizeof(T));
+            else
+            {
+                std::string error = "Cannot write file \"" + file_name + "\"";
+                throw std::runtime_error(error);
+            }
+        }
+
     private:
         std::array<int, N> dims;
         int ncells;
@@ -266,8 +281,39 @@ class Array_gpu
 
         ~Array_gpu() { cuda_safe_call(cudaFree(data_ptr)); }
 
-        Array_gpu& operator=(const Array<T, N>&) = delete;
-        Array_gpu& operator=(Array<T, N>&&) = delete;
+        #ifdef __CUDACC__
+        Array_gpu& operator=(const Array_gpu<T, N>& array)
+        {
+            if ( !(this->ncells == 0 && data_ptr == nullptr) )
+                throw std::runtime_error("Only arrays with uninitialized pointers can be resized");
+
+            dims = array.dims;
+            ncells = array.ncells;
+            strides = array.strides;
+            offsets = array.offsets;
+
+            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
+            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
+
+            return (*this);
+        }
+        #endif
+
+        #ifdef __CUDACC__
+        Array_gpu& operator=(Array_gpu<T, N>&& array)
+        {
+            if ( !(this->ncells == 0 && data_ptr == nullptr) )
+                throw std::runtime_error("Only arrays with uninitialized pointers can be resized");
+
+            dims = std::exchange(array.dims, {});
+            ncells = std::exchange(array.ncells, 0);
+            data_ptr = std::exchange(array.data_ptr, nullptr);
+            strides = std::exchange(array.strides, {});
+            offsets = std::exchange(array.offsets, {});
+
+            return (*this);
+        }
+        #endif
 
         #ifdef __CUDACC__
         Array_gpu(const Array_gpu<T, N>& array) :

@@ -48,7 +48,7 @@ class Gas_concs
         void set_vmr(const std::string& name, const Array<TF,1>& data);
         void set_vmr(const std::string& name, const Array<TF,2>& data);
 
-        // Insert new gas into the map.
+        // Retrieve gas from the map.
         // void get_vmr(const std::string& name, Array<TF,2>& data) const;
         const Array<TF,2>& get_vmr(const std::string& name) const;
 
@@ -78,9 +78,9 @@ class Gas_concs_gpu
         // void set_vmr(const std::string& name, const Array<TF,1>& data);
         // void set_vmr(const std::string& name, const Array<TF,2>& data);
 
-        // // Insert new gas into the map.
+        // Retrieve gas from the map.
         // // void get_vmr(const std::string& name, Array<TF,2>& data) const;
-        // const Array<TF,2>& get_vmr(const std::string& name) const;
+        const Array_gpu<TF,2>& get_vmr(const std::string& name) const;
 
         // // Check if gas exists in map.
         // BOOL_TYPE exists(const std::string& name) const;

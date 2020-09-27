@@ -646,11 +646,11 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});
         std::cout << "PGPU subset: "<<p_lev_subset({1,1})<<" "<<p_lev_subset({3,3})<<std::endl;
 
-        //  Array<TF,2> col_dry_subset({n_col_in, n_lay});
-        //  if (col_dry.size() == 0)
-        //      Gas_optics_rrtmgp<TF>::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
-        //  else
-        //      col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
+        Array_gpu<TF,2> col_dry_subset({n_col_in, n_lay});
+        if (col_dry.size() == 0)
+            Gas_optics_rrtmgp<TF>::get_col_dry_gpu(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
+        else
+            col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
         //  Array<TF,2> toa_src_subset({n_col_in, n_gpt});
 

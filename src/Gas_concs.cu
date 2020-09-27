@@ -49,6 +49,13 @@ Gas_concs_gpu<TF>::Gas_concs_gpu(const Gas_concs_gpu& gas_concs_ref, const int s
     }
 }
 
+// Get gas from map.
+template<typename TF>
+const Array_gpu<TF,2>& Gas_concs_gpu<TF>::get_vmr(const std::string& name) const
+{
+    return this->gas_concs_map.at(name);
+}
+
 #ifdef FLOAT_SINGLE_RRTMGP
 template class Gas_concs_gpu<float>;
 #else
