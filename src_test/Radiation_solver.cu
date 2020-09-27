@@ -583,7 +583,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         const bool switch_cloud_optics,
         const bool switch_output_optical,
         const bool switch_output_bnd_fluxes,
-        const Gas_concs<TF>& gas_concs,
+        const Gas_concs_gpu<TF>& gas_concs,
         const Array_gpu<TF,2>& p_lay, const Array_gpu<TF,2>& p_lev,
         const Array_gpu<TF,2>& t_lay, const Array_gpu<TF,2>& t_lev,
         const Array_gpu<TF,2>& col_dry,
@@ -640,7 +640,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
             Fluxes_broadband<TF>& bnd_fluxes)
     {
         const int n_col_in = col_e_in - col_s_in + 1;
-        Gas_concs<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
+        Gas_concs_gpu<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
         std::cout<<"PGPU: "<<p_lev({1,1})<<" "<<p_lev({3,3})<<std::endl;
         auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});

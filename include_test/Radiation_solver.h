@@ -94,12 +94,13 @@ class Radiation_solver_shortwave
                 Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn,
                 Array<TF,3>& sw_bnd_flux_dn_dir, Array<TF,3>& sw_bnd_flux_net) const;
 
+        #ifdef __CUDACC__
         void solve_gpu(
                 const bool switch_fluxes,
                 const bool switch_cloud_optics,
                 const bool switch_output_optical,
                 const bool switch_output_bnd_fluxes,
-                const Gas_concs<TF>& gas_concs,
+                const Gas_concs_gpu<TF>& gas_concs,
                 const Array_gpu<TF,2>& p_lay, const Array_gpu<TF,2>& p_lev,
                 const Array_gpu<TF,2>& t_lay, const Array_gpu<TF,2>& t_lev,
                 const Array_gpu<TF,2>& col_dry,
@@ -113,6 +114,7 @@ class Radiation_solver_shortwave
                 Array_gpu<TF,2>& sw_flux_dn_dir, Array_gpu<TF,2>& sw_flux_net,
                 Array_gpu<TF,3>& sw_bnd_flux_up, Array_gpu<TF,3>& sw_bnd_flux_dn,
                 Array_gpu<TF,3>& sw_bnd_flux_dn_dir, Array_gpu<TF,3>& sw_bnd_flux_net) const;
+        #endif
 
         int get_n_gpt() const { return this->kdist->get_ngpt(); };
         int get_n_bnd() const { return this->kdist->get_nband(); };
@@ -129,6 +131,4 @@ class Radiation_solver_shortwave
         std::unique_ptr<Gas_optics<TF>> kdist;
         std::unique_ptr<Cloud_optics<TF>> cloud_optics;
 };
-
-
 #endif
