@@ -652,6 +652,9 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         else
             col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
+        col_dry_subset.dump("col_dry_subset");
+        throw 666;
+
         //  Array<TF,2> toa_src_subset({n_col_in, n_gpt});
 
         //  kdist->gas_optics(

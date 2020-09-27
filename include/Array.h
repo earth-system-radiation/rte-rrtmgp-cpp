@@ -140,6 +140,18 @@ class Array
             offsets(std::exchange(array.offsets, {}))
         {}
 
+        #ifdef __CUDACC__
+        Array(const Array_gpu<T, N>& array_gpu) :
+            dims(array_gpu.dims),
+            ncells(array_gpu.ncells),
+            data(ncells),
+            strides(array_gpu.strides),
+            offsets(array_gpu.offsets)
+        {
+            cuda_safe_call(cudaMemcpy(data.data(), array_gpu.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToHost));
+        }
+        #endif
+
         inline void set_offsets(const std::array<int, N>& offsets)
         {
             this->offsets = offsets;
@@ -247,7 +259,7 @@ class Array
             std::ofstream binary_file(file_name, std::ios::out | std::ios::trunc | std::ios::binary);
 
             if (binary_file)
-                binary_file.write(data.data(), ncells*sizeof(T));
+                binary_file.write(reinterpret_cast<char*>(data.data()), ncells*sizeof(T));
             else
             {
                 std::string error = "Cannot write file \"" + file_name + "\"";
@@ -505,6 +517,22 @@ class Array_gpu
         // {
         //     std::fill(data.begin(), data.end(), value);
         // }
+
+        inline void dump(const std::string& name) const
+        {
+            std::string file_name = name + ".bin";
+            std::ofstream binary_file(file_name, std::ios::out | std::ios::trunc | std::ios::binary);
+
+            Array<T, N> array_dump(*this);
+
+            if (binary_file)
+                binary_file.write(reinterpret_cast<char*>(array_dump.ptr()), ncells*sizeof(T));
+            else
+            {
+                std::string error = "Cannot write file \"" + file_name + "\"";
+                throw std::runtime_error(error);
+            }
+        }
 
     private:
         std::array<int, N> dims;
