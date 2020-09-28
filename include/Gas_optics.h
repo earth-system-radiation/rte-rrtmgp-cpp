@@ -78,7 +78,7 @@ class Gas_optics : public Optical_props<TF>
                 Array<TF,2>& toa_src,
                 const Array<TF,2>& col_dry) const = 0;
 
-        #ifdef __CUDACC__
+        #ifdef USECUDA
         // Shortwave variant.
         virtual void gas_optics_gpu(
                 const Array_gpu<TF,2>& play,

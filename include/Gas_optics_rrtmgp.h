@@ -171,7 +171,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 Array<TF,2>& toa_src,
                 const Array<TF,2>& col_dry) const;
 
-        #ifdef __CUDACC__
+        #ifdef USECUDA
         // Shortwave variant.
         void gas_optics_gpu(
                 const Array_gpu<TF,2>& play,
