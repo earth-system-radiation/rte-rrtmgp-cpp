@@ -30,12 +30,16 @@
 #include "Array.h"
 #include "Gas_optics.h"
 #include "define_bool.h"
+#ifdef __CUDACC__
+#include "tools_gpu.h"
+#endif
 
 // Forward declarations.
 // template<typename TF> class Gas_optics;
 template<typename TF> class Optical_props;
 template<typename TF> class Optical_props_arry;
 template<typename TF> class Gas_concs;
+template<typename TF> class Gas_concs_gpu;
 template<typename TF> class Source_func_lw;
 
 template<typename TF>
@@ -167,6 +171,18 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 Array<TF,2>& toa_src,
                 const Array<TF,2>& col_dry) const;
 
+        #ifdef __CUDACC__
+        // Shortwave variant.
+        void gas_optics_gpu(
+                const Array_gpu<TF,2>& play,
+                const Array_gpu<TF,2>& plev,
+                const Array_gpu<TF,2>& tlay,
+                const Gas_concs_gpu<TF>& gas_desc,
+                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                Array_gpu<TF,2>& toa_src,
+                const Array_gpu<TF,2>& col_dry) const;
+        #endif
+
     private:
         Array<TF,2> totplnk;
         Array<TF,4> planck_frac;
@@ -216,6 +232,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
         Array<TF,1> solar_source_facular;
         Array<TF,1> solar_source_sunspot;
         Array<TF,1> solar_source;
+        Array_gpu<TF,1> solar_source_g;
 
         Array<TF,4> krayl;
 
@@ -268,6 +285,21 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 Array<BOOL_TYPE,2>& tropo,
                 Array<TF,6>& fmajor,
                 const Array<TF,2>& col_dry) const;
+
+        #ifdef __CUDACC__
+        void compute_gas_taus_gpu(
+                const int ncol, const int nlay, const int ngpt, const int nband,
+                const Array_gpu<TF,2>& play,
+                const Array_gpu<TF,2>& plev,
+                const Array_gpu<TF,2>& tlay,
+                const Gas_concs_gpu<TF>& gas_desc,
+                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                Array_gpu<int,2>& jtemp, Array_gpu<int,2>& jpress,
+                Array_gpu<int,4>& jeta,
+                Array_gpu<BOOL_TYPE,2>& tropo,
+                Array_gpu<TF,6>& fmajor,
+                const Array_gpu<TF,2>& col_dry) const;
+        #endif
 
         void combine_and_reorder(
                 const Array<TF,3>& tau,

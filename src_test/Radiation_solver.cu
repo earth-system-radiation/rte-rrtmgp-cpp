@@ -650,19 +650,17 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         else
             col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
-        col_dry_subset.dump("col_dry_subset_gpu");
-        throw 666;
+        Array_gpu<TF,2> toa_src_subset({n_col_in, n_gpt});
 
-        //  Array<TF,2> toa_src_subset({n_col_in, n_gpt});
-
-        //  kdist->gas_optics(
-        //          p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-        //          p_lev_subset,
-        //          t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
-        //          gas_concs_subset,
-        //          optical_props_subset_in,
-        //          toa_src_subset,
-        //          col_dry_subset);
+        kdist->gas_optics_gpu(
+                  p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                  p_lev_subset,
+                  t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                  gas_concs_subset,
+                  optical_props_subset_in,
+                  toa_src_subset,
+                  col_dry_subset);
+        std::cout << "PGPU subset: "<<p_lev_subset({1,1})<<" "<<p_lev_subset({3,3})<<std::endl;
 
         //  auto tsi_scaling_subset = tsi_scaling.subset({{ {col_s_in, col_e_in} }});
 

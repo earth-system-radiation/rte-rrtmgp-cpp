@@ -31,6 +31,7 @@
 #include "Optical_props.h"
 
 // Forward declarations.
+template<typename TF> class Gas_concs_gpu;
 template<typename TF> class Gas_concs;
 template<typename TF> class Source_func_lw;
 
@@ -77,6 +78,18 @@ class Gas_optics : public Optical_props<TF>
                 Array<TF,2>& toa_src,
                 const Array<TF,2>& col_dry) const = 0;
 
+        #ifdef __CUDACC__
+        // Shortwave variant.
+        virtual void gas_optics_gpu(
+                const Array_gpu<TF,2>& play,
+                const Array_gpu<TF,2>& plev,
+                const Array_gpu<TF,2>& tlay,
+                const Gas_concs_gpu<TF>& gas_desc,
+                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                Array_gpu<TF,2>& toa_src,
+                const Array_gpu<TF,2>& col_dry) const = 0;
+        #endif
+        
         virtual TF get_tsi() const = 0;
 };
 #endif

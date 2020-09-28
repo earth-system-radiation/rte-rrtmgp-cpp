@@ -195,11 +195,11 @@ class Array
             return *std::min_element(data.begin(), data.end());
         }
 
-         inline void operator=(std::vector<T>&& data)
-         {
-             // CvH check size.
-             this->data = data;
-         }
+        inline void operator=(std::vector<T>&& data)
+        {
+            // CvH check size.
+            this->data = data;
+        }
 
         inline T& operator()(const std::array<int, N>& indices)
         {
@@ -291,7 +291,9 @@ class Array_gpu
             data_ptr(nullptr)
         {}
 
+        #ifdef __CUDACC__
         ~Array_gpu() { cuda_safe_call(cudaFree(data_ptr)); }
+        #endif
 
         #ifdef __CUDACC__
         Array_gpu& operator=(const Array_gpu<T, N>& array)
@@ -430,6 +432,14 @@ class Array_gpu
             offsets = {};
         }
         #endif
+        
+        #ifdef __CUDACC__
+        inline void insert(const std::array<int, N>& indices, const T value) const
+        {
+            const int index = calc_index<N>(indices, strides, offsets);
+            cuda_safe_call(cudaMemcpy(data_ptr + index, &value, sizeof(T), cudaMemcpyHostToDevice));
+        }
+        #endif
 
         inline T* ptr() { return data_ptr; }
         inline const T* ptr() const { return data_ptr; }
@@ -464,6 +474,7 @@ class Array_gpu
         //     return data[index];
         // }
 
+        
         #ifdef __CUDACC__
         inline T operator()(const std::array<int, N>& indices) const
         {

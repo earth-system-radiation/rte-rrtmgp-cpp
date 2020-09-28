@@ -1112,7 +1112,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
                     vmr({icol, ilay, igas}) = vmr_2d({icol, ilay});
         }
     }
-
+    
     // CvH: Assume that col_dry is provided.
     for (int ilay=1; ilay<=nlay; ++ilay)
         for (int icol=1; icol<=ncol; ++icol)
@@ -1122,6 +1122,9 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         for (int ilay=1; ilay<=nlay; ++ilay)
             for (int icol=1; icol<=ncol; ++icol)
                 col_gas({icol, ilay, igas}) = vmr({icol, ilay, igas}) * col_dry({icol, ilay});
+    vmr.dump("vmr_sub_cpu");
+    throw 666;
+
     auto time_end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
     std::cout<<"CPU fill gases: "<<std::to_string(duration)<<" (ms)"<<std::endl;
