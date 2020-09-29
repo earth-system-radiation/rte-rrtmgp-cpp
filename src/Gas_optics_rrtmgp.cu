@@ -27,10 +27,12 @@
 #include "Array.h"
 #include "iostream"
 
+#include "rrtmgp_kernel_launcher_cuda.h"
+
 template<typename TF>__global__
 void fill_gases_kernel(
-        const int ncol, const int nlay, const int ngas, const int igas, 
-        TF* __restrict__ vmr_out, TF* __restrict__ vmr_in,
+        const int ncol, const int nlay, const int dim1, const int dim2, const int ngas, const int igas, 
+        TF* __restrict__ vmr_out, const TF* __restrict__ vmr_in,
         TF* __restrict__ col_gas, const TF* __restrict__ col_dry)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
@@ -38,26 +40,27 @@ void fill_gases_kernel(
     if ( ( icol < ncol) && (ilay < nlay) )
     {
         const int idx_in = icol + ilay*ncol;
-        const int idx_out = icol + ilay*ncol;
+        const int idx_out1 = icol + ilay*ncol + (igas-1)*ncol*nlay;
+        const int idx_out2 = icol + ilay*ncol + igas*ncol*nlay;
         if (igas > 0)
         {
-            if (ncol == 1 && nlay == 1)
+            if (dim1 == 1 && dim2 == 1)
             { 
-                 vmr_out[idx_out] = vmr_in[0];
+                 vmr_out[idx_out1] = vmr_in[0];
             }
-            else if (ncol == 1)
+            else if (dim1 == 1)
             {
-                 vmr_out[idx_out] = vmr_in[ilay];
+                 vmr_out[idx_out1] = vmr_in[ilay];
             }
             else
             {
-                vmr_out[idx_out] = vmr_in[idx_in];
+                vmr_out[idx_out1] = vmr_in[idx_in];
             }
-            col_gas[idx_out] = vmr_out[idx_out] * col_dry[idx_in];
+            col_gas[idx_out2] = vmr_out[idx_out1] * col_dry[idx_in];
         }
         else if (igas == 0)
         {
-            col_gas[idx_out] = col_dry[idx_in];
+            col_gas[idx_out2] = col_dry[idx_in];
         }
     }
 }
@@ -174,7 +177,6 @@ void Gas_optics_rrtmgp<TF>::gas_optics_gpu(
         Array_gpu<TF,2>& toa_src,
         const Array_gpu<TF,2>& col_dry) const
 {
-    std::cout<<"?????"<<std::endl;
     const int ncol = play.dim(1);
     const int nlay = play.dim(2);
     const int ngpt = this->get_ngpt();
@@ -185,7 +187,7 @@ void Gas_optics_rrtmgp<TF>::gas_optics_gpu(
     Array_gpu<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
     Array_gpu<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
     Array_gpu<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
-    std::cout<<"?????"<<std::endl;
+    
     // Gas optics.
     compute_gas_taus_gpu(
             ncol, nlay, ngpt, nband,
@@ -194,10 +196,10 @@ void Gas_optics_rrtmgp<TF>::gas_optics_gpu(
             jtemp, jpress, jeta, tropo, fmajor,
             col_dry);
 
-    // External source function is constant.
-    for (int igpt=1; igpt<=ngpt; ++igpt)
-        for (int icol=1; icol<=ncol; ++icol)
-            toa_src.insert({icol, igpt},this->solar_source({igpt}));
+//    // External source function is constant.
+//    for (int igpt=1; igpt<=ngpt; ++igpt)
+//        for (int icol=1; icol<=ncol; ++icol)
+//            toa_src.insert({icol, igpt},this->solar_source({igpt}));
 }
 
 
@@ -223,6 +225,29 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus_gpu(
     Array_gpu<TF,4> col_mix({2, this->get_nflav(), ncol, nlay});
     Array_gpu<TF,5> fminor({2, 2, this->get_nflav(), ncol, nlay});
 
+    // Create cuda arrays with k-distribution variables
+    Array_gpu<TF,1> press_ref_log_gpu(this->press_ref_log);
+    Array_gpu<TF,1> temp_ref_gpu(this->temp_ref);
+    Array_gpu<TF,3> vmr_ref_gpu(this->vmr_ref);
+    Array_gpu<int,2> flavor_gpu(this->flavor);
+    Array_gpu<int,2> gpoint_flavor_gpu(this->gpoint_flavor);
+    Array_gpu<int,2> band_lims_gpt_gpu(this->get_band_lims_gpoint()); 
+    Array_gpu<TF,4> kmajor_gpu(this->kmajor);
+    Array_gpu<TF,3> kminor_lower_gpu(this->kminor_lower);
+    Array_gpu<TF,3> kminor_upper_gpu(this->kminor_upper);
+    Array_gpu<int,2> minor_limits_gpt_lower_gpu(this->minor_limits_gpt_lower);
+    Array_gpu<int,2> minor_limits_gpt_upper_gpu(this->minor_limits_gpt_upper);
+    Array_gpu<BOOL_TYPE,1> minor_scales_with_density_lower_gpu(this->minor_scales_with_density_lower);
+    Array_gpu<BOOL_TYPE,1> minor_scales_with_density_upper_gpu(this->minor_scales_with_density_upper);
+    Array_gpu<BOOL_TYPE,1> scale_by_complement_lower_gpu(this->scale_by_complement_lower);
+    Array_gpu<BOOL_TYPE,1> scale_by_complement_upper_gpu(this->scale_by_complement_upper);
+    Array_gpu<int,1> idx_minor_lower_gpu(this->idx_minor_lower);
+    Array_gpu<int,1> idx_minor_upper_gpu(this->idx_minor_upper);
+    Array_gpu<int,1> idx_minor_scaling_lower_gpu(this->idx_minor_scaling_lower);
+    Array_gpu<int,1> idx_minor_scaling_upper_gpu(this->idx_minor_scaling_upper);
+    Array_gpu<int,1> kminor_start_lower_gpu(this->kminor_start_lower);
+    Array_gpu<int,1> kminor_start_upper_gpu(this->kminor_start_upper);
+    
     // CvH add all the checking...
     const int ngas = this->get_ngas();
     const int nflav = this->get_nflav();
@@ -246,12 +271,77 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus_gpu(
    
     for (int igas=0; igas<=ngas; ++igas)
     {
-        Array_gpu<TF,2> vmr_2d = gas_desc.get_vmr(this->gas_names({igas}));
+        const Array_gpu<TF,2>& vmr_2d = igas > 0 ? gas_desc.get_vmr(this->gas_names({igas})) : gas_desc.get_vmr(this->gas_names({1}));
         fill_gases_kernel<<<grid_gpu, block_gpu>>>(
-            ncol, nlay, ngas, igas, vmr.ptr(), vmr_2d.ptr(), col_gas.ptr(), col_dry.ptr());
+            ncol, nlay, vmr_2d.dim(1), vmr_2d.dim(2), ngas, igas, vmr.ptr(), vmr_2d.ptr(), col_gas.ptr(), col_dry.ptr());
     }
-    vmr.dump("vmr_subset_gpu");
+
+    rrtmgp_kernel_launcher_cuda::zero_array(ngpt, nlay, ncol, tau);
+
+    rrtmgp_kernel_launcher_cuda::interpolation(
+            ncol, nlay,
+            ngas, nflav, neta, npres, ntemp,
+            flavor_gpu,
+            press_ref_log_gpu,
+            temp_ref_gpu,
+            this->press_ref_log_delta,
+            this->temp_ref_min,
+            this->temp_ref_delta,
+            this->press_ref_trop_log,
+            vmr_ref_gpu,
+            play,
+            tlay,
+            col_gas,
+            jtemp,
+            fmajor, fminor,
+            col_mix,
+            tropo,
+            jeta, jpress);
+    
+    int idx_h2o = -1;
+    for  (int i=1; i<=this->gas_names.dim(1); ++i)
+        if (gas_names({i}) == "h2o")
+        {
+            idx_h2o = i;
+            break;
+        }
+    
+    if (idx_h2o == -1)
+        throw std::runtime_error("idx_h2o cannot be found");
+
+
+    rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
+            ncol, nlay, nband, ngpt,
+            ngas, nflav, neta, npres, ntemp,
+            nminorlower, nminorklower,
+            nminorupper, nminorkupper,
+            idx_h2o,
+            gpoint_flavor_gpu,
+            band_lims_gpt_gpu,
+            kmajor_gpu,
+            kminor_lower_gpu,
+            kminor_upper_gpu,
+            minor_limits_gpt_lower_gpu,
+            minor_limits_gpt_upper_gpu,
+            minor_scales_with_density_lower_gpu,
+            minor_scales_with_density_upper_gpu,
+            scale_by_complement_lower_gpu,
+            scale_by_complement_upper_gpu,
+            idx_minor_lower_gpu,
+            idx_minor_upper_gpu,
+            idx_minor_scaling_lower_gpu,
+            idx_minor_scaling_upper_gpu,
+            kminor_start_lower_gpu,
+            kminor_start_upper_gpu,
+            tropo,
+            col_mix, fmajor, fminor,
+            play, tlay, col_gas,
+            jeta, jtemp, jpress,
+            tau);
+
+    tau.dump("tau_sub_gpu");
     throw 666;
+
 } 
 
 

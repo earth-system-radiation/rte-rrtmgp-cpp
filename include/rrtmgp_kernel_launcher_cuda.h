@@ -45,29 +45,29 @@ namespace rrtmgp_kernel_launcher_cuda
     void reorder12x21(const int ni, const int nj, const Array<TF,2>& arr_in, Array<TF,2>& arr_out);
 
     template<typename TF>
-    void zero_array(const int ni, const int nj, const int nk, Array<TF,3>& arr);
+    void zero_array(const int ni, const int nj, const int nk, Array_gpu<TF,3>& arr);
 
     template<typename TF>
     void interpolation(
             const int ncol, const int nlay,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
-            const Array<int,2>& flavor,
-            const Array<TF,1>& press_ref_log,
-            const Array<TF,1>& temp_ref,
+            const Array_gpu<int,2>& flavor,
+            const Array_gpu<TF,1>& press_ref_log,
+            const Array_gpu<TF,1>& temp_ref,
             TF press_ref_log_delta,
             TF temp_ref_min,
             TF temp_ref_delta,
             TF press_ref_trop_log,
-            const Array<TF,3>& vmr_ref,
-            const Array<TF,2>& play,
-            const Array<TF,2>& tlay,
-            Array<TF,3>& col_gas,
-            Array<int,2>& jtemp,
-            Array<TF,6>& fmajor, Array<TF,5>& fminor,
-            Array<TF,4>& col_mix,
-            Array<BOOL_TYPE,2>& tropo,
-            Array<int,4>& jeta,
-            Array<int,2>& jpress);
+            const Array_gpu<TF,3>& vmr_ref,
+            const Array_gpu<TF,2>& play,
+            const Array_gpu<TF,2>& tlay,
+            Array_gpu<TF,3>& col_gas,
+            Array_gpu<int,2>& jtemp,
+            Array_gpu<TF,6>& fmajor, Array_gpu<TF,5>& fminor,
+            Array_gpu<TF,4>& col_mix,
+            Array_gpu<BOOL_TYPE,2>& tropo,
+            Array_gpu<int,4>& jeta,
+            Array_gpu<int,2>& jpress);
 
     template<typename TF>
     void combine_and_reorder_2str(
@@ -94,29 +94,29 @@ namespace rrtmgp_kernel_launcher_cuda
             const int nminorlower, const int nminorklower,
             const int nminorupper, const int nminorkupper,
             const int idx_h2o,
-            const Array<int,2>& gpoint_flavor,
-            const Array<int,2>& band_lims_gpt,
-            const Array<TF,4>& kmajor,
-            const Array<TF,3>& kminor_lower,
-            const Array<TF,3>& kminor_upper,
-            const Array<int,2>& minor_limits_gpt_lower,
-            const Array<int,2>& minor_limits_gpt_upper,
-            const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
-            const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
-            const Array<BOOL_TYPE,1>& scale_by_complement_lower,
-            const Array<BOOL_TYPE,1>& scale_by_complement_upper,
-            const Array<int,1>& idx_minor_lower,
-            const Array<int,1>& idx_minor_upper,
-            const Array<int,1>& idx_minor_scaling_lower,
-            const Array<int,1>& idx_minor_scaling_upper,
-            const Array<int,1>& kminor_start_lower,
-            const Array<int,1>& kminor_start_upper,
-            const Array<BOOL_TYPE,2>& tropo,
-            const Array<TF,4>& col_mix, const Array<TF,6>& fmajor,
-            const Array<TF,5>& fminor, const Array<TF,2>& play,
-            const Array<TF,2>& tlay, const Array<TF,3>& col_gas,
-            const Array<int,4>& jeta, const Array<int,2>& jtemp,
-            const Array<int,2>& jpress, Array<TF,3>& tau);
+            const Array_gpu<int,2>& gpoint_flavor,
+            const Array_gpu<int,2>& band_lims_gpt,
+            const Array_gpu<TF,4>& kmajor,
+            const Array_gpu<TF,3>& kminor_lower,
+            const Array_gpu<TF,3>& kminor_upper,
+            const Array_gpu<int,2>& minor_limits_gpt_lower,
+            const Array_gpu<int,2>& minor_limits_gpt_upper,
+            const Array_gpu<BOOL_TYPE,1>& minor_scales_with_density_lower,
+            const Array_gpu<BOOL_TYPE,1>& minor_scales_with_density_upper,
+            const Array_gpu<BOOL_TYPE,1>& scale_by_complement_lower,
+            const Array_gpu<BOOL_TYPE,1>& scale_by_complement_upper,
+            const Array_gpu<int,1>& idx_minor_lower,
+            const Array_gpu<int,1>& idx_minor_upper,
+            const Array_gpu<int,1>& idx_minor_scaling_lower,
+            const Array_gpu<int,1>& idx_minor_scaling_upper,
+            const Array_gpu<int,1>& kminor_start_lower,
+            const Array_gpu<int,1>& kminor_start_upper,
+            const Array_gpu<BOOL_TYPE,2>& tropo,
+            const Array_gpu<TF,4>& col_mix, const Array_gpu<TF,6>& fmajor,
+            const Array_gpu<TF,5>& fminor, const Array_gpu<TF,2>& play,
+            const Array_gpu<TF,2>& tlay, const Array_gpu<TF,3>& col_gas,
+            const Array_gpu<int,4>& jeta, const Array_gpu<int,2>& jtemp,
+            const Array_gpu<int,2>& jpress, Array_gpu<TF,3>& tau);
 
     template<typename TF>
     void Planck_source(

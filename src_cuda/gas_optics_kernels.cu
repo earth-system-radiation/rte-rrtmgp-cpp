@@ -74,40 +74,6 @@ namespace
     }
 
 
-    template<typename TF>__global__
-    void fill_gases_kernel(
-            const int ncol, const int nlay, const int ngas, const int igas, const int dim1, const int dim2, 
-            TF* __restrict__ vmr_out, TF* __restrict__ vmr_in,
-            TF* __restrict__ col_gas, const TF* __restrict__ col_dry)
-    {
-        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-        const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-        if ( ( icol < ncol) && (ilay < nlay) )
-        {
-            const int idx_in = icol + ilay*ncol;
-            const int idx_out = icol + ilay*ncol;
-            if (igas > 0)
-            {
-                if (dim1 == 1 && dim2 == 1)
-                { 
-                     vmr_out[idx_out] = vmr_in[0];
-                }
-                else if (dim1 == 1)
-                {
-                     vmr_out[idx_out] = vmr_in[ilay];
-                }
-                else
-                {
-                    vmr_out[idx_out] = vmr_in[idx_in];
-                }
-                col_gas[idx_out] = vmr_out[idx_out] * col_dry[idx_in];
-            }
-            else if (igas == 0)
-            {
-                col_gas[idx_out] = col_dry[idx_in];
-            }
-        }
-    }
 
     template<typename TF>__global__
     void reorder12x21_kernel(
@@ -350,7 +316,7 @@ namespace
             for (int igpt=gpt_start; igpt<gpt_end; ++igpt)
             {
                 const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
-                tau[idx_out] = tau_major[idx_out];
+                tau[idx_out] += tau_major[idx_out];
                 //should be '+=' later on, but we first need the zero_arrays for that
             }
         }
@@ -566,88 +532,88 @@ namespace
 
 namespace rrtmgp_kernel_launcher_cuda
 {
-    template<typename TF>
-    void fill_gases(
-            const int ncol, const int nlay, const int ngas, 
-            Array<TF,3>& vmr_out, 
-            Array<TF,3>& col_gas, const Array<TF,2>& col_dry,
-            const Gas_concs<TF>& gas_desc, const Array<std::string,1>& gas_names)
-    {
-        const int arr_in_size = col_dry.size() * sizeof(TF);
-        const int vmr_out_size = vmr_out.size() * sizeof(TF);
-        const int gas_out_size = col_gas.size() * sizeof(TF);
-        int dim1;
-        int dim2;
-        TF* vmr_out_gpu;
-        TF* vmr_in_gpu;
-        TF* col_gas_gpu;
-        TF* col_dry_gpu;
-
-        cuda_safe_call(cudaMalloc((void **) &vmr_out_gpu, vmr_out_size));
-        cuda_safe_call(cudaMalloc((void **) &vmr_in_gpu, arr_in_size));
-        cuda_safe_call(cudaMalloc((void **) &col_gas_gpu, gas_out_size));
-        cuda_safe_call(cudaMalloc((void **) &col_dry_gpu, arr_in_size));
-
-        cuda_safe_call(cudaMemcpy(col_dry_gpu, col_dry.ptr(), arr_in_size, cudaMemcpyHostToDevice));
-        
-        cudaEvent_t startEvent, stopEvent;
-        float elapsedtime;
-        cudaEventCreate(&startEvent);
-        cudaEventCreate(&stopEvent);
-        cudaEventRecord(startEvent, 0);
-
-        const int block_col = 16;
-        const int block_lay = 16;
-
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-
-        dim3 grid_gpu(grid_col, grid_lay);
-        dim3 block_gpu(block_col, block_lay);
-        std::cout<<ngas<<std::endl;
-        for (int igas = 0; igas<=ngas; ++igas)
-        {
-            if (igas > 0)
-            { 
-                std::cout<<"#gas" <<igas<<std::endl;
-                cuda_safe_call(cudaMemcpy(vmr_in_gpu, gas_desc.get_vmr(gas_names({igas})).ptr(), arr_in_size, cudaMemcpyHostToDevice));
-                dim1 = gas_desc.get_vmr(gas_names({igas})).dim(1);
-                dim2 = gas_desc.get_vmr(gas_names({igas})).dim(2);
-            }
-            else
-            {
-                dim1 = 1;
-                dim2 = 1;
-            }
-            std::cout<<"#gas" <<igas<<std::endl;
-            fill_gases_kernel<<<grid_gpu, block_gpu>>>(
-                ncol, nlay, ngas, igas, dim1, dim2, 
-                vmr_out_gpu, vmr_in_gpu,
-                col_gas_gpu, col_dry_gpu);
-            std::cout<<"#gas" <<igas<<std::endl;
-            if (igas > 0)
-                cuda_safe_call(cudaMemcpy(&vmr_out.v()[(igas-1)*ncol*nlay],vmr_out_gpu, vmr_out_size, cudaMemcpyDeviceToHost));
-            cuda_safe_call(cudaMemcpy(&col_gas.v()[igas*ncol*nlay],col_gas_gpu, gas_out_size, cudaMemcpyDeviceToHost));
-            std::cout<<"#gas" <<igas<<std::endl;
-            cuda_check_error();
-            cuda_safe_call(cudaDeviceSynchronize());
-        }
-        std::cout<<"#gas" <<std::endl;
-
-        //cuda_check_error();
-        //cuda_safe_call(cudaDeviceSynchronize());
-        std::cout<<"#gas" <<std::endl;
-        cudaEventRecord(stopEvent, 0);
-        cudaEventSynchronize(stopEvent);
-        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-        std::cout<<"GPU fill gases: "<<elapsedtime<<" (ms)"<<std::endl;
-
-
-        cuda_safe_call(cudaFree(vmr_out_gpu));
-        cuda_safe_call(cudaFree(vmr_in_gpu));
-        cuda_safe_call(cudaFree(col_gas_gpu));
-        cuda_safe_call(cudaFree(col_dry_gpu));
-    }
+//    template<typename TF>
+//    void fill_gases(
+//            const int ncol, const int nlay, const int ngas, 
+//            Array<TF,3>& vmr_out, 
+//            Array<TF,3>& col_gas, const Array<TF,2>& col_dry,
+//            const Gas_concs<TF>& gas_desc, const Array<std::string,1>& gas_names)
+//    {
+//        const int arr_in_size = col_dry.size() * sizeof(TF);
+//        const int vmr_out_size = vmr_out.size() * sizeof(TF);
+//        const int gas_out_size = col_gas.size() * sizeof(TF);
+//        int dim1;
+//        int dim2;
+//        TF* vmr_out_gpu;
+//        TF* vmr_in_gpu;
+//        TF* col_gas_gpu;
+//        TF* col_dry_gpu;
+//
+//        cuda_safe_call(cudaMalloc((void **) &vmr_out_gpu, vmr_out_size));
+//        cuda_safe_call(cudaMalloc((void **) &vmr_in_gpu, arr_in_size));
+//        cuda_safe_call(cudaMalloc((void **) &col_gas_gpu, gas_out_size));
+//        cuda_safe_call(cudaMalloc((void **) &col_dry_gpu, arr_in_size));
+//
+//        cuda_safe_call(cudaMemcpy(col_dry_gpu, col_dry.ptr(), arr_in_size, cudaMemcpyHostToDevice));
+//        
+//        cudaEvent_t startEvent, stopEvent;
+//        float elapsedtime;
+//        cudaEventCreate(&startEvent);
+//        cudaEventCreate(&stopEvent);
+//        cudaEventRecord(startEvent, 0);
+//
+//        const int block_col = 16;
+//        const int block_lay = 16;
+//
+//        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+//        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
+//
+//        dim3 grid_gpu(grid_col, grid_lay);
+//        dim3 block_gpu(block_col, block_lay);
+//        std::cout<<ngas<<std::endl;
+//        for (int igas = 0; igas<=ngas; ++igas)
+//        {
+//            if (igas > 0)
+//            { 
+//                std::cout<<"#gas" <<igas<<std::endl;
+//                cuda_safe_call(cudaMemcpy(vmr_in_gpu, gas_desc.get_vmr(gas_names({igas})).ptr(), arr_in_size, cudaMemcpyHostToDevice));
+//                dim1 = gas_desc.get_vmr(gas_names({igas})).dim(1);
+//                dim2 = gas_desc.get_vmr(gas_names({igas})).dim(2);
+//            }
+//            else
+//            {
+//                dim1 = 1;
+//                dim2 = 1;
+//            }
+//            std::cout<<"#gas" <<igas<<std::endl;
+//            fill_gases_kernel<<<grid_gpu, block_gpu>>>(
+//                ncol, nlay, ngas, igas, dim1, dim2, 
+//                vmr_out_gpu, vmr_in_gpu,
+//                col_gas_gpu, col_dry_gpu);
+//            std::cout<<"#gas" <<igas<<std::endl;
+//            if (igas > 0)
+//                cuda_safe_call(cudaMemcpy(&vmr_out.v()[(igas-1)*ncol*nlay],vmr_out_gpu, vmr_out_size, cudaMemcpyDeviceToHost));
+//            cuda_safe_call(cudaMemcpy(&col_gas.v()[igas*ncol*nlay],col_gas_gpu, gas_out_size, cudaMemcpyDeviceToHost));
+//            std::cout<<"#gas" <<igas<<std::endl;
+//            cuda_check_error();
+//            cuda_safe_call(cudaDeviceSynchronize());
+//        }
+//        std::cout<<"#gas" <<std::endl;
+//
+//        //cuda_check_error();
+//        //cuda_safe_call(cudaDeviceSynchronize());
+//        std::cout<<"#gas" <<std::endl;
+//        cudaEventRecord(stopEvent, 0);
+//        cudaEventSynchronize(stopEvent);
+//        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
+//        std::cout<<"GPU fill gases: "<<elapsedtime<<" (ms)"<<std::endl;
+//
+//
+//        cuda_safe_call(cudaFree(vmr_out_gpu));
+//        cuda_safe_call(cudaFree(vmr_in_gpu));
+//        cuda_safe_call(cudaFree(col_gas_gpu));
+//        cuda_safe_call(cudaFree(col_dry_gpu));
+//    }
 
     template<typename TF>
     void reorder123x321(const int ni, const int nj, const int nk,
@@ -736,18 +702,8 @@ namespace rrtmgp_kernel_launcher_cuda
     }
 
     template<typename TF>
-    void zero_array(const int ni, const int nj, const int nk, Array<TF,3>& arr)
+    void zero_array(const int ni, const int nj, const int nk, Array_gpu<TF,3>& arr)
     {
-        const int arr_size = arr.size() * sizeof(TF);
-        TF* arr_gpu;
-        cuda_safe_call(cudaMalloc((void **) &arr_gpu, arr_size));
-
-        cudaEvent_t startEvent, stopEvent;
-        float elapsedtime;
-        cudaEventCreate(&startEvent);
-        cudaEventCreate(&stopEvent);
-        cudaEventRecord(startEvent, 0);
-
         const int block_i = 32;
         const int block_j = 16;
         const int block_k = 1;
@@ -760,100 +716,34 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 block_gpu(block_i, block_j, block_k);
 
         zero_array_kernel<<<grid_gpu, block_gpu>>>(
-                ni, nj, nk, arr_gpu);
+                ni, nj, nk, arr.ptr());
 
-        cuda_check_error();
-        cuda_safe_call(cudaDeviceSynchronize());
-        cudaEventRecord(stopEvent, 0);
-        cudaEventSynchronize(stopEvent);
-        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-        std::cout<<"GPU zero_array: "<<elapsedtime<<" (ms)"<<std::endl;
-
-        cuda_safe_call(cudaMemcpy(arr.ptr(), arr_gpu, arr_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaFree(arr_gpu));
+//        cuda_check_error();
+//        cuda_safe_call(cudaDeviceSynchronize());
     }
 
     template<typename TF>
     void interpolation(
             const int ncol, const int nlay,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
-            const Array<int,2>& flavor,
-            const Array<TF,1>& press_ref_log,
-            const Array<TF,1>& temp_ref,
+            const Array_gpu<int,2>& flavor,
+            const Array_gpu<TF,1>& press_ref_log,
+            const Array_gpu<TF,1>& temp_ref,
             TF press_ref_log_delta,
             TF temp_ref_min,
             TF temp_ref_delta,
             TF press_ref_trop_log,
-            const Array<TF,3>& vmr_ref,
-            const Array<TF,2>& play,
-            const Array<TF,2>& tlay,
-            Array<TF,3>& col_gas,
-            Array<int,2>& jtemp,
-            Array<TF,6>& fmajor, Array<TF,5>& fminor,
-            Array<TF,4>& col_mix,
-            Array<BOOL_TYPE,2>& tropo,
-            Array<int,4>& jeta,
-            Array<int,2>& jpress)
+            const Array_gpu<TF,3>& vmr_ref,
+            const Array_gpu<TF,2>& play,
+            const Array_gpu<TF,2>& tlay,
+            Array_gpu<TF,3>& col_gas,
+            Array_gpu<int,2>& jtemp,
+            Array_gpu<TF,6>& fmajor, Array_gpu<TF,5>& fminor,
+            Array_gpu<TF,4>& col_mix,
+            Array_gpu<BOOL_TYPE,2>& tropo,
+            Array_gpu<int,4>& jeta,
+            Array_gpu<int,2>& jpress)
     {
-        const int flavor_size = flavor.size() * sizeof(int);
-        const int press_ref_log_size = press_ref_log.size() * sizeof(TF);
-        const int temp_ref_size = temp_ref.size() * sizeof(TF);
-        const int vmr_ref_size = vmr_ref.size() * sizeof(TF);
-        const int collay_tf_size = ncol * nlay * sizeof(TF);
-        const int collay_int_size = ncol * nlay * sizeof(int);
-        const int col_gas_size = col_gas.size() * sizeof(TF);
-        const int jtemp_size = jtemp.size() * sizeof(int);
-        const int fmajor_size = fmajor.size() * sizeof(TF);
-        const int fminor_size = fminor.size() * sizeof(TF);
-        const int col_mix_size = col_mix.size() * sizeof(TF);
-        const int tropo_size = tropo.size() * sizeof(BOOL_TYPE);
-        const int jeta_size = jeta.size() * sizeof(int);
-        const int jpress_size = jpress.size() * sizeof(int);
-
-        int* flavor_gpu;
-        TF* press_ref_log_gpu;
-        TF* temp_ref_gpu;
-        TF* vmr_ref_gpu;
-        TF* play_gpu;
-        TF* tlay_gpu;
-        TF* col_gas_gpu;
-        int* jtemp_gpu;
-        TF* fmajor_gpu;
-        TF* fminor_gpu;
-        TF* col_mix_gpu;
-        BOOL_TYPE* tropo_gpu;
-        int* jeta_gpu;
-        int* jpress_gpu;
-
-        cuda_safe_call(cudaMalloc((void **) &flavor_gpu, flavor_size));
-        cuda_safe_call(cudaMalloc((void **) &press_ref_log_gpu, press_ref_log_size));
-        cuda_safe_call(cudaMalloc((void **) &temp_ref_gpu, temp_ref_size));
-        cuda_safe_call(cudaMalloc((void **) &vmr_ref_gpu, vmr_ref_size));
-        cuda_safe_call(cudaMalloc((void **) &play_gpu, collay_tf_size));
-        cuda_safe_call(cudaMalloc((void **) &tlay_gpu, collay_tf_size));
-        cuda_safe_call(cudaMalloc((void **) &col_gas_gpu, col_gas_size));
-        cuda_safe_call(cudaMalloc((void **) &jtemp_gpu, collay_int_size));
-        cuda_safe_call(cudaMalloc((void **) &fmajor_gpu, fmajor_size));
-        cuda_safe_call(cudaMalloc((void **) &fminor_gpu, fminor_size));
-        cuda_safe_call(cudaMalloc((void **) &col_mix_gpu, col_mix_size));
-        cuda_safe_call(cudaMalloc((void **) &tropo_gpu, tropo_size));
-        cuda_safe_call(cudaMalloc((void **) &jeta_gpu, jeta_size));
-        cuda_safe_call(cudaMalloc((void **) &jpress_gpu, collay_int_size));
-
-        cuda_safe_call(cudaMemcpy(flavor_gpu, flavor.ptr(), flavor_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(press_ref_log_gpu, press_ref_log.ptr(), press_ref_log_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(temp_ref_gpu, temp_ref.ptr(), temp_ref_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(vmr_ref_gpu, vmr_ref.ptr(), vmr_ref_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(play_gpu, play.ptr(), collay_tf_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(tlay_gpu, tlay.ptr(), collay_tf_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(col_gas_gpu, col_gas.ptr(), col_gas_size, cudaMemcpyHostToDevice));
-
-        cudaEvent_t startEvent, stopEvent;
-        float elapsedtime;
-        cudaEventCreate(&startEvent);
-        cudaEventCreate(&stopEvent);
-        cudaEventRecord(startEvent, 0);
-
         const int block_lay = 16;
         const int block_col = 32;
 
@@ -866,45 +756,14 @@ namespace rrtmgp_kernel_launcher_cuda
         TF tmin = std::numeric_limits<TF>::min();
         interpolation_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngas, nflav, neta, npres, ntemp, tmin,
-                flavor_gpu, press_ref_log_gpu, temp_ref_gpu,
+                flavor.ptr(), press_ref_log.ptr(), temp_ref.ptr(),
                 press_ref_log_delta, temp_ref_min,
                 temp_ref_delta, press_ref_trop_log,
-                vmr_ref_gpu, play_gpu, tlay_gpu,
-                col_gas_gpu, jtemp_gpu, fmajor_gpu,
-                fminor_gpu, col_mix_gpu, tropo_gpu,
-                jeta_gpu, jpress_gpu);
+                vmr_ref.ptr(), play.ptr(), tlay.ptr(),
+                col_gas.ptr(), jtemp.ptr(), fmajor.ptr(),
+                fminor.ptr(), col_mix.ptr(), tropo.ptr(),
+                jeta.ptr(), jpress.ptr());
 
-        cuda_check_error();
-        cuda_safe_call(cudaDeviceSynchronize());
-        cudaEventRecord(stopEvent, 0);
-        cudaEventSynchronize(stopEvent);
-        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-        std::cout<<"GPU interpolation: "<<elapsedtime<<" (ms)"<<std::endl;
-
-        // Copy back the results.
-        cuda_safe_call(cudaMemcpy(jtemp.ptr(), jtemp_gpu, jtemp_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(fmajor.ptr(), fmajor_gpu, fmajor_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(fminor.ptr(), fminor_gpu, fminor_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(col_mix.ptr(), col_mix_gpu, col_mix_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(tropo.ptr(), tropo_gpu, tropo_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(jeta.ptr(), jeta_gpu, jeta_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(jpress.ptr(), jpress_gpu, jpress_size, cudaMemcpyDeviceToHost));
-
-        // Deallocate a CUDA array.
-        cuda_safe_call(cudaFree(flavor_gpu));
-        cuda_safe_call(cudaFree(press_ref_log_gpu));
-        cuda_safe_call(cudaFree(temp_ref_gpu));
-        cuda_safe_call(cudaFree(vmr_ref_gpu));
-        cuda_safe_call(cudaFree(play_gpu));
-        cuda_safe_call(cudaFree(tlay_gpu));
-        cuda_safe_call(cudaFree(col_gas_gpu));
-        cuda_safe_call(cudaFree(jtemp_gpu));
-        cuda_safe_call(cudaFree(fmajor_gpu));
-        cuda_safe_call(cudaFree(fminor_gpu));
-        cuda_safe_call(cudaFree(col_mix_gpu));
-        cuda_safe_call(cudaFree(tropo_gpu));
-        cuda_safe_call(cudaFree(jeta_gpu));
-        cuda_safe_call(cudaFree(jpress_gpu));
     }
 
     template<typename TF>
@@ -1095,155 +954,36 @@ namespace rrtmgp_kernel_launcher_cuda
             const int nminorlower, const int nminorklower,
             const int nminorupper, const int nminorkupper,
             const int idx_h2o,
-            const Array<int,2>& gpoint_flavor,
-            const Array<int,2>& band_lims_gpt,
-            const Array<TF,4>& kmajor,
-            const Array<TF,3>& kminor_lower,
-            const Array<TF,3>& kminor_upper,
-            const Array<int,2>& minor_limits_gpt_lower,
-            const Array<int,2>& minor_limits_gpt_upper,
-            const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
-            const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
-            const Array<BOOL_TYPE,1>& scale_by_complement_lower,
-            const Array<BOOL_TYPE,1>& scale_by_complement_upper,
-            const Array<int,1>& idx_minor_lower,
-            const Array<int,1>& idx_minor_upper,
-            const Array<int,1>& idx_minor_scaling_lower,
-            const Array<int,1>& idx_minor_scaling_upper,
-            const Array<int,1>& kminor_start_lower,
-            const Array<int,1>& kminor_start_upper,
-            const Array<BOOL_TYPE,2>& tropo,
-            const Array<TF,4>& col_mix, const Array<TF,6>& fmajor,
-            const Array<TF,5>& fminor, const Array<TF,2>& play,
-            const Array<TF,2>& tlay, const Array<TF,3>& col_gas,
-            const Array<int,4>& jeta, const Array<int,2>& jtemp,
-            const Array<int,2>& jpress, Array<TF,3>& tau)
+            const Array_gpu<int,2>& gpoint_flavor,
+            const Array_gpu<int,2>& band_lims_gpt,
+            const Array_gpu<TF,4>& kmajor,
+            const Array_gpu<TF,3>& kminor_lower,
+            const Array_gpu<TF,3>& kminor_upper,
+            const Array_gpu<int,2>& minor_limits_gpt_lower,
+            const Array_gpu<int,2>& minor_limits_gpt_upper,
+            const Array_gpu<BOOL_TYPE,1>& minor_scales_with_density_lower,
+            const Array_gpu<BOOL_TYPE,1>& minor_scales_with_density_upper,
+            const Array_gpu<BOOL_TYPE,1>& scale_by_complement_lower,
+            const Array_gpu<BOOL_TYPE,1>& scale_by_complement_upper,
+            const Array_gpu<int,1>& idx_minor_lower,
+            const Array_gpu<int,1>& idx_minor_upper,
+            const Array_gpu<int,1>& idx_minor_scaling_lower,
+            const Array_gpu<int,1>& idx_minor_scaling_upper,
+            const Array_gpu<int,1>& kminor_start_lower,
+            const Array_gpu<int,1>& kminor_start_upper,
+            const Array_gpu<BOOL_TYPE,2>& tropo,
+            const Array_gpu<TF,4>& col_mix, const Array_gpu<TF,6>& fmajor,
+            const Array_gpu<TF,5>& fminor, const Array_gpu<TF,2>& play,
+            const Array_gpu<TF,2>& tlay, const Array_gpu<TF,3>& col_gas,
+            const Array_gpu<int,4>& jeta, const Array_gpu<int,2>& jtemp,
+            const Array_gpu<int,2>& jpress, Array_gpu<TF,3>& tau)
     {
-        float elapsedtime;
-        const int gpoint_flavor_size = gpoint_flavor.size()*sizeof(int);
-        const int band_lims_gpt_size = band_lims_gpt.size()*sizeof(int);
-        const int kmajor_size = kmajor.size()*sizeof(TF);
-        const int kminor_lower_size = kminor_lower.size()*sizeof(TF);
-        const int kminor_upper_size = kminor_upper.size()*sizeof(TF);
-        const int minor_limits_gpt_lower_size = minor_limits_gpt_lower.size()*sizeof(int);
-        const int minor_limits_gpt_upper_size = minor_limits_gpt_upper.size()*sizeof(int);
-        const int nminorlower_bool_size = nminorlower*sizeof(BOOL_TYPE); //minor scales with/scale by complement
-        const int nminorupper_bool_size = nminorlower*sizeof(BOOL_TYPE); //minor scales with/scale by complement
-        const int nminorlower_int_size = nminorlower*sizeof(int); //idx_minor(scaling) kminor
-        const int nminorupper_int_size = nminorlower*sizeof(int);
-        const int tropo_size = tropo.size()*sizeof(BOOL_TYPE);
-        const int col_mix_size = col_mix.size()*sizeof(TF);
-        const int fmajor_size = fmajor.size()*sizeof(TF);
-        const int fminor_size = fminor.size()*sizeof(TF);
-        const int collay_tf_size = ncol*nlay*sizeof(TF); //tlay,play
-        const int col_gas_size = col_gas.size()*sizeof(TF);
-        const int jeta_size =  jeta.size()*sizeof(int);
-        const int collay_int_size = ncol*nlay*sizeof(int);
-        const int itropo_size = 2*ncol*sizeof(int);
         const int tau_size = tau.size()*sizeof(TF);
+        TF* tau_major;
+        TF* tau_minor;
+        cuda_safe_call(cudaMalloc((void**)& tau_major, tau_size));
+        cuda_safe_call(cudaMalloc((void**)& tau_minor, tau_size));
         
-        int* gpoint_flavor_gpu;
-        int* band_lims_gpt_gpu;
-        TF* kmajor_gpu;
-        TF* kminor_lower_gpu;
-        TF* kminor_upper_gpu;
-        int* minor_limits_gpt_lower_gpu;
-        int* minor_limits_gpt_upper_gpu;
-        BOOL_TYPE* minor_scales_with_density_lower_gpu;
-        BOOL_TYPE* minor_scales_with_density_upper_gpu;
-        BOOL_TYPE* scale_by_complement_lower_gpu;
-        BOOL_TYPE* scale_by_complement_upper_gpu;
-        int* idx_minor_lower_gpu;
-        int* idx_minor_upper_gpu;
-        int* idx_minor_scaling_lower_gpu;
-        int* idx_minor_scaling_upper_gpu;
-        int* kminor_start_lower_gpu;
-        int* kminor_start_upper_gpu;
-        BOOL_TYPE* tropo_gpu;
-        TF* col_mix_gpu;
-        TF* fmajor_gpu;
-        TF* fminor_gpu;
-        TF* play_gpu;
-        TF* tlay_gpu;
-        TF* col_gas_gpu;
-        int* jeta_gpu;
-        int* jtemp_gpu;
-        int* jpress_gpu;
-        int* itropo_lower_gpu;
-        int* itropo_upper_gpu;
-        TF* tau_gpu;
-        TF* tau_major_gpu;
-        TF* tau_minor_gpu;
-
-        // Allocate a CUDA array.
-        cuda_safe_call(cudaMalloc((void**)& gpoint_flavor_gpu, gpoint_flavor_size));
-        cuda_safe_call(cudaMalloc((void**)& band_lims_gpt_gpu, band_lims_gpt_size));
-        cuda_safe_call(cudaMalloc((void**)& kmajor_gpu, kmajor_size));
-        cuda_safe_call(cudaMalloc((void**)& kminor_lower_gpu, kminor_lower_size));
-        cuda_safe_call(cudaMalloc((void**)& kminor_upper_gpu, kminor_upper_size));
-        cuda_safe_call(cudaMalloc((void**)& minor_limits_gpt_lower_gpu, minor_limits_gpt_lower_size));
-        cuda_safe_call(cudaMalloc((void**)& minor_limits_gpt_upper_gpu, minor_limits_gpt_upper_size));
-        cuda_safe_call(cudaMalloc((void**)& minor_scales_with_density_lower_gpu, nminorlower_bool_size));
-        cuda_safe_call(cudaMalloc((void**)& minor_scales_with_density_upper_gpu, nminorupper_bool_size));
-        cuda_safe_call(cudaMalloc((void**)& scale_by_complement_lower_gpu, nminorlower_bool_size));
-        cuda_safe_call(cudaMalloc((void**)& scale_by_complement_upper_gpu, nminorupper_bool_size));
-        cuda_safe_call(cudaMalloc((void**)& idx_minor_lower_gpu, nminorlower_int_size));
-        cuda_safe_call(cudaMalloc((void**)& idx_minor_upper_gpu, nminorupper_int_size));
-        cuda_safe_call(cudaMalloc((void**)& idx_minor_scaling_lower_gpu, nminorlower_int_size));
-        cuda_safe_call(cudaMalloc((void**)& idx_minor_scaling_upper_gpu, nminorupper_int_size));
-        cuda_safe_call(cudaMalloc((void**)& kminor_start_lower_gpu, nminorlower_int_size));
-        cuda_safe_call(cudaMalloc((void**)& kminor_start_upper_gpu, nminorupper_int_size));
-        cuda_safe_call(cudaMalloc((void**)& tropo_gpu, tropo_size));
-        cuda_safe_call(cudaMalloc((void**)& col_mix_gpu, col_mix_size));
-        cuda_safe_call(cudaMalloc((void**)& fmajor_gpu, fmajor_size));
-        cuda_safe_call(cudaMalloc((void**)& fminor_gpu, fminor_size));
-        cuda_safe_call(cudaMalloc((void**)& play_gpu, collay_tf_size));
-        cuda_safe_call(cudaMalloc((void**)& tlay_gpu, collay_tf_size));
-        cuda_safe_call(cudaMalloc((void**)& col_gas_gpu, col_gas_size));
-        cuda_safe_call(cudaMalloc((void**)& jeta_gpu, jeta_size));
-        cuda_safe_call(cudaMalloc((void**)& jtemp_gpu, collay_int_size));
-        cuda_safe_call(cudaMalloc((void**)& jpress_gpu, collay_int_size));
-        cuda_safe_call(cudaMalloc((void**)& itropo_lower_gpu, itropo_size));
-        cuda_safe_call(cudaMalloc((void**)& itropo_upper_gpu, itropo_size));
-        cuda_safe_call(cudaMalloc((void**)& tau_gpu, tau_size));
-        cuda_safe_call(cudaMalloc((void**)& tau_major_gpu, tau_size));
-        cuda_safe_call(cudaMalloc((void**)& tau_minor_gpu, tau_size));
-
-        // Copy the data to the GPU.
-        cuda_safe_call(cudaMemcpy(gpoint_flavor_gpu, gpoint_flavor.ptr(), gpoint_flavor_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(band_lims_gpt_gpu, band_lims_gpt.ptr(), band_lims_gpt_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(kmajor_gpu, kmajor.ptr(), kmajor_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(kminor_lower_gpu, kminor_lower.ptr(), kminor_lower_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(kminor_upper_gpu, kminor_upper.ptr(), kminor_upper_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(minor_limits_gpt_lower_gpu, minor_limits_gpt_lower.ptr(), minor_limits_gpt_lower_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(minor_limits_gpt_upper_gpu, minor_limits_gpt_upper.ptr(), minor_limits_gpt_upper_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(minor_scales_with_density_lower_gpu, minor_scales_with_density_lower.ptr(), nminorlower_bool_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(minor_scales_with_density_upper_gpu, minor_scales_with_density_upper.ptr(), nminorupper_bool_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(scale_by_complement_lower_gpu, scale_by_complement_lower.ptr(), nminorlower_bool_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(scale_by_complement_upper_gpu, scale_by_complement_upper.ptr(), nminorupper_bool_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(idx_minor_lower_gpu, idx_minor_lower.ptr(), nminorlower_int_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(idx_minor_upper_gpu, idx_minor_upper.ptr(), nminorupper_int_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(idx_minor_scaling_lower_gpu, idx_minor_scaling_lower.ptr(), nminorlower_int_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(idx_minor_scaling_upper_gpu, idx_minor_scaling_upper.ptr(), nminorupper_int_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(kminor_start_lower_gpu, kminor_start_lower.ptr(), nminorlower_int_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(kminor_start_upper_gpu, kminor_start_upper.ptr(), nminorupper_int_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(tropo_gpu, tropo.ptr(), tropo_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(col_mix_gpu, col_mix.ptr(), col_mix_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(fmajor_gpu, fmajor.ptr(), fmajor_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(fminor_gpu, fminor.ptr(), fminor_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(play_gpu, play.ptr(), collay_tf_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(tlay_gpu, tlay.ptr(), collay_tf_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(col_gas_gpu, col_gas.ptr(), col_gas_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(jeta_gpu, jeta.ptr(), jeta_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(jtemp_gpu, jtemp.ptr(), collay_int_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(jpress_gpu, jpress.ptr(), collay_int_size, cudaMemcpyHostToDevice));
-
-        cudaEvent_t startEvent, stopEvent;
-        cudaEventCreate(&startEvent);
-        cudaEventCreate(&stopEvent);
-        cudaEventRecord(startEvent, 0);
-
-        // Call the kernel.
         const int block_bnd_maj = 14;
         const int block_lay_maj = 1;
         const int block_col_maj = 32;
@@ -1258,10 +998,10 @@ namespace rrtmgp_kernel_launcher_cuda
         compute_tau_major_absorption_kernel<<<grid_gpu_maj, block_gpu_maj>>>(
                 ncol, nlay, nband, ngpt,
                 nflav, neta, npres, ntemp,
-                gpoint_flavor_gpu, band_lims_gpt_gpu,
-                kmajor_gpu, col_mix_gpu, fmajor_gpu, jeta_gpu,
-                tropo_gpu, jtemp_gpu, jpress_gpu,
-                tau_gpu, tau_major_gpu);
+                gpoint_flavor.ptr(), band_lims_gpt.ptr(),
+                kmajor.ptr(), col_mix.ptr(), fmajor.ptr(), jeta.ptr(),
+                tropo.ptr(), jtemp.ptr(), jpress.ptr(),
+                tau.ptr(), tau_major);
 
         const int nscale_lower = scale_by_complement_lower.dim(1);
         const int nscale_upper = scale_by_complement_upper.dim(1);
@@ -1281,61 +1021,20 @@ namespace rrtmgp_kernel_launcher_cuda
                 nminorlower, nminorupper,
                 nminorklower,nminorkupper,
                 idx_h2o,
-                gpoint_flavor_gpu,
-                kminor_lower_gpu, kminor_upper_gpu,
-                minor_limits_gpt_lower_gpu, minor_limits_gpt_upper_gpu,
-                minor_scales_with_density_lower_gpu, minor_scales_with_density_upper_gpu,
-                scale_by_complement_lower_gpu, scale_by_complement_upper_gpu,
-                idx_minor_lower_gpu, idx_minor_upper_gpu,
-                idx_minor_scaling_lower_gpu, idx_minor_scaling_upper_gpu,
-                kminor_start_lower_gpu, kminor_start_upper_gpu,
-                play_gpu, tlay_gpu, col_gas_gpu,
-                fminor_gpu, jeta_gpu, jtemp_gpu,
-                tropo_gpu, tau_gpu, tau_minor_gpu);
+                gpoint_flavor.ptr(),
+                kminor_lower.ptr(), kminor_upper.ptr(),
+                minor_limits_gpt_lower.ptr(), minor_limits_gpt_upper.ptr(),
+                minor_scales_with_density_lower.ptr(), minor_scales_with_density_upper.ptr(),
+                scale_by_complement_lower.ptr(), scale_by_complement_upper.ptr(),
+                idx_minor_lower.ptr(), idx_minor_upper.ptr(),
+                idx_minor_scaling_lower.ptr(), idx_minor_scaling_upper.ptr(),
+                kminor_start_lower.ptr(), kminor_start_upper.ptr(),
+                play.ptr(), tlay.ptr(), col_gas.ptr(),
+                fminor.ptr(), jeta.ptr(), jtemp.ptr(),
+                tropo.ptr(), tau.ptr(), tau_minor);
 
-        cuda_check_error();
-        cuda_safe_call(cudaDeviceSynchronize());
-        cudaEventRecord(stopEvent, 0);
-        cudaEventSynchronize(stopEvent);
-        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-        std::cout<<"GPU compute_tau_abs: "<<elapsedtime<<" (ms)"<<std::endl;
-
-        // Copy back the results.
-        cuda_safe_call(cudaMemcpy(tau.ptr(), tau_gpu, tau_size, cudaMemcpyDeviceToHost));
-
-        // Deallocate a CUDA array.
-        cuda_safe_call(cudaFree(gpoint_flavor_gpu));
-        cuda_safe_call(cudaFree(band_lims_gpt_gpu));
-        cuda_safe_call(cudaFree(kmajor_gpu));
-        cuda_safe_call(cudaFree(kminor_lower_gpu));
-        cuda_safe_call(cudaFree(kminor_upper_gpu));
-        cuda_safe_call(cudaFree(minor_limits_gpt_lower_gpu));
-        cuda_safe_call(cudaFree(minor_limits_gpt_upper_gpu));
-        cuda_safe_call(cudaFree(minor_scales_with_density_lower_gpu));
-        cuda_safe_call(cudaFree(minor_scales_with_density_upper_gpu));
-        cuda_safe_call(cudaFree(scale_by_complement_lower_gpu));
-        cuda_safe_call(cudaFree(scale_by_complement_upper_gpu));
-        cuda_safe_call(cudaFree(idx_minor_lower_gpu));
-        cuda_safe_call(cudaFree(idx_minor_upper_gpu));
-        cuda_safe_call(cudaFree(idx_minor_scaling_lower_gpu));
-        cuda_safe_call(cudaFree(idx_minor_scaling_upper_gpu));
-        cuda_safe_call(cudaFree(kminor_start_lower_gpu));
-        cuda_safe_call(cudaFree(kminor_start_upper_gpu));
-        cuda_safe_call(cudaFree(tropo_gpu));
-        cuda_safe_call(cudaFree(col_mix_gpu));
-        cuda_safe_call(cudaFree(fmajor_gpu));
-        cuda_safe_call(cudaFree(fminor_gpu));
-        cuda_safe_call(cudaFree(play_gpu));
-        cuda_safe_call(cudaFree(tlay_gpu));
-        cuda_safe_call(cudaFree(col_gas_gpu));
-        cuda_safe_call(cudaFree(jeta_gpu));
-        cuda_safe_call(cudaFree(jtemp_gpu));
-        cuda_safe_call(cudaFree(jpress_gpu));
-        cuda_safe_call(cudaFree(itropo_lower_gpu));
-        cuda_safe_call(cudaFree(itropo_upper_gpu));
-        cuda_safe_call(cudaFree(tau_major_gpu));
-        cuda_safe_call(cudaFree(tau_minor_gpu));
-        cuda_safe_call(cudaFree(tau_gpu));
+        cuda_safe_call(cudaFree(tau_major));
+        cuda_safe_call(cudaFree(tau_minor));
     }
 
     template<typename TF>
@@ -1519,22 +1218,17 @@ namespace rrtmgp_kernel_launcher_cuda
 
 
 #ifdef FLOAT_SINGLE_RRTMGP
-template void rrtmgp_kernel_launcher_cuda::fill_gases<float>(
-            const int ncol, const int nlay, const int ngas, 
-            Array<float,3>&, const Array<float,2>&,
-            Array<float,3>&, const Array<float,2>&);
-
 template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, const Array<float,3>&, Array<float,3>&);
 template void rrtmgp_kernel_launcher_cuda::reorder12x21<float>(const int, const int, const Array<float,2>&, Array<float,2>&);
 
-template void rrtmgp_kernel_launcher_cuda::zero_array<float>(const int, const int, const int, Array<float,3>&);
+template void rrtmgp_kernel_launcher_cuda::zero_array<float>(const int, const int, const int, Array_gpu<float,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::interpolation<float>(
         const int, const int, const int, const int, const int, const int, const int,
-        const Array<int,2>&, const Array<float,1>&, const Array<float,1>&,
-        float, float, float, float, const Array<float,3>&, const Array<float,2>&,
-        const Array<float,2>&, Array<float,3>&, Array<int,2>&, Array<float,6>&, Array<float,5>&,
-        Array<float,4>&, Array<BOOL_TYPE,2>&, Array<int,4>&, Array<int,2>&);
+        const Array_gpu<int,2>&, const Array_gpu<float,1>&, const Array_gpu<float,1>&,
+        float, float, float, float, const Array_gpu<float,3>&, const Array_gpu<float,2>&,
+        const Array_gpu<float,2>&, Array_gpu<float,3>&, Array_gpu<int,2>&, Array_gpu<float,6>&, Array_gpu<float,5>&,
+        Array_gpu<float,4>&, Array_gpu<BOOL_TYPE,2>&, Array_gpu<int,4>&, Array_gpu<int,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<float>(
         const int, const int, const int, const Array<float,3>&, const Array<float,3>&, Array<float,3>&, Array<float,3>&, Array<float,3>&);
@@ -1547,12 +1241,12 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float>(
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const int, const int, const int, const int, const int, const int, 
 	const int, const int, const int, const int, const int, const int, const int, const int,
-        const Array<int,2>&, const Array<int,2>&, const Array<float,4>&, const Array<float,3>&, const Array<float,3>&,
-        const Array<int,2>&, const Array<int,2>&, const Array<BOOL_TYPE,1>&, const Array<BOOL_TYPE,1>&,
-        const Array<BOOL_TYPE,1>&, const Array<BOOL_TYPE,1>&, const Array<int,1>&, const Array<int,1>&,
-        const Array<int,1>&, const Array<int,1>&, const Array<int,1>&, const Array<int,1>&, const Array<BOOL_TYPE,2>& tropo,
-        const Array<float,4>&, const Array<float,6>&, const Array<float,5>&, const Array<float,2>&, const Array<float,2>&, const Array<float,3>&,
-        const Array<int,4>&, const Array<int,2>&, const Array<int,2>&, Array<float,3>&);
+        const Array_gpu<int,2>&, const Array_gpu<int,2>&, const Array_gpu<float,4>&, const Array_gpu<float,3>&, const Array_gpu<float,3>&,
+        const Array_gpu<int,2>&, const Array_gpu<int,2>&, const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<BOOL_TYPE,1>&,
+        const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&,
+        const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<BOOL_TYPE,2>& tropo,
+        const Array_gpu<float,4>&, const Array_gpu<float,6>&, const Array_gpu<float,5>&, const Array_gpu<float,2>&, const Array_gpu<float,2>&, const Array_gpu<float,3>&,
+        const Array_gpu<int,4>&, const Array_gpu<int,2>&, const Array_gpu<int,2>&, Array_gpu<float,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::Planck_source<float>(const int ncol, const int nlay, const int nbnd, const int ngpt,
         const int nflav, const int neta, const int npres, const int ntemp,
@@ -1566,24 +1260,18 @@ template void rrtmgp_kernel_launcher_cuda::Planck_source<float>(const int ncol, 
         Array<float,3>& lev_src_dec, Array<float,2>& sfc_src_jac, Array<float,3>& pfrac);
 	    
 #else
-template void rrtmgp_kernel_launcher_cuda::fill_gases<double>(
-            const int ncol, const int nlay, const int ngas, 
-            Array<double,3>&,
-            Array<double,3>&, const Array<double,2>&,
-            const Gas_concs<double>&, const Array<std::string,1>&);
-
 template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array<double,3>&, Array<double,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::reorder12x21<double>(const int, const int, const Array<double,2>&, Array<double,2>&);
 
-template void rrtmgp_kernel_launcher_cuda::zero_array<double>(const int, const int, const int, Array<double,3>&);
+template void rrtmgp_kernel_launcher_cuda::zero_array<double>(const int, const int, const int, Array_gpu<double,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::interpolation<double>(
         const int, const int, const int, const int, const int, const int, const int,
-        const Array<int,2>&, const Array<double,1>&, const Array<double,1>&,
-        double, double, double, double, const Array<double,3>&, const Array<double,2>&,
-        const Array<double,2>&, Array<double,3>&, Array<int,2>&, Array<double,6>&, Array<double,5>&,
-        Array<double,4>&, Array<BOOL_TYPE,2>&, Array<int,4>&, Array<int,2>&);
+        const Array_gpu<int,2>&, const Array_gpu<double,1>&, const Array_gpu<double,1>&,
+        double, double, double, double, const Array_gpu<double,3>&, const Array_gpu<double,2>&,
+        const Array_gpu<double,2>&, Array_gpu<double,3>&, Array_gpu<int,2>&, Array_gpu<double,6>&, Array_gpu<double,5>&,
+        Array_gpu<double,4>&, Array_gpu<BOOL_TYPE,2>&, Array_gpu<int,4>&, Array_gpu<int,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<double>(
         const int, const int, const int, const Array<double,3>&, const Array<double,3>&, Array<double,3>&, Array<double,3>&, Array<double,3>&);
@@ -1596,12 +1284,12 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<double>(const int, const int, const int, const int, const int, const int, 
 	const int, const int, const int, const int, const int, const int, const int, const int,
-        const Array<int,2>&, const Array<int,2>&, const Array<double,4>&, const Array<double,3>&, const Array<double,3>&,
-        const Array<int,2>&, const Array<int,2>&, const Array<BOOL_TYPE,1>&, const Array<BOOL_TYPE,1>&,
-        const Array<BOOL_TYPE,1>&, const Array<BOOL_TYPE,1>&, const Array<int,1>&, const Array<int,1>&,
-        const Array<int,1>&, const Array<int,1>&, const Array<int,1>&, const Array<int,1>&, const Array<BOOL_TYPE,2>& tropo,
-        const Array<double,4>&, const Array<double,6>&, const Array<double,5>&, const Array<double,2>&, const Array<double,2>&, const Array<double,3>&,
-        const Array<int,4>&, const Array<int,2>&, const Array<int,2>&, Array<double,3>&);
+        const Array_gpu<int,2>&, const Array_gpu<int,2>&, const Array_gpu<double,4>&, const Array_gpu<double,3>&, const Array_gpu<double,3>&,
+        const Array_gpu<int,2>&, const Array_gpu<int,2>&, const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<BOOL_TYPE,1>&,
+        const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&,
+        const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<BOOL_TYPE,2>& tropo,
+        const Array_gpu<double,4>&, const Array_gpu<double,6>&, const Array_gpu<double,5>&, const Array_gpu<double,2>&, const Array_gpu<double,2>&, const Array_gpu<double,3>&,
+        const Array_gpu<int,4>&, const Array_gpu<int,2>&, const Array_gpu<int,2>&, Array_gpu<double,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::Planck_source<double>(const int ncol, const int nlay, const int nbnd, const int ngpt,
         const int nflav, const int neta, const int npres, const int ntemp,

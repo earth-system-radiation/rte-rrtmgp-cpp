@@ -1081,7 +1081,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     const int nminorupper = this->minor_scales_with_density_upper.dim(1);
     const int nminorkupper = this->kminor_upper.dim(1);
 
-    auto time_start = std::chrono::high_resolution_clock::now();
     for (int igas=1; igas<=ngas; ++igas)
     {
         const Array<TF,2>& vmr_2d = gas_desc.get_vmr(this->gas_names({igas}));
@@ -1122,55 +1121,11 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         for (int ilay=1; ilay<=nlay; ++ilay)
             for (int icol=1; icol<=ncol; ++icol)
                 col_gas({icol, ilay, igas}) = vmr({icol, ilay, igas}) * col_dry({icol, ilay});
-    vmr.dump("vmr_sub_cpu");
-    throw 666;
 
-    auto time_end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
-    std::cout<<"CPU fill gases: "<<std::to_string(duration)<<" (ms)"<<std::endl;
-
-    //#ifdef USECUDA
-    //Array<TF,3> vmr_gpu(vmr);
-    //Array<TF,3> col_gas_gpu(col_gas);
-    //col_gas_gpu.set_offsets({0, 0, -1});
-    //rrtmgp_kernel_launcher_cuda::fill_gases( 
-    //        ncol, nlay, ngas, vmr_gpu, col_gas_gpu, col_dry, gas_desc, this->gas_names);
-
-    //for (int igas=1; igas<=ngas; ++igas)
-    //    for (int ilay=1; ilay<=nlay; ++ilay)
-    //        for (int icol=1; icol<=ncol; ++icol)
-    //        {
-    //            if (vmr_gpu({icol, ilay, igas}) != vmr({icol, ilay, igas}))
-    //            {
-    //                std::cout << std::setprecision(16) << "vmr (" << icol << "," << ilay << "," << igas << ") = " <<
-    //                    vmr_gpu({icol, ilay, igas}) << ", " << vmr({icol, ilay, igas}) << std::endl;            
-    //            }
-    //        }
-    //#endif
 
     // Call the fortran kernels
-    time_start = std::chrono::high_resolution_clock::now();
     rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, tau);
-    time_end = std::chrono::high_resolution_clock::now();
-    duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
-    std::cout<<"CPU zero_array: "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
-    #ifdef USECUDA
-    Array<TF,3> tau_gpu(tau);
-    rrtmgp_kernel_launcher_cuda::zero_array(ngpt, nlay, ncol, tau_gpu);
-    for (int icol=1; icol<=ncol; ++icol)
-        for (int ilay=1; ilay<=nlay; ++ilay)
-            for (int igpt=1; igpt<=ngpt; ++igpt)
-            {
-                if (tau_gpu({igpt, ilay, icol}) != tau({igpt, ilay, icol}))
-                {
-                    std::cout << std::setprecision(16) << "tau_zero (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        tau_gpu({igpt, ilay, icol}) << ", " << tau({igpt, ilay, icol}) << std::endl;            
-                }
-            }
-    #endif
-
-    time_start = std::chrono::high_resolution_clock::now();
     rrtmgp_kernel_launcher::interpolation(
             ncol, nlay,
             ngas, nflav, neta, npres, ntemp,
@@ -1190,59 +1145,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
             col_mix,
             tropo,
             jeta, jpress);
-    time_end = std::chrono::high_resolution_clock::now();
-    duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
-    std::cout<<"CPU interpolation: "<<std::to_string(duration)<<" (ms)"<<std::endl;
-
-    // CUDA TEST.
-    #ifdef USECUDA
-    // Make new arrays for output comparison.
-    Array<int,2> jtemp_gpu(jtemp);
-    Array<int,2> jpress_gpu(jpress);
-    Array<BOOL_TYPE,2> tropo_gpu(tropo);
-    Array<int,4> jeta_gpu(jeta);
-    Array<TF,4> col_mix_gpu(col_mix);
-    Array<TF,6> fmajor_gpu(fmajor);
-    Array<TF,5> fminor_gpu(fminor);
-
-    rrtmgp_kernel_launcher_cuda::interpolation(
-            ncol, nlay,
-            ngas, nflav, neta, npres, ntemp,
-            this->flavor,
-            this->press_ref_log,
-            this->temp_ref,
-            this->press_ref_log_delta,
-            this->temp_ref_min,
-            this->temp_ref_delta,
-            this->press_ref_trop_log,
-            this->vmr_ref,
-            play,
-            tlay,
-            col_gas,
-            jtemp_gpu,
-            fmajor_gpu, fminor_gpu,
-            col_mix_gpu,
-            tropo_gpu,
-            jeta_gpu, jpress_gpu);
-
-    for (int icol=1; icol<=ncol; ++icol)
-        for (int ilay=1; ilay<=nlay; ++ilay)
-            for (int iflv=1; iflv<=ngpt; ++iflv)
-            for (int ii=1; ii<=2; ++ii)
-            for (int ij=1; ij<=2; ++ij)
-            {
-                if (fminor_gpu({ii, ij, iflv, ilay, icol}) != fminor({ii, ij, iflv, ilay, icol}))
-                    std::cout << std::setprecision(16) << "fminor (" << icol << "," << ilay << "," << iflv << ") = " <<
-                        fminor_gpu({ii, ij, iflv, ilay, icol}) << ", " << fminor({ii, ij, iflv, ilay, icol}) << std::endl;
-                for (int ik=1; ik<=2; ++ik)
-                {
-                    if (fmajor_gpu({ik,ii, ij, iflv, ilay, icol}) != fmajor({ik,ii, ij, iflv, ilay, icol}))
-                    {    std::cout << std::setprecision(16) << "fmajor (" << icol << "," << ilay << "," << iflv << ") = " <<
-                            fmajor_gpu({ik,ii, ij, iflv, ilay, icol}) << ", " << fmajor({ik,ii, ij, iflv, ilay, icol}) << std::endl;            }
-                }
-            }
-    #endif
-    // END CUDA TEST.
 
     int idx_h2o = -1;
     for (int i=1; i<=this->gas_names.dim(1); ++i)
@@ -1255,7 +1157,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     if (idx_h2o == -1)
         throw std::runtime_error("idx_h2o cannot be found");
 
-    time_start = std::chrono::high_resolution_clock::now();
     rrtmgp_kernel_launcher::compute_tau_absorption(
             ncol, nlay, nband, ngpt,
             ngas, nflav, neta, npres, ntemp,
@@ -1284,53 +1185,52 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
             play, tlay, col_gas,
             jeta, jtemp, jpress,
             tau);
-    time_end = std::chrono::high_resolution_clock::now();
-    duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
-    std::cout<<"CPU compute_tau_abs: "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
     // CUDA TEST.
-    #ifdef USECUDA
-    // Make new arrays for output comparison.
-    //Array<TF,3> tau_gpu(tau);
-    rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
-            ncol, nlay, nband, ngpt,
-            ngas, nflav, neta, npres, ntemp,
-            nminorlower, nminorklower,
-            nminorupper, nminorkupper,
-            idx_h2o,
-            this->gpoint_flavor,
-            this->get_band_lims_gpoint(),
-            this->kmajor,
-            this->kminor_lower,
-            this->kminor_upper,
-            this->minor_limits_gpt_lower,
-            this->minor_limits_gpt_upper,
-            this->minor_scales_with_density_lower,
-            this->minor_scales_with_density_upper,
-            this->scale_by_complement_lower,
-            this->scale_by_complement_upper,
-            this->idx_minor_lower,
-            this->idx_minor_upper,
-            this->idx_minor_scaling_lower,
-            this->idx_minor_scaling_upper,
-            this->kminor_start_lower,
-            this->kminor_start_upper,
-            tropo,
-            col_mix, fmajor, fminor,
-            play, tlay, col_gas,
-            jeta, jtemp, jpress,
-            tau_gpu);
-
-    for (int icol=1; icol<=ncol; ++icol)
-        for (int ilay=1; ilay<=nlay; ++ilay)
-            for (int igpt=1; igpt<=ngpt; ++igpt)
-            {
-                if (float(tau_gpu({igpt, ilay, icol})) != float(tau({igpt, ilay, icol})))
-                    std::cout << std::setprecision(16) << "tau absorption (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        tau_gpu({igpt, ilay, icol}) << ", " << tau({igpt, ilay, icol}) << std::endl;
-            }
-    #endif
-    // END CUDA TEST.
+//    #ifdef USECUDA
+//    // Make new arrays for output comparison.
+//    Array<TF,3> tau_gpu(tau);
+//    rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
+//            ncol, nlay, nband, ngpt,
+//            ngas, nflav, neta, npres, ntemp,
+//            nminorlower, nminorklower,
+//            nminorupper, nminorkupper,
+//            idx_h2o,
+//            this->gpoint_flavor,
+//            this->get_band_lims_gpoint(),
+//            this->kmajor,
+//            this->kminor_lower,
+//            this->kminor_upper,
+//            this->minor_limits_gpt_lower,
+//            this->minor_limits_gpt_upper,
+//            this->minor_scales_with_density_lower,
+//            this->minor_scales_with_density_upper,
+//            this->scale_by_complement_lower,
+//            this->scale_by_complement_upper,
+//            this->idx_minor_lower,
+//            this->idx_minor_upper,
+//            this->idx_minor_scaling_lower,
+//            this->idx_minor_scaling_upper,
+//            this->kminor_start_lower,
+//            this->kminor_start_upper,
+//            tropo,
+//            col_mix, fmajor, fminor,
+//            play, tlay, col_gas,
+//            jeta, jtemp, jpress,
+//            tau_gpu);
+//
+//    for (int icol=1; icol<=ncol; ++icol)
+//        for (int ilay=1; ilay<=nlay; ++ilay)
+//            for (int igpt=1; igpt<=ngpt; ++igpt)
+//            {
+//                if (float(tau_gpu({igpt, ilay, icol})) != float(tau({igpt, ilay, icol})))
+//                    std::cout << std::setprecision(16) << "tau absorption (" << icol << "," << ilay << "," << igpt << ") = " <<
+//                        tau_gpu({igpt, ilay, icol}) << ", " << tau({igpt, ilay, icol}) << std::endl;
+//            }
+//    #endif
+//    // END CUDA TEST.
+    tau.dump("tau_sub_cpu");
+    throw 666;
 
     bool has_rayleigh = (this->krayl.size() > 0);
 
