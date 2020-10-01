@@ -452,10 +452,14 @@ class Array_gpu
         //     return calc_indices<N>(pos, strides, offsets);
         // }
 
-        // inline T max() const
-        // {
-        //     return *std::max_element(data.begin(), data.end());
-        // }
+        inline T max() const
+        {
+            T val = data_ptr[0];
+            for (int i=0; i < ncells; ++i)
+                if (data_ptr[i] > val)
+                    val = data_ptr[i];
+            return val;
+        }
 
         // inline T min() const
         // {
