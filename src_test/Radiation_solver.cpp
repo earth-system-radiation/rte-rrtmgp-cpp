@@ -455,7 +455,7 @@ void Radiation_solver_longwave<TF>::solve(
                     dynamic_cast<Optical_props_1scl<TF>&>(*optical_props_subset_in),
                     dynamic_cast<Optical_props_1scl<TF>&>(*cloud_optical_props_subset_in));
         }
-
+        
         // Store the optical properties, if desired.
         if (switch_output_optical)
         {
@@ -647,9 +647,6 @@ void Radiation_solver_shortwave<TF>::solve(
         else
             col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
-//        col_dry_subset.dump("col_dry_subset");
-//        throw 666;
-
         Array<TF,2> toa_src_subset({n_col_in, n_gpt});
 
         kdist->gas_optics(
@@ -661,11 +658,15 @@ void Radiation_solver_shortwave<TF>::solve(
                 toa_src_subset,
                 col_dry_subset);
 
+        optical_props_subset_in->get_ssa().dump("ssa_sub_cpu");
         auto tsi_scaling_subset = tsi_scaling.subset({{ {col_s_in, col_e_in} }});
 
         for (int igpt=1; igpt<=n_gpt; ++igpt)
             for (int icol=1; icol<=n_col_in; ++icol)
                 toa_src_subset({icol, igpt}) *= tsi_scaling_subset({icol});
+        toa_src_subset.dump("toa_sub_cpu");
+        throw 666;
+
 
         if (switch_cloud_optics)
         {

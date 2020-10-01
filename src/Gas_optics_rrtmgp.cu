@@ -814,7 +814,10 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
     // External source function is constant.
     for (int igpt=1; igpt<=ngpt; ++igpt)
         for (int icol=1; icol<=ncol; ++icol)
-            toa_src.insert({icol, igpt},this->solar_source({igpt}));
+            toa_src.insert({icol, igpt}, this->solar_source({igpt}));
+    TF val = play({1,1});
+    TF valx = toa_src({1,1});
+
 }
 
 

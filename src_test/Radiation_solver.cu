@@ -573,7 +573,6 @@ Radiation_solver_shortwave<TF>::Radiation_solver_shortwave(
     this->kdist_gpu = std::make_unique<Gas_optics_rrtmgp_gpu<TF>>(
             load_and_init_gas_optics<TF>(gas_concs, file_name_gas));
 
-        std::cout<<"Xpass -----"<<std::endl;
     this->cloud_optics = std::make_unique<Cloud_optics<TF>>(
             load_and_init_cloud_optics<TF>(file_name_cloud));
 }
@@ -642,9 +641,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         const int n_col_in = col_e_in - col_s_in + 1;
         Gas_concs_gpu<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
-        std::cout <<"PGPU: "<<p_lev({1,1})<<" "<<p_lev({3,3})<<std::endl;
         auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});
-        std::cout << "PGPU subset: "<<p_lev_subset({1,1})<<" "<<p_lev_subset({3,3})<<std::endl;
 
         Array_gpu<TF,2> col_dry_subset({n_col_in, n_lay});
         if (col_dry.size() == 0)
@@ -662,15 +659,21 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                   optical_props_subset_in,
                   toa_src_subset,
                   col_dry_subset);
-        std::cout << "PGPU subset: "<<p_lev_subset({1,1})<<" "<<p_lev_subset({3,3})<<std::endl;
+        
+        const TF val = toa_src_subset({1,1});
 
-        //  auto tsi_scaling_subset = tsi_scaling.subset({{ {col_s_in, col_e_in} }});
-
-        //  for (int igpt=1; igpt<=n_gpt; ++igpt)
-        //      for (int icol=1; icol<=n_col_in; ++icol)
-        //          toa_src_subset({icol, igpt}) *= tsi_scaling_subset({icol});
-
-        //  if (switch_cloud_optics)
+        auto tsi_scaling_subset = tsi_scaling.subset({{ {col_s_in, col_e_in} }});
+        for (int igpt=1; igpt<=n_gpt; ++igpt)
+             for (int icol=1; icol<=n_col_in; ++icol)
+             {
+                TF val = TF(5.);//toa_src_subset({1,1});
+             }     //toa_src_subset.insert({icol, igpt}, val * tsi_scaling_subset({icol})); }
+                  //toa_src_subset.insert({icol, igpt}, toa_src_subset({icol,igpt}) * tsi_scaling_subset({icol}));
+        //optical_props_subset_in->get_ssa().dump("ssa_sub_cpu");
+        toa_src_subset.dump("toa_sub_cpu");
+        throw 666;
+    };
+      //  if (switch_cloud_optics)
         //  {
         //      Array<int,2> cld_mask_liq({n_col_in, n_lay});
         //      Array<int,2> cld_mask_ice({n_col_in, n_lay});
@@ -752,7 +755,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         //                  sw_bnd_flux_net    ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_net    ()({icol, ilev, ibnd});
         //              }
         //  }
-    };
+    
 
     for (int b=1; b<=n_blocks; ++b)
     {

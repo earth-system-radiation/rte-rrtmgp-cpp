@@ -1203,8 +1203,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 
     }
     combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
-    optical_props->get_ssa().dump("ssa_sub_cpu");
-    throw 666;
 
 }
 
