@@ -178,7 +178,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array_gpu<TF,2>& plev,
                 const Array_gpu<TF,2>& tlay,
                 const Gas_concs_gpu<TF>& gas_desc,
-                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props,
                 Array_gpu<TF,2>& toa_src,
                 const Array_gpu<TF,2>& col_dry) const;
         #endif
@@ -235,6 +235,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
         Array_gpu<TF,1> solar_source_g;
 
         Array<TF,4> krayl;
+        Array_gpu<TF,4> krayl_test;
 
         int get_ngas() const { return this->gas_names.dim(1); }
 
@@ -293,7 +294,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array_gpu<TF,2>& plev,
                 const Array_gpu<TF,2>& tlay,
                 const Gas_concs_gpu<TF>& gas_desc,
-                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props,
                 Array_gpu<int,2>& jtemp, Array_gpu<int,2>& jpress,
                 Array_gpu<int,4>& jeta,
                 Array_gpu<BOOL_TYPE,2>& tropo,

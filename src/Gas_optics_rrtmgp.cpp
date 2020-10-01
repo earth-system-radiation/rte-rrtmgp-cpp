@@ -1186,57 +1186,11 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
             jeta, jtemp, jpress,
             tau);
 
-    // CUDA TEST.
-//    #ifdef USECUDA
-//    // Make new arrays for output comparison.
-//    Array<TF,3> tau_gpu(tau);
-//    rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
-//            ncol, nlay, nband, ngpt,
-//            ngas, nflav, neta, npres, ntemp,
-//            nminorlower, nminorklower,
-//            nminorupper, nminorkupper,
-//            idx_h2o,
-//            this->gpoint_flavor,
-//            this->get_band_lims_gpoint(),
-//            this->kmajor,
-//            this->kminor_lower,
-//            this->kminor_upper,
-//            this->minor_limits_gpt_lower,
-//            this->minor_limits_gpt_upper,
-//            this->minor_scales_with_density_lower,
-//            this->minor_scales_with_density_upper,
-//            this->scale_by_complement_lower,
-//            this->scale_by_complement_upper,
-//            this->idx_minor_lower,
-//            this->idx_minor_upper,
-//            this->idx_minor_scaling_lower,
-//            this->idx_minor_scaling_upper,
-//            this->kminor_start_lower,
-//            this->kminor_start_upper,
-//            tropo,
-//            col_mix, fmajor, fminor,
-//            play, tlay, col_gas,
-//            jeta, jtemp, jpress,
-//            tau_gpu);
-//
-//    for (int icol=1; icol<=ncol; ++icol)
-//        for (int ilay=1; ilay<=nlay; ++ilay)
-//            for (int igpt=1; igpt<=ngpt; ++igpt)
-//            {
-//                if (float(tau_gpu({igpt, ilay, icol})) != float(tau({igpt, ilay, icol})))
-//                    std::cout << std::setprecision(16) << "tau absorption (" << icol << "," << ilay << "," << igpt << ") = " <<
-//                        tau_gpu({igpt, ilay, icol}) << ", " << tau({igpt, ilay, icol}) << std::endl;
-//            }
-//    #endif
-//    // END CUDA TEST.
-    tau.dump("tau_sub_cpu");
-    throw 666;
 
     bool has_rayleigh = (this->krayl.size() > 0);
 
     if (has_rayleigh)
     {
-        auto time_start = std::chrono::high_resolution_clock::now();
         rrtmgp_kernel_launcher::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
@@ -1247,39 +1201,11 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
                 fminor, jeta, tropo, jtemp,
                 tau_rayleigh);
 
-        auto time_end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
-        std::cout<<"CPU compute_tau_rayleigh: "<<std::to_string(duration)<<" (ms)"<<std::endl;
-
-        // CUDA TEST.
-        #ifdef USECUDA
-        // Make new arrays for output comparison.
-        Array<TF,3> tau_rayleigh_gpu(tau_rayleigh);
-        rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
-                ncol, nlay, nband, ngpt,
-                ngas, nflav, neta, npres, ntemp,
-                this->gpoint_flavor,
-                this->get_band_lims_gpoint(),
-                this->krayl,
-                idx_h2o, col_dry, col_gas,
-                fminor, jeta, tropo, jtemp,
-                tau_rayleigh_gpu);
-
-        // Print the output to the screen.
-        // for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-        for (int icol=1; icol<=ncol; ++icol)
-            for (int ilay=1; ilay<=nlay; ++ilay)
-                for (int igpt=1; igpt<=ngpt; ++igpt)
-                {
-                    const int idx_ray = igpt+ilay*ngpt+icol*nlay*ngpt;
-                    if (tau_rayleigh_gpu({igpt, ilay, icol}) != tau_rayleigh({igpt, ilay, icol}))
-                        std::cout << std::setprecision(16) << "tau_rayleigh (" << icol << "," << ilay << "," << igpt << ") = " <<
-                            tau_rayleigh_gpu({igpt, ilay, icol}) << ", " << tau_rayleigh({igpt, ilay, icol}) << std::endl;
-                }
-        #endif
-        // END CUDA TEST.
+        tau_rayleigh.dump("tau_sub_cpu");
+        throw 666;
     }
     combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
+
 }
 
 template<typename TF>
@@ -1296,11 +1222,7 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
     if (!has_rayleigh)
     {
         // CvH for 2 stream and n-stream zero the g and ssa
-        auto time_start = std::chrono::high_resolution_clock::now();
         rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
-        auto time_end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
-        std::cout<<"CPU reorder123x321: "<<std::to_string(duration)<<" (ms)"<<std::endl;
 
         #ifdef USECUDA
         // Make new arrays for output comparison.

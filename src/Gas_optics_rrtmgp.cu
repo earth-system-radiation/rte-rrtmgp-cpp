@@ -173,7 +173,7 @@ void Gas_optics_rrtmgp<TF>::gas_optics_gpu(
         const Array_gpu<TF,2>& plev,
         const Array_gpu<TF,2>& tlay,
         const Gas_concs_gpu<TF>& gas_desc,
-        std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+        std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props,
         Array_gpu<TF,2>& toa_src,
         const Array_gpu<TF,2>& col_dry) const
 {
@@ -210,7 +210,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus_gpu(
         const Array_gpu<TF,2>& plev,
         const Array_gpu<TF,2>& tlay,
         const Gas_concs_gpu<TF>& gas_desc,
-        std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+        std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props,
         Array_gpu<int,2>& jtemp, Array_gpu<int,2>& jpress,
         Array_gpu<int,4>& jeta,
         Array_gpu<BOOL_TYPE,2>& tropo,
@@ -233,6 +233,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus_gpu(
     Array_gpu<int,2> gpoint_flavor_gpu(this->gpoint_flavor);
     Array_gpu<int,2> band_lims_gpt_gpu(this->get_band_lims_gpoint()); 
     Array_gpu<TF,4> kmajor_gpu(this->kmajor);
+    Array_gpu<TF,4> krayl_gpu(this->krayl);
     Array_gpu<TF,3> kminor_lower_gpu(this->kminor_lower);
     Array_gpu<TF,3> kminor_upper_gpu(this->kminor_upper);
     Array_gpu<int,2> minor_limits_gpt_lower_gpu(this->minor_limits_gpt_lower);
@@ -339,8 +340,33 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus_gpu(
             jeta, jtemp, jpress,
             tau);
 
-    tau.dump("tau_sub_gpu");
-    throw 666;
+
+    bool has_rayleigh = (this->krayl.size() > 0);
+
+    if (has_rayleigh)
+    {
+        rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
+                ncol, nlay, nband, ngpt,
+                ngas, nflav, neta, npres, ntemp,
+                gpoint_flavor_gpu,
+                band_lims_gpt_gpu,
+                krayl_gpu,
+                idx_h2o, col_dry, col_gas,
+                fminor, jeta, tropo, jtemp,
+                tau_rayleigh);
+
+        tau_rayleigh.dump("tau_sub_gpu");
+        throw 666;
+
+    }
+
+
+
+
+
+
+
+
 
 } 
 

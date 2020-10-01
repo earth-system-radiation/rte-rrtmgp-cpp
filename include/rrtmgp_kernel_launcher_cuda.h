@@ -79,13 +79,13 @@ namespace rrtmgp_kernel_launcher_cuda
     void compute_tau_rayleigh(
             const int ncol, const int nlay, const int nband, const int ngpt,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
-            const Array<int, 2>& gpoint_flavor,
-            const Array<int, 2>& band_lims_gpt,
-            const Array<TF,4>& krayl,
-            int idx_h2o, const Array<TF,2>& col_dry, const Array<TF,3>& col_gas,
-            const Array<TF,5>& fminor, const Array<int,4>& jeta,
-            const Array<BOOL_TYPE,2>& tropo, const Array<int,2>& jtemp,
-            Array<TF,3>& tau_rayleigh);
+            const Array_gpu<int, 2>& gpoint_flavor,
+            const Array_gpu<int, 2>& band_lims_gpt,
+            const Array_gpu<TF,4>& krayl,
+            int idx_h2o, const Array_gpu<TF,2>& col_dry, const Array_gpu<TF,3>& col_gas,
+            const Array_gpu<TF,5>& fminor, const Array_gpu<int,4>& jeta,
+            const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
+            Array_gpu<TF,3>& tau_rayleigh);
 
     template<typename TF>
     void compute_tau_absorption(
