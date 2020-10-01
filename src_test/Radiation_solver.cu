@@ -34,7 +34,7 @@
 #include "Rte_lw.h"
 #include "Rte_sw.h"
 
-/*
+
 namespace
 {
     std::vector<std::string> get_variable_string(
@@ -68,8 +68,8 @@ namespace
     }
 
     template<typename TF>
-    Gas_optics_rrtmgp<TF> load_and_init_gas_optics(
-            const Gas_concs<TF>& gas_concs,
+    Gas_optics_rrtmgp_gpu<TF> load_and_init_gas_optics(
+            const Gas_concs_gpu<TF>& gas_concs,
             const std::string& coef_file)
     {
         // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
@@ -189,54 +189,54 @@ namespace
         }
 
         // Is it really LW if so read these variables as well.
-        if (coef_nc.variable_exists("totplnk"))
-        {
-            int n_internal_sourcetemps = coef_nc.get_dimension_size("temperature_Planck");
-
-            Array<TF,2> totplnk(
-                    coef_nc.get_variable<TF>( "totplnk", {n_bnds, n_internal_sourcetemps}),
-                    {n_internal_sourcetemps, n_bnds});
-            Array<TF,4> planck_frac(
-                    coef_nc.get_variable<TF>("plank_fraction", {n_temps, n_press+1, n_mixingfracs, n_gpts}),
-                    {n_gpts, n_mixingfracs, n_press+1, n_temps});
-
-            // Construct the k-distribution.
-            return Gas_optics_rrtmgp<TF>(
-                    gas_concs,
-                    gas_names,
-                    key_species,
-                    band2gpt,
-                    band_lims,
-                    press_ref,
-                    press_ref_trop,
-                    temp_ref,
-                    temp_ref_p,
-                    temp_ref_t,
-                    vmr_ref,
-                    kmajor,
-                    kminor_lower,
-                    kminor_upper,
-                    gas_minor,
-                    identifier_minor,
-                    minor_gases_lower,
-                    minor_gases_upper,
-                    minor_limits_gpt_lower,
-                    minor_limits_gpt_upper,
-                    minor_scales_with_density_lower,
-                    minor_scales_with_density_upper,
-                    scaling_gas_lower,
-                    scaling_gas_upper,
-                    scale_by_complement_lower,
-                    scale_by_complement_upper,
-                    kminor_start_lower,
-                    kminor_start_upper,
-                    totplnk,
-                    planck_frac,
-                    rayl_lower,
-                    rayl_upper);
-        }
-        else
-        {
+//        if (coef_nc.variable_exists("totplnk"))
+//        {
+//            int n_internal_sourcetemps = coef_nc.get_dimension_size("temperature_Planck");
+//
+//            Array<TF,2> totplnk(
+//                    coef_nc.get_variable<TF>( "totplnk", {n_bnds, n_internal_sourcetemps}),
+//                    {n_internal_sourcetemps, n_bnds});
+//            Array<TF,4> planck_frac(
+//                    coef_nc.get_variable<TF>("plank_fraction", {n_temps, n_press+1, n_mixingfracs, n_gpts}),
+//                    {n_gpts, n_mixingfracs, n_press+1, n_temps});
+//
+//            // Construct the k-distribution.
+//            return Gas_optics_rrtmgp_gpu<TF>(
+//                    gas_concs,
+//                    gas_names,
+//                    key_species,
+//                    band2gpt,
+//                    band_lims,
+//                    press_ref,
+//                    press_ref_trop,
+//                    temp_ref,
+//                    temp_ref_p,
+//                    temp_ref_t,
+//                    vmr_ref,
+//                    kmajor,
+//                    kminor_lower,
+//                    kminor_upper,
+//                    gas_minor,
+//                    identifier_minor,
+//                    minor_gases_lower,
+//                    minor_gases_upper,
+//                    minor_limits_gpt_lower,
+//                    minor_limits_gpt_upper,
+//                    minor_scales_with_density_lower,
+//                    minor_scales_with_density_upper,
+//                    scaling_gas_lower,
+//                    scaling_gas_upper,
+//                    scale_by_complement_lower,
+//                    scale_by_complement_upper,
+//                    kminor_start_lower,
+//                    kminor_start_upper,
+//                    totplnk,
+//                    planck_frac,
+//                    rayl_lower,
+//                    rayl_upper);
+//        }
+//        else
+//        {
             Array<TF,1> solar_src_quiet(
                     coef_nc.get_variable<TF>("solar_source_quiet", {n_gpts}), {n_gpts});
             Array<TF,1> solar_src_facular(
@@ -248,7 +248,7 @@ namespace
             TF mg_index = coef_nc.get_variable<TF>("mg_default");
             TF sb_index = coef_nc.get_variable<TF>("sb_default");
 
-            return Gas_optics_rrtmgp<TF>(
+            return Gas_optics_rrtmgp_gpu<TF>(
                     gas_concs,
                     gas_names,
                     key_species,
@@ -285,7 +285,7 @@ namespace
                     sb_index,
                     rayl_lower,
                     rayl_upper);
-        }
+//        }
         // End reading of k-distribution.
     }
 
@@ -335,7 +335,7 @@ namespace
                 lut_extice, lut_ssaice, lut_asyice);
     }
 }
-
+/*
 template<typename TF>
 Radiation_solver_longwave<TF>::Radiation_solver_longwave(
         const Gas_concs<TF>& gas_concs,
@@ -561,21 +561,21 @@ void Radiation_solver_longwave<TF>::solve(
                 *bnd_fluxes_residual);
     }
 }
-
+*/
 template<typename TF>
 Radiation_solver_shortwave<TF>::Radiation_solver_shortwave(
-        const Gas_concs<TF>& gas_concs,
+        const Gas_concs_gpu<TF>& gas_concs,
         const std::string& file_name_gas,
         const std::string& file_name_cloud)
 {
     // Construct the gas optics classes for the solver.
-    this->kdist = std::make_unique<Gas_optics_rrtmgp<TF>>(
+    this->kdist_gpu = std::make_unique<Gas_optics_rrtmgp_gpu<TF>>(
             load_and_init_gas_optics<TF>(gas_concs, file_name_gas));
 
     this->cloud_optics = std::make_unique<Cloud_optics<TF>>(
             load_and_init_cloud_optics<TF>(file_name_cloud));
 }
-*/
+
 
 template<typename TF>
 void Radiation_solver_shortwave<TF>::solve_gpu(
@@ -601,8 +601,8 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
     const int n_col = p_lay.dim(1);
     const int n_lay = p_lay.dim(2);
     const int n_lev = p_lev.dim(2);
-    const int n_gpt = this->kdist->get_ngpt();
-    const int n_bnd = this->kdist->get_nband();
+    const int n_gpt = this->kdist_gpu->get_ngpt();
+    const int n_bnd = this->kdist_gpu->get_nband();
 
     const BOOL_TYPE top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
@@ -612,28 +612,28 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
     int n_blocks = n_col / n_col_block;
     int n_col_block_residual = n_col % n_col_block;
 
-    std::unique_ptr<Optical_props_gpu_arry<TF>> optical_props_subset;
-    std::unique_ptr<Optical_props_gpu_arry<TF>> optical_props_residual;
+    std::unique_ptr<Optical_props_arry_gpu<TF>> optical_props_subset;
+    std::unique_ptr<Optical_props_arry_gpu<TF>> optical_props_residual;
 
-    optical_props_subset = std::make_unique<Optical_props_gpu_2str<TF>>(n_col_block, n_lay, *kdist);
+    optical_props_subset = std::make_unique<Optical_props_2str_gpu<TF>>(n_col_block, n_lay, *kdist_gpu);
     if (n_col_block_residual > 0)
-        optical_props_residual = std::make_unique<Optical_props_gpu_2str<TF>>(n_col_block_residual, n_lay, *kdist);
+        optical_props_residual = std::make_unique<Optical_props_2str_gpu<TF>>(n_col_block_residual, n_lay, *kdist_gpu);
 
-    std::unique_ptr<Optical_props_gpu_2str<TF>> cloud_optical_props_subset;
-    std::unique_ptr<Optical_props_gpu_2str<TF>> cloud_optical_props_residual;
-
-    if (switch_cloud_optics)
-    {
-        cloud_optical_props_subset = std::make_unique<Optical_props_gpu_2str<TF>>(n_col_block, n_lay, *cloud_optics);
-        if (n_col_block_residual > 0)
-            cloud_optical_props_residual = std::make_unique<Optical_props_gpu_2str<TF>>(n_col_block_residual, n_lay, *cloud_optics);
-    }
+//    std::unique_ptr<Optical_props_2str_gpu<TF>> cloud_optical_props_subset;
+//    std::unique_ptr<Optical_props_2str_gpu<TF>> cloud_optical_props_residual;
+//
+//    if (switch_cloud_optics)
+//    {
+//        cloud_optical_props_subset = std::make_unique<Optical_props_2str_gpu<TF>>(n_col_block, n_lay, *cloud_optics);
+//        if (n_col_block_residual > 0)
+//            cloud_optical_props_residual = std::make_unique<Optical_props_2str_gpu<TF>>(n_col_block_residual, n_lay, *cloud_optics);
+//    }
 
     // Lambda function for solving optical properties subset.
     auto call_kernels = [&](
             const int col_s_in, const int col_e_in,
-            std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props_subset_in,
-            std::unique_ptr<Optical_props_gpu_2str<TF>>& cloud_optical_props_subset_in,
+            std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_subset_in,
+//            std::unique_ptr<Optical_props_2str_gpu<TF>>& cloud_optical_props_subset_in,
             Fluxes_broadband<TF>& fluxes,
             Fluxes_broadband<TF>& bnd_fluxes)
     {
@@ -646,13 +646,13 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
 
         Array_gpu<TF,2> col_dry_subset({n_col_in, n_lay});
         if (col_dry.size() == 0)
-            Gas_optics_rrtmgp<TF>::get_col_dry_gpu(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
+            Gas_optics_rrtmgp_gpu<TF>::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
         else
             col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
         Array_gpu<TF,2> toa_src_subset({n_col_in, n_gpt});
 
-        kdist->gas_optics_gpu(
+        kdist_gpu->gas_optics(
                   p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                   p_lev_subset,
                   t_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
@@ -765,28 +765,28 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         call_kernels(
                 col_s, col_e,
                 optical_props_subset,
-                cloud_optical_props_subset,
+//                cloud_optical_props_subset,
                 *fluxes_subset,
                 *bnd_fluxes_subset);
     }
-
-    if (n_col_block_residual > 0)
-    {
-        const int col_s = n_col - n_col_block_residual + 1;
-        const int col_e = n_col;
-
-        std::unique_ptr<Fluxes_broadband<TF>> fluxes_residual =
-                std::make_unique<Fluxes_broadband<TF>>(n_col_block_residual, n_lev);
-        std::unique_ptr<Fluxes_broadband<TF>> bnd_fluxes_residual =
-                std::make_unique<Fluxes_byband<TF>>(n_col_block_residual, n_lev, n_bnd);
-
-        call_kernels(
-                col_s, col_e,
-                optical_props_residual,
-                cloud_optical_props_residual,
-                *fluxes_residual,
-                *bnd_fluxes_residual);
-    }
+//
+//    if (n_col_block_residual > 0)
+//    {
+//        const int col_s = n_col - n_col_block_residual + 1;
+//        const int col_e = n_col;
+//
+//        std::unique_ptr<Fluxes_broadband<TF>> fluxes_residual =
+//                std::make_unique<Fluxes_broadband<TF>>(n_col_block_residual, n_lev);
+//        std::unique_ptr<Fluxes_broadband<TF>> bnd_fluxes_residual =
+//                std::make_unique<Fluxes_byband<TF>>(n_col_block_residual, n_lev, n_bnd);
+//
+//        call_kernels(
+//                col_s, col_e,
+//                optical_props_residual,
+//                cloud_optical_props_residual,
+//                *fluxes_residual,
+//                *bnd_fluxes_residual);
+//    }
 }
 
 #ifdef FLOAT_SINGLE_RRTMGP

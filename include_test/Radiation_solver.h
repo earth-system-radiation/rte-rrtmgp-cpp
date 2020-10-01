@@ -33,6 +33,10 @@ class Radiation_solver_longwave
                 const Gas_concs<TF>& gas_concs,
                 const std::string& file_name_gas,
                 const std::string& file_name_cloud);
+        Radiation_solver_longwave(
+                const Gas_concs_gpu<TF>& gas_concs,
+                const std::string& file_name_gas,
+                const std::string& file_name_cloud);
 
         void solve(
                 const bool switch_fluxes,
@@ -71,6 +75,10 @@ class Radiation_solver_shortwave
     public:
         Radiation_solver_shortwave(
                 const Gas_concs<TF>& gas_concs,
+                const std::string& file_name_gas,
+                const std::string& file_name_cloud);
+        Radiation_solver_shortwave(
+                const Gas_concs_gpu<TF>& gas_concs,
                 const std::string& file_name_gas,
                 const std::string& file_name_cloud);
 
@@ -130,5 +138,6 @@ class Radiation_solver_shortwave
     private:
         std::unique_ptr<Gas_optics<TF>> kdist;
         std::unique_ptr<Cloud_optics<TF>> cloud_optics;
+        std::unique_ptr<Gas_optics_gpu<TF>> kdist_gpu;
 };
 #endif

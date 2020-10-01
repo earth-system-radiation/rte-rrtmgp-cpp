@@ -82,8 +82,8 @@ class Gas_concs_gpu
         // // void get_vmr(const std::string& name, Array<TF,2>& data) const;
         const Array_gpu<TF,2>& get_vmr(const std::string& name) const;
 
-        // // Check if gas exists in map.
-        // BOOL_TYPE exists(const std::string& name) const;
+         // Check if gas exists in map.
+        BOOL_TYPE exists(const std::string& name) const;
 
     private:
         std::map<std::string, Array_gpu<TF,2>> gas_concs_map;

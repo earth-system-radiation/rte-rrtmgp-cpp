@@ -56,6 +56,13 @@ const Array_gpu<TF,2>& Gas_concs_gpu<TF>::get_vmr(const std::string& name) const
     return this->gas_concs_map.at(name);
 }
 
+// Check if gas exists in map.
+template<typename TF>
+BOOL_TYPE Gas_concs_gpu<TF>::exists(const std::string& name) const
+{ 
+    return gas_concs_map.count(name) != 0;
+}
+
 #ifdef FLOAT_SINGLE_RRTMGP
 template class Gas_concs_gpu<float>;
 #else

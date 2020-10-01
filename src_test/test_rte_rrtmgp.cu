@@ -394,7 +394,9 @@ void solve_radiation(int argc, char** argv)
         // Initialize the solver.
         Status::print_message("Initializing the shortwave solver.");
 
-        Radiation_solver_shortwave<TF> rad_sw(gas_concs, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
+
+        Gas_concs_gpu<TF> gas_concs_gpu(gas_concs);
+        Radiation_solver_shortwave<TF> rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
 
         // Read the boundary conditions.
         const int n_bnd_sw = rad_sw.get_n_bnd();
@@ -486,8 +488,6 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<TF,3> sw_bnd_flux_dn_gpu(sw_bnd_flux_dn);
         Array_gpu<TF,3> sw_bnd_flux_dn_dir_gpu(sw_bnd_flux_dn_dir);
         Array_gpu<TF,3> sw_bnd_flux_net_gpu(sw_bnd_flux_net);
-
-        Gas_concs_gpu<TF> gas_concs_gpu(gas_concs);
 
         auto time_start = std::chrono::high_resolution_clock::now();
 

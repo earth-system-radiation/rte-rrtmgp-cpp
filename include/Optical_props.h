@@ -192,14 +192,14 @@ class Optical_props_gpu
 
 // Base class for 1scl and 2str solvers fully implemented in header.
 template<typename TF>
-class Optical_props_gpu_arry : public Optical_props_gpu<TF>
+class Optical_props_arry_gpu : public Optical_props_gpu<TF>
 {
     public:
-        Optical_props_gpu_arry(const Optical_props_gpu<TF>& optical_props_gpu) :
+        Optical_props_arry_gpu(const Optical_props_gpu<TF>& optical_props_gpu) :
             Optical_props_gpu<TF>(optical_props_gpu)
         {}
 
-        virtual ~Optical_props_gpu_arry() {};
+        virtual ~Optical_props_arry_gpu() {};
 
         virtual Array_gpu<TF,3>& get_tau() = 0;
         virtual Array_gpu<TF,3>& get_ssa() = 0;
@@ -213,11 +213,11 @@ class Optical_props_gpu_arry : public Optical_props_gpu<TF>
         virtual void delta_scale(const Array_gpu<TF,3>& forward_frac=Array_gpu<TF,3>()) = 0;
 
         virtual void set_subset(
-                const std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props_gpu_sub,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
                 const int col_s, const int col_e) = 0;
 
         virtual void get_subset(
-                const std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props_gpu_sub,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
                 const int col_s, const int col_e) = 0;
 
         virtual int get_ncol() const = 0;
@@ -225,21 +225,21 @@ class Optical_props_gpu_arry : public Optical_props_gpu<TF>
 };
 
 template<typename TF>
-class Optical_props_gpu_1scl : public Optical_props_gpu_arry<TF>
+class Optical_props_1scl_gpu : public Optical_props_arry_gpu<TF>
 {
     public:
         // Initializer constructor.
-        Optical_props_gpu_1scl(
+        Optical_props_1scl_gpu(
                 const int ncol,
                 const int nlay,
                 const Optical_props_gpu<TF>& optical_props_gpu);
 
         void set_subset(
-                const std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props_gpu_sub,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
                 const int col_s, const int col_e);
 
         void get_subset(
-                const std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props_gpu_sub,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
                 const int col_s, const int col_e);
 
         int get_ncol() const { return tau.dim(1); }
@@ -260,20 +260,20 @@ class Optical_props_gpu_1scl : public Optical_props_gpu_arry<TF>
 };
 
 template<typename TF>
-class Optical_props_gpu_2str : public Optical_props_gpu_arry<TF>
+class Optical_props_2str_gpu : public Optical_props_arry_gpu<TF>
 {
     public:
-        Optical_props_gpu_2str(
+        Optical_props_2str_gpu(
                 const int ncol,
                 const int nlay,
                 const Optical_props_gpu<TF>& optical_props_gpu);
 
         void set_subset(
-                const std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props_gpu_sub,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
                 const int col_s, const int col_e);
 
         void get_subset(
-                const std::unique_ptr<Optical_props_gpu_arry<TF>>& optical_props_gpu_sub,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
                 const int col_s, const int col_e);
 
         int get_ncol() const { return tau.dim(1); }
