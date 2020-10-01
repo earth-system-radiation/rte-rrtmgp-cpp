@@ -39,6 +39,7 @@
 #include "iostream"
 
 #include "rrtmgp_kernel_launcher_cuda.h"
+
 namespace
 {
     int find_index(
@@ -810,10 +811,10 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
             jtemp, jpress, jeta, tropo, fmajor,
             col_dry);
 
-//    // External source function is constant.
-//    for (int igpt=1; igpt<=ngpt; ++igpt)
-//        for (int icol=1; icol<=ncol; ++icol)
-//            toa_src.insert({icol, igpt},this->solar_source({igpt}));
+    // External source function is constant.
+    for (int igpt=1; igpt<=ngpt; ++igpt)
+        for (int icol=1; icol<=ncol; ++icol)
+            toa_src.insert({icol, igpt},this->solar_source({igpt}));
 }
 
 
@@ -832,6 +833,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
         const Array_gpu<TF,2>& col_dry) const
 {
     Array_gpu<TF,3> tau({ngpt, nlay, ncol});
+    std::cout<<ngpt<<nlay<<ncol<<std::endl;
     Array_gpu<TF,3> tau_rayleigh({ngpt, nlay, ncol});
     Array_gpu<TF,3> vmr({ncol, nlay, this->get_ngas()});
     Array_gpu<TF,3> col_gas({ncol, nlay, this->get_ngas()+1});
@@ -969,17 +971,41 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 fminor, jeta, tropo, jtemp,
                 tau_rayleigh);
 
-        tau_rayleigh.dump("tau_sub_gpu");
-        throw 666;
 
     }
+    combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
+    optical_props->get_ssa().dump("ssa_sub_gpu");
+    throw 666;
+}
 
+template<typename TF>
+void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
+        const Array_gpu<TF,3>& tau,
+        const Array_gpu<TF,3>& tau_rayleigh,
+        const bool has_rayleigh,
+        std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props) const
+{
+    int ncol = tau.dim(3);
+    int nlay = tau.dim(2);
+    int ngpt = tau.dim(1);
 
-
-
-
-
-
+    if (!has_rayleigh)
+    {
+//        // CvH for 2 stream and n-stream zero the g and ssa
+//        rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
+//
+//        // Make new arrays for output comparison.
+//        Array<TF,3> tau_gpu(optical_props->get_tau());
+//        rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
+//                ncol, nlay, ngpt,tau,tau_gpu);
+    }
+    else
+    {
+        rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str(
+                ncol, nlay, ngpt,
+                tau, tau_rayleigh,
+                optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
+    }
 
 
 } 

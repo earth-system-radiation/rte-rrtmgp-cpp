@@ -397,10 +397,10 @@ void solve_radiation(int argc, char** argv)
 
         Gas_concs_gpu<TF> gas_concs_gpu(gas_concs);
         Radiation_solver_shortwave<TF> rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
-
+        std::cout<<"pass -----"<<std::endl;
         // Read the boundary conditions.
-        const int n_bnd_sw = rad_sw.get_n_bnd();
-        const int n_gpt_sw = rad_sw.get_n_gpt();
+        const int n_bnd_sw = rad_sw.get_n_bnd_gpu();
+        const int n_gpt_sw = rad_sw.get_n_gpt_gpu();
 
         Array<TF,1> mu0(input_nc.get_variable<TF>("mu0", {n_col}), {n_col});
         Array<TF,2> sfc_alb_dir(input_nc.get_variable<TF>("sfc_alb_dir", {n_col, n_bnd_sw}), {n_bnd_sw, n_col});

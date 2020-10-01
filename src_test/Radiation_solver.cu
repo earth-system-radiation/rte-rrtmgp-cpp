@@ -248,6 +248,7 @@ namespace
             TF mg_index = coef_nc.get_variable<TF>("mg_default");
             TF sb_index = coef_nc.get_variable<TF>("sb_default");
 
+            std::cout<<"pass -----"<<std::endl;
             return Gas_optics_rrtmgp_gpu<TF>(
                     gas_concs,
                     gas_names,
@@ -572,6 +573,7 @@ Radiation_solver_shortwave<TF>::Radiation_solver_shortwave(
     this->kdist_gpu = std::make_unique<Gas_optics_rrtmgp_gpu<TF>>(
             load_and_init_gas_optics<TF>(gas_concs, file_name_gas));
 
+        std::cout<<"Xpass -----"<<std::endl;
     this->cloud_optics = std::make_unique<Cloud_optics<TF>>(
             load_and_init_cloud_optics<TF>(file_name_cloud));
 }

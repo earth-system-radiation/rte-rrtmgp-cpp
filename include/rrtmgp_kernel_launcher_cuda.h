@@ -72,8 +72,8 @@ namespace rrtmgp_kernel_launcher_cuda
     template<typename TF>
     void combine_and_reorder_2str(
             const int ncol, const int nlay, const int ngpt,
-            const Array<TF,3>& tau_local, const Array<TF,3>& tau_rayleigh,
-            Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g);
+            const Array_gpu<TF,3>& tau_local, const Array_gpu<TF,3>& tau_rayleigh,
+            Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g);
     
     template<typename TF>
     void compute_tau_rayleigh(

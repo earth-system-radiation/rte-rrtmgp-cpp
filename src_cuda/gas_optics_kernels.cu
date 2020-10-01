@@ -686,36 +686,9 @@ namespace rrtmgp_kernel_launcher_cuda
     template<typename TF>
     void combine_and_reorder_2str(
             const int ncol, const int nlay, const int ngpt,
-            const Array<TF,3>& tau_abs, const Array<TF,3>& tau_rayleigh,
-            Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g)
+            const Array_gpu<TF,3>& tau_abs, const Array_gpu<TF,3>& tau_rayleigh,
+            Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g)
     {
-        // Store the sizes, all the same
-        const int array_size = tau_abs.size()*sizeof(TF);
-
-        TF* tau_abs_gpu;
-        TF* tau_rayleigh_gpu;
-        TF* tau_gpu;
-        TF* ssa_gpu;
-        TF* g_gpu;
-
-        TF tmin = std::numeric_limits<TF>::min();
-        // Allocate a CUDA array.
-        cuda_safe_call(cudaMalloc((void**)&tau_abs_gpu, array_size));
-        cuda_safe_call(cudaMalloc((void**)&tau_rayleigh_gpu, array_size));
-        cuda_safe_call(cudaMalloc((void**)&tau_gpu, array_size));
-        cuda_safe_call(cudaMalloc((void**)&ssa_gpu, array_size));
-        cuda_safe_call(cudaMalloc((void**)&g_gpu, array_size));
-
-        // Copy the data to the GPU.
-        cuda_safe_call(cudaMemcpy(tau_abs_gpu, tau_abs.ptr(), array_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(tau_rayleigh_gpu, tau_rayleigh.ptr(), array_size, cudaMemcpyHostToDevice));
-        cudaEvent_t startEvent, stopEvent;
-        float elapsedtime;
-        cudaEventCreate(&startEvent);
-        cudaEventCreate(&stopEvent);
-
-        cudaEventRecord(startEvent, 0);
-        // Call the kernel.
         const int block_col = 32;
         const int block_gpt = 32;
         const int block_lay = 1;
@@ -727,29 +700,11 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 grid_gpu(grid_col, grid_gpt, grid_lay);
         dim3 block_gpu(block_col, block_gpt, block_lay);
 
+        TF tmin = std::numeric_limits<TF>::min();
         combine_and_reorder_2str_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, tmin,
-                tau_abs_gpu, tau_rayleigh_gpu,
-                tau_gpu, ssa_gpu, g_gpu);
-
-        cuda_check_error();
-        cuda_safe_call(cudaDeviceSynchronize());
-        cudaEventRecord(stopEvent, 0);
-        cudaEventSynchronize(stopEvent);
-        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-        std::cout<<"GPU combine_and_reorder_2str: "<<elapsedtime<<" (ms)"<<std::endl;
-
-        // Copy back the results.
-        cuda_safe_call(cudaMemcpy(tau.ptr(), tau_gpu, array_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(ssa.ptr(), ssa_gpu, array_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(g.ptr(), g_gpu, array_size, cudaMemcpyDeviceToHost));
-
-        // Deallocate a CUDA array.
-        cuda_safe_call(cudaFree(tau_abs_gpu));
-        cuda_safe_call(cudaFree(tau_rayleigh_gpu));
-        cuda_safe_call(cudaFree(tau_gpu));
-        cuda_safe_call(cudaFree(ssa_gpu));
-        cuda_safe_call(cudaFree(g_gpu));
+                tau_abs.ptr(), tau_rayleigh.ptr(),
+                tau.ptr(), ssa.ptr(), g.ptr());
     }
     
     template<typename TF>
@@ -764,58 +719,9 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
             Array_gpu<TF,3>& tau_rayleigh)
     {
-//        float elapsedtime;
-//        const int gpoint_flavor_size = gpoint_flavor.size()*sizeof(int);
-//        const int band_lims_gpt_size = band_lims_gpt.size()*sizeof(int);
-//        const int krayl_size = krayl.size()*sizeof(TF);
-//        const int col_dry_size = col_dry.size()*sizeof(TF);
-//        const int col_gas_size = col_gas.size()*sizeof(TF);
-//        const int fminor_size = fminor.size()*sizeof(TF);
-//        const int jeta_size = jeta.size()*sizeof(int);
-//        const int tropo_size = tropo.size()*sizeof(BOOL_TYPE);
-//        const int jtemp_size = jtemp.size()*sizeof(int);
         const int k_size = ncol*nlay*ngpt*sizeof(TF);
-//
-//        int* gpoint_flavor_gpu;
-//        int* band_lims_gpt_gpu;
-//        int* jeta_gpu;
-//        int* jtemp_gpu;
-//        BOOL_TYPE* tropo_gpu;
-//        TF* krayl_gpu;
-//        TF* col_dry_gpu;
-//        TF* col_gas_gpu;
-//        TF* fminor_gpu;
-//        TF* tau_rayleigh_gpu;
         TF* k;
-
-//        // Allocate a CUDA array.
-//        cuda_safe_call(cudaMalloc((void**)&gpoint_flavor_gpu, gpoint_flavor_size));
-//        cuda_safe_call(cudaMalloc((void**)&band_lims_gpt_gpu, band_lims_gpt_size));
-//        cuda_safe_call(cudaMalloc((void**)&krayl_gpu, krayl_size));
-//        cuda_safe_call(cudaMalloc((void**)&col_dry_gpu, col_dry_size));
-//        cuda_safe_call(cudaMalloc((void**)&col_gas_gpu, col_gas_size));
-//        cuda_safe_call(cudaMalloc((void**)&fminor_gpu, fminor_size));
-//        cuda_safe_call(cudaMalloc((void**)&jeta_gpu, jeta_size));
-//        cuda_safe_call(cudaMalloc((void**)&tropo_gpu, tropo_size));
-//        cuda_safe_call(cudaMalloc((void**)&jtemp_gpu, jtemp_size));
-//        cuda_safe_call(cudaMalloc((void**)&tau_rayleigh_gpu, k_size));
         cuda_safe_call(cudaMalloc((void**)&k, k_size));
-
-        // Copy the data to the GPU.
-//        cuda_safe_call(cudaMemcpy(gpoint_flavor_gpu, gpoint_flavor.ptr(), gpoint_flavor_size, cudaMemcpyHostToDevice));
-//        cuda_safe_call(cudaMemcpy(band_lims_gpt_gpu, band_lims_gpt.ptr(), band_lims_gpt_size, cudaMemcpyHostToDevice));
-//        cuda_safe_call(cudaMemcpy(krayl_gpu, krayl.ptr(), krayl_size, cudaMemcpyHostToDevice));
-//        cuda_safe_call(cudaMemcpy(col_dry_gpu, col_dry.ptr(), col_dry_size, cudaMemcpyHostToDevice));
-//        cuda_safe_call(cudaMemcpy(col_gas_gpu, col_gas.ptr(), col_gas_size, cudaMemcpyHostToDevice));
-//        cuda_safe_call(cudaMemcpy(fminor_gpu, fminor.ptr(), fminor_size, cudaMemcpyHostToDevice));
-//        cuda_safe_call(cudaMemcpy(jeta_gpu, jeta.ptr(), jeta_size, cudaMemcpyHostToDevice));
-//        cuda_safe_call(cudaMemcpy(tropo_gpu, tropo.ptr(), tropo_size, cudaMemcpyHostToDevice));
-//        cuda_safe_call(cudaMemcpy(jtemp_gpu, jtemp.ptr(), jtemp_size, cudaMemcpyHostToDevice));
-//
-//        cudaEvent_t startEvent, stopEvent;
-//        cudaEventCreate(&startEvent);
-//        cudaEventCreate(&stopEvent);
-//        cudaEventRecord(startEvent, 0);
 
         // Call the kernel.
         const int block_bnd = 14;
@@ -840,27 +746,6 @@ namespace rrtmgp_kernel_launcher_cuda
                 tropo.ptr(), jtemp.ptr(),
                 tau_rayleigh.ptr(), k);
 
-//        cuda_check_error();
-//        cuda_safe_call(cudaDeviceSynchronize());
-//        cudaEventRecord(stopEvent, 0);
-//        cudaEventSynchronize(stopEvent);
-//        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-//        std::cout<<"GPU compute_tau_rayleigh: "<<elapsedtime<<" (ms)"<<std::endl;
-//
-//        // Copy back the results.
-//        cuda_safe_call(cudaMemcpy(tau_rayleigh.ptr(), tau_rayleigh_gpu, k_size, cudaMemcpyDeviceToHost));
-//        
-//        // Deallocate a CUDA array.
-//        cuda_safe_call(cudaFree(gpoint_flavor_gpu));
-//        cuda_safe_call(cudaFree(band_lims_gpt_gpu));
-//        cuda_safe_call(cudaFree(krayl_gpu));
-//        cuda_safe_call(cudaFree(col_dry_gpu));
-//        cuda_safe_call(cudaFree(col_gas_gpu));
-//        cuda_safe_call(cudaFree(fminor_gpu));
-//        cuda_safe_call(cudaFree(jeta_gpu));
-//        cuda_safe_call(cudaFree(tropo_gpu));
-//        cuda_safe_call(cudaFree(jtemp_gpu));
-//        cuda_safe_call(cudaFree(tau_rayleigh_gpu));
         cuda_safe_call(cudaFree(k));
     }
 
@@ -1148,7 +1033,7 @@ template void rrtmgp_kernel_launcher_cuda::interpolation<float>(
         Array_gpu<float,4>&, Array_gpu<BOOL_TYPE,2>&, Array_gpu<int,4>&, Array_gpu<int,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<float>(
-        const int, const int, const int, const Array<float,3>&, const Array<float,3>&, Array<float,3>&, Array<float,3>&, Array<float,3>&);
+        const int, const int, const int, const Array_gpu<float,3>&, const Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
@@ -1191,7 +1076,7 @@ template void rrtmgp_kernel_launcher_cuda::interpolation<double>(
         Array_gpu<double,4>&, Array_gpu<BOOL_TYPE,2>&, Array_gpu<int,4>&, Array_gpu<int,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<double>(
-        const int, const int, const int, const Array<double,3>&, const Array<double,3>&, Array<double,3>&, Array<double,3>&, Array<double,3>&);
+        const int, const int, const int, const Array_gpu<double,3>&, const Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,

@@ -433,13 +433,22 @@ class Array_gpu
         }
         #endif
         
-        #ifdef __CUDACC__
+        inline void copy(const std::array<int, N>& indices, Array_gpu<T, N>& input, const std::array<int, N>& indices_input) const
+        {
+            #ifdef __CUDACC__
+            const int index = calc_index<N>(indices, strides, offsets);
+            const int index_in =  calc_index<N>(indices_input, input.strides, input.offsets);
+            cuda_safe_call(cudaMemcpy(data_ptr + index, input.ptr() + index_in, sizeof(T), cudaMemcpyDeviceToDevice));
+            #endif
+        }
+        
         inline void insert(const std::array<int, N>& indices, const T value) const
         {
+            #ifdef __CUDACC__
             const int index = calc_index<N>(indices, strides, offsets);
             cuda_safe_call(cudaMemcpy(data_ptr + index, &value, sizeof(T), cudaMemcpyHostToDevice));
+            #endif
         }
-        #endif
 
         inline T* ptr() { return data_ptr; }
         inline const T* ptr() const { return data_ptr; }
@@ -454,13 +463,24 @@ class Array_gpu
 
         inline T max() const
         {
-            T val = data_ptr[0];
+        #ifdef __CUDACC__
+            if (ncells>0)
+            {
+            T val;
+            cuda_safe_call(cudaMemcpy(&val, data_ptr , sizeof(T), cudaMemcpyDeviceToHost));
             for (int i=0; i < ncells; ++i)
-                if (data_ptr[i] > val)
-                    val = data_ptr[i];
+            {
+                T val2;
+                cuda_safe_call(cudaMemcpy(&val2, data_ptr+i , sizeof(T), cudaMemcpyDeviceToHost));
+                if (val2>val)
+                    val = val2;
+            }
             return val;
+            }
+            else
+        #endif
+            return T(0.);
         }
-
         // inline T min() const
         // {
         //     return *std::min_element(data.begin(), data.end());

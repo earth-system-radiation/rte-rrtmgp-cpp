@@ -126,6 +126,8 @@ class Radiation_solver_shortwave
 
         int get_n_gpt() const { return this->kdist->get_ngpt(); };
         int get_n_bnd() const { return this->kdist->get_nband(); };
+        int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
+        int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
 
         TF get_tsi() const { return this->kdist->get_tsi(); };
 
