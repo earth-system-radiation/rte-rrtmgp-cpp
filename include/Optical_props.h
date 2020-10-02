@@ -181,7 +181,8 @@ class Optical_props_gpu
         Array<int,1> get_gpoint_bands() const { return this->gpt2band; }
         int get_nband() const { return this->band2gpt.dim(2); }
         int get_ngpt() const { return this->band2gpt_cpu.max(); }
-        Array<int,2> get_band_lims_gpoint() const { return this->band2gpt; }
+        Array_gpu<int,2> get_band_lims_gpoint_gpu() const { return this->band2gpt;}
+        Array<int,2> get_band_lims_gpoint() const { return this->band2gpt_cpu;}
         Array<TF,2> get_band_lims_wavenumber() const { return this->band_lims_wvn; }
 
     private:

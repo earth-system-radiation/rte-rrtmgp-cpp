@@ -1203,7 +1203,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 
     }
     combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
-
 }
 
 template<typename TF>

@@ -153,10 +153,6 @@ Optical_props_gpu<TF>::Optical_props_gpu(
     this->gpt2band.set_dims({band_lims_gpt.max()});
     
     std::array<int,1> dd2 = this->gpt2band.get_dims();
-    std::cout<<band_lims_gpt.max()<<std::endl;
-    std::cout<<band_lims_gpt_lcl.max()<<std::endl;
-    std::cout<<band_lims_gpt_lcl.size()<<std::endl;
-    std::cout<<dd2[0]<<std::endl;
     
     for (int iband=1; iband<=band_lims_gpt_lcl.dim(2); ++iband)
     {
@@ -173,7 +169,6 @@ Optical_props_gpu<TF>::Optical_props_gpu(
     Array_gpu<int,2> band_lims_gpt_lcl({2, band_lims_wvn.dim(2)});
 
     Array<int,2> dd = band_lims_gpt_lcl.get_dims();
-    std::cout<<dd({1})<<std::endl;
     for (int iband=1; iband<=band_lims_wvn.dim(2); ++iband)
     {
         band_lims_gpt_lcl.insert({1, iband}, iband);

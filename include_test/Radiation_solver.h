@@ -116,8 +116,8 @@ class Radiation_solver_shortwave
                 const Array_gpu<TF,1>& tsi_scaling, const Array_gpu<TF,1>& mu0,
                 const Array_gpu<TF,2>& lwp, const Array_gpu<TF,2>& iwp,
                 const Array_gpu<TF,2>& rel, const Array_gpu<TF,2>& rei,
-                Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g,
-                Array_gpu<TF,2>& toa_src,
+                Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g,
+                Array<TF,2>& toa_src,
                 Array_gpu<TF,2>& sw_flux_up, Array_gpu<TF,2>& sw_flux_dn,
                 Array_gpu<TF,2>& sw_flux_dn_dir, Array_gpu<TF,2>& sw_flux_net,
                 Array_gpu<TF,3>& sw_bnd_flux_up, Array_gpu<TF,3>& sw_bnd_flux_dn,
@@ -136,7 +136,12 @@ class Radiation_solver_shortwave
 
         Array<TF,2> get_band_lims_wavenumber() const
         { return this->kdist->get_band_lims_wavenumber(); }
+        
+        Array<int,2> get_band_lims_gpoint_gpu() const
+        { return this->kdist_gpu->get_band_lims_gpoint(); }
 
+        Array<TF,2> get_band_lims_wavenumber_gpu() const
+        { return this->kdist_gpu->get_band_lims_wavenumber(); }
     private:
         std::unique_ptr<Gas_optics<TF>> kdist;
         std::unique_ptr<Cloud_optics<TF>> cloud_optics;

@@ -397,7 +397,6 @@ void solve_radiation(int argc, char** argv)
 
         Gas_concs_gpu<TF> gas_concs_gpu(gas_concs);
         Radiation_solver_shortwave<TF> rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
-        std::cout<<"pass -----"<<std::endl;
         // Read the boundary conditions.
         const int n_bnd_sw = rad_sw.get_n_bnd_gpu();
         const int n_gpt_sw = rad_sw.get_n_gpt_gpu();
@@ -476,10 +475,10 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<TF,2> iwp_gpu(iwp);
         Array_gpu<TF,2> rel_gpu(rel);
         Array_gpu<TF,2> rei_gpu(rei);
-        Array_gpu<TF,3> sw_tau_gpu(sw_tau);
-        Array_gpu<TF,3> ssa_gpu(ssa);
-        Array_gpu<TF,3> g_gpu(g);
-        Array_gpu<TF,2> toa_source_gpu(toa_source);
+//        Array_gpu<TF,3> sw_tau_gpu(sw_tau);
+//        Array_gpu<TF,3> ssa_gpu(ssa);
+//        Array_gpu<TF,3> g_gpu(g);
+//        Array_gpu<TF,2> toa_source_gpu(toa_source);
         Array_gpu<TF,2> sw_flux_up_gpu(sw_flux_up);
         Array_gpu<TF,2> sw_flux_dn_gpu(sw_flux_dn);
         Array_gpu<TF,2> sw_flux_dn_dir_gpu(sw_flux_dn_dir);
@@ -504,8 +503,8 @@ void solve_radiation(int argc, char** argv)
                 tsi_scaling_gpu, mu0_gpu,
                 lwp_gpu, iwp_gpu,
                 rel_gpu, rei_gpu,
-                sw_tau_gpu, ssa_gpu, g_gpu,
-                toa_source_gpu,
+                sw_tau, ssa, g,
+                toa_source,
                 sw_flux_up_gpu, sw_flux_dn_gpu,
                 sw_flux_dn_dir_gpu, sw_flux_net_gpu,
                 sw_bnd_flux_up_gpu, sw_bnd_flux_dn_gpu,
@@ -524,12 +523,12 @@ void solve_radiation(int argc, char** argv)
         output_nc.add_dimension("band_sw", n_bnd_sw);
 
         auto nc_sw_band_lims_wvn = output_nc.add_variable<TF>("sw_band_lims_wvn", {"band_sw", "pair"});
-        nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber().v(), {0, 0});
+        nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber_gpu().v(), {0, 0});
 
         if (switch_output_optical)
         {
             auto nc_sw_band_lims_gpt = output_nc.add_variable<int>("sw_band_lims_gpt", {"band_sw", "pair"});
-            nc_sw_band_lims_gpt.insert(rad_sw.get_band_lims_gpoint().v(), {0, 0});
+            nc_sw_band_lims_gpt.insert(rad_sw.get_band_lims_gpoint_gpu().v(), {0, 0});
 
             auto nc_sw_tau = output_nc.add_variable<TF>("sw_tau", {"gpt_sw", "lay", "col"});
             auto nc_ssa    = output_nc.add_variable<TF>("ssa"   , {"gpt_sw", "lay", "col"});

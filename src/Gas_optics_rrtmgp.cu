@@ -680,6 +680,7 @@ void fill_gases_kernel(
     }
 }
 
+
 template<typename TF> __global__
 void compute_delta_plev(
         const int ncol, const int nlay,
@@ -815,8 +816,6 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
     for (int igpt=1; igpt<=ngpt; ++igpt)
         for (int icol=1; icol<=ncol; ++icol)
             toa_src.insert({icol, igpt}, this->solar_source({igpt}));
-    TF val = play({1,1});
-    TF valx = toa_src({1,1});
 
 }
 
@@ -836,7 +835,6 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
         const Array_gpu<TF,2>& col_dry) const
 {
     Array_gpu<TF,3> tau({ngpt, nlay, ncol});
-    std::cout<<ngpt<<nlay<<ncol<<std::endl;
     Array_gpu<TF,3> tau_rayleigh({ngpt, nlay, ncol});
     Array_gpu<TF,3> vmr({ncol, nlay, this->get_ngas()});
     Array_gpu<TF,3> col_gas({ncol, nlay, this->get_ngas()+1});
@@ -977,8 +975,6 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
 
     }
     combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
-    optical_props->get_ssa().dump("ssa_sub_gpu");
-    throw 666;
 }
 
 template<typename TF>
