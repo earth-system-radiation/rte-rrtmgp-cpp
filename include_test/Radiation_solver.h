@@ -130,6 +130,7 @@ class Radiation_solver_shortwave
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
 
         TF get_tsi() const { return this->kdist->get_tsi(); };
+        TF get_tsi_gpu() const { return this->kdist_gpu->get_tsi(); };
 
         Array<int,2> get_band_lims_gpoint() const
         { return this->kdist->get_band_lims_gpoint(); }

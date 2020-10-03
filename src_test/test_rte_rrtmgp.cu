@@ -391,6 +391,7 @@ void solve_radiation(int argc, char** argv)
     ////// RUN THE SHORTWAVE SOLVER //////
     if (switch_shortwave)
     {
+        // note: many Array's initialised below are later copied to Array_gpu, this is not necessary I think
         // Initialize the solver.
         Status::print_message("Initializing the shortwave solver.");
 
@@ -409,7 +410,7 @@ void solve_radiation(int argc, char** argv)
         if (input_nc.variable_exists("tsi"))
         {
             Array<TF,1> tsi(input_nc.get_variable<TF>("tsi", {n_col}), {n_col});
-            const TF tsi_ref = rad_sw.get_tsi();
+            const TF tsi_ref = rad_sw.get_tsi_gpu();
             for (int icol=1; icol<=n_col; ++icol)
                 tsi_scaling({icol}) = tsi({icol}) / tsi_ref;
         }
@@ -475,6 +476,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<TF,2> iwp_gpu(iwp);
         Array_gpu<TF,2> rel_gpu(rel);
         Array_gpu<TF,2> rei_gpu(rei);
+//      Some arrays should not be copied to Array_gpu, e.g. when used for storing in netCDF
 //        Array_gpu<TF,3> sw_tau_gpu(sw_tau);
 //        Array_gpu<TF,3> ssa_gpu(ssa);
 //        Array_gpu<TF,3> g_gpu(g);
