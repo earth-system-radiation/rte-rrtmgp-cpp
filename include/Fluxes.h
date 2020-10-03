@@ -33,6 +33,8 @@
 // Forward declarations.
 template<typename TF, int> class Array;
 template<typename TF> class Optical_props_arry;
+template<typename TF, int> class Array_gpu;
+template<typename TF> class Optical_props_arry_gpu;
 
 template<typename TF>
 class Fluxes
@@ -120,4 +122,94 @@ class Fluxes_byband : public Fluxes_broadband<TF>
         Array<TF,3> bnd_flux_dn_dir;
         Array<TF,3> bnd_flux_net;
 };
+
+//#ifdef USECUDA
+template<typename TF>
+class Fluxes_gpu
+{
+    public:
+        virtual void reduce(
+                const Array_gpu<TF,3>& gpt_flux_up,
+                const Array_gpu<TF,3>& gpt_flux_dn,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const BOOL_TYPE top_at_1) = 0;
+
+        virtual void reduce(
+                const Array_gpu<TF,3>& gpt_flux_up,
+                const Array_gpu<TF,3>& gpt_flux_dn,
+                const Array_gpu<TF,3>& gpt_flux_dn_dir,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const BOOL_TYPE top_at_1) = 0;
+};
+
+template<typename TF>
+class Fluxes_broadband_gpu : public Fluxes_gpu<TF>
+{
+    public:
+        Fluxes_broadband_gpu(const int ncol, const int nlev);
+        virtual ~Fluxes_broadband_gpu() {};
+
+        virtual void reduce(
+                const Array_gpu<TF,3>& gpt_flux_up,
+                const Array_gpu<TF,3>& gpt_flux_dn,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const BOOL_TYPE top_at_1);
+
+        virtual void reduce(
+                const Array_gpu<TF,3>& gpt_flux_up,
+                const Array_gpu<TF,3>& gpt_flux_dn,
+                const Array_gpu<TF,3>& gpt_flux_dn_dir,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const BOOL_TYPE top_at_1);
+
+        Array_gpu<TF,2>& get_flux_up    () { return flux_up;     }
+        Array_gpu<TF,2>& get_flux_dn    () { return flux_dn;     }
+        Array_gpu<TF,2>& get_flux_dn_dir() { return flux_dn_dir; }
+        Array_gpu<TF,2>& get_flux_net   () { return flux_net;    }
+
+        virtual Array_gpu<TF,3>& get_bnd_flux_up    () { throw std::runtime_error("Band fluxes are not available"); }
+        virtual Array_gpu<TF,3>& get_bnd_flux_dn    () { throw std::runtime_error("Band fluxes are not available"); }
+        virtual Array_gpu<TF,3>& get_bnd_flux_dn_dir() { throw std::runtime_error("Band fluxes are not available"); }
+        virtual Array_gpu<TF,3>& get_bnd_flux_net   () { throw std::runtime_error("Band fluxes are not available"); }
+
+    private:
+        Array_gpu<TF,2> flux_up;
+        Array_gpu<TF,2> flux_dn;
+        Array_gpu<TF,2> flux_dn_dir;
+        Array_gpu<TF,2> flux_net;
+};
+
+template<typename TF>
+class Fluxes_byband_gpu : public Fluxes_broadband_gpu<TF>
+{
+    public:
+        Fluxes_byband_gpu(const int ncol, const int nlev, const int nbnd);
+        virtual ~Fluxes_byband_gpu() {};
+
+        virtual void reduce(
+                const Array_gpu<TF,3>& gpt_flux_up,
+                const Array_gpu<TF,3>& gpt_flux_dn,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const BOOL_TYPE top_at_1);
+
+        virtual void reduce(
+                const Array_gpu<TF,3>& gpt_flux_up,
+                const Array_gpu<TF,3>& gpt_flux_dn,
+                const Array_gpu<TF,3>& gpt_flux_dn_dir,
+                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const BOOL_TYPE top_at_1);
+
+        Array_gpu<TF,3>& get_bnd_flux_up    () { return bnd_flux_up;     }
+        Array_gpu<TF,3>& get_bnd_flux_dn    () { return bnd_flux_dn;     }
+        Array_gpu<TF,3>& get_bnd_flux_dn_dir() { return bnd_flux_dn_dir; }
+        Array_gpu<TF,3>& get_bnd_flux_net   () { return bnd_flux_net;    }
+
+    private:
+        Array_gpu<TF,3> bnd_flux_up;
+        Array_gpu<TF,3> bnd_flux_dn;
+        Array_gpu<TF,3> bnd_flux_dn_dir;
+        Array_gpu<TF,3> bnd_flux_net;
+};
+
+//#endif
 #endif

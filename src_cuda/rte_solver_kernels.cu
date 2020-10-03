@@ -668,7 +668,6 @@ namespace rte_kernel_launcher_cuda
                 ncol, nlay, ngpt, tmin, tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(), r_dif, t_dif, r_dir, t_dir, t_noscat);
         
 //        cuda_safe_call(cudaDeviceSynchronize());
-
         const int block_col2d = 32;
         const int block_gpt2d = 32;
 

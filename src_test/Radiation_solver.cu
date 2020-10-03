@@ -634,8 +634,8 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
             const int col_s_in, const int col_e_in,
             std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_subset_in,
 //            std::unique_ptr<Optical_props_2str_gpu<TF>>& cloud_optical_props_subset_in,
-            Fluxes_broadband<TF>& fluxes,
-            Fluxes_broadband<TF>& bnd_fluxes)
+            Fluxes_broadband_gpu<TF>& fluxes,
+            Fluxes_broadband_gpu<TF>& bnd_fluxes)
     {
         const int n_col_in = col_e_in - col_s_in + 1;
         Gas_concs_gpu<TF> gas_concs_subset(gas_concs, col_s_in, n_col_in);
@@ -724,7 +724,9 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                 gpt_flux_dn,
                 gpt_flux_dn_dir);
 
-        //  fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
+        fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
+        fluxes.get_flux_net().dump("flux_sub_gpu");
+        throw 666;
 
         //  // Copy the data to the output.
         //  for (int ilev=1; ilev<=n_lev; ++ilev)
@@ -758,10 +760,10 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         const int col_s = (b-1) * n_col_block + 1;
         const int col_e =  b    * n_col_block;
 
-        std::unique_ptr<Fluxes_broadband<TF>> fluxes_subset =
-                std::make_unique<Fluxes_broadband<TF>>(n_col_block, n_lev);
-        std::unique_ptr<Fluxes_broadband<TF>> bnd_fluxes_subset =
-                std::make_unique<Fluxes_byband<TF>>(n_col_block, n_lev, n_bnd);
+        std::unique_ptr<Fluxes_broadband_gpu<TF>> fluxes_subset =
+                std::make_unique<Fluxes_broadband_gpu<TF>>(n_col_block, n_lev);
+        std::unique_ptr<Fluxes_broadband_gpu<TF>> bnd_fluxes_subset =
+                std::make_unique<Fluxes_byband_gpu<TF>>(n_col_block, n_lev, n_bnd);
 
         call_kernels(
                 col_s, col_e,
@@ -776,10 +778,10 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         const int col_s = n_col - n_col_block_residual + 1;
         const int col_e = n_col;
 
-        std::unique_ptr<Fluxes_broadband<TF>> fluxes_residual =
-                std::make_unique<Fluxes_broadband<TF>>(n_col_block_residual, n_lev);
-        std::unique_ptr<Fluxes_broadband<TF>> bnd_fluxes_residual =
-                std::make_unique<Fluxes_byband<TF>>(n_col_block_residual, n_lev, n_bnd);
+        std::unique_ptr<Fluxes_broadband_gpu<TF>> fluxes_residual =
+                std::make_unique<Fluxes_broadband_gpu<TF>>(n_col_block_residual, n_lev);
+        std::unique_ptr<Fluxes_broadband_gpu<TF>> bnd_fluxes_residual =
+                std::make_unique<Fluxes_byband_gpu<TF>>(n_col_block_residual, n_lev, n_bnd);
 
         call_kernels(
                 col_s, col_e,
