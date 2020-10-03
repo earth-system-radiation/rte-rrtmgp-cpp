@@ -118,10 +118,10 @@ class Radiation_solver_shortwave
                 const Array_gpu<TF,2>& rel, const Array_gpu<TF,2>& rei,
                 Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g,
                 Array<TF,2>& toa_src,
-                Array_gpu<TF,2>& sw_flux_up, Array_gpu<TF,2>& sw_flux_dn,
-                Array_gpu<TF,2>& sw_flux_dn_dir, Array_gpu<TF,2>& sw_flux_net,
-                Array_gpu<TF,3>& sw_bnd_flux_up, Array_gpu<TF,3>& sw_bnd_flux_dn,
-                Array_gpu<TF,3>& sw_bnd_flux_dn_dir, Array_gpu<TF,3>& sw_bnd_flux_net) const;
+                Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn,
+                Array<TF,2>& sw_flux_dn_dir, Array<TF,2>& sw_flux_net,
+                Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn,
+                Array<TF,3>& sw_bnd_flux_dn_dir, Array<TF,3>& sw_bnd_flux_net) const;
         #endif
 
         int get_n_gpt() const { return this->kdist->get_ngpt(); };

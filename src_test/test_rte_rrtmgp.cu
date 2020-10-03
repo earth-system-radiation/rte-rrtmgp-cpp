@@ -481,14 +481,14 @@ void solve_radiation(int argc, char** argv)
 //        Array_gpu<TF,3> ssa_gpu(ssa);
 //        Array_gpu<TF,3> g_gpu(g);
 //        Array_gpu<TF,2> toa_source_gpu(toa_source);
-        Array_gpu<TF,2> sw_flux_up_gpu(sw_flux_up);
-        Array_gpu<TF,2> sw_flux_dn_gpu(sw_flux_dn);
-        Array_gpu<TF,2> sw_flux_dn_dir_gpu(sw_flux_dn_dir);
-        Array_gpu<TF,2> sw_flux_net_gpu(sw_flux_net);
-        Array_gpu<TF,3> sw_bnd_flux_up_gpu(sw_bnd_flux_up);
-        Array_gpu<TF,3> sw_bnd_flux_dn_gpu(sw_bnd_flux_dn);
-        Array_gpu<TF,3> sw_bnd_flux_dn_dir_gpu(sw_bnd_flux_dn_dir);
-        Array_gpu<TF,3> sw_bnd_flux_net_gpu(sw_bnd_flux_net);
+//        Array_gpu<TF,2> sw_flux_up_gpu(sw_flux_up);
+//        Array_gpu<TF,2> sw_flux_dn_gpu(sw_flux_dn);
+//        Array_gpu<TF,2> sw_flux_dn_dir_gpu(sw_flux_dn_dir);
+//        Array_gpu<TF,2> sw_flux_net_gpu(sw_flux_net);
+//        Array_gpu<TF,3> sw_bnd_flux_up_gpu(sw_bnd_flux_up);
+//        Array_gpu<TF,3> sw_bnd_flux_dn_gpu(sw_bnd_flux_dn);
+//        Array_gpu<TF,3> sw_bnd_flux_dn_dir_gpu(sw_bnd_flux_dn_dir);
+//        Array_gpu<TF,3> sw_bnd_flux_net_gpu(sw_bnd_flux_net);
 
         auto time_start = std::chrono::high_resolution_clock::now();
 
@@ -507,10 +507,10 @@ void solve_radiation(int argc, char** argv)
                 rel_gpu, rei_gpu,
                 sw_tau, ssa, g,
                 toa_source,
-                sw_flux_up_gpu, sw_flux_dn_gpu,
-                sw_flux_dn_dir_gpu, sw_flux_net_gpu,
-                sw_bnd_flux_up_gpu, sw_bnd_flux_dn_gpu,
-                sw_bnd_flux_dn_dir_gpu, sw_bnd_flux_net_gpu);
+                sw_flux_up, sw_flux_dn,
+                sw_flux_dn_dir, sw_flux_net,
+                sw_bnd_flux_up, sw_bnd_flux_dn,
+                sw_bnd_flux_dn_dir, sw_bnd_flux_net);
 
         auto time_end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
