@@ -464,6 +464,35 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
         Array<TF,4> krayl;
         Array_gpu<TF,4> krayl_test;
 
+        #ifdef USECUDA
+//        Array_gpu<TF,2> totplnk_gpu;
+//        Array_gpu<TF,4> planck_frac_gpu;
+        Array_gpu<TF,1> press_ref_gpu, press_ref_log_gpu, temp_ref_gpu;
+        Array_gpu<TF,3> vmr_ref_gpu;
+        Array_gpu<int,2> flavor_gpu;
+        Array_gpu<int,2> gpoint_flavor_gpu;
+        Array_gpu<TF,4> kmajor_gpu;
+        Array_gpu<TF,3> kminor_lower_gpu;
+        Array_gpu<TF,3> kminor_upper_gpu;
+        Array_gpu<int,2> minor_limits_gpt_lower_gpu;
+        Array_gpu<int,2> minor_limits_gpt_upper_gpu;
+        Array_gpu<BOOL_TYPE,1> minor_scales_with_density_lower_gpu;
+        Array_gpu<BOOL_TYPE,1> minor_scales_with_density_upper_gpu;
+        Array_gpu<BOOL_TYPE,1> scale_by_complement_lower_gpu;
+        Array_gpu<BOOL_TYPE,1> scale_by_complement_upper_gpu;
+        Array_gpu<int,1> kminor_start_lower_gpu;
+        Array_gpu<int,1> kminor_start_upper_gpu;
+        Array_gpu<int,1> idx_minor_lower_gpu;
+        Array_gpu<int,1> idx_minor_upper_gpu;
+        Array_gpu<int,1> idx_minor_scaling_lower_gpu;
+        Array_gpu<int,1> idx_minor_scaling_upper_gpu;
+//        Array_gpu<int,1> is_key_gpu;
+//        Array_gpu<TF,1> solar_source_gpu;
+        Array_gpu<TF,4> krayl_gpu;
+        #endif
+
+
+
         int get_ngas() const { return this->gas_names.dim(1); }
 
         void init_abs_coeffs(

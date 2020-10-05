@@ -624,6 +624,29 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
         }
 
     this->is_key = is_key;
+
+    // copy to gpu
+    this->press_ref_log_gpu = this->press_ref_log;
+    this->temp_ref_gpu = this->temp_ref;
+    this->vmr_ref_gpu = this->vmr_ref;
+    this->flavor_gpu = this->flavor;
+    this->gpoint_flavor_gpu = this->gpoint_flavor;
+    this->kmajor_gpu = this->kmajor;
+    this->krayl_gpu = this->krayl;
+    this->kminor_lower_gpu = this->kminor_lower;
+    this->kminor_upper_gpu = this->kminor_upper;
+    this->minor_limits_gpt_lower_gpu = this->minor_limits_gpt_lower;
+    this->minor_limits_gpt_upper_gpu = this->minor_limits_gpt_upper;
+    this->minor_scales_with_density_lower_gpu = this->minor_scales_with_density_lower;
+    this->minor_scales_with_density_upper_gpu = this->minor_scales_with_density_upper;
+    this->scale_by_complement_lower_gpu = this->scale_by_complement_lower;
+    this->scale_by_complement_upper_gpu = this->scale_by_complement_upper;
+    this->idx_minor_lower_gpu = this->idx_minor_lower;
+    this->idx_minor_upper_gpu = this->idx_minor_upper;
+    this->idx_minor_scaling_lower_gpu = this->idx_minor_scaling_lower;
+    this->idx_minor_scaling_upper_gpu = this->idx_minor_scaling_upper;
+    this->kminor_start_lower_gpu = this->kminor_start_lower;
+    this->kminor_start_upper_gpu = this->kminor_start_upper;
 }
 
 template<typename TF>
@@ -842,29 +865,6 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
     Array_gpu<TF,4> col_mix({2, this->get_nflav(), ncol, nlay});
     Array_gpu<TF,5> fminor({2, 2, this->get_nflav(), ncol, nlay});
 
-    // Create cuda arrays with k-distribution variables
-    Array_gpu<TF,1> press_ref_log_gpu(this->press_ref_log);
-    Array_gpu<TF,1> temp_ref_gpu(this->temp_ref);
-    Array_gpu<TF,3> vmr_ref_gpu(this->vmr_ref);
-    Array_gpu<int,2> flavor_gpu(this->flavor);
-    Array_gpu<int,2> gpoint_flavor_gpu(this->gpoint_flavor);
-    Array_gpu<int,2> band_lims_gpt_gpu(this->get_band_lims_gpoint()); 
-    Array_gpu<TF,4> kmajor_gpu(this->kmajor);
-    Array_gpu<TF,4> krayl_gpu(this->krayl);
-    Array_gpu<TF,3> kminor_lower_gpu(this->kminor_lower);
-    Array_gpu<TF,3> kminor_upper_gpu(this->kminor_upper);
-    Array_gpu<int,2> minor_limits_gpt_lower_gpu(this->minor_limits_gpt_lower);
-    Array_gpu<int,2> minor_limits_gpt_upper_gpu(this->minor_limits_gpt_upper);
-    Array_gpu<BOOL_TYPE,1> minor_scales_with_density_lower_gpu(this->minor_scales_with_density_lower);
-    Array_gpu<BOOL_TYPE,1> minor_scales_with_density_upper_gpu(this->minor_scales_with_density_upper);
-    Array_gpu<BOOL_TYPE,1> scale_by_complement_lower_gpu(this->scale_by_complement_lower);
-    Array_gpu<BOOL_TYPE,1> scale_by_complement_upper_gpu(this->scale_by_complement_upper);
-    Array_gpu<int,1> idx_minor_lower_gpu(this->idx_minor_lower);
-    Array_gpu<int,1> idx_minor_upper_gpu(this->idx_minor_upper);
-    Array_gpu<int,1> idx_minor_scaling_lower_gpu(this->idx_minor_scaling_lower);
-    Array_gpu<int,1> idx_minor_scaling_upper_gpu(this->idx_minor_scaling_upper);
-    Array_gpu<int,1> kminor_start_lower_gpu(this->kminor_start_lower);
-    Array_gpu<int,1> kminor_start_upper_gpu(this->kminor_start_upper);
     
     // CvH add all the checking...
     const int ngas = this->get_ngas();
@@ -935,7 +935,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
             nminorupper, nminorkupper,
             idx_h2o,
             gpoint_flavor_gpu,
-            band_lims_gpt_gpu,
+            this->get_band_lims_gpoint(),
             kmajor_gpu,
             kminor_lower_gpu,
             kminor_upper_gpu,
@@ -966,7 +966,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
                 gpoint_flavor_gpu,
-                band_lims_gpt_gpu,
+                this->get_band_lims_gpoint(),
                 krayl_gpu,
                 idx_h2o, col_dry, col_gas,
                 fminor, jeta, tropo, jtemp,
