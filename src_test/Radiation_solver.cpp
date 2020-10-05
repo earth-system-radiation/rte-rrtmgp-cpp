@@ -724,7 +724,6 @@ void Radiation_solver_shortwave<TF>::solve(
 
         fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
         fluxes.get_flux_net().dump("flux_sub_cpu");
-        throw 666;
 
         // Copy the data to the output.
         for (int ilev=1; ilev<=n_lev; ++ilev)
