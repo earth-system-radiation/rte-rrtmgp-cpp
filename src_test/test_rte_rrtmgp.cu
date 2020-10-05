@@ -421,10 +421,10 @@ void solve_radiation(int argc, char** argv)
         }
 
         // Create output arrays.
-        Array<TF,3> sw_tau;
-        Array<TF,3> ssa;
-        Array<TF,3> g;
-        Array<TF,2> toa_source;
+        Array_gpu<TF,3> sw_tau;
+        Array_gpu<TF,3> ssa;
+        Array_gpu<TF,3> g;
+        Array_gpu<TF,2> toa_source;
 
         if (switch_output_optical)
         {
@@ -434,10 +434,10 @@ void solve_radiation(int argc, char** argv)
             toa_source.set_dims({n_col, n_gpt_sw});
         }
 
-        Array<TF,2> sw_flux_up;
-        Array<TF,2> sw_flux_dn;
-        Array<TF,2> sw_flux_dn_dir;
-        Array<TF,2> sw_flux_net;
+        Array_gpu<TF,2> sw_flux_up;
+        Array_gpu<TF,2> sw_flux_dn;
+        Array_gpu<TF,2> sw_flux_dn_dir;
+        Array_gpu<TF,2> sw_flux_net;
 
         if (switch_fluxes)
         {
@@ -447,10 +447,10 @@ void solve_radiation(int argc, char** argv)
             sw_flux_net   .set_dims({n_col, n_lev});
         }
 
-        Array<TF,3> sw_bnd_flux_up;
-        Array<TF,3> sw_bnd_flux_dn;
-        Array<TF,3> sw_bnd_flux_dn_dir;
-        Array<TF,3> sw_bnd_flux_net;
+        Array_gpu<TF,3> sw_bnd_flux_up;
+        Array_gpu<TF,3> sw_bnd_flux_dn;
+        Array_gpu<TF,3> sw_bnd_flux_dn_dir;
+        Array_gpu<TF,3> sw_bnd_flux_net;
 
         if (switch_output_bnd_fluxes)
         {
@@ -476,20 +476,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<TF,2> iwp_gpu(iwp);
         Array_gpu<TF,2> rel_gpu(rel);
         Array_gpu<TF,2> rei_gpu(rei);
-//      Some arrays should not be copied to Array_gpu, e.g. when used for storing in netCDF
-//        Array_gpu<TF,3> sw_tau_gpu(sw_tau);
-//        Array_gpu<TF,3> ssa_gpu(ssa);
-//        Array_gpu<TF,3> g_gpu(g);
-//        Array_gpu<TF,2> toa_source_gpu(toa_source);
-//        Array_gpu<TF,2> sw_flux_up_gpu(sw_flux_up);
-//        Array_gpu<TF,2> sw_flux_dn_gpu(sw_flux_dn);
-//        Array_gpu<TF,2> sw_flux_dn_dir_gpu(sw_flux_dn_dir);
-//        Array_gpu<TF,2> sw_flux_net_gpu(sw_flux_net);
-//        Array_gpu<TF,3> sw_bnd_flux_up_gpu(sw_bnd_flux_up);
-//        Array_gpu<TF,3> sw_bnd_flux_dn_gpu(sw_bnd_flux_dn);
-//        Array_gpu<TF,3> sw_bnd_flux_dn_dir_gpu(sw_bnd_flux_dn_dir);
-//        Array_gpu<TF,3> sw_bnd_flux_net_gpu(sw_bnd_flux_net);
-
+        
         auto time_start = std::chrono::high_resolution_clock::now();
 
         rad_sw.solve_gpu(
@@ -517,9 +504,20 @@ void solve_radiation(int argc, char** argv)
 
         Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
 
-
         // Store the output.
         Status::print_message("Storing the shortwave output.");
+        Array<TF,3> sw_tau_cpu(sw_tau);
+        Array<TF,3> ssa_cpu(ssa);
+        Array<TF,3> g_cpu(g);
+        Array<TF,2> toa_source_cpu(toa_source);
+        Array<TF,2> sw_flux_up_cpu(sw_flux_up);
+        Array<TF,2> sw_flux_dn_cpu(sw_flux_dn);
+        Array<TF,2> sw_flux_dn_dir_cpu(sw_flux_dn_dir);
+        Array<TF,2> sw_flux_net_cpu(sw_flux_net);
+        Array<TF,3> sw_bnd_flux_up_cpu(sw_bnd_flux_up);
+        Array<TF,3> sw_bnd_flux_dn_cpu(sw_bnd_flux_dn);
+        Array<TF,3> sw_bnd_flux_dn_dir_cpu(sw_bnd_flux_dn_dir);
+        Array<TF,3> sw_bnd_flux_net_cpu(sw_bnd_flux_net);
 
         output_nc.add_dimension("gpt_sw", n_gpt_sw);
         output_nc.add_dimension("band_sw", n_bnd_sw);
@@ -536,12 +534,12 @@ void solve_radiation(int argc, char** argv)
             auto nc_ssa    = output_nc.add_variable<TF>("ssa"   , {"gpt_sw", "lay", "col"});
             auto nc_g      = output_nc.add_variable<TF>("g"     , {"gpt_sw", "lay", "col"});
 
-            nc_sw_tau.insert(sw_tau.v(), {0, 0, 0});
-            nc_ssa   .insert(ssa   .v(), {0, 0, 0});
-            nc_g     .insert(g     .v(), {0, 0, 0});
+            nc_sw_tau.insert(sw_tau_cpu.v(), {0, 0, 0});
+            nc_ssa   .insert(ssa_cpu   .v(), {0, 0, 0});
+            nc_g     .insert(g_cpu     .v(), {0, 0, 0});
 
             auto nc_toa_source = output_nc.add_variable<TF>("toa_source", {"gpt_sw", "col"});
-            nc_toa_source.insert(toa_source.v(), {0, 0});
+            nc_toa_source.insert(toa_source_cpu.v(), {0, 0});
         }
 
         if (switch_fluxes)
@@ -551,10 +549,10 @@ void solve_radiation(int argc, char** argv)
             auto nc_sw_flux_dn_dir = output_nc.add_variable<TF>("sw_flux_dn_dir", {"lev", "col"});
             auto nc_sw_flux_net    = output_nc.add_variable<TF>("sw_flux_net"   , {"lev", "col"});
 
-            nc_sw_flux_up    .insert(sw_flux_up    .v(), {0, 0});
-            nc_sw_flux_dn    .insert(sw_flux_dn    .v(), {0, 0});
-            nc_sw_flux_dn_dir.insert(sw_flux_dn_dir.v(), {0, 0});
-            nc_sw_flux_net   .insert(sw_flux_net   .v(), {0, 0});
+            nc_sw_flux_up    .insert(sw_flux_up_cpu    .v(), {0, 0});
+            nc_sw_flux_dn    .insert(sw_flux_dn_cpu    .v(), {0, 0});
+            nc_sw_flux_dn_dir.insert(sw_flux_dn_dir_cpu.v(), {0, 0});
+            nc_sw_flux_net   .insert(sw_flux_net_cpu   .v(), {0, 0});
 
             if (switch_output_bnd_fluxes)
             {
@@ -563,10 +561,10 @@ void solve_radiation(int argc, char** argv)
                 auto nc_sw_bnd_flux_dn_dir = output_nc.add_variable<TF>("sw_bnd_flux_dn_dir", {"band_sw", "lev", "col"});
                 auto nc_sw_bnd_flux_net    = output_nc.add_variable<TF>("sw_bnd_flux_net"   , {"band_sw", "lev", "col"});
 
-                nc_sw_bnd_flux_up    .insert(sw_bnd_flux_up    .v(), {0, 0, 0});
-                nc_sw_bnd_flux_dn    .insert(sw_bnd_flux_dn    .v(), {0, 0, 0});
-                nc_sw_bnd_flux_dn_dir.insert(sw_bnd_flux_dn_dir.v(), {0, 0, 0});
-                nc_sw_bnd_flux_net   .insert(sw_bnd_flux_net   .v(), {0, 0, 0});
+                nc_sw_bnd_flux_up    .insert(sw_bnd_flux_up_cpu    .v(), {0, 0, 0});
+                nc_sw_bnd_flux_dn    .insert(sw_bnd_flux_dn_cpu    .v(), {0, 0, 0});
+                nc_sw_bnd_flux_dn_dir.insert(sw_bnd_flux_dn_dir_cpu.v(), {0, 0, 0});
+                nc_sw_bnd_flux_net   .insert(sw_bnd_flux_net_cpu   .v(), {0, 0, 0});
             }
         }
     }
