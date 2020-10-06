@@ -635,8 +635,6 @@ namespace rrtmgp_kernel_launcher_cuda
         zero_array_kernel<<<grid_gpu, block_gpu>>>(
                 ni, nj, nk, arr.ptr());
 
-//        cuda_check_error();
-//        cuda_safe_call(cudaDeviceSynchronize());
     }
 
     template<typename TF>

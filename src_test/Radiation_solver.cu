@@ -33,10 +33,40 @@
 #include "Fluxes.h"
 #include "Rte_lw.h"
 #include "Rte_sw.h"
+#include "subset_kernel_launcher_cuda.h"
 
 
+#include <cuda_profiler_api.h>
 namespace
 {
+    template<typename TF>__global__
+    void scaling_to_subset_kernel(
+            const int ncol, const int ngpt, TF* __restrict__ toa_src, const TF* __restrict__ tsi_scaling)
+    {
+        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+        const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+        if ( ( icol < ncol) && (igpt < ngpt) )
+        {
+            const int idx = icol + igpt*ncol;  
+            toa_src[idx] *= tsi_scaling[icol];
+        }
+    }
+
+    template<typename TF>
+    void scaling_to_subset(
+            const int ncol, const int ngpt, Array_gpu<TF,2>& toa_src, const Array_gpu<TF,1>& tsi_scaling)
+    {
+        const int block_col = 16;
+        const int block_gpt = 16;
+        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_gpt  = ngpt/block_gpt + (ngpt%block_gpt > 0);
+        dim3 grid_gpu(grid_col, grid_gpt);
+        dim3 block_gpu(block_col, block_gpt);
+        scaling_to_subset_kernel<<<grid_gpu, block_gpu>>>(
+            ncol, ngpt, toa_src.ptr(), tsi_scaling.ptr());
+    }
+
+
     std::vector<std::string> get_variable_string(
             const std::string& var_name,
             std::vector<int> i_count,
@@ -649,7 +679,6 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
             col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
         Array_gpu<TF,2> toa_src_subset({n_col_in, n_gpt});
-
         kdist_gpu->gas_optics(
                   p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                   p_lev_subset,
@@ -659,16 +688,8 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                   toa_src_subset,
                   col_dry_subset);
         
-        optical_props_subset_in->get_ssa().dump("ssa_sub_gpu");
-        
         auto tsi_scaling_subset = tsi_scaling.subset({{ {col_s_in, col_e_in} }});
-        for (int igpt=1; igpt<=n_gpt; ++igpt)
-             for (int icol=1; icol<=n_col_in; ++icol)
-             {
-                toa_src_subset.insert({icol, igpt}, toa_src_subset({icol,igpt}) * tsi_scaling_subset({icol}));
-             }
-
-        toa_src_subset.dump("toa_sub_gpu");
+        scaling_to_subset(n_col_in, n_gpt, toa_src_subset, tsi_scaling_subset);
       //  if (switch_cloud_optics)
         //  {
         //      Array<int,2> cld_mask_liq({n_col_in, n_lay});
@@ -692,20 +713,13 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         // Store the optical properties, if desired.
         if (switch_output_optical)
         {
-            for (int igpt=1; igpt<=n_gpt; ++igpt)
-                for (int ilay=1; ilay<=n_lay; ++ilay)
-                    for (int icol=1; icol<=n_col_in; ++icol)
-                    {
-                        tau.copy({icol+col_s_in-1, ilay, igpt}, optical_props_subset_in->get_tau(), {icol, ilay, igpt});
-                        ssa.copy({icol+col_s_in-1, ilay, igpt}, optical_props_subset_in->get_ssa(), {icol, ilay, igpt});
-                        g  .copy({icol+col_s_in-1, ilay, igpt}, optical_props_subset_in->get_g  (), {icol, ilay, igpt});
-                    }
-
-            for (int igpt=1; igpt<=n_gpt; ++igpt)
-                for (int icol=1; icol<=n_col_in; ++icol)
-                    toa_src.copy({icol+col_s_in-1, igpt}, toa_src_subset, {icol, igpt});
+            subset_kernel_launcher_cuda::get_from_subset(
+                    n_col, n_lay, n_gpt, n_col_in, col_s_in, tau, ssa, g, optical_props_subset_in->get_tau(), 
+                     optical_props_subset_in->get_ssa(),  optical_props_subset_in->get_g());
+            
+            subset_kernel_launcher_cuda::get_from_subset(
+                    n_col, n_gpt, n_col_in, col_s_in, toa_src, toa_src_subset);
         }
-
         if (!switch_fluxes)
             return;
 
@@ -725,32 +739,19 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                 gpt_flux_dn_dir);
 
         fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
-        fluxes.get_flux_net().dump("flux_sub_gpu");
-        //throw 666;
 
         // Copy the data to the output.
-        for (int ilev=1; ilev<=n_lev; ++ilev)
-            for (int icol=1; icol<=n_col_in; ++icol)
-            {
-                sw_flux_up     .copy({icol+col_s_in-1, ilev}, fluxes.get_flux_up    (), {icol, ilev});
-                sw_flux_dn     .copy({icol+col_s_in-1, ilev}, fluxes.get_flux_dn    (), {icol, ilev});
-                sw_flux_dn_dir .copy({icol+col_s_in-1, ilev}, fluxes.get_flux_dn_dir(), {icol, ilev});
-                sw_flux_net    .copy({icol+col_s_in-1, ilev}, fluxes.get_flux_net   (), {icol, ilev});
-            }
+        subset_kernel_launcher_cuda::get_from_subset(
+                n_col, n_lev, n_col_in, col_s_in, sw_flux_up, sw_flux_dn, sw_flux_dn_dir, sw_flux_net,
+                fluxes.get_flux_up(), fluxes.get_flux_dn(), fluxes.get_flux_dn_dir(), fluxes.get_flux_net());
 
         if (switch_output_bnd_fluxes)
         {
             bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
 
-            for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
-                for (int ilev=1; ilev<=n_lev; ++ilev)
-                    for (int icol=1; icol<=n_col_in; ++icol)
-                    {
-                        sw_bnd_flux_up     .copy({icol+col_s_in-1, ilev, ibnd}, bnd_fluxes.get_bnd_flux_up     (), {icol, ilev, ibnd});
-                        sw_bnd_flux_dn     .copy({icol+col_s_in-1, ilev, ibnd}, bnd_fluxes.get_bnd_flux_dn     (), {icol, ilev, ibnd});
-                        sw_bnd_flux_dn_dir .copy({icol+col_s_in-1, ilev, ibnd}, bnd_fluxes.get_bnd_flux_dn_dir (), {icol, ilev, ibnd});
-                        sw_bnd_flux_net    .copy({icol+col_s_in-1, ilev, ibnd}, bnd_fluxes.get_bnd_flux_net    (), {icol, ilev, ibnd});
-                    }
+            subset_kernel_launcher_cuda::get_from_subset(
+                    n_col, n_lev, n_bnd, n_col_in, col_s_in, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dn_dir, sw_bnd_flux_net,
+                    bnd_fluxes.get_bnd_flux_up(), bnd_fluxes.get_bnd_flux_dn(), bnd_fluxes.get_bnd_flux_dn_dir(), bnd_fluxes.get_bnd_flux_net());
         }
     };
     

@@ -26,6 +26,7 @@
 #include "Radiation_solver.h"
 #include "Gas_concs.h"
 
+#include <cuda_profiler_api.h>
 
 #ifdef FLOAT_SINGLE_RRTMGP
 #define FLOAT_TYPE float
@@ -478,7 +479,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<TF,2> rei_gpu(rei);
         
         auto time_start = std::chrono::high_resolution_clock::now();
-
+        cudaProfilerStart();
         rad_sw.solve_gpu(
                 switch_fluxes,
                 switch_cloud_optics,
@@ -498,7 +499,7 @@ void solve_radiation(int argc, char** argv)
                 sw_flux_dn_dir, sw_flux_net,
                 sw_bnd_flux_up, sw_bnd_flux_dn,
                 sw_bnd_flux_dn_dir, sw_bnd_flux_net);
-
+        cudaProfilerStop();
         auto time_end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
 

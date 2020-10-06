@@ -242,6 +242,7 @@ void Optical_props_2str_gpu<TF>::set_subset(
                 tau.copy({icol, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol-col_s+1, ilay, igpt});
                 ssa.copy({icol, ilay, igpt}, optical_props_gpu_sub->get_ssa(), {icol-col_s+1, ilay, igpt});
             }
+    throw 666;
 }
 
 template<typename TF>
@@ -257,6 +258,7 @@ void Optical_props_2str_gpu<TF>::get_subset(
                 ssa.copy({icol-col_s+1, ilay, igpt}, optical_props_gpu_sub->get_ssa(), {icol, ilay, igpt});
                 g  .copy({icol-col_s+1, ilay, igpt}, optical_props_gpu_sub->get_g  (), {icol, ilay, igpt});
             }
+    throw 666;
 }
 
 namespace rrtmgp_kernel_launcher_cuda
