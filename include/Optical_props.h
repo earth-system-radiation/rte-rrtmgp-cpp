@@ -214,13 +214,13 @@ class Optical_props_arry_gpu : public Optical_props_gpu<TF>
         // Optional argument.
         virtual void delta_scale(const Array_gpu<TF,3>& forward_frac=Array_gpu<TF,3>()) = 0;
 
-        virtual void set_subset(
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-                const int col_s, const int col_e) = 0;
-
-        virtual void get_subset(
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-                const int col_s, const int col_e) = 0;
+//        virtual void set_subset(
+//                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
+//                const int col_s, const int col_e) = 0;
+//
+//        virtual void get_subset(
+//                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
+//                const int col_s, const int col_e) = 0;
 
         virtual int get_ncol() const = 0;
         virtual int get_nlay() const = 0;
@@ -236,13 +236,13 @@ class Optical_props_1scl_gpu : public Optical_props_arry_gpu<TF>
                 const int nlay,
                 const Optical_props_gpu<TF>& optical_props_gpu);
 
-        void set_subset(
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-                const int col_s, const int col_e);
-
-        void get_subset(
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-                const int col_s, const int col_e);
+//        void set_subset(
+//                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
+//                const int col_s, const int col_e);
+//
+//        void get_subset(
+//                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
+//                const int col_s, const int col_e);
 
         int get_ncol() const { return tau.dim(1); }
         int get_nlay() const { return tau.dim(2); }
@@ -270,13 +270,13 @@ class Optical_props_2str_gpu : public Optical_props_arry_gpu<TF>
                 const int nlay,
                 const Optical_props_gpu<TF>& optical_props_gpu);
 
-        void set_subset(
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-                const int col_s, const int col_e);
-
-        void get_subset(
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-                const int col_s, const int col_e);
+//        void set_subset(
+//                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
+//                const int col_s, const int col_e);
+//
+//        void get_subset(
+//                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
+//                const int col_s, const int col_e);
 
         int get_ncol() const { return tau.dim(1); }
         int get_nlay() const { return tau.dim(2); }
