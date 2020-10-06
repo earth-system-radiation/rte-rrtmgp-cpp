@@ -487,7 +487,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
         Array_gpu<int,1> idx_minor_scaling_lower_gpu;
         Array_gpu<int,1> idx_minor_scaling_upper_gpu;
 //        Array_gpu<int,1> is_key_gpu;
-//        Array_gpu<TF,1> solar_source_gpu;
+        Array_gpu<TF,1> solar_source_gpu;
         Array_gpu<TF,4> krayl_gpu;
         #endif
 

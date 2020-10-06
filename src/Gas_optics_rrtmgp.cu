@@ -42,6 +42,33 @@
 
 namespace
 {
+    template<typename TF>__global__
+    void spread_col_kernel(
+            const int ncol, const int ngpt, TF* __restrict__ src_out, const TF* __restrict__ src_in)
+    {
+        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+        const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+        if ( ( icol < ncol) && (igpt < ngpt) )
+        {
+            const int idx = icol + igpt*ncol;  
+            src_out[idx] = src_in[icol];
+        }
+    }
+
+    template<typename TF>
+    void spread_col(
+            const int ncol, const int ngpt, Array_gpu<TF,2>& src_out, const Array_gpu<TF,1>& src_in)
+    {
+        const int block_col = 16;
+        const int block_gpt = 16;
+        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_gpt  = ngpt/block_gpt + (ngpt%block_gpt > 0);
+        dim3 grid_gpu(grid_col, grid_gpt);
+        dim3 block_gpu(block_col, block_gpt);
+        spread_col_kernel<<<grid_gpu, block_gpu>>>(
+            ncol, ngpt, src_out.ptr(), src_in.ptr());
+    }
+
     int find_index(
             const Array<std::string,1>& data, const std::string& value)
     {
@@ -649,23 +676,6 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
     this->kminor_start_upper_gpu = this->kminor_start_upper;
 }
 
-template<typename TF>
-void Gas_optics_rrtmgp<TF>::set_solar_variability(
-        const TF mg_index, const TF sb_index)
-{
-    constexpr TF a_offset = TF(0.1495954);
-    constexpr TF b_offset = TF(0.00066696);
-
-    for (int igpt=1; igpt<=this->solar_source_quiet.dim(1); ++igpt)
-    {
-        this->solar_source({igpt}) = this->solar_source_quiet({igpt})
-                + (mg_index - a_offset) * this->solar_source_facular({igpt})
-                + (sb_index - b_offset) * this->solar_source_sunspot({igpt});
-    }
-
-    // Scale solar source to input TSI value
-    // if (present(tsi)) error_msg = this%set_tsi(tsi)
-}
 
 template<typename TF>__global__
 void fill_gases_kernel(
@@ -836,9 +846,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
             col_dry);
 
     // External source function is constant.
-    for (int igpt=1; igpt<=ngpt; ++igpt)
-        for (int icol=1; icol<=ncol; ++icol)
-            toa_src.insert({icol, igpt}, this->solar_source({igpt}));
+    spread_col(ncol, ngpt, toa_src, this->solar_source_gpu);
 
 }
 
@@ -1025,6 +1033,7 @@ void Gas_optics_rrtmgp_gpu<TF>::set_solar_variability(
                 + (mg_index - a_offset) * this->solar_source_facular({igpt})
                 + (sb_index - b_offset) * this->solar_source_sunspot({igpt});
     }
+    this->solar_source_gpu = this->solar_source;
 }
 
 
