@@ -159,6 +159,7 @@ Optical_props_gpu<TF>::Optical_props_gpu(
         for (int i=band_lims_gpt_lcl({1,iband}); i<=band_lims_gpt_lcl({2,iband}); ++i)
             this->gpt2band.insert({i}, iband);
     }
+    this->gpt2band_cpu = this->gpt2band;
 }
 
 // Optical properties per band.

@@ -178,7 +178,8 @@ class Optical_props_gpu
 
         Optical_props_gpu(const Optical_props_gpu&) = default;
 
-        Array<int,1> get_gpoint_bands() const { return this->gpt2band; }
+        Array<int,1> get_gpoint_bands() const { return this->gpt2band_cpu; }
+        Array_gpu<int,1> get_gpoint_bands_gpu() const { return this->gpt2band; }
         int get_nband() const { return this->band2gpt.dim(2); }
         int get_ngpt() const { return this->band2gpt_cpu.max(); }
         Array_gpu<int,2> get_band_lims_gpoint_gpu() const { return this->band2gpt;}
@@ -188,6 +189,7 @@ class Optical_props_gpu
     private:
         Array<int,2> band2gpt_cpu;     // (begin g-point, end g-point) = band2gpt(2,band)
         Array_gpu<int,2> band2gpt;     // (begin g-point, end g-point) = band2gpt(2,band)
+        Array<int,1> gpt2band_cpu;     // band = gpt2band(g-point)
         Array_gpu<int,1> gpt2band;     // band = gpt2band(g-point)
         Array<TF,2> band_lims_wvn; // (upper and lower wavenumber by band) = band_lims_wvn(2,band)
 };

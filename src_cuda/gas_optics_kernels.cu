@@ -522,7 +522,7 @@ namespace
             if (tau_tot>(TF(2.)*tmin))
                 ssa[idx_out] = tau_rayleigh[idx_in]/tau_tot;
             else
-                ssa[idx_out] = 0.;
+                ssa[idx_out] = TF(0.);
         }
     }
     
