@@ -701,15 +701,13 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                     rei.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     *cloud_optical_props_subset_in);
             
-            cloud_optical_props_subset_in->get_ssa().dump("cloudssa_sub_gpu");
-           // dynamic_cast<Optical_props_2str<double>&>(*cloud_optical_props_subset_in)->get_ssa().dump("cloudssa_sub_gpu");
-            throw 666;
-        //      cloud_optical_props_subset_in->delta_scale();
+            cloud_optical_props_subset_in->delta_scale();
 
-        //      // Add the cloud optical props to the gas optical properties.
-        //      add_to(
-        //              dynamic_cast<Optical_props_2str<double>&>(*optical_props_subset_in),
-        //              dynamic_cast<Optical_props_2str<double>&>(*cloud_optical_props_subset_in));
+            // Add the cloud optical props to the gas optical properties.
+            add_to(
+                    dynamic_cast<Optical_props_2str_gpu<double>&>(*optical_props_subset_in),
+                    dynamic_cast<Optical_props_2str_gpu<double>&>(*cloud_optical_props_subset_in));
+            
         }
 
         // Store the optical properties, if desired.

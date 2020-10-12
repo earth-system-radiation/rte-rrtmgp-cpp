@@ -103,7 +103,7 @@ namespace
                 const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
                 const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
                 const TF tau12 = tau1[idx_gpt] + tau2[idx_bnd];
-                const TF tauscat12 = tau1[idx_gpt] * ssa1[idx_gpt] + tau2[idx_bnd] * tau2[idx_bnd];
+                const TF tauscat12 = tau1[idx_gpt] * ssa1[idx_gpt] + tau2[idx_bnd] * ssa2[idx_bnd];
                 g1[idx_gpt] = (tau1[idx_gpt] * ssa1[idx_gpt] * g1[idx_gpt] +
                                 tau2[idx_bnd] * ssa2[idx_bnd] * g2[idx_bnd]) / max(tauscat12, eps);
                 ssa1[idx_gpt] = tauscat12 / max(eps, tau12);

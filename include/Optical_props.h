@@ -303,4 +303,6 @@ class Optical_props_2str_gpu : public Optical_props_arry_gpu<TF>
 
 template<typename TF> void add_to(Optical_props_1scl<TF>& op_inout, const Optical_props_1scl<TF>& op_in);
 template<typename TF> void add_to(Optical_props_2str<TF>& op_inout, const Optical_props_2str<TF>& op_in);
+template<typename TF> void add_to(Optical_props_1scl_gpu<TF>& op_inout, const Optical_props_1scl_gpu<TF>& op_in);
+template<typename TF> void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<TF>& op_in);
 #endif
