@@ -293,40 +293,40 @@ template<typename TF>
 class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
 {
     public:
-//        // Constructor for longwave variant.
-//        Gas_optics_rrtmgp_gpu(
-//                const Gas_concs_gpu<TF>& available_gases,
-//                const Array<std::string,1>& gas_names,
-//                const Array<int,3>& key_species,
-//                const Array<int,2>& band2gpt,
-//                const Array<TF,2>& band_lims_wavenum,
-//                const Array<TF,1>& press_ref,
-//                const TF press_ref_trop,
-//                const Array<TF,1>& temp_ref,
-//                const TF temp_ref_p,
-//                const TF temp_ref_t,
-//                const Array<TF,3>& vmr_ref,
-//                const Array<TF,4>& kmajor,
-//                const Array<TF,3>& kminor_lower,
-//                const Array<TF,3>& kminor_upper,
-//                const Array<std::string,1>& gas_minor,
-//                const Array<std::string,1>& identifier_minor,
-//                const Array<std::string,1>& minor_gases_lower,
-//                const Array<std::string,1>& minor_gases_upper,
-//                const Array<int,2>& minor_limits_gpt_lower,
-//                const Array<int,2>& minor_limits_gpt_upper,
-//                const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
-//                const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
-//                const Array<std::string,1>& scaling_gas_lower,
-//                const Array<std::string,1>& scaling_gas_upper,
-//                const Array<BOOL_TYPE,1>& scale_by_complement_lower,
-//                const Array<BOOL_TYPE,1>& scale_by_complement_upper,
-//                const Array<int,1>& kminor_start_lower,
-//                const Array<int,1>& kminor_start_upper,
-//                const Array<TF,2>& totplnk,
-//                const Array<TF,4>& planck_frac,
-//                const Array<TF,3>& rayl_lower,
-//                const Array<TF,3>& rayl_upper);
+        // Constructor for longwave variant.
+        Gas_optics_rrtmgp_gpu(
+                const Gas_concs_gpu<TF>& available_gases,
+                const Array<std::string,1>& gas_names,
+                const Array<int,3>& key_species,
+                const Array<int,2>& band2gpt,
+                const Array<TF,2>& band_lims_wavenum,
+                const Array<TF,1>& press_ref,
+                const TF press_ref_trop,
+                const Array<TF,1>& temp_ref,
+                const TF temp_ref_p,
+                const TF temp_ref_t,
+                const Array<TF,3>& vmr_ref,
+                const Array<TF,4>& kmajor,
+                const Array<TF,3>& kminor_lower,
+                const Array<TF,3>& kminor_upper,
+                const Array<std::string,1>& gas_minor,
+                const Array<std::string,1>& identifier_minor,
+                const Array<std::string,1>& minor_gases_lower,
+                const Array<std::string,1>& minor_gases_upper,
+                const Array<int,2>& minor_limits_gpt_lower,
+                const Array<int,2>& minor_limits_gpt_upper,
+                const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
+                const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
+                const Array<std::string,1>& scaling_gas_lower,
+                const Array<std::string,1>& scaling_gas_upper,
+                const Array<BOOL_TYPE,1>& scale_by_complement_lower,
+                const Array<BOOL_TYPE,1>& scale_by_complement_upper,
+                const Array<int,1>& kminor_start_lower,
+                const Array<int,1>& kminor_start_upper,
+                const Array<TF,2>& totplnk,
+                const Array<TF,4>& planck_frac,
+                const Array<TF,3>& rayl_lower,
+                const Array<TF,3>& rayl_upper);
 
         // Constructor for shortwave variant.
         Gas_optics_rrtmgp_gpu(
@@ -390,18 +390,19 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
         TF get_tsi() const;
 
         // Longwave variant.
-//        void gas_optics(
-//                const Array_gpu<TF,2>& play,
-//                const Array_gpu<TF,2>& plev,
-//                const Array_gpu<TF,2>& tlay,
-//                const Array_gpu<TF,1>& tsfc,
-//                const Gas_concs_gpu<TF>& gas_desc,
-//                std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
-//                Source_func_lw<TF>& sources,
-//                const Array_gpu<TF,2>& col_dry,
-//                const Array_gpu<TF,2>& tlev) const;
-
         void gas_optics(
+                const Array_gpu<TF,2>& play,
+                const Array_gpu<TF,2>& plev,
+                const Array_gpu<TF,2>& tlay,
+                const Array_gpu<TF,1>& tsfc,
+                const Gas_concs_gpu<TF>& gas_desc,
+                std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                Source_func_lw<TF>& sources,
+                const Array_gpu<TF,2>& col_dry,
+                const Array_gpu<TF,2>& tlev) const;
+
+        //shortwave variant
+           void gas_optics(
                 const Array_gpu<TF,2>& play,
                 const Array_gpu<TF,2>& plev,
                 const Array_gpu<TF,2>& tlay,
@@ -409,6 +410,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
                 Array_gpu<TF,2>& toa_src,
                 const Array_gpu<TF,2>& col_dry) const;
+    
 
     private:
         Array<TF,2> totplnk;
@@ -462,7 +464,6 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
         Array_gpu<TF,1> solar_source_g;
 
         Array<TF,4> krayl;
-        Array_gpu<TF,4> krayl_test;
 
         #ifdef USECUDA
 //        Array_gpu<TF,2> totplnk_gpu;
@@ -489,6 +490,9 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
 //        Array_gpu<int,1> is_key_gpu;
         Array_gpu<TF,1> solar_source_gpu;
         Array_gpu<TF,4> krayl_gpu;
+        
+        
+        
         #endif
 
 

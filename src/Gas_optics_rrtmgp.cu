@@ -674,6 +674,8 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
     this->idx_minor_scaling_upper_gpu = this->idx_minor_scaling_upper;
     this->kminor_start_lower_gpu = this->kminor_start_lower;
     this->kminor_start_upper_gpu = this->kminor_start_upper;
+    
+    //set dimensions of temporary arrays
 }
 
 

@@ -260,7 +260,8 @@ void solve_radiation(int argc, char** argv)
     {
         // Initialize the solver.
         Status::print_message("Initializing the longwave solver.");
-        Radiation_solver_longwave<TF> rad_lw(gas_concs, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
+        Gas_concs_gpu<TF> gas_concs_gpu(gas_concs);
+        Radiation_solver_longwave<TF> rad_lw(gas_concs_gpu, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
 
         // Read the boundary conditions.
         const int n_bnd_lw = rad_lw.get_n_bnd();
@@ -270,11 +271,11 @@ void solve_radiation(int argc, char** argv)
         Array<TF,1> t_sfc(input_nc.get_variable<TF>("t_sfc", {n_col}), {n_col});
 
         // Create output arrays.
-        Array<TF,3> lw_tau;
-        Array<TF,3> lay_source;
-        Array<TF,3> lev_source_inc;
-        Array<TF,3> lev_source_dec;
-        Array<TF,2> sfc_source;
+        Array_gpu<TF,3> lw_tau;
+        Array_gpu<TF,3> lay_source;
+        Array_gpu<TF,3> lev_source_inc;
+        Array_gpu<TF,3> lev_source_dec;
+        Array_gpu<TF,2> sfc_source;
 
         if (switch_output_optical)
         {
@@ -285,9 +286,9 @@ void solve_radiation(int argc, char** argv)
             sfc_source    .set_dims({n_col, n_gpt_lw});
         }
 
-        Array<TF,2> lw_flux_up;
-        Array<TF,2> lw_flux_dn;
-        Array<TF,2> lw_flux_net;
+        Array_gpu<TF,2> lw_flux_up;
+        Array_gpu<TF,2> lw_flux_dn;
+        Array_gpu<TF,2> lw_flux_net;
 
         if (switch_fluxes)
         {
@@ -296,9 +297,9 @@ void solve_radiation(int argc, char** argv)
             lw_flux_net.set_dims({n_col, n_lev});
         }
 
-        Array<TF,3> lw_bnd_flux_up;
-        Array<TF,3> lw_bnd_flux_dn;
-        Array<TF,3> lw_bnd_flux_net;
+        Array_gpu<TF,3> lw_bnd_flux_up;
+        Array_gpu<TF,3> lw_bnd_flux_dn;
+        Array_gpu<TF,3> lw_bnd_flux_net;
 
         if (switch_output_bnd_fluxes)
         {
@@ -310,21 +311,32 @@ void solve_radiation(int argc, char** argv)
 
         // Solve the radiation.
         Status::print_message("Solving the longwave radiation.");
-
+        Array_gpu<TF,2> p_lay_gpu(p_lay);
+        Array_gpu<TF,2> p_lev_gpu(p_lev);
+        Array_gpu<TF,2> t_lay_gpu(t_lay);
+        Array_gpu<TF,2> t_lev_gpu(t_lev);
+        Array_gpu<TF,2> col_dry_gpu(col_dry);
+        Array_gpu<TF,1> t_sfc_gpu(t_sfc);
+        Array_gpu<TF,2> emis_sfc_gpu(emis_sfc);
+        Array_gpu<TF,2> lwp_gpu(lwp);
+        Array_gpu<TF,2> iwp_gpu(iwp);
+        Array_gpu<TF,2> rel_gpu(rel);
+        Array_gpu<TF,2> rei_gpu(rei);
+        
         auto time_start = std::chrono::high_resolution_clock::now();
 
-        rad_lw.solve(
+        rad_lw.solve_gpu(
                 switch_fluxes,
                 switch_cloud_optics,
                 switch_output_optical,
                 switch_output_bnd_fluxes,
-                gas_concs,
-                p_lay, p_lev,
-                t_lay, t_lev,
-                col_dry,
-                t_sfc, emis_sfc,
-                lwp, iwp,
-                rel, rei,
+                gas_concs_gpu,
+                p_lay_gpu, p_lev_gpu,
+                t_lay_gpu, t_lev_gpu,
+                col_dry_gpu,
+                t_sfc_gpu, emis_sfc_gpu,
+                lwp_gpu, iwp_gpu,
+                rel_gpu, rei_gpu,
                 lw_tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
                 lw_flux_up, lw_flux_dn, lw_flux_net,
                 lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
@@ -335,57 +347,57 @@ void solve_radiation(int argc, char** argv)
         Status::print_message("Duration longwave solver: " + std::to_string(duration) + " (ms)");
 
 
-        // Store the output.
-        Status::print_message("Storing the longwave output.");
+        //// Store the output.
+        //Status::print_message("Storing the longwave output.");
 
-        output_nc.add_dimension("gpt_lw", n_gpt_lw);
-        output_nc.add_dimension("band_lw", n_bnd_lw);
+        //output_nc.add_dimension("gpt_lw", n_gpt_lw);
+        //output_nc.add_dimension("band_lw", n_bnd_lw);
 
-        auto nc_lw_band_lims_wvn = output_nc.add_variable<TF>("lw_band_lims_wvn", {"band_lw", "pair"});
-        nc_lw_band_lims_wvn.insert(rad_lw.get_band_lims_wavenumber().v(), {0, 0});
+        //auto nc_lw_band_lims_wvn = output_nc.add_variable<TF>("lw_band_lims_wvn", {"band_lw", "pair"});
+        //nc_lw_band_lims_wvn.insert(rad_lw.get_band_lims_wavenumber().v(), {0, 0});
 
-        if (switch_output_optical)
-        {
-            auto nc_lw_band_lims_gpt = output_nc.add_variable<int>("lw_band_lims_gpt", {"band_lw", "pair"});
-            nc_lw_band_lims_gpt.insert(rad_lw.get_band_lims_gpoint().v(), {0, 0});
+        //if (switch_output_optical)
+        //{
+        //    auto nc_lw_band_lims_gpt = output_nc.add_variable<int>("lw_band_lims_gpt", {"band_lw", "pair"});
+        //    nc_lw_band_lims_gpt.insert(rad_lw.get_band_lims_gpoint().v(), {0, 0});
 
-            auto nc_lw_tau = output_nc.add_variable<TF>("lw_tau", {"gpt_lw", "lay", "col"});
-            nc_lw_tau.insert(lw_tau.v(), {0, 0, 0});
+        //    auto nc_lw_tau = output_nc.add_variable<TF>("lw_tau", {"gpt_lw", "lay", "col"});
+        //    nc_lw_tau.insert(lw_tau.v(), {0, 0, 0});
 
-            auto nc_lay_source     = output_nc.add_variable<TF>("lay_source"    , {"gpt_lw", "lay", "col"});
-            auto nc_lev_source_inc = output_nc.add_variable<TF>("lev_source_inc", {"gpt_lw", "lay", "col"});
-            auto nc_lev_source_dec = output_nc.add_variable<TF>("lev_source_dec", {"gpt_lw", "lay", "col"});
+        //    auto nc_lay_source     = output_nc.add_variable<TF>("lay_source"    , {"gpt_lw", "lay", "col"});
+        //    auto nc_lev_source_inc = output_nc.add_variable<TF>("lev_source_inc", {"gpt_lw", "lay", "col"});
+        //    auto nc_lev_source_dec = output_nc.add_variable<TF>("lev_source_dec", {"gpt_lw", "lay", "col"});
 
-            auto nc_sfc_source = output_nc.add_variable<TF>("sfc_source", {"gpt_lw", "col"});
+        //    auto nc_sfc_source = output_nc.add_variable<TF>("sfc_source", {"gpt_lw", "col"});
 
-            nc_lay_source.insert    (lay_source.v()    , {0, 0, 0});
-            nc_lev_source_inc.insert(lev_source_inc.v(), {0, 0, 0});
-            nc_lev_source_dec.insert(lev_source_dec.v(), {0, 0, 0});
+        //    nc_lay_source.insert    (lay_source.v()    , {0, 0, 0});
+        //    nc_lev_source_inc.insert(lev_source_inc.v(), {0, 0, 0});
+        //    nc_lev_source_dec.insert(lev_source_dec.v(), {0, 0, 0});
 
-            nc_sfc_source.insert(sfc_source.v(), {0, 0});
-        }
+        //    nc_sfc_source.insert(sfc_source.v(), {0, 0});
+        //}
 
-        if (switch_fluxes)
-        {
-            auto nc_lw_flux_up  = output_nc.add_variable<TF>("lw_flux_up" , {"lev", "col"});
-            auto nc_lw_flux_dn  = output_nc.add_variable<TF>("lw_flux_dn" , {"lev", "col"});
-            auto nc_lw_flux_net = output_nc.add_variable<TF>("lw_flux_net", {"lev", "col"});
+        //if (switch_fluxes)
+        //{
+        //    auto nc_lw_flux_up  = output_nc.add_variable<TF>("lw_flux_up" , {"lev", "col"});
+        //    auto nc_lw_flux_dn  = output_nc.add_variable<TF>("lw_flux_dn" , {"lev", "col"});
+        //    auto nc_lw_flux_net = output_nc.add_variable<TF>("lw_flux_net", {"lev", "col"});
 
-            nc_lw_flux_up .insert(lw_flux_up .v(), {0, 0});
-            nc_lw_flux_dn .insert(lw_flux_dn .v(), {0, 0});
-            nc_lw_flux_net.insert(lw_flux_net.v(), {0, 0});
+        //    nc_lw_flux_up .insert(lw_flux_up .v(), {0, 0});
+        //    nc_lw_flux_dn .insert(lw_flux_dn .v(), {0, 0});
+        //    nc_lw_flux_net.insert(lw_flux_net.v(), {0, 0});
 
-            if (switch_output_bnd_fluxes)
-            {
-                auto nc_lw_bnd_flux_up  = output_nc.add_variable<TF>("lw_bnd_flux_up" , {"band_lw", "lev", "col"});
-                auto nc_lw_bnd_flux_dn  = output_nc.add_variable<TF>("lw_bnd_flux_dn" , {"band_lw", "lev", "col"});
-                auto nc_lw_bnd_flux_net = output_nc.add_variable<TF>("lw_bnd_flux_net", {"band_lw", "lev", "col"});
+        //    if (switch_output_bnd_fluxes)
+        //    {
+        //        auto nc_lw_bnd_flux_up  = output_nc.add_variable<TF>("lw_bnd_flux_up" , {"band_lw", "lev", "col"});
+        //        auto nc_lw_bnd_flux_dn  = output_nc.add_variable<TF>("lw_bnd_flux_dn" , {"band_lw", "lev", "col"});
+        //        auto nc_lw_bnd_flux_net = output_nc.add_variable<TF>("lw_bnd_flux_net", {"band_lw", "lev", "col"});
 
-                nc_lw_bnd_flux_up .insert(lw_bnd_flux_up .v(), {0, 0, 0});
-                nc_lw_bnd_flux_dn .insert(lw_bnd_flux_dn .v(), {0, 0, 0});
-                nc_lw_bnd_flux_net.insert(lw_bnd_flux_net.v(), {0, 0, 0});
-            }
-        }
+        //        nc_lw_bnd_flux_up .insert(lw_bnd_flux_up .v(), {0, 0, 0});
+        //        nc_lw_bnd_flux_dn .insert(lw_bnd_flux_dn .v(), {0, 0, 0});
+        //        nc_lw_bnd_flux_net.insert(lw_bnd_flux_net.v(), {0, 0, 0});
+        //    }
+        //}
     }
 
 

@@ -167,16 +167,17 @@ template<typename TF>
 Optical_props_gpu<TF>::Optical_props_gpu(
         const Array<TF,2>& band_lims_wvn)
 {
-    Array_gpu<int,2> band_lims_gpt_lcl({2, band_lims_wvn.dim(2)});
+    Array<int,2> band_lims_gpt_lcl({2, band_lims_wvn.dim(2)});
 
     Array<int,2> dd = band_lims_gpt_lcl.get_dims();
     for (int iband=1; iband<=band_lims_wvn.dim(2); ++iband)
     {
-        band_lims_gpt_lcl.insert({1, iband}, iband);
-        band_lims_gpt_lcl.insert({2, iband}, iband);
+        band_lims_gpt_lcl({1, iband}) = iband;
+        band_lims_gpt_lcl({2, iband}) = iband;
     }
 
-    this->band2gpt = band_lims_gpt_lcl;
+    this->band2gpt_cpu = band_lims_gpt_lcl;
+    this->band2gpt = this->band2gpt_cpu;
     this->band_lims_wvn = band_lims_wvn;
 
     // Make a map between g-points and bands.

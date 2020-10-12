@@ -55,6 +55,25 @@ class Radiation_solver_longwave
                 Array<TF,2>& lw_flux_up, Array<TF,2>& lw_flux_dn, Array<TF,2>& lw_flux_net,
                 Array<TF,3>& lw_bnd_flux_up, Array<TF,3>& lw_bnd_flux_dn, Array<TF,3>& lw_bnd_flux_net) const;
 
+        #ifdef __CUDACC__
+        void solve_gpu(
+                const bool switch_fluxes,
+                const bool switch_cloud_optics,
+                const bool switch_output_optical,
+                const bool switch_output_bnd_fluxes,
+                const Gas_concs_gpu<TF>& gas_concs,
+                const Array_gpu<TF,2>& p_lay, const Array_gpu<TF,2>& p_lev,
+                const Array_gpu<TF,2>& t_lay, const Array_gpu<TF,2>& t_lev,
+                const Array_gpu<TF,2>& col_dry,
+                const Array_gpu<TF,1>& t_sfc, const Array_gpu<TF,2>& emis_sfc,
+                const Array_gpu<TF,2>& lwp, const Array_gpu<TF,2>& iwp,
+                const Array_gpu<TF,2>& rel, const Array_gpu<TF,2>& rei,
+                Array_gpu<TF,3>& tau, Array_gpu<TF,3>& lay_source,
+                Array_gpu<TF,3>& lev_source_inc, Array_gpu<TF,3>& lev_source_dec, Array_gpu<TF,2>& sfc_source,
+                Array_gpu<TF,2>& lw_flux_up, Array_gpu<TF,2>& lw_flux_dn, Array_gpu<TF,2>& lw_flux_net,
+                Array_gpu<TF,3>& lw_bnd_flux_up, Array_gpu<TF,3>& lw_bnd_flux_dn, Array_gpu<TF,3>& lw_bnd_flux_net) const;
+        #endif
+        
         int get_n_gpt() const { return this->kdist->get_ngpt(); };
         int get_n_bnd() const { return this->kdist->get_nband(); };
 
@@ -67,6 +86,8 @@ class Radiation_solver_longwave
     private:
         std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist;
         std::unique_ptr<Cloud_optics<TF>> cloud_optics;
+        std::unique_ptr<Gas_optics_rrtmgp_gpu<TF>> kdist_gpu;
+        std::unique_ptr<Cloud_optics_gpu<TF>> cloud_optics_gpu;
 };
 
 template<typename TF>
@@ -147,5 +168,6 @@ class Radiation_solver_shortwave
         std::unique_ptr<Gas_optics<TF>> kdist;
         std::unique_ptr<Cloud_optics<TF>> cloud_optics;
         std::unique_ptr<Gas_optics_gpu<TF>> kdist_gpu;
+        std::unique_ptr<Cloud_optics_gpu<TF>> cloud_optics_gpu;
 };
 #endif
