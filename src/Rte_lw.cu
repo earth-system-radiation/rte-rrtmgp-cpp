@@ -22,12 +22,14 @@
  *
  */
 
-#include "Rte_sw.h"
+#include "Rte_lw.h"
 #include "Array.h"
 #include "Optical_props.h"
+#include "Source_functions.h"
 #include "Fluxes.h"
 #include <iomanip>
 #include <chrono>
+
 #include "rrtmgp_kernels.h"
 // CUDA TEST
 #include "rte_kernel_launcher_cuda.h"
@@ -54,9 +56,12 @@ namespace
             }
         }
     }
+
+
+
+
+
 }
-//namespace rrtmgp_kernel_launcher
-//{
 //    template<typename TF>
 //    void apply_BC(
 //            int ncol, int nlay, int ngpt,
@@ -69,98 +74,86 @@ namespace
 //
 //    template<typename TF>
 //    void apply_BC(
-//            int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1,
-//            const Array<TF,2>& inc_flux, Array<TF,3>& gpt_flux_dn)
+//            int ncol, int nlay, int ngpt,
+//            BOOL_TYPE top_at_1, const Array<TF,2>& inc_flux,
+//            Array<TF,3>& gpt_flux_dn)
 //    {
 //        rrtmgp_kernels::apply_BC_gpt(
-//                &ncol, &nlay, &ngpt, &top_at_1,
-//                const_cast<TF*>(inc_flux.ptr()), gpt_flux_dn.ptr());
-//    }
-//
-//    template<typename TF>
-//    void apply_BC(
-//            int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1,
-//            const Array<TF,2>& inc_flux,
-//            const Array<TF,1>& factor,
-//            Array<TF,3>& gpt_flux)
-//    {
-//        rrtmgp_kernels::apply_BC_factor(
 //                &ncol, &nlay, &ngpt,
-//                &top_at_1,
-//                const_cast<TF*>(inc_flux.ptr()),
-//                const_cast<TF*>(factor.ptr()),
-//                gpt_flux.ptr());
+//                &top_at_1, const_cast<TF*>(inc_flux.ptr()), gpt_flux_dn.ptr());
 //    }
 //
-//    template<typename TF>
-//    void sw_solver_2stream(
-//            int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1,
-//            const Array<TF,3>& tau,
-//            const Array<TF,3>& ssa,
-//            const Array<TF,3>& g,
-//            const Array<TF,1>& mu0,
-//            const Array<TF,2>& sfc_alb_dir_gpt, const Array<TF,2>& sfc_alb_dif_gpt,
-//            Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn, Array<TF,3>& gpt_flux_dir)
-//    {
-//        rrtmgp_kernels::sw_solver_2stream(
-//                &ncol, &nlay, &ngpt, &top_at_1,
-//                const_cast<TF*>(tau.ptr()),
-//                const_cast<TF*>(ssa.ptr()),
-//                const_cast<TF*>(g  .ptr()),
-//                const_cast<TF*>(mu0.ptr()),
-//                const_cast<TF*>(sfc_alb_dir_gpt.ptr()),
-//                const_cast<TF*>(sfc_alb_dif_gpt.ptr()),
-//                gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr());
-//    }
 //}
 //
+
 template<typename TF>
-void Rte_sw_gpu<TF>::rte_sw(
+void Rte_lw_gpu<TF>::rte_lw(
         const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
         const BOOL_TYPE top_at_1,
-        const Array_gpu<TF,1>& mu0,
-        const Array_gpu<TF,2>& inc_flux_dir,
-        const Array_gpu<TF,2>& sfc_alb_dir,
-        const Array_gpu<TF,2>& sfc_alb_dif,
-        const Array_gpu<TF,2>& inc_flux_dif,
+        const Source_func_lw_gpu<TF>& sources,
+        const Array_gpu<TF,2>& sfc_emis,
+        const Array_gpu<TF,2>& inc_flux,
         Array_gpu<TF,3>& gpt_flux_up,
         Array_gpu<TF,3>& gpt_flux_dn,
-        Array_gpu<TF,3>& gpt_flux_dir)
+        const int n_gauss_angles)
 {
+    const int max_gauss_pts = 4;
+    const Array<TF,2> gauss_Ds(
+            {      1.66,         0.,         0.,         0.,
+             1.18350343, 2.81649655,         0.,         0.,
+             1.09719858, 1.69338507, 4.70941630,         0.,
+             1.06056257, 1.38282560, 2.40148179, 7.15513024},
+            { max_gauss_pts, max_gauss_pts });
+
+    const Array<TF,2> gauss_wts(
+            {         0.5,           0.,           0.,           0.,
+             0.3180413817, 0.1819586183,           0.,           0.,
+             0.2009319137, 0.2292411064, 0.0698269799,           0.,
+             0.1355069134, 0.2034645680, 0.1298475476, 0.0311809710},
+            { max_gauss_pts, max_gauss_pts });
+
     const int ncol = optical_props->get_ncol();
     const int nlay = optical_props->get_nlay();
     const int ngpt = optical_props->get_ngpt();
 
-    Array_gpu<TF,2> sfc_alb_dir_gpt({ncol, ngpt});
-    Array_gpu<TF,2> sfc_alb_dif_gpt({ncol, ngpt});
+    Array_gpu<TF,2> sfc_emis_gpt({ncol, ngpt});
 
-    expand_and_transpose(optical_props, sfc_alb_dir, sfc_alb_dir_gpt);
-    expand_and_transpose(optical_props, sfc_alb_dif, sfc_alb_dif_gpt);
+    expand_and_transpose(optical_props, sfc_emis, sfc_emis_gpt);
 
-    // Upper boundary condition. At this stage, flux_dn contains the diffuse radiation only.
-    rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dir, mu0, gpt_flux_dir);
-    if (inc_flux_dif.size() == 0)
+    // Upper boundary condition.
+    if (inc_flux.size() == 0)
         rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
     else
-        rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif, gpt_flux_dn);
+        rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, gpt_flux_dn);
 
     // Run the radiative transfer solver
-    // CvH: only two-stream solutions, I skipped the sw_solver_noscat
-    rte_kernel_launcher_cuda::sw_solver_2stream(
-            ncol, nlay, ngpt, top_at_1,
-            optical_props->get_tau(),
-            optical_props->get_ssa(),
-            optical_props->get_g  (),
-            mu0,
-            sfc_alb_dir_gpt, sfc_alb_dif_gpt,
-            gpt_flux_up, gpt_flux_dn, gpt_flux_dir);
-    // CvH: The original fortran code had a call to the reduce here.
-    // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
+    const int n_quad_angs = n_gauss_angles;
 
+    Array_gpu<TF,2> gauss_Ds_subset = gauss_Ds.subset(
+            {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
+    Array_gpu<TF,2> gauss_wts_subset = gauss_wts.subset(
+            {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
+
+    // For now, just pass the arrays around.
+    Array_gpu<TF,2> sfc_src_jac(sources.get_sfc_source().get_dims());
+    Array_gpu<TF,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
+
+    rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad(
+            ncol, nlay, ngpt, top_at_1, n_quad_angs, 
+            gauss_Ds_subset, gauss_wts_subset,   
+            optical_props->get_tau(),
+            sources.get_lay_source(), 
+            sources.get_lev_source_inc(), sources.get_lev_source_dec(),
+            sfc_emis_gpt, sources.get_sfc_source(), 
+            gpt_flux_up, gpt_flux_dn, 
+            sfc_src_jac, gpt_flux_up_jac);
+
+    // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
+    // fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);
 }
 
 template<typename TF>
-void Rte_sw_gpu<TF>::expand_and_transpose(
+void Rte_lw_gpu<TF>::expand_and_transpose(
         const std::unique_ptr<Optical_props_arry_gpu<TF>>& ops,
         const Array_gpu<TF,2> arr_in,
         Array_gpu<TF,2>& arr_out)
@@ -175,17 +168,15 @@ void Rte_sw_gpu<TF>::expand_and_transpose(
 
     dim3 grid_gpu(grid_col, grid_bnd);
     dim3 block_gpu(block_col, block_bnd);
-
     Array_gpu<int,2> limits = ops->get_band_lims_gpoint_gpu();
-    //Array<int,2> limitsc = ops->get_band_lims_gpoint();
-    //Array_gpu<int,2> limits(limitsc);
+    
     expand_and_transpose_kernel<<<grid_gpu, block_gpu>>>(
-        ncol, nbnd, limits.ptr(), arr_out.ptr(), arr_in.ptr());
+            ncol, nbnd, limits.ptr(), arr_out.ptr(), arr_in.ptr());
 
 }
 
 #ifdef FLOAT_SINGLE_RRTMGP
-template class Rte_sw_gpu<float>;
+template class Rte_lw_gpu<float>;
 #else
-template class Rte_sw_gpu<double>;
+template class Rte_lw_gpu<double>;
 #endif

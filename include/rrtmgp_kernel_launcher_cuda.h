@@ -39,10 +39,10 @@ namespace rrtmgp_kernel_launcher_cuda
             const Gas_concs<TF>& gas_desc, const Array<std::string,1>& gas_names);
 
     template<typename TF>
-    void reorder123x321(const int ni, const int nj, const int nk, const Array<TF,3>& arr_in, Array<TF,3>& arr_out);
+    void reorder123x321(const int ni, const int nj, const int nk, const Array_gpu<TF,3>& arr_in, Array_gpu<TF,3>& arr_out);
 
     template<typename TF>
-    void reorder12x21(const int ni, const int nj, const Array<TF,2>& arr_in, Array<TF,2>& arr_out);
+    void reorder12x21(const int ni, const int nj, const Array_gpu<TF,2>& arr_in, Array_gpu<TF,2>& arr_out);
 
     template<typename TF>
     void zero_array(const int ni, const int nj, const int nk, Array_gpu<TF,3>& arr);
@@ -123,28 +123,26 @@ namespace rrtmgp_kernel_launcher_cuda
             const int ncol, const int nlay, const int nbnd, const int ngpt,
             const int nflav, const int neta, const int npres, const int ntemp,
             const int nPlanckTemp,
-            const Array<TF,2>& tlay, 
-            const Array<TF,2>& tlev,
-            const Array<TF,1>& tsfc,
+            const Array_gpu<TF,2>& tlay, 
+            const Array_gpu<TF,2>& tlev,
+            const Array_gpu<TF,1>& tsfc,
             const int sfc_lay,
-            const Array<TF,6>& fmajor, 
-            const Array<int,4>& jeta,
-            const Array<BOOL_TYPE,2>& tropo, 
-            const Array<int,2>& jtemp,
-            const Array<int,2>& jpress, 
-            const Array<int,1>& gpoint_bands,
-            const Array<int,2>& band_lims_gpt, 
-            const Array<TF,4>& pfracin,
+            const Array_gpu<TF,6>& fmajor, 
+            const Array_gpu<int,4>& jeta,
+            const Array_gpu<BOOL_TYPE,2>& tropo, 
+            const Array_gpu<int,2>& jtemp,
+            const Array_gpu<int,2>& jpress, 
+            const Array_gpu<int,1>& gpoint_bands,
+            const Array_gpu<int,2>& band_lims_gpt, 
+            const Array_gpu<TF,4>& pfracin,
             const TF temp_ref_min, const TF totplnk_delta,
-            const Array<TF,2>& totplnk, 
-            const Array<int,2>& gpoint_flavor,
-            const TF delta_Tsurf,
-            Array<TF,2>& sfc_src, 
-            Array<TF,3>& lay_src,
-            Array<TF,3>& lev_src_inc, 
-            Array<TF,3>& lev_src_dec,
-            Array<TF,2>& sfc_src_jac, 
-            Array<TF,3>& pfrac);
+            const Array_gpu<TF,2>& totplnk, 
+            const Array_gpu<int,2>& gpoint_flavor,
+            Array_gpu<TF,2>& sfc_src, 
+            Array_gpu<TF,3>& lay_src,
+            Array_gpu<TF,3>& lev_src_inc, 
+            Array_gpu<TF,3>& lev_src_dec,
+            Array_gpu<TF,2>& sfc_src_jac);
             
 }
 #endif

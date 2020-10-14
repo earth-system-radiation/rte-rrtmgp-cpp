@@ -662,8 +662,6 @@ void Radiation_solver_shortwave<TF>::solve(
         for (int igpt=1; igpt<=n_gpt; ++igpt)
             for (int icol=1; icol<=n_col_in; ++icol)
                 toa_src_subset({icol, igpt}) *= tsi_scaling_subset({icol});
-        toa_src_subset.dump("toa_sub_cpu");
-        optical_props_subset_in->get_ssa().dump("ssa_sub_cpu");
 
 
         if (switch_cloud_optics)
@@ -723,7 +721,6 @@ void Radiation_solver_shortwave<TF>::solve(
                 gpt_flux_dn_dir);
 
         fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
-        fluxes.get_flux_net().dump("flux_sub_cpu");
 
         // Copy the data to the output.
         for (int ilev=1; ilev<=n_lev; ++ilev)

@@ -31,7 +31,7 @@
 //#include "Gas_optics_rrtmgp.h"
 //#include "Array.h"
 #include "Optical_props.h"
-//#include "Source_functions.h"
+#include "Source_functions.h"
 
 #include "Gas_concs.h"
 #include "Gas_optics_rrtmgp.h"
@@ -383,6 +383,74 @@ namespace
     }
 }
 
+// Constructor of longwave variant.
+template<typename TF>
+Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
+        const Gas_concs_gpu<TF>& available_gases,
+        const Array<std::string,1>& gas_names,
+        const Array<int,3>& key_species,
+        const Array<int,2>& band2gpt,
+        const Array<TF,2>& band_lims_wavenum,
+        const Array<TF,1>& press_ref,
+        const TF press_ref_trop,
+        const Array<TF,1>& temp_ref,
+        const TF temp_ref_p,
+        const TF temp_ref_t,
+        const Array<TF,3>& vmr_ref,
+        const Array<TF,4>& kmajor,
+        const Array<TF,3>& kminor_lower,
+        const Array<TF,3>& kminor_upper,
+        const Array<std::string,1>& gas_minor,
+        const Array<std::string,1>& identifier_minor,
+        const Array<std::string,1>& minor_gases_lower,
+        const Array<std::string,1>& minor_gases_upper,
+        const Array<int,2>& minor_limits_gpt_lower,
+        const Array<int,2>& minor_limits_gpt_upper,
+        const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
+        const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
+        const Array<std::string,1>& scaling_gas_lower,
+        const Array<std::string,1>& scaling_gas_upper,
+        const Array<BOOL_TYPE,1>& scale_by_complement_lower,
+        const Array<BOOL_TYPE,1>& scale_by_complement_upper,
+        const Array<int,1>& kminor_start_lower,
+        const Array<int,1>& kminor_start_upper,
+        const Array<TF,2>& totplnk,
+        const Array<TF,4>& planck_frac,
+        const Array<TF,3>& rayl_lower,
+        const Array<TF,3>& rayl_upper) :
+            Gas_optics_gpu<TF>(band_lims_wavenum, band2gpt),
+            totplnk(totplnk),
+            planck_frac(planck_frac)
+{
+    // Initialize the absorption coefficient array, including Rayleigh scattering
+    // tables if provided.
+    init_abs_coeffs(
+            available_gases,
+            gas_names, key_species,
+            band2gpt, band_lims_wavenum,
+            press_ref, temp_ref,
+            press_ref_trop, temp_ref_p, temp_ref_t,
+            vmr_ref,
+            kmajor, kminor_lower, kminor_upper,
+            gas_minor,identifier_minor,
+            minor_gases_lower, minor_gases_upper,
+            minor_limits_gpt_lower,
+            minor_limits_gpt_upper,
+            minor_scales_with_density_lower,
+            minor_scales_with_density_upper,
+            scaling_gas_lower, scaling_gas_upper,
+            scale_by_complement_lower,
+            scale_by_complement_upper,
+            kminor_start_lower,
+            kminor_start_upper,
+            rayl_lower, rayl_upper);
+
+    // Temperature steps for Planck function interpolation.
+    // Assumes that temperature minimum and max are the same for the absorption coefficient grid and the
+    // Planck grid and the Planck grid is equally spaced.
+    totplnk_delta = (temp_ref_max - temp_ref_min) / (totplnk.dim(1)-1);
+}
+
 // Constructor of the shortwave variant.
 template<typename TF>
 Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
@@ -674,7 +742,8 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
     this->idx_minor_scaling_upper_gpu = this->idx_minor_scaling_upper;
     this->kminor_start_lower_gpu = this->kminor_start_lower;
     this->kminor_start_upper_gpu = this->kminor_start_upper;
-    
+    this->totplnk_gpu = this->totplnk; 
+    this->planck_frac_gpu = this->planck_frac; 
     //set dimensions of temporary arrays
 }
 
@@ -816,6 +885,46 @@ void Gas_optics_rrtmgp_gpu<TF>::get_col_dry(
             ncol, nlay,
             delta_plev.ptr(), m_air.ptr(), vmr_h2o.ptr(),
             col_dry.ptr());
+}
+
+// Gas optics solver longwave variant.
+template<typename TF>
+void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
+        const Array_gpu<TF,2>& play,
+        const Array_gpu<TF,2>& plev,
+        const Array_gpu<TF,2>& tlay,
+        const Array_gpu<TF,1>& tsfc,
+        const Gas_concs_gpu<TF>& gas_desc,
+        std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+        Source_func_lw_gpu<TF>& sources,
+        const Array_gpu<TF,2>& col_dry,
+        const Array_gpu<TF,2>& tlev) const
+{
+    const int ncol = play.dim(1);
+    const int nlay = play.dim(2);
+    const int ngpt = this->get_ngpt();
+    const int nband = this->get_nband();
+
+    Array_gpu<int,2> jtemp({play.dim(1), play.dim(2)});
+    Array_gpu<int,2> jpress({play.dim(1), play.dim(2)});
+    Array_gpu<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
+    Array_gpu<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
+    Array_gpu<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
+
+    // Gas optics.
+    compute_gas_taus(
+            ncol, nlay, ngpt, nband,
+            play, plev, tlay, gas_desc,
+            optical_props,
+            jtemp, jpress, jeta, tropo, fmajor,
+            col_dry);
+
+    // External sources.
+    source(
+            ncol, nlay, nband, ngpt,
+            play, plev, tlay, tsfc,
+            jtemp, jpress, jeta, tropo, fmajor,
+            sources, tlev);
 }
 
 template<typename TF>
@@ -1001,12 +1110,8 @@ void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
     if (!has_rayleigh)
     {
 //        // CvH for 2 stream and n-stream zero the g and ssa
-//        rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
-//
-//        // Make new arrays for output comparison.
-//        Array<TF,3> tau_gpu(optical_props->get_tau());
-//        rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-//                ncol, nlay, ngpt,tau,tau_gpu);
+        rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
+                ncol, nlay, ngpt, tau, optical_props->get_tau());
     }
     else
     {
@@ -1019,7 +1124,59 @@ void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
 
 } 
 
+template<typename TF>
+void Gas_optics_rrtmgp_gpu<TF>::source(
+        const int ncol, const int nlay, const int nbnd, const int ngpt,
+        const Array_gpu<TF,2>& play, const Array_gpu<TF,2>& plev,
+        const Array_gpu<TF,2>& tlay, const Array_gpu<TF,1>& tsfc,
+        const Array_gpu<int,2>& jtemp, const Array_gpu<int,2>& jpress,
+        const Array_gpu<int,4>& jeta, const Array_gpu<BOOL_TYPE,2>& tropo,
+        const Array_gpu<TF,6>& fmajor,
+        Source_func_lw_gpu<TF>& sources,
+        const Array_gpu<TF,2>& tlev) const
+{
+    const int nflav = this->get_nflav();
+    const int neta = this->get_neta();
+    const int npres = this->get_npres();
+    const int ntemp = this->get_ntemp();
+    const int nPlanckTemp = this->get_nPlanckTemp();
+    auto gpoint_bands = this->get_gpoint_bands_gpu();
+    auto band_lims_gpoint = this->get_band_lims_gpoint_gpu();
 
+    Array_gpu<TF,3> lay_source_t({ngpt, nlay, ncol});
+    Array_gpu<TF,3> lev_source_inc_t({ngpt, nlay, ncol});
+    Array_gpu<TF,3> lev_source_dec_t({ngpt, nlay, ncol});
+    Array_gpu<TF,2> sfc_source_t({ngpt, ncol});
+    Array_gpu<TF,2> sfc_source_jac({ngpt, ncol});
+
+    int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
+    rrtmgp_kernel_launcher_cuda::Planck_source(
+            ncol, nlay, nbnd, ngpt,
+            nflav, neta, npres, ntemp, nPlanckTemp,
+            tlay, tlev, tsfc, sfc_lay,
+            fmajor, jeta, tropo, jtemp, jpress,
+            gpoint_bands, band_lims_gpoint, this->planck_frac_gpu, this->temp_ref_min,
+            this->totplnk_delta, this->totplnk_gpu, this->gpoint_flavor_gpu,
+            sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t,
+            sfc_source_jac);
+
+    rrtmgp_kernel_launcher_cuda::reorder12x21(
+            ncol, ngpt, sfc_source_t, sources.get_sfc_source());
+
+    rrtmgp_kernel_launcher_cuda::reorder12x21<TF>(
+            ncol, ngpt, sfc_source_jac, sources.get_sfc_source_jac());
+    
+    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
+            ncol, nlay, ngpt, lay_source_t, sources.get_lay_source());
+    
+    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
+            ncol, nlay, ngpt, lev_source_inc_t, sources.get_lev_source_inc());
+    
+    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
+            ncol, nlay, ngpt, lev_source_dec_t, sources.get_lev_source_dec());
+
+
+}
 
 
 template<typename TF>

@@ -43,6 +43,7 @@ template<typename TF> class Optical_props_arry_gpu;
 template<typename TF> class Gas_concs;
 template<typename TF> class Gas_concs_gpu;
 template<typename TF> class Source_func_lw;
+template<typename TF> class Source_func_lw_gpu;
 
 template<typename TF>
 class Gas_optics_rrtmgp : public Gas_optics<TF>
@@ -397,7 +398,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 const Array_gpu<TF,1>& tsfc,
                 const Gas_concs_gpu<TF>& gas_desc,
                 std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
-                Source_func_lw<TF>& sources,
+                Source_func_lw_gpu<TF>& sources,
                 const Array_gpu<TF,2>& col_dry,
                 const Array_gpu<TF,2>& tlev) const;
 
@@ -461,13 +462,13 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
         Array<TF,1> solar_source_facular;
         Array<TF,1> solar_source_sunspot;
         Array<TF,1> solar_source;
-        Array_gpu<TF,1> solar_source_g;
 
         Array<TF,4> krayl;
 
         #ifdef USECUDA
-//        Array_gpu<TF,2> totplnk_gpu;
-//        Array_gpu<TF,4> planck_frac_gpu;
+        Array_gpu<TF,1> solar_source_g;
+        Array_gpu<TF,2> totplnk_gpu;
+        Array_gpu<TF,4> planck_frac_gpu;
         Array_gpu<TF,1> press_ref_gpu, press_ref_log_gpu, temp_ref_gpu;
         Array_gpu<TF,3> vmr_ref_gpu;
         Array_gpu<int,2> flavor_gpu;
@@ -490,9 +491,6 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
 //        Array_gpu<int,1> is_key_gpu;
         Array_gpu<TF,1> solar_source_gpu;
         Array_gpu<TF,4> krayl_gpu;
-        
-        
-        
         #endif
 
 
@@ -555,13 +553,13 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
 
         void source(
                 const int ncol, const int nlay, const int nband, const int ngpt,
-                const Array<TF,2>& play, const Array<TF,2>& plev,
-                const Array<TF,2>& tlay, const Array<TF,1>& tsfc,
-                const Array<int,2>& jtemp, const Array<int,2>& jpress,
-                const Array<int,4>& jeta, const Array<BOOL_TYPE,2>& tropo,
-                const Array<TF,6>& fmajor,
-                Source_func_lw<TF>& sources,
-                const Array<TF,2>& tlev) const;
+                const Array_gpu<TF,2>& play, const Array_gpu<TF,2>& plev,
+                const Array_gpu<TF,2>& tlay, const Array_gpu<TF,1>& tsfc,
+                const Array_gpu<int,2>& jtemp, const Array_gpu<int,2>& jpress,
+                const Array_gpu<int,4>& jeta, const Array_gpu<BOOL_TYPE,2>& tropo,
+                const Array_gpu<TF,6>& fmajor,
+                Source_func_lw_gpu<TF>& sources,
+                const Array_gpu<TF,2>& tlev) const;
 
 };
 

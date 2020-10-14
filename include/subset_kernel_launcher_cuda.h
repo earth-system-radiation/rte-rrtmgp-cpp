@@ -34,14 +34,22 @@ namespace subset_kernel_launcher_cuda
     template<typename TF>
     void get_from_subset(const int ncol, const int nbnd, const int ncol_in, const int col_s_in,
                   Array_gpu<TF,2>& var_full, const Array_gpu<TF,2>& var_sub);
+
     template<typename TF>
     void get_from_subset(const int ncol, const int nlay, const int ncol_in, const int col_s_in,
                   Array_gpu<TF,2>& var1_full, Array_gpu<TF,2>& var2_full, Array_gpu<TF,2>& var3_full,  Array_gpu<TF,2>& var4_full,
                   const Array_gpu<TF,2>& var1_sub, const Array_gpu<TF,2>& var2_sub, const Array_gpu<TF,2>& var3_sub, const Array_gpu<TF,2>& var4_sub);
+    
+    template<typename TF>
+    void get_from_subset(const int ncol, const int nlay, const int ncol_in, const int col_s_in,
+                  Array_gpu<TF,2>& var1_full, Array_gpu<TF,2>& var2_full, Array_gpu<TF,2>& var3_full,
+                  const Array_gpu<TF,2>& var1_sub, const Array_gpu<TF,2>& var2_sub, const Array_gpu<TF,2>& var3_sub);
+    
     template<typename TF>
     void get_from_subset(const int ncol, const int nlay, const int nbnd, const int ncol_in, const int col_s_in,
                   Array_gpu<TF,3>& var1_full, Array_gpu<TF,3>& var2_full, Array_gpu<TF,3>& var3_full,  Array_gpu<TF,3>& var4_full,
                   const Array_gpu<TF,3>& var1_sub, const Array_gpu<TF,3>& var2_sub, const Array_gpu<TF,3>& var3_sub, const Array_gpu<TF,3>& var4_sub);
+    
     template<typename TF>
     void get_from_subset(const int ncol, const int nlay, const int nbnd, const int ncol_in, const int col_s_in,
                   Array_gpu<TF,3>& var1_full, Array_gpu<TF,3>& var2_full, Array_gpu<TF,3>& var3_full,

@@ -87,10 +87,10 @@ class Cloud_optics_gpu : public Optical_props_gpu<TF>
                 const Array<TF,2>& lut_extliq, const Array<TF,2>& lut_ssaliq, const Array<TF,2>& lut_asyliq,
                 const Array<TF,3>& lut_extice, const Array<TF,3>& lut_ssaice, const Array<TF,3>& lut_asyice);
 
-//        void cloud_optics(
-//                const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
-//                const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
-//                Optical_props_1scl_gpu<TF>& optical_props);
+        void cloud_optics(
+                const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
+                const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
+                Optical_props_1scl_gpu<TF>& optical_props);
 
         void cloud_optics(
                 const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,

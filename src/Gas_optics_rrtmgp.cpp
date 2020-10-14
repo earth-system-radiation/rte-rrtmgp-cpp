@@ -1221,22 +1221,6 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
         // CvH for 2 stream and n-stream zero the g and ssa
         rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
 
-        #ifdef USECUDA
-        // Make new arrays for output comparison.
-        Array<TF,3> tau_gpu(optical_props->get_tau());
-        rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-                ncol, nlay, ngpt,tau,tau_gpu);
-
-        // Print the output to the screen.
-        for (int igpt=1; igpt<=ngpt; ++igpt)
-            for (int ilay=1; ilay<=nlay; ++ilay)
-                for (int icol=1; icol<=ncol; ++icol)
-                {
-                  if (tau_gpu({icol, ilay, igpt}) != optical_props->get_tau()({icol, ilay, igpt}))
-                        std::cout << std::setprecision(16) << "tau (" << icol << "," << ilay << "," << igpt << ") = " <<
-                            tau_gpu({icol, ilay, igpt}) << ", " << optical_props->get_tau()({icol, ilay, igpt}) << std::endl;
-                }
-        #endif
         // END CUDA TEST.
         //
         // reorder123x321_test(optical_props->get_tau().ptr(), tau.ptr(), ngpt, nlay, ncol);
@@ -1286,7 +1270,6 @@ void Gas_optics_rrtmgp<TF>::source(
     Array<TF,2> sfc_source_jac({ngpt, ncol});
 
     int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
-    auto time_start = std::chrono::high_resolution_clock::now();
     rrtmgp_kernel_launcher::compute_Planck_source(
             ncol, nlay, nbnd, ngpt,
             nflav, neta, npres, ntemp, nPlanckTemp,
@@ -1296,57 +1279,6 @@ void Gas_optics_rrtmgp<TF>::source(
             this->totplnk_delta, this->totplnk, this->gpoint_flavor,
             sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t,
             sfc_source_jac);
-    auto time_end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
-    std::cout<<"CPU compute_planck: "<<std::to_string(duration)<<" (ms)"<<std::endl;
-    
-    #ifdef USECUDA
-    const TF delta_Tsurf = TF(1.);
-    Array<TF,2> sfc_source_t_gpu(sfc_source_t);
-    Array<TF,3> lay_source_t_gpu(lay_source_t);
-    Array<TF,3> lev_source_inc_t_gpu(lev_source_inc_t);
-    Array<TF,3> lev_source_dec_t_gpu(lev_source_inc_t);
-    Array<TF,2> sfc_source_t_jac_gpu(sfc_source_jac);
-    Array<TF,3> pfrac_gpu(lay_source_t);
-
-    rrtmgp_kernel_launcher_cuda::Planck_source(
-            ncol, nlay, nbnd, ngpt,
-            nflav, neta, npres, ntemp, nPlanckTemp,
-            tlay, tlev, tsfc, sfc_lay,
-            fmajor, jeta, tropo, jtemp, jpress,
-            gpoint_bands, band_lims_gpoint, this->planck_frac, this->temp_ref_min,
-            this->totplnk_delta, this->totplnk, this->gpoint_flavor, delta_Tsurf,
-            sfc_source_t_gpu, lay_source_t_gpu, lev_source_inc_t_gpu, lev_source_dec_t_gpu,
-            sfc_source_t_jac_gpu, pfrac_gpu);
-
-    for (int igpt=1; igpt<=ngpt; ++igpt)
-        for (int icol=1; icol<=ncol; ++icol)
-        {
-          if (sfc_source_t_gpu({igpt, icol}) != sfc_source_t({igpt, icol}))
-                std::cout << std::setprecision(16) << "src sfc" << icol << "," << igpt <<  ") = " <<
-                    sfc_source_t_gpu({igpt, icol}) << ", " << sfc_source_t({igpt, icol}) << std::endl;
-          if (sfc_source_t_jac_gpu({igpt, icol}) != sfc_source_jac({igpt, icol}))
-                std::cout << std::setprecision(16) << "jac sfc" << icol << "," << igpt << ") = " <<
-                    sfc_source_t_jac_gpu({igpt, icol}) << ", " << sfc_source_jac({igpt, icol}) << std::endl;
-        }
-        
-    for (int igpt=1; igpt<=ngpt; ++igpt)
-        for (int ilay=1; ilay<=nlay; ++ilay)
-            for (int icol=1; icol<=ncol; ++icol)
-            {
-              if (lay_source_t_gpu({igpt, ilay, icol}) != lay_source_t({igpt, ilay, icol}))
-                    std::cout << std::setprecision(16) << "lev src (" << icol << "," << ilay <<"," << igpt <<  ") = " <<
-                        lay_source_t_gpu({igpt, ilay, icol}) << ", " << lay_source_t({igpt, ilay, icol}) << std::endl;
-              if (lev_source_inc_t_gpu({igpt, ilay, icol}) != lev_source_inc_t({igpt, ilay, icol}))
-                    std::cout << std::setprecision(16) << "lev inc (" << icol << "," << ilay <<"," << igpt <<  ") = " <<
-                        lev_source_inc_t_gpu({igpt, ilay, icol}) << ", " << lev_source_inc_t({igpt, ilay, icol}) << std::endl;
-              if (lev_source_dec_t_gpu({igpt, ilay, icol}) != lev_source_dec_t({igpt, ilay, icol}))
-                    std::cout << std::setprecision(16) << "lev dec (" << icol << "," << ilay <<"," << igpt <<  ") = " <<
-                        lev_source_dec_t_gpu({igpt, ilay, icol}) << ", " << lev_source_dec_t({igpt, ilay, icol}) << std::endl;
-            }
-
-
-    #endif
 
     // CvH this transpose is super slow.
     for (int j=1; j<=sfc_source_t.dim(2); ++j)
@@ -1356,72 +1288,12 @@ void Gas_optics_rrtmgp<TF>::source(
             sources.get_sfc_source_jac()({j, i}) = sfc_source_jac({i, j});
         }
     
-    #ifdef USECUDA
-    // Make new arrays for output comparison.
-    Array<TF,2> sfc_source_gpu(sources.get_sfc_source());
-    Array<TF,2> sfc_source_jac_gpu(sources.get_sfc_source_jac());
-    
-    rrtmgp_kernel_launcher_cuda::reorder12x21<TF>(
-            ncol, ngpt,
-            sfc_source_t, sfc_source_gpu);
-    rrtmgp_kernel_launcher_cuda::reorder12x21<TF>(
-            ncol, ngpt, 
-            sfc_source_jac, sfc_source_jac_gpu);
-
-    // Print the output to the screen.
-        for (int igpt=1; igpt<=ngpt; ++igpt)
-            for (int icol=1; icol<=ncol; ++icol)
-            {
-              if (sfc_source_gpu({icol, igpt}) != sources.get_sfc_source()({icol, igpt}))
-                    std::cout << std::setprecision(16) << "src sfc (" << icol << "," << igpt <<  ") = " <<
-                        sfc_source_gpu({icol, igpt}) << ", " << sources.get_sfc_source()({icol, igpt}) << std::endl;
-              if (sfc_source_jac_gpu({icol, igpt}) != sources.get_sfc_source_jac()({icol, igpt}))
-                    std::cout << std::setprecision(16) << "jac sfc (" << icol << "," << igpt << ") = " <<
-                        sfc_source_jac_gpu({icol, igpt}) << ", " << sources.get_sfc_source_jac()({icol, igpt}) << std::endl;
-            }
-
-    #endif
-
     rrtmgp_kernel_launcher::reorder123x321(lay_source_t, sources.get_lay_source());
     rrtmgp_kernel_launcher::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());
     rrtmgp_kernel_launcher::reorder123x321(lev_source_dec_t, sources.get_lev_source_dec());
     // reorder123x321_test(sources.get_lay_source    ().ptr(), lay_source_t    .ptr(), ngpt, nlay, ncol);
     // reorder123x321_test(sources.get_lev_source_inc().ptr(), lev_source_inc_t.ptr(), ngpt, nlay, ncol);
     // reorder123x321_test(sources.get_lev_source_dec().ptr(), lev_source_dec_t.ptr(), ngpt, nlay, ncol);
-    
-    #ifdef USECUDA
-    // Make new arrays for output comparison.
-    Array<TF,3> lay_source_gpu(sources.get_lay_source());
-    Array<TF,3> lev_source_inc_gpu(sources.get_lev_source_inc());
-    Array<TF,3> lev_source_dec_gpu(sources.get_lev_source_dec());
-    
-    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-            ncol, nlay, ngpt,
-            lay_source_t, lay_source_gpu);
-    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-            ncol, nlay, ngpt,
-            lev_source_inc_t, lev_source_inc_gpu);
-    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-            ncol, nlay, ngpt,
-            lev_source_dec_t, lev_source_dec_gpu);
-
-    // Print the output to the screen.
-    for (int igpt=1; igpt<=ngpt; ++igpt)
-        for (int ilay=1; ilay<=nlay; ++ilay)
-            for (int icol=1; icol<=ncol; ++icol)
-            {
-              if (lay_source_gpu({icol, ilay, igpt}) != sources.get_lay_source()({icol, ilay, igpt}))
-                    std::cout << std::setprecision(16) << "lay sfc (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        lay_source_gpu({icol, ilay, igpt}) << ", " << sources.get_lay_source()({icol, ilay, igpt}) << std::endl;
-              if (lev_source_inc_gpu({icol, ilay, igpt}) != sources.get_lev_source_inc()({icol, ilay, igpt}))
-                    std::cout << std::setprecision(16) << "lay sfc (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        lev_source_inc_gpu({icol, ilay, igpt}) << ", " << sources.get_lev_source_inc()({icol, ilay, igpt}) << std::endl;
-              if (lev_source_dec_gpu({icol, ilay, igpt}) != sources.get_lev_source_dec()({icol, ilay, igpt}))
-                    std::cout << std::setprecision(16) << "lay sfc (" << icol << "," << ilay << "," << igpt << ") = " <<
-                        lev_source_dec_gpu({icol, ilay, igpt}) << ", " << sources.get_lev_source_dec()({icol, ilay, igpt}) << std::endl;
-            }
-
-    #endif
 }
 
 template<typename TF>

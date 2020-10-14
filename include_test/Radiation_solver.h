@@ -76,12 +76,20 @@ class Radiation_solver_longwave
         
         int get_n_gpt() const { return this->kdist->get_ngpt(); };
         int get_n_bnd() const { return this->kdist->get_nband(); };
+        int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
+        int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
 
         Array<int,2> get_band_lims_gpoint() const
         { return this->kdist->get_band_lims_gpoint(); }
 
         Array<TF,2> get_band_lims_wavenumber() const
         { return this->kdist->get_band_lims_wavenumber(); }
+        
+        Array<int,2> get_band_lims_gpoint_gpu() const
+        { return this->kdist_gpu->get_band_lims_gpoint(); }
+
+        Array<TF,2> get_band_lims_wavenumber_gpu() const
+        { return this->kdist_gpu->get_band_lims_wavenumber(); }
 
     private:
         std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist;

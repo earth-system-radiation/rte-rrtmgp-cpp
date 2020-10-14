@@ -534,22 +534,8 @@ namespace rrtmgp_kernel_launcher_cuda
 {
     template<typename TF>
     void reorder123x321(const int ni, const int nj, const int nk,
-                        const Array<TF,3>& arr_in, Array<TF,3>& arr_out)
+                        const Array_gpu<TF,3>& arr_in, Array_gpu<TF,3>& arr_out)
     {
-        const int arr_size = arr_in.size() * sizeof(TF);
-        TF* arr_in_gpu;
-        TF* arr_out_gpu;
-        cuda_safe_call(cudaMalloc((void **) &arr_in_gpu, arr_size));
-        cuda_safe_call(cudaMalloc((void **) &arr_out_gpu, arr_size));
-
-        cuda_safe_call(cudaMemcpy(arr_in_gpu, arr_in.ptr(), arr_size, cudaMemcpyHostToDevice));
-
-        cudaEvent_t startEvent, stopEvent;
-        float elapsedtime;
-        cudaEventCreate(&startEvent);
-        cudaEventCreate(&stopEvent);
-        cudaEventRecord(startEvent, 0);
-
         const int block_i = 32;
         const int block_j = 16;
         const int block_k = 1;
@@ -562,38 +548,13 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 block_gpu(block_i, block_j, block_k);
         
         reorder123x321_kernel<<<grid_gpu, block_gpu>>>(
-                ni, nj, nk, arr_in_gpu, arr_out_gpu);
-
-        cuda_check_error();
-        cuda_safe_call(cudaDeviceSynchronize());
-        cudaEventRecord(stopEvent, 0);
-        cudaEventSynchronize(stopEvent);
-        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-        std::cout<<"GPU reorder123x321: "<<elapsedtime<<" (ms)"<<std::endl;
-
-        cuda_safe_call(cudaMemcpy(arr_out.ptr(), arr_out_gpu, arr_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaFree(arr_in_gpu));
-        cuda_safe_call(cudaFree(arr_out_gpu));
+                ni, nj, nk, arr_in.ptr(), arr_out.ptr());
     }
 
     template<typename TF>
     void reorder12x21(const int ni, const int nj,
-                        const Array<TF,2>& arr_in, Array<TF,2>& arr_out)
+                      const Array_gpu<TF,2>& arr_in, Array_gpu<TF,2>& arr_out)
     {
-        const int arr_size = arr_in.size() * sizeof(TF);
-        TF* arr_in_gpu;
-        TF* arr_out_gpu;
-        cuda_safe_call(cudaMalloc((void **) &arr_in_gpu, arr_size));
-        cuda_safe_call(cudaMalloc((void **) &arr_out_gpu, arr_size));
-
-        cuda_safe_call(cudaMemcpy(arr_in_gpu, arr_in.ptr(), arr_size, cudaMemcpyHostToDevice));
-
-        cudaEvent_t startEvent, stopEvent;
-        float elapsedtime;
-        cudaEventCreate(&startEvent);
-        cudaEventCreate(&stopEvent);
-        cudaEventRecord(startEvent, 0);
-
         const int block_i = 32;
         const int block_j = 16;
 
@@ -604,18 +565,7 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 block_gpu(block_i, block_j);
 
         reorder12x21_kernel<<<grid_gpu, block_gpu>>>(
-                ni, nj, arr_in_gpu, arr_out_gpu);
-
-        cuda_check_error();
-        cuda_safe_call(cudaDeviceSynchronize());
-        cudaEventRecord(stopEvent, 0);
-        cudaEventSynchronize(stopEvent);
-        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-        std::cout<<"GPU reorder12x21: "<<elapsedtime<<" (ms)"<<std::endl;
-
-        cuda_safe_call(cudaMemcpy(arr_out.ptr(), arr_out_gpu, arr_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaFree(arr_in_gpu));
-        cuda_safe_call(cudaFree(arr_out_gpu));
+                ni, nj, arr_in.ptr(), arr_out.ptr());
     }
 
     template<typename TF>
@@ -842,115 +792,40 @@ namespace rrtmgp_kernel_launcher_cuda
             const int ncol, const int nlay, const int nbnd, const int ngpt,
             const int nflav, const int neta, const int npres, const int ntemp,
             const int nPlanckTemp,
-            const Array<TF,2>& tlay, 
-            const Array<TF,2>& tlev,
-            const Array<TF,1>& tsfc,
+            const Array_gpu<TF,2>& tlay, 
+            const Array_gpu<TF,2>& tlev,
+            const Array_gpu<TF,1>& tsfc,
             const int sfc_lay,
-            const Array<TF,6>& fmajor, 
-            const Array<int,4>& jeta,
-            const Array<BOOL_TYPE,2>& tropo, 
-            const Array<int,2>& jtemp,
-            const Array<int,2>& jpress, 
-            const Array<int,1>& gpoint_bands,
-            const Array<int,2>& band_lims_gpt, 
-            const Array<TF,4>& pfracin,
+            const Array_gpu<TF,6>& fmajor, 
+            const Array_gpu<int,4>& jeta,
+            const Array_gpu<BOOL_TYPE,2>& tropo, 
+            const Array_gpu<int,2>& jtemp,
+            const Array_gpu<int,2>& jpress, 
+            const Array_gpu<int,1>& gpoint_bands,
+            const Array_gpu<int,2>& band_lims_gpt, 
+            const Array_gpu<TF,4>& pfracin,
             const TF temp_ref_min, const TF totplnk_delta,
-            const Array<TF,2>& totplnk, 
-            const Array<int,2>& gpoint_flavor,
-            const TF delta_Tsurf,
-            Array<TF,2>& sfc_src, 
-            Array<TF,3>& lay_src,
-            Array<TF,3>& lev_src_inc, 
-            Array<TF,3>& lev_src_dec,
-            Array<TF,2>& sfc_src_jac, 
-            Array<TF,3>& pfrac)
+            const Array_gpu<TF,2>& totplnk, 
+            const Array_gpu<int,2>& gpoint_flavor,
+            Array_gpu<TF,2>& sfc_src, 
+            Array_gpu<TF,3>& lay_src,
+            Array_gpu<TF,3>& lev_src_inc, 
+            Array_gpu<TF,3>& lev_src_dec,
+            Array_gpu<TF,2>& sfc_src_jac) 
     {
-        TF ones[2] = {TF(1.), TF(1.)}; 
+        TF ones_cpu[2] = {TF(1.), TF(1.)}; 
+        const TF delta_Tsurf = TF(1.);
         
-        float elapsedtime; 
+        const int pfrac_size = lay_src.size() * sizeof(TF);
         const int ones_size = 2 * sizeof(TF);
-        const int tlay_size = tlay.size() * sizeof(TF);
-        const int tlev_size = tlev.size() * sizeof(TF);
-        const int tsfc_size = tsfc.size() * sizeof(TF);
-        const int fmajor_size = fmajor.size() * sizeof(TF);
-        const int pfracin_size = pfracin.size() * sizeof(TF);
-        const int totplnk_size = totplnk.size() * sizeof(TF);
-        const int sfc_src_size = sfc_src.size() * sizeof(TF);
-        const int lay_src_size = lay_src.size() * sizeof(TF);
-        const int lev_src_inc_size = lev_src_inc.size() * sizeof(TF);
-        const int lev_src_dec_size = lev_src_dec.size() * sizeof(TF);
-        const int sfc_src_jac_size = sfc_src_jac.size() * sizeof(TF);
-        const int pfrac_size = pfrac.size() * sizeof(TF);
-        const int jeta_size = jeta.size() * sizeof(int);
-        const int jtemp_size = jtemp.size() * sizeof(int);
-        const int jpress_size = jpress.size() * sizeof(int);
-        const int gpoint_bands_size = gpoint_bands.size() * sizeof(int);
-        const int band_lims_gpt_size = band_lims_gpt.size() * sizeof(int);
-        const int gpoint_flavor_size = gpoint_flavor.size() * sizeof(int);
-        const int tropo_size = tropo.size() * sizeof(BOOL_TYPE);
+        TF* pfrac;
+        TF* ones;
 
-        TF* tlay_gpu;
-        TF* tlev_gpu;
-        TF* tsfc_gpu;
-        TF* fmajor_gpu;
-        TF* pfracin_gpu;
-        TF* totplnk_gpu;
-        TF* sfc_src_gpu;
-        TF* lay_src_gpu;
-        TF* lev_src_inc_gpu;
-        TF* lev_src_dec_gpu;
-        TF* sfc_src_jac_gpu;
-        TF* pfrac_gpu;
-        TF* ones_gpu;
-        int* jeta_gpu;
-        int* jtemp_gpu;
-        int* jpress_gpu;
-        int* gpoint_bands_gpu;
-        int* band_lims_gpt_gpu;
-        int* gpoint_flavor_gpu;
-        BOOL_TYPE* tropo_gpu;
-
-        cuda_safe_call(cudaMalloc((void**)& tlay_gpu, tlay_size));
-        cuda_safe_call(cudaMalloc((void**)& tlev_gpu, tlev_size));
-        cuda_safe_call(cudaMalloc((void**)& tsfc_gpu, tsfc_size));
-        cuda_safe_call(cudaMalloc((void**)& fmajor_gpu, fmajor_size));
-        cuda_safe_call(cudaMalloc((void**)& pfracin_gpu, pfracin_size));
-        cuda_safe_call(cudaMalloc((void**)& totplnk_gpu, totplnk_size));
-        cuda_safe_call(cudaMalloc((void**)& sfc_src_gpu, sfc_src_size));
-        cuda_safe_call(cudaMalloc((void**)& lay_src_gpu, lay_src_size));
-        cuda_safe_call(cudaMalloc((void**)& lev_src_inc_gpu, lev_src_inc_size));
-        cuda_safe_call(cudaMalloc((void**)& lev_src_dec_gpu, lev_src_dec_size));
-        cuda_safe_call(cudaMalloc((void**)& sfc_src_jac_gpu, sfc_src_jac_size));
-        cuda_safe_call(cudaMalloc((void**)& pfrac_gpu, pfrac_size));
-        cuda_safe_call(cudaMalloc((void**)& ones_gpu, ones_size));
-        cuda_safe_call(cudaMalloc((void**)& jeta_gpu, jeta_size));
-        cuda_safe_call(cudaMalloc((void**)& jtemp_gpu, jtemp_size));
-        cuda_safe_call(cudaMalloc((void**)& jpress_gpu, jpress_size));
-        cuda_safe_call(cudaMalloc((void**)& gpoint_bands_gpu, gpoint_bands_size));
-        cuda_safe_call(cudaMalloc((void**)& band_lims_gpt_gpu, band_lims_gpt_size));
-        cuda_safe_call(cudaMalloc((void**)& gpoint_flavor_gpu, gpoint_flavor_size));
-        cuda_safe_call(cudaMalloc((void**)& tropo_gpu, tropo_size));
+        cuda_safe_call(cudaMalloc((void**)& pfrac, pfrac_size));
+        cuda_safe_call(cudaMalloc((void**)& ones, ones_size));
 
         // Copy the data to the GPU.
-        cuda_safe_call(cudaMemcpy(ones_gpu, ones, ones_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(tlay_gpu, tlay.ptr(), tlay_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(tlev_gpu, tlev.ptr(), tlev_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(tsfc_gpu, tsfc.ptr(), tsfc_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(fmajor_gpu, fmajor.ptr(), fmajor_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(pfracin_gpu, pfracin.ptr(), pfracin_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(totplnk_gpu, totplnk.ptr(), totplnk_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(jeta_gpu, jeta.ptr(), jeta_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(jtemp_gpu, jtemp.ptr(), jtemp_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(jpress_gpu, jpress.ptr(), jpress_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(gpoint_bands_gpu, gpoint_bands.ptr(), gpoint_bands_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(band_lims_gpt_gpu, band_lims_gpt.ptr(), band_lims_gpt_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(gpoint_flavor_gpu, gpoint_flavor.ptr(), gpoint_flavor_size, cudaMemcpyHostToDevice));
-        cuda_safe_call(cudaMemcpy(tropo_gpu, tropo.ptr(), tropo_size, cudaMemcpyHostToDevice));
-
-        cudaEvent_t startEvent, stopEvent;
-        cudaEventCreate(&startEvent);
-        cudaEventCreate(&stopEvent);
-        cudaEventRecord(startEvent, 0);
+        cuda_safe_call(cudaMemcpy(ones, ones_cpu, ones_size, cudaMemcpyHostToDevice));
 
         // Call the kernel.
         const int block_bnd = 14;
@@ -967,59 +842,25 @@ namespace rrtmgp_kernel_launcher_cuda
         Planck_source_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, nbnd, ngpt,
                 nflav, neta, npres, ntemp, nPlanckTemp,
-                tlay_gpu, tlev_gpu, tsfc_gpu, sfc_lay,
-                fmajor_gpu, jeta_gpu, tropo_gpu, jtemp_gpu,
-                jpress_gpu, gpoint_bands_gpu, band_lims_gpt_gpu,
-                pfracin_gpu, temp_ref_min, totplnk_delta,
-                totplnk_gpu, gpoint_flavor_gpu, ones_gpu, 
-                delta_Tsurf, sfc_src_gpu, lay_src_gpu,
-                lev_src_inc_gpu, lev_src_dec_gpu,
-                sfc_src_jac_gpu, pfrac_gpu);
+                tlay.ptr(), tlev.ptr(), tsfc.ptr(), sfc_lay,
+                fmajor.ptr(), jeta.ptr(), tropo.ptr(), jtemp.ptr(),
+                jpress.ptr(), gpoint_bands.ptr(), band_lims_gpt.ptr(),
+                pfracin.ptr(), temp_ref_min, totplnk_delta,
+                totplnk.ptr(), gpoint_flavor.ptr(), ones, 
+                delta_Tsurf, sfc_src.ptr(), lay_src.ptr(),
+                lev_src_inc.ptr(), lev_src_dec.ptr(),
+                sfc_src_jac.ptr(), pfrac);
 
-        cuda_check_error();
-        cuda_safe_call(cudaDeviceSynchronize());
-        cudaEventRecord(stopEvent, 0);
-        cudaEventSynchronize(stopEvent);
-        cudaEventElapsedTime(&elapsedtime,startEvent,stopEvent);
-        std::cout<<"GPU compute_Planck: "<<elapsedtime<<" (ms)"<<std::endl;
-
-        // Copy back the results.
-        cuda_safe_call(cudaMemcpy(sfc_src.ptr(), sfc_src_gpu, sfc_src_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(lay_src.ptr(), lay_src_gpu, lay_src_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(lev_src_inc.ptr(), lev_src_inc_gpu, lev_src_inc_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(lev_src_dec.ptr(), lev_src_dec_gpu, lev_src_dec_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(sfc_src_jac.ptr(), sfc_src_jac_gpu, sfc_src_jac_size, cudaMemcpyDeviceToHost));
-        cuda_safe_call(cudaMemcpy(pfrac.ptr(), pfrac_gpu, pfrac_size, cudaMemcpyDeviceToHost));
-
-        // Deallocate a CUDA array.
-        cuda_safe_call(cudaFree(tlay_gpu));
-        cuda_safe_call(cudaFree(tlev_gpu));
-        cuda_safe_call(cudaFree(tsfc_gpu));
-        cuda_safe_call(cudaFree(fmajor_gpu));
-        cuda_safe_call(cudaFree(pfracin_gpu));
-        cuda_safe_call(cudaFree(totplnk_gpu));
-        cuda_safe_call(cudaFree(sfc_src_gpu));
-        cuda_safe_call(cudaFree(lay_src_gpu));
-        cuda_safe_call(cudaFree(lev_src_inc_gpu));
-        cuda_safe_call(cudaFree(lev_src_dec_gpu));
-        cuda_safe_call(cudaFree(sfc_src_jac_gpu));
-        cuda_safe_call(cudaFree(pfrac_gpu));
-        cuda_safe_call(cudaFree(ones_gpu));
-        cuda_safe_call(cudaFree(jeta_gpu));
-        cuda_safe_call(cudaFree(jtemp_gpu));
-        cuda_safe_call(cudaFree(jpress_gpu));
-        cuda_safe_call(cudaFree(gpoint_bands_gpu));
-        cuda_safe_call(cudaFree(band_lims_gpt_gpu));
-        cuda_safe_call(cudaFree(gpoint_flavor_gpu));
-        cuda_safe_call(cudaFree(tropo_gpu));
+        cuda_safe_call(cudaFree(pfrac));
+        cuda_safe_call(cudaFree(ones));
     }
 
 }
 
 
 #ifdef FLOAT_SINGLE_RRTMGP
-template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, const Array<float,3>&, Array<float,3>&);
-template void rrtmgp_kernel_launcher_cuda::reorder12x21<float>(const int, const int, const Array<float,2>&, Array<float,2>&);
+template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, const Array_gpu<float,3>&, Array_gpu<float,3>&);
+template void rrtmgp_kernel_launcher_cuda::reorder12x21<float>(const int, const int, const Array_gpu<float,2>&, Array_gpu<float,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::zero_array<float>(const int, const int, const int, Array_gpu<float,3>&);
 
@@ -1050,19 +891,19 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const i
 
 template void rrtmgp_kernel_launcher_cuda::Planck_source<float>(const int ncol, const int nlay, const int nbnd, const int ngpt,
         const int nflav, const int neta, const int npres, const int ntemp,
-        const int nPlanckTemp, const Array<float,2>& tlay, const Array<float,2>& tlev,
-        const Array<float,1>& tsfc, const int sfc_lay, const Array<float,6>& fmajor, 
-        const Array<int,4>& jeta, const Array<BOOL_TYPE,2>& tropo, const Array<int,2>& jtemp,
-        const Array<int,2>& jpress, const Array<int,1>& gpoint_bands, const Array<int,2>& band_lims_gpt, 
-        const Array<float,4>& pfracin, const float temp_ref_min, const float totplnk_delta,
-        const Array<float,2>& totplnk, const Array<int,2>& gpoint_flavor, const float delta_Tsurf,
-        Array<float,2>& sfc_src,  Array<float,3>& lay_src, Array<float,3>& lev_src_inc, 
-        Array<float,3>& lev_src_dec, Array<float,2>& sfc_src_jac, Array<float,3>& pfrac);
+        const int nPlanckTemp, const Array_gpu<float,2>& tlay, const Array_gpu<float,2>& tlev,
+        const Array_gpu<float,1>& tsfc, const int sfc_lay, const Array_gpu<float,6>& fmajor, 
+        const Array_gpu<int,4>& jeta, const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
+        const Array_gpu<int,2>& jpress, const Array_gpu<int,1>& gpoint_bands, const Array_gpu<int,2>& band_lims_gpt, 
+        const Array_gpu<float,4>& pfracin, const float temp_ref_min, const float totplnk_delta,
+        const Array_gpu<float,2>& totplnk, const Array_gpu<int,2>& gpoint_flavor,
+        Array_gpu<float,2>& sfc_src,  Array_gpu<float,3>& lay_src, Array_gpu<float,3>& lev_src_inc, 
+        Array_gpu<float,3>& lev_src_dec, Array_gpu<float,2>& sfc_src_jac);
 	    
 #else
-template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array<double,3>&, Array<double,3>&);
+template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array_gpu<double,3>&, Array_gpu<double,3>&);
 
-template void rrtmgp_kernel_launcher_cuda::reorder12x21<double>(const int, const int, const Array<double,2>&, Array<double,2>&);
+template void rrtmgp_kernel_launcher_cuda::reorder12x21<double>(const int, const int, const Array_gpu<double,2>&, Array_gpu<double,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::zero_array<double>(const int, const int, const int, Array_gpu<double,3>&);
 
@@ -1093,14 +934,14 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<double>(const 
 
 template void rrtmgp_kernel_launcher_cuda::Planck_source<double>(const int ncol, const int nlay, const int nbnd, const int ngpt,
         const int nflav, const int neta, const int npres, const int ntemp,
-        const int nPlanckTemp, const Array<double,2>& tlay, const Array<double,2>& tlev,
-        const Array<double,1>& tsfc, const int sfc_lay, const Array<double,6>& fmajor, 
-        const Array<int,4>& jeta, const Array<BOOL_TYPE,2>& tropo, const Array<int,2>& jtemp,
-        const Array<int,2>& jpress, const Array<int,1>& gpoint_bands, const Array<int,2>& band_lims_gpt, 
-        const Array<double,4>& pfracin, const double temp_ref_min, const double totplnk_delta,
-        const Array<double,2>& totplnk, const Array<int,2>& gpoint_flavor, const double delta_Tsurf,
-        Array<double,2>& sfc_src,  Array<double,3>& lay_src, Array<double,3>& lev_src_inc, 
-        Array<double,3>& lev_src_dec, Array<double,2>& sfc_src_jac, Array<double,3>& pfrac);
+        const int nPlanckTemp, const Array_gpu<double,2>& tlay, const Array_gpu<double,2>& tlev,
+        const Array_gpu<double,1>& tsfc, const int sfc_lay, const Array_gpu<double,6>& fmajor, 
+        const Array_gpu<int,4>& jeta, const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
+        const Array_gpu<int,2>& jpress, const Array_gpu<int,1>& gpoint_bands, const Array_gpu<int,2>& band_lims_gpt, 
+        const Array_gpu<double,4>& pfracin, const double temp_ref_min, const double totplnk_delta,
+        const Array_gpu<double,2>& totplnk, const Array_gpu<int,2>& gpoint_flavor,
+        Array_gpu<double,2>& sfc_src,  Array_gpu<double,3>& lay_src, Array_gpu<double,3>& lev_src_inc, 
+        Array_gpu<double,3>& lev_src_dec, Array_gpu<double,2>& sfc_src_jac);
 
 #endif
 

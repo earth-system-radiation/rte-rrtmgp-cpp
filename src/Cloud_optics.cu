@@ -249,80 +249,80 @@ void Cloud_optics_gpu<TF>::cloud_optics(
 }
 
 // 1scl variant of cloud optics.
-//template<typename TF>
-//void Cloud_optics_gpu<TF>::cloud_optics(
-//        const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
-//        const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
-//        Optical_props_1scl_gpu<TF>& optical_props)
-//{
-//    const int ncol = clwp.dim(1);
-//    const int nlay = clwp.dim(2);
-//    const int nbnd = this->get_nband();
-//
-//    Optical_props_1scl<TF> clouds_liq(ncol, nlay, optical_props);
-//    Optical_props_1scl<TF> clouds_ice(ncol, nlay, optical_props);
-//
-//    // Set the mask.
-//    constexpr TF mask_min_value = TF(0.);
-//    const int block_col_m = 16;
-//    const int block_lay_m = 16;
-//
-//    const int grid_col_m  = ncol/block_col_m + (ncol%block_col_m > 0);
-//    const int grid_lay_m  = nlay/block_lay_m + (nlay%block_lay_m > 0);
-//
-//    dim3 grid_m_gpu(grid_col_m, grid_lay_m);
-//    dim3 block_m_gpu(block_col_m, block_lay_m);
-//    
-//    Array_gpu<BOOL_TYPE,2> liqmsk({ncol, nlay});
-//    set_mask<<<grid_m_gpu, block_m_gpu>>>(
-//            ncol, nlay, mask_min_value, liqmsk.ptr(), clwp.ptr());
-//    
-//    Array_gpu<BOOL_TYPE,2> icemsk({ncol, nlay});
-//    set_mask<<<grid_m_gpu, block_m_gpu>>>(
-//            ncol, nlay, mask_min_value, icemsk.ptr(), ciwp.ptr());
-//
-//    // Temporary arrays for storage.
-//    Array_gpu<TF,3> ltau    ({ncol, nlay, nbnd});
-//    Array_gpu<TF,3> ltaussa ({ncol, nlay, nbnd});
-//    Array_gpu<TF,3> ltaussag({ncol, nlay, nbnd});
-//
-//    Array_gpu<TF,3> itau    ({ncol, nlay, nbnd});
-//    Array_gpu<TF,3> itaussa ({ncol, nlay, nbnd});
-//    Array_gpu<TF,3> itaussag({ncol, nlay, nbnd});
-//
-//    const int block_bnd = 14;
-//    const int block_lay = 1;
-//    const int block_col = 32;
-//
-//    const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
-//    const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-//    const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-//
-//    dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
-//    dim3 block_gpu(block_bnd, block_lay, block_col);
-//
-//    // Liquid water
-//    compute_from_table_kernel<<<grid_gpu, block_gpu>>>(
-//            ncol, nlay, nbnd, liqmsk.ptr(), clwp.ptr(), reliq.ptr(),
-//            this->liq_nsteps, this->liq_step_size, this->radliq_lwr,
-//            this->lut_extliq_gpu.ptr(), this->lut_ssaliq_gpu.ptr(),
-//            this->lut_asyliq_gpu.ptr(), ltau.ptr(), ltaussa.ptr(), ltaussag.ptr());
-//
-//    // Ice.
-//    compute_from_table_kernel<<<grid_gpu, block_gpu>>>(
-//            ncol, nlay, nbnd, icemsk.ptr(), ciwp.ptr(), reice.ptr(),
-//            this->ice_nsteps, this->ice_step_size, this->radice_lwr,
-//            this->lut_extice_gpu.ptr(), this->lut_ssaice_gpu.ptr(),
-//            this->lut_asyice_gpu.ptr(), itau.ptr(), itaussa.ptr(), itaussag.ptr());
-//
-//    constexpr TF eps = std::numeric_limits<TF>::epsilon();
-//    
-//    combine_and_store_kernel<<<grid_gpu, block_gpu>>>(
-//            ncol, nlay, nbnd, eps,
-//            optical_props.get_tau().ptr(),
-//            ltau.ptr(), ltaussa.ptr(),
-//            itau.ptr(), itaussa.ptr());
-//}
+template<typename TF>
+void Cloud_optics_gpu<TF>::cloud_optics(
+        const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
+        const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
+        Optical_props_1scl_gpu<TF>& optical_props)
+{
+    const int ncol = clwp.dim(1);
+    const int nlay = clwp.dim(2);
+    const int nbnd = this->get_nband();
+
+    Optical_props_1scl_gpu<TF> clouds_liq(ncol, nlay, optical_props);
+    Optical_props_1scl_gpu<TF> clouds_ice(ncol, nlay, optical_props);
+
+    // Set the mask.
+    constexpr TF mask_min_value = TF(0.);
+    const int block_col_m = 16;
+    const int block_lay_m = 16;
+
+    const int grid_col_m  = ncol/block_col_m + (ncol%block_col_m > 0);
+    const int grid_lay_m  = nlay/block_lay_m + (nlay%block_lay_m > 0);
+
+    dim3 grid_m_gpu(grid_col_m, grid_lay_m);
+    dim3 block_m_gpu(block_col_m, block_lay_m);
+    
+    Array_gpu<BOOL_TYPE,2> liqmsk({ncol, nlay});
+    set_mask<<<grid_m_gpu, block_m_gpu>>>(
+            ncol, nlay, mask_min_value, liqmsk.ptr(), clwp.ptr());
+    
+    Array_gpu<BOOL_TYPE,2> icemsk({ncol, nlay});
+    set_mask<<<grid_m_gpu, block_m_gpu>>>(
+            ncol, nlay, mask_min_value, icemsk.ptr(), ciwp.ptr());
+
+    // Temporary arrays for storage.
+    Array_gpu<TF,3> ltau    ({ncol, nlay, nbnd});
+    Array_gpu<TF,3> ltaussa ({ncol, nlay, nbnd});
+    Array_gpu<TF,3> ltaussag({ncol, nlay, nbnd});
+
+    Array_gpu<TF,3> itau    ({ncol, nlay, nbnd});
+    Array_gpu<TF,3> itaussa ({ncol, nlay, nbnd});
+    Array_gpu<TF,3> itaussag({ncol, nlay, nbnd});
+
+    const int block_bnd = 14;
+    const int block_lay = 1;
+    const int block_col = 32;
+
+    const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
+    const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
+    const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+
+    dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
+    dim3 block_gpu(block_bnd, block_lay, block_col);
+
+    // Liquid water
+    compute_from_table_kernel<<<grid_gpu, block_gpu>>>(
+            ncol, nlay, nbnd, liqmsk.ptr(), clwp.ptr(), reliq.ptr(),
+            this->liq_nsteps, this->liq_step_size, this->radliq_lwr,
+            this->lut_extliq_gpu.ptr(), this->lut_ssaliq_gpu.ptr(),
+            this->lut_asyliq_gpu.ptr(), ltau.ptr(), ltaussa.ptr(), ltaussag.ptr());
+
+    // Ice.
+    compute_from_table_kernel<<<grid_gpu, block_gpu>>>(
+            ncol, nlay, nbnd, icemsk.ptr(), ciwp.ptr(), reice.ptr(),
+            this->ice_nsteps, this->ice_step_size, this->radice_lwr,
+            this->lut_extice_gpu.ptr(), this->lut_ssaice_gpu.ptr(),
+            this->lut_asyice_gpu.ptr(), itau.ptr(), itaussa.ptr(), itaussag.ptr());
+
+    constexpr TF eps = std::numeric_limits<TF>::epsilon();
+    
+    combine_and_store_kernel<<<grid_gpu, block_gpu>>>(
+            ncol, nlay, nbnd, eps,
+            optical_props.get_tau().ptr(),
+            ltau.ptr(), ltaussa.ptr(),
+            itau.ptr(), itaussa.ptr());
+}
 
 #ifdef FLOAT_SINGLE_RRTMGP
 template class Cloud_optics_gpu<float>;
