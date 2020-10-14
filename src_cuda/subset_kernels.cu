@@ -1,9 +1,9 @@
 #include <chrono>
+#include <iomanip>
 
 #include "subset_kernel_launcher_cuda.h"
 #include "tools_gpu.h"
 #include "Array.h"
-#include <iomanip>
 
 namespace
 {
@@ -93,6 +93,7 @@ namespace
         }
     }
 }
+
 namespace subset_kernel_launcher_cuda
 {
     template<typename TF>
@@ -204,6 +205,7 @@ namespace subset_kernel_launcher_cuda
         get_from_subset_kernel<<<grid_gpu, block_gpu>>>(ncol, nbnd, ncol_in, col_s_in, var_full.ptr(), var_sub.ptr());
     }
 }
+
 #ifdef FLOAT_SINGLE_RRTMGP
 template void subset_kernel_launcher_cuda::get_from_subset(const int ncol, const int nlay, const int ncol_in, const int col_s_in,
               Array_gpu<float,2>&, Array_gpu<float,2>&, Array_gpu<float,2>&, Array_gpu<float,2>&,

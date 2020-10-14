@@ -379,31 +379,6 @@ class Array_gpu
         }
         #endif
 
-        /*
-        // Create an array from copying the contents of an std::vector.
-        Array_gpu(const std::vector<T>& data, const std::array<int, N>& dims) :
-            dims(dims),
-            ncells(product<N>(dims)),
-            data(data),
-            strides(calc_strides<N>(dims)),
-            offsets({})
-        {} // CvH Do we need to size check data?
-
-        // Create an array from moving the contents of an std::vector.
-        Array_gpu(std::vector<T>&& data, const std::array<int, N>& dims) :
-            dims(dims),
-            ncells(product<N>(dims)),
-            data(data),
-            strides(calc_strides<N>(dims)),
-            offsets({})
-        {} // CvH Do we need to size check data?
-
-        // Array_gpu(Array_gpu<T, N>&& array) = delete;
-        // Define the default copy constructor and assignment operator.
-        // Array_gpu(const Array<T, N>&) = default;
-        // Array_gpu<T,N>& operator=(const Array<T, N>&) = default; // CvH does this one need empty checking?
-        */
-
         inline void set_offsets(const std::array<int, N>& offsets)
         {
             this->offsets = offsets;
@@ -461,44 +436,6 @@ class Array_gpu
         //     return calc_indices<N>(pos, strides, offsets);
         // }
 
-        inline T max() const
-        {
-        #ifdef __CUDACC__
-            if (ncells>0)
-            {
-            T val;
-            cuda_safe_call(cudaMemcpy(&val, data_ptr , sizeof(T), cudaMemcpyDeviceToHost));
-            for (int i=0; i < ncells; ++i)
-            {
-                T val2;
-                cuda_safe_call(cudaMemcpy(&val2, data_ptr+i , sizeof(T), cudaMemcpyDeviceToHost));
-                if (val2>val)
-                    val = val2;
-            }
-            return val;
-            }
-            else
-        #endif
-            return T(0.);
-        }
-        // inline T min() const
-        // {
-        //     return *std::min_element(data.begin(), data.end());
-        // }
-
-        // inline void operator=(thrust::device_vector<T>&& data)
-        // {
-        //     // CvH check size.
-        //     this->data = data;
-        // }
-
-        // inline T& operator()(const std::array<int, N>& indices)
-        // {
-        //     const int index = calc_index<N>(indices, strides, offsets);
-        //     return data[index];
-        // }
-
-        
         #ifdef __CUDACC__
         inline T operator()(const std::array<int, N>& indices) const
         {
