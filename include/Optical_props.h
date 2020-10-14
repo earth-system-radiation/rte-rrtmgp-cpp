@@ -161,6 +161,9 @@ class Optical_props_2str : public Optical_props_arry<TF>
         Array<TF,3> g;
 };
 
+template<typename TF> void add_to(Optical_props_1scl<TF>& op_inout, const Optical_props_1scl<TF>& op_in);
+template<typename TF> void add_to(Optical_props_2str<TF>& op_inout, const Optical_props_2str<TF>& op_in);
+
 // GPU version of optical props class
 #ifdef USECUDA
 template<typename TF>
@@ -299,10 +302,8 @@ class Optical_props_2str_gpu : public Optical_props_arry_gpu<TF>
         Array_gpu<TF,3> g;
 };
 
-#endif
-
-template<typename TF> void add_to(Optical_props_1scl<TF>& op_inout, const Optical_props_1scl<TF>& op_in);
-template<typename TF> void add_to(Optical_props_2str<TF>& op_inout, const Optical_props_2str<TF>& op_in);
 template<typename TF> void add_to(Optical_props_1scl_gpu<TF>& op_inout, const Optical_props_1scl_gpu<TF>& op_in);
 template<typename TF> void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<TF>& op_in);
+#endif
+
 #endif

@@ -125,6 +125,6 @@ class Cloud_optics_gpu : public Optical_props_gpu<TF>
         Array_gpu<TF,2> lut_ssaice_gpu;
         Array_gpu<TF,2> lut_asyice_gpu;
 };
-
 #endif
+
 #endif

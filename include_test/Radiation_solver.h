@@ -33,6 +33,7 @@ class Radiation_solver_longwave
                 const Gas_concs<TF>& gas_concs,
                 const std::string& file_name_gas,
                 const std::string& file_name_cloud);
+
         Radiation_solver_longwave(
                 const Gas_concs_gpu<TF>& gas_concs,
                 const std::string& file_name_gas,
@@ -54,6 +55,15 @@ class Radiation_solver_longwave
                 Array<TF,3>& lev_source_inc, Array<TF,3>& lev_source_dec, Array<TF,2>& sfc_source,
                 Array<TF,2>& lw_flux_up, Array<TF,2>& lw_flux_dn, Array<TF,2>& lw_flux_net,
                 Array<TF,3>& lw_bnd_flux_up, Array<TF,3>& lw_bnd_flux_dn, Array<TF,3>& lw_bnd_flux_net) const;
+        
+        int get_n_gpt() const { return this->kdist->get_ngpt(); };
+        int get_n_bnd() const { return this->kdist->get_nband(); };
+
+        Array<int,2> get_band_lims_gpoint() const
+        { return this->kdist->get_band_lims_gpoint(); }
+
+        Array<TF,2> get_band_lims_wavenumber() const
+        { return this->kdist->get_band_lims_wavenumber(); }
 
         #ifdef __CUDACC__
         void solve_gpu(
@@ -72,30 +82,25 @@ class Radiation_solver_longwave
                 Array_gpu<TF,3>& lev_source_inc, Array_gpu<TF,3>& lev_source_dec, Array_gpu<TF,2>& sfc_source,
                 Array_gpu<TF,2>& lw_flux_up, Array_gpu<TF,2>& lw_flux_dn, Array_gpu<TF,2>& lw_flux_net,
                 Array_gpu<TF,3>& lw_bnd_flux_up, Array_gpu<TF,3>& lw_bnd_flux_dn, Array_gpu<TF,3>& lw_bnd_flux_net) const;
-        #endif
-        
-        int get_n_gpt() const { return this->kdist->get_ngpt(); };
-        int get_n_bnd() const { return this->kdist->get_nband(); };
+
         int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
-
-        Array<int,2> get_band_lims_gpoint() const
-        { return this->kdist->get_band_lims_gpoint(); }
-
-        Array<TF,2> get_band_lims_wavenumber() const
-        { return this->kdist->get_band_lims_wavenumber(); }
         
         Array<int,2> get_band_lims_gpoint_gpu() const
         { return this->kdist_gpu->get_band_lims_gpoint(); }
 
         Array<TF,2> get_band_lims_wavenumber_gpu() const
         { return this->kdist_gpu->get_band_lims_wavenumber(); }
+        #endif
 
     private:
         std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist;
         std::unique_ptr<Cloud_optics<TF>> cloud_optics;
+
+        #ifdef __CUDACC__
         std::unique_ptr<Gas_optics_rrtmgp_gpu<TF>> kdist_gpu;
         std::unique_ptr<Cloud_optics_gpu<TF>> cloud_optics_gpu;
+        #endif
 };
 
 template<typename TF>
@@ -131,6 +136,17 @@ class Radiation_solver_shortwave
                 Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn,
                 Array<TF,3>& sw_bnd_flux_dn_dir, Array<TF,3>& sw_bnd_flux_net) const;
 
+        int get_n_gpt() const { return this->kdist->get_ngpt(); };
+        int get_n_bnd() const { return this->kdist->get_nband(); };
+
+        TF get_tsi() const { return this->kdist->get_tsi(); };
+
+        Array<int,2> get_band_lims_gpoint() const
+        { return this->kdist->get_band_lims_gpoint(); }
+
+        Array<TF,2> get_band_lims_wavenumber() const
+        { return this->kdist->get_band_lims_wavenumber(); }
+
         #ifdef __CUDACC__
         void solve_gpu(
                 const bool switch_fluxes,
@@ -151,31 +167,26 @@ class Radiation_solver_shortwave
                 Array_gpu<TF,2>& sw_flux_dn_dir, Array_gpu<TF,2>& sw_flux_net,
                 Array_gpu<TF,3>& sw_bnd_flux_up, Array_gpu<TF,3>& sw_bnd_flux_dn,
                 Array_gpu<TF,3>& sw_bnd_flux_dn_dir, Array_gpu<TF,3>& sw_bnd_flux_net) const;
-        #endif
 
-        int get_n_gpt() const { return this->kdist->get_ngpt(); };
-        int get_n_bnd() const { return this->kdist->get_nband(); };
         int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
 
-        TF get_tsi() const { return this->kdist->get_tsi(); };
         TF get_tsi_gpu() const { return this->kdist_gpu->get_tsi(); };
-
-        Array<int,2> get_band_lims_gpoint() const
-        { return this->kdist->get_band_lims_gpoint(); }
-
-        Array<TF,2> get_band_lims_wavenumber() const
-        { return this->kdist->get_band_lims_wavenumber(); }
         
         Array<int,2> get_band_lims_gpoint_gpu() const
         { return this->kdist_gpu->get_band_lims_gpoint(); }
 
         Array<TF,2> get_band_lims_wavenumber_gpu() const
         { return this->kdist_gpu->get_band_lims_wavenumber(); }
+        #endif
+
     private:
         std::unique_ptr<Gas_optics<TF>> kdist;
         std::unique_ptr<Cloud_optics<TF>> cloud_optics;
+
+        #ifdef __CUDACC__
         std::unique_ptr<Gas_optics_gpu<TF>> kdist_gpu;
         std::unique_ptr<Cloud_optics_gpu<TF>> cloud_optics_gpu;
+        #endif
 };
 #endif
