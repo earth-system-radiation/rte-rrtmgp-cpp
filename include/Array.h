@@ -288,6 +288,7 @@ struct Subset_data
     int strides[N];
     int starts[N];
     int offsets[N];
+    bool do_spread[N];
 };
 
 template<typename T, int N> __global__
@@ -307,15 +308,14 @@ void subset_kernel(
         #pragma unroll
         for (int n=N-1; n>=0; --n)
         {
-            const int idx_dim = ic / subset_data.sub_strides[n];
+            const int idx_dim = subset_data.do_spread[n] ? 1 : ic / subset_data.sub_strides[n] + subset_data.starts[n];
             ic %= subset_data.sub_strides[n];
 
-            idx_in += (idx_dim + subset_data.starts[n] - subset_data.offsets[n] - 1) * subset_data.strides[n];
+            idx_in += (idx_dim - subset_data.offsets[n] - 1) * subset_data.strides[n];
         }
 
         a_sub[idx_out] = a[idx_in];
     }
-
     /*
     for (int i=0; i<a_sub.ncells; ++i)
     {
@@ -518,8 +518,6 @@ class Array_gpu
                 subdims[i] = ranges[i].second - ranges[i].first + 1;
                 // CvH how flexible / tolerant are we?
                 do_spread[i] = (dims[i] == 1);
-                if (do_spread[i])
-                    throw std::runtime_error("Array spreading not implemented.");
             }
 
             // Create the array and fill it with the subset.
@@ -533,6 +531,7 @@ class Array_gpu
                 subset_data.strides[i] = strides[i];
                 subset_data.starts[i] = ranges[i].first;
                 subset_data.offsets[i] = offsets[i];
+                subset_data.do_spread[i] = do_spread[i];
             }
 
             constexpr int block_ncells = 64;
