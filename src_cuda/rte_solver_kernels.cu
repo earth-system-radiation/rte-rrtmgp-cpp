@@ -293,7 +293,7 @@ namespace
         }
     }
 
-    template<typename TF>__global__ //apply_BC_factor
+    template<typename TF>__global__
     void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const TF* __restrict__ inc_flux, const TF* __restrict__ factor, TF* __restrict__ flux_dn)
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
@@ -315,7 +315,7 @@ namespace
         }
     }
 
-    template<typename TF>__global__ //apply_BC_0
+    template<typename TF>__global__
     void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, TF* __restrict__ flux_dn)
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
@@ -467,6 +467,7 @@ namespace rte_kernel_launcher_cuda
         apply_BC_kernel<<<grid_gpu, block_gpu>>>(ncol, nlay, ngpt, top_at_1, inc_flux_dir.ptr(), mu0.ptr(), gpt_flux_dir.ptr());
 
     }
+
     template<typename TF>
     void apply_BC(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, Array_gpu<TF,3>& gpt_flux_dn)
     {
@@ -480,6 +481,7 @@ namespace rte_kernel_launcher_cuda
         dim3 block_gpu(block_col, block_gpt);
         apply_BC_kernel<<<grid_gpu, block_gpu>>>(ncol, nlay, ngpt, top_at_1, gpt_flux_dn.ptr());
     }
+
     template<typename TF>
     void apply_BC(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const Array_gpu<TF,2>& inc_flux_dif, Array_gpu<TF,3>& gpt_flux_dn)
     {
@@ -603,7 +605,6 @@ namespace rte_kernel_launcher_cuda
         sw_2stream_kernel<<<grid_gpu3d, block_gpu3d>>>(
                 ncol, nlay, ngpt, tmin, tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(), r_dif, t_dif, r_dir, t_dir, t_noscat);
 
-//        cuda_safe_call(cudaDeviceSynchronize());
         const int block_col2d = 32;
         const int block_gpt2d = 32;
 
