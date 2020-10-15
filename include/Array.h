@@ -287,6 +287,7 @@ struct Subset_data
     int sub_strides[N];
     int strides[N];
     int starts[N];
+    int offsets[N];
 };
 
 template<typename T, int N> __global__
@@ -309,7 +310,7 @@ void subset_kernel(
             const int idx_dim = ic / subset_data.sub_strides[n];
             ic %= subset_data.sub_strides[n];
 
-            idx_in += (idx_dim + subset_data.starts[n]) * subset_data.strides[n];
+            idx_in += (idx_dim + subset_data.starts[n] - subset_data.offsets[n] - 1) * subset_data.strides[n];
         }
 
         a_sub[idx_out] = a[idx_in];
@@ -530,6 +531,7 @@ class Array_gpu
                 subset_data.sub_strides[i] = a_sub.strides[i];
                 subset_data.strides[i] = strides[i];
                 subset_data.starts[i] = ranges[i].first;
+                subset_data.offsets[i] = offsets[i];
             }
 
             const int block_ncells = 32;
