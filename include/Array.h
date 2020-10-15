@@ -540,7 +540,7 @@ class Array_gpu
             dim3 block_gpu(block_ncells);
             dim3 grid_gpu(grid_ncells);
 
-            subset_kernel<<<grid_gpu, block_gpu>>>(a_sub.data_ptr, data_ptr, subset_data, ncells);
+            subset_kernel<<<grid_gpu, block_gpu>>>(a_sub.data_ptr, data_ptr, subset_data, a_sub.ncells);
 
             /*
             for (int i=0; i<a_sub.ncells; ++i)
