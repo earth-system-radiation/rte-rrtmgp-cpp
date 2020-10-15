@@ -304,12 +304,12 @@ void subset_kernel(
     if (ic < ncells)
     {
         #pragma unroll
-        for (int n=N-1; n>0; --n)
+        for (int n=N-1; n>=0; --n)
         {
-            const int idx_dim = ic / subset_data.sub_strides[N];
-            ic %= subset_data.sub_strides[N];
+            const int idx_dim = ic / subset_data.sub_strides[n];
+            ic %= subset_data.sub_strides[n];
 
-            idx_in += (idx_dim + subset_data.starts[N]) * subset_data.strides[N];
+            idx_in += (idx_dim + subset_data.starts[n]) * subset_data.strides[n];
         }
 
         a_sub[idx_out] = a[idx_in];
@@ -516,6 +516,8 @@ class Array_gpu
                 subdims[i] = ranges[i].second - ranges[i].first + 1;
                 // CvH how flexible / tolerant are we?
                 do_spread[i] = (dims[i] == 1);
+                if (do_spread[i])
+                    throw std::runtime_error("Array spreading not implemented.");
             }
 
             // Create the array and fill it with the subset.
