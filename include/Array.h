@@ -299,11 +299,11 @@ void subset_kernel(
 {
     const int idx_out = blockIdx.x*blockDim.x + threadIdx.x;
 
-    int ic = idx_out;
-    int idx_in = 0;
-
-    if (ic < ncells)
+    if (idx_out < ncells)
     {
+        int ic = idx_out;
+        int idx_in = 0;
+
         #pragma unroll
         for (int n=N-1; n>=0; --n)
         {
@@ -315,6 +315,7 @@ void subset_kernel(
 
         a_sub[idx_out] = a[idx_in];
     }
+
     /*
     for (int i=0; i<a_sub.ncells; ++i)
     {
@@ -534,8 +535,8 @@ class Array_gpu
                 subset_data.offsets[i] = offsets[i];
             }
 
-            const int block_ncells = 32;
-            const int grid_ncells = ncells/block_ncells + (ncells%block_ncells > 0);
+            constexpr int block_ncells = 64;
+            const int grid_ncells = a_sub.ncells/block_ncells + (a_sub.ncells%block_ncells > 0);
 
             dim3 block_gpu(block_ncells);
             dim3 grid_gpu(grid_ncells);
