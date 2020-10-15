@@ -131,7 +131,7 @@ void Rte_sw<TF>::rte_sw(
             mu0,
             sfc_alb_dir_gpt, sfc_alb_dif_gpt,
             gpt_flux_up, gpt_flux_dn, gpt_flux_dir);
-    
+
     // CvH: The original fortran code had a call to the reduce here.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
 

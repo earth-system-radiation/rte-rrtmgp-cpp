@@ -151,9 +151,9 @@ Optical_props_gpu<TF>::Optical_props_gpu(
 
     // Make a map between g-points and bands.
     this->gpt2band.set_dims({band_lims_gpt.max()});
-    
+
     std::array<int,1> dd2 = this->gpt2band.get_dims();
-    
+
     for (int iband=1; iband<=band_lims_gpt_lcl.dim(2); ++iband)
     {
         for (int i=band_lims_gpt_lcl({1,iband}); i<=band_lims_gpt_lcl({2,iband}); ++i)

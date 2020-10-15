@@ -251,7 +251,7 @@ void solve_radiation(int argc, char** argv)
 
     nc_lay.insert(p_lay.v(), {0, 0});
     nc_lev.insert(p_lev.v(), {0, 0});
-    
+
     ////// RUN THE LONGWAVE SOLVER //////
     if (switch_longwave)
     {

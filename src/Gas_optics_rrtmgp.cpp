@@ -1111,7 +1111,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
                     vmr({icol, ilay, igas}) = vmr_2d({icol, ilay});
         }
     }
-    
+
     // CvH: Assume that col_dry is provided.
     for (int ilay=1; ilay<=nlay; ++ilay)
         for (int icol=1; icol<=ncol; ++icol)
@@ -1287,7 +1287,7 @@ void Gas_optics_rrtmgp<TF>::source(
             sources.get_sfc_source    ()({j, i}) = sfc_source_t  ({i, j});
             sources.get_sfc_source_jac()({j, i}) = sfc_source_jac({i, j});
         }
-    
+
     rrtmgp_kernel_launcher::reorder123x321(lay_source_t, sources.get_lay_source());
     rrtmgp_kernel_launcher::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());
     rrtmgp_kernel_launcher::reorder123x321(lev_source_dec_t, sources.get_lev_source_dec());

@@ -33,7 +33,7 @@ namespace rrtmgp_kernel_launcher_cuda
 {
     template<typename TF>
     void fill_gases(
-            const int ncol, const int nlay, const int ngas, 
+            const int ncol, const int nlay, const int ngas,
             Array<TF,3>& vmr_out,
             Array<TF,3>& col_gas, const Array<TF,2>& col_dry,
             const Gas_concs<TF>& gas_desc, const Array<std::string,1>& gas_names);
@@ -74,7 +74,7 @@ namespace rrtmgp_kernel_launcher_cuda
             const int ncol, const int nlay, const int ngpt,
             const Array_gpu<TF,3>& tau_local, const Array_gpu<TF,3>& tau_rayleigh,
             Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g);
-    
+
     template<typename TF>
     void compute_tau_rayleigh(
             const int ncol, const int nlay, const int nband, const int ngpt,
@@ -123,26 +123,26 @@ namespace rrtmgp_kernel_launcher_cuda
             const int ncol, const int nlay, const int nbnd, const int ngpt,
             const int nflav, const int neta, const int npres, const int ntemp,
             const int nPlanckTemp,
-            const Array_gpu<TF,2>& tlay, 
+            const Array_gpu<TF,2>& tlay,
             const Array_gpu<TF,2>& tlev,
             const Array_gpu<TF,1>& tsfc,
             const int sfc_lay,
-            const Array_gpu<TF,6>& fmajor, 
+            const Array_gpu<TF,6>& fmajor,
             const Array_gpu<int,4>& jeta,
-            const Array_gpu<BOOL_TYPE,2>& tropo, 
+            const Array_gpu<BOOL_TYPE,2>& tropo,
             const Array_gpu<int,2>& jtemp,
-            const Array_gpu<int,2>& jpress, 
+            const Array_gpu<int,2>& jpress,
             const Array_gpu<int,1>& gpoint_bands,
-            const Array_gpu<int,2>& band_lims_gpt, 
+            const Array_gpu<int,2>& band_lims_gpt,
             const Array_gpu<TF,4>& pfracin,
             const TF temp_ref_min, const TF totplnk_delta,
-            const Array_gpu<TF,2>& totplnk, 
+            const Array_gpu<TF,2>& totplnk,
             const Array_gpu<int,2>& gpoint_flavor,
-            Array_gpu<TF,2>& sfc_src, 
+            Array_gpu<TF,2>& sfc_src,
             Array_gpu<TF,3>& lay_src,
-            Array_gpu<TF,3>& lev_src_inc, 
+            Array_gpu<TF,3>& lev_src_inc,
             Array_gpu<TF,3>& lev_src_dec,
             Array_gpu<TF,2>& sfc_src_jac);
-            
+
 }
 #endif

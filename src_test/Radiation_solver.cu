@@ -46,7 +46,7 @@ namespace
         const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
         if ( ( icol < ncol) && (igpt < ngpt) )
         {
-            const int idx = icol + igpt*ncol;  
+            const int idx = icol + igpt*ncol;
             toa_src[idx] *= tsi_scaling[icol];
         }
     }
@@ -457,7 +457,7 @@ void Radiation_solver_longwave<TF>::solve_gpu(
             Gas_optics_rrtmgp_gpu<TF>::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
         else
             col_dry_subset = col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }});
-            
+
         kdist_gpu->gas_optics(
                 p_lay.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                 p_lev_subset,
@@ -468,7 +468,7 @@ void Radiation_solver_longwave<TF>::solve_gpu(
                 sources_subset_in,
                 col_dry_subset,
                 t_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }}) );
-        
+
         if (switch_cloud_optics)
         {
             cloud_optics_gpu->cloud_optics(
@@ -493,7 +493,7 @@ void Radiation_solver_longwave<TF>::solve_gpu(
                     n_col, n_lay, n_gpt, n_col_in, col_s_in, tau, lay_source, lev_source_inc, lev_source_dec,
                     optical_props_subset_in->get_tau(), sources_subset_in.get_lay_source(),
                     sources_subset_in.get_lev_source_inc(), sources_subset_in.get_lev_source_dec());
-            
+
             subset_kernel_launcher_cuda::get_from_subset(
                     n_col, n_gpt, n_col_in, col_s_in, sfc_source, sources_subset_in.get_sfc_source());
         }
@@ -520,7 +520,7 @@ void Radiation_solver_longwave<TF>::solve_gpu(
         subset_kernel_launcher_cuda::get_from_subset(
                 n_col, n_lev, n_col_in, col_s_in, lw_flux_up, lw_flux_dn, lw_flux_net,
                 fluxes.get_flux_up(), fluxes.get_flux_dn(), fluxes.get_flux_net());
-        
+
 
         if (switch_output_bnd_fluxes)
         {
@@ -685,23 +685,23 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                     rel.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     rei.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     *cloud_optical_props_subset_in);
-            
+
             cloud_optical_props_subset_in->delta_scale();
 
             // Add the cloud optical props to the gas optical properties.
             add_to(
                     dynamic_cast<Optical_props_2str_gpu<double>&>(*optical_props_subset_in),
                     dynamic_cast<Optical_props_2str_gpu<double>&>(*cloud_optical_props_subset_in));
-            
+
         }
 
         // Store the optical properties, if desired.
         if (switch_output_optical)
         {
             subset_kernel_launcher_cuda::get_from_subset(
-                    n_col, n_lay, n_gpt, n_col_in, col_s_in, tau, ssa, g, optical_props_subset_in->get_tau(), 
+                    n_col, n_lay, n_gpt, n_col_in, col_s_in, tau, ssa, g, optical_props_subset_in->get_tau(),
                      optical_props_subset_in->get_ssa(),  optical_props_subset_in->get_g());
-            
+
             subset_kernel_launcher_cuda::get_from_subset(
                     n_col, n_gpt, n_col_in, col_s_in, toa_src, toa_src_subset);
         }
@@ -739,7 +739,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                     bnd_fluxes.get_bnd_flux_up(), bnd_fluxes.get_bnd_flux_dn(), bnd_fluxes.get_bnd_flux_dn_dir(), bnd_fluxes.get_bnd_flux_net());
         }
     };
-    
+
 
     for (int b=1; b<=n_blocks; ++b)
     {

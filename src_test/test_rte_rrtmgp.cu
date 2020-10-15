@@ -322,7 +322,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<TF,2> iwp_gpu(iwp);
         Array_gpu<TF,2> rel_gpu(rel);
         Array_gpu<TF,2> rei_gpu(rei);
-        
+
         auto time_start = std::chrono::high_resolution_clock::now();
 
         cudaProfilerStart();
@@ -502,7 +502,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<TF,2> iwp_gpu(iwp);
         Array_gpu<TF,2> rel_gpu(rel);
         Array_gpu<TF,2> rei_gpu(rei);
-        
+
         auto time_start = std::chrono::high_resolution_clock::now();
 
         cudaProfilerStart();

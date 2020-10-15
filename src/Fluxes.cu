@@ -40,14 +40,14 @@ namespace
             const int idx_out = icol + ilev*ncol;
             TF bb_flux_s = 0;
             for (int igpt=0; igpt < ngpt; ++igpt)
-            {    
+            {
                 const int idx_in = icol + ilev*ncol + igpt*nlev*ncol;
                 bb_flux_s += spectral_flux[idx_in];
             }
             broadband_flux[idx_out] = bb_flux_s;
         }
     }
-    
+
     template<typename TF>__global__
     void net_broadband_precalc(
                 const int ncol, const int nlev,
@@ -62,11 +62,11 @@ namespace
             broadband_flux_net[idx] = flux_dn[idx] - flux_up[idx];
         }
     }
-    
+
     template<typename TF>__global__
     void sum_byband(
                 const int ncol, const int nlev, const int ngpt, const int nbnd,
-                const int* __restrict__ band_lims, const TF* __restrict__ spectral_flux, 
+                const int* __restrict__ band_lims, const TF* __restrict__ spectral_flux,
                 TF* __restrict__ byband_flux)
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
@@ -81,7 +81,7 @@ namespace
             for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
             {
                 const int idx_gpt = icol + ilev*ncol + igpt*ncol*nlev;
-                byband_flux[idx_bnd] += spectral_flux[idx_gpt]; 
+                byband_flux[idx_bnd] += spectral_flux[idx_gpt];
             }
         }
     }
@@ -104,7 +104,7 @@ namespace
             for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
             {
                 const int idx_gpt = icol + ilev*ncol + igpt*ncol*nlev;
-                byband_flux_net[idx_bnd] += spectral_flux_dn[idx_gpt] - spectral_flux_up[idx_gpt]; 
+                byband_flux_net[idx_bnd] += spectral_flux_dn[idx_gpt] - spectral_flux_up[idx_gpt];
             }
         }
     }
@@ -181,7 +181,7 @@ void Fluxes_broadband_gpu<TF>::reduce(
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
     const int ngpt = gpt_flux_up.dim(3);
-    
+
     const int block_lev = 16;
     const int block_col = 16;
 
@@ -213,7 +213,7 @@ void Fluxes_broadband_gpu<TF>::reduce(
     const int ngpt = gpt_flux_up.dim(3);
 
     reduce(gpt_flux_up, gpt_flux_dn, spectral_disc, top_at_1);
-    
+
     const int block_lev = 16;
     const int block_col = 16;
 

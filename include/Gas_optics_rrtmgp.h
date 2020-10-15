@@ -411,7 +411,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
                 Array_gpu<TF,2>& toa_src,
                 const Array_gpu<TF,2>& col_dry) const;
-    
+
 
     private:
         Array<TF,2> totplnk;
