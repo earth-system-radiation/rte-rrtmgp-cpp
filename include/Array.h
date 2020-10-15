@@ -280,6 +280,60 @@ class Array
 };
 
 
+#ifdef __CUDACC__
+template<int N>
+struct Subset_data
+{
+    int sub_strides[N];
+    int strides[N];
+    int starts[N];
+};
+
+template<typename T, int N> __global__
+void subset_kernel(
+        T* __restrict__ a_sub,
+        const T* __restrict__ a,
+        Subset_data<N> subset_data,
+        const int ncells)
+{
+    const int idx_out = blockIdx.x*blockDim.x + threadIdx.x;
+
+    int ic = idx_out;
+    int idx_in = 0;
+
+    if (ic < ncells)
+    {
+        #pragma unroll
+        for (int n=N-1; n>0; --n)
+        {
+            const int idx_dim = ic / subset_data.sub_strides[N];
+            ic %= subset_data.sub_strides[N];
+
+            idx_in += (idx_dim + subset_data.starts[N]) * subset_data.strides[N];
+        }
+
+        a_sub[idx_out] = a[idx_in];
+    }
+    /*
+    for (int i=0; i<a_sub.ncells; ++i)
+    {
+        std::array<int, N> indices;
+        int ic = i;
+        for (int n=N-1; n>0; --n)
+        {
+            indices[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
+            ic %= a_sub.strides[n];
+        }
+        indices[0] = do_spread[0] ? 1 : ic + ranges[0].first;
+    
+        const int index = calc_index<N>(indices, strides, offsets);
+        cuda_safe_call(cudaMemcpy(&a_sub.data_ptr[i], &data_ptr[index], sizeof(T), cudaMemcpyDeviceToDevice));
+    }
+    */
+}
+#endif
+
+
 template<typename T, int N>
 class Array_gpu
 {
@@ -466,6 +520,25 @@ class Array_gpu
 
             // Create the array and fill it with the subset.
             Array_gpu<T, N> a_sub(subdims);
+
+            Subset_data<N> subset_data;
+
+            for (int i=0; i<N; ++i)
+            {
+                subset_data.sub_strides[i] = a_sub.strides[i];
+                subset_data.strides[i] = strides[i];
+                subset_data.starts[i] = ranges[i].first;
+            }
+
+            const int block_ncells = 32;
+            const int grid_ncells = ncells/block_ncells + (ncells%block_ncells > 0);
+
+            dim3 block_gpu(block_ncells);
+            dim3 grid_gpu(grid_ncells);
+
+            subset_kernel<<<grid_gpu, block_gpu>>>(a_sub.data_ptr, data_ptr, subset_data, ncells);
+
+            /*
             for (int i=0; i<a_sub.ncells; ++i)
             {
                 std::array<int, N> indices;
@@ -480,6 +553,7 @@ class Array_gpu
                 const int index = calc_index<N>(indices, strides, offsets);
                 cuda_safe_call(cudaMemcpy(&a_sub.data_ptr[i], &data_ptr[index], sizeof(T), cudaMemcpyDeviceToDevice));
             }
+            */
 
             return a_sub;
         }
