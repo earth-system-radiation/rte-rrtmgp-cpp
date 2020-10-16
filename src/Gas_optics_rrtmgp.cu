@@ -51,7 +51,7 @@ namespace
         if ( ( icol < ncol) && (igpt < ngpt) )
         {
             const int idx = icol + igpt*ncol;
-            src_out[idx] = src_in[icol];
+            src_out[idx] = src_in[igpt];
         }
     }
 
