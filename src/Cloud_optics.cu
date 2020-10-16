@@ -52,7 +52,7 @@ namespace
                                      (ssa_table[idx_ib] + fint * (ssa_table[idx_ib+1] - ssa_table[idx_ib]));
                 const TF taussag_local = taussa_local *
                                      (asy_table[idx_ib] + fint * (asy_table[idx_ib+1] - asy_table[idx_ib]));
-    
+
                 tau[idx_3d]     = tau_local;
                 taussa[idx_3d]  = taussa_local;
                 taussag[idx_3d] = taussag_local;
@@ -82,7 +82,7 @@ namespace
             tau[idx] = tau_t;
         }
     }
-    
+
     template<typename TF>__global__
     void combine_and_store_kernel(const int ncol, const int nlay, const int nbnd, const TF tmin,
                   TF* __restrict__ tau, TF* __restrict__ ssa, TF* __restrict__ g,
@@ -104,7 +104,7 @@ namespace
             g[idx]   = taussag/ max(taussa, tmin);
         }
     }
-    
+
     template<typename TF>__global__
     void set_mask(const int ncol, const int nlay, const TF min_value,
                   BOOL_TYPE* __restrict__ mask, const TF* __restrict__ values)
@@ -195,11 +195,11 @@ void Cloud_optics_gpu<TF>::cloud_optics(
 
     dim3 grid_m_gpu(grid_col_m, grid_lay_m);
     dim3 block_m_gpu(block_col_m, block_lay_m);
-    
+
     Array_gpu<BOOL_TYPE,2> liqmsk({ncol, nlay});
     set_mask<<<grid_m_gpu, block_m_gpu>>>(
             ncol, nlay, mask_min_value, liqmsk.ptr(), clwp.ptr());
-    
+
     Array_gpu<BOOL_TYPE,2> icemsk({ncol, nlay});
     set_mask<<<grid_m_gpu, block_m_gpu>>>(
             ncol, nlay, mask_min_value, icemsk.ptr(), ciwp.ptr());
@@ -239,7 +239,7 @@ void Cloud_optics_gpu<TF>::cloud_optics(
             this->lut_asyice_gpu.ptr(), itau.ptr(), itaussa.ptr(), itaussag.ptr());
 
     constexpr TF eps = std::numeric_limits<TF>::epsilon();
-    
+
     combine_and_store_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nlay, nbnd, eps,
             optical_props.get_tau().ptr(), optical_props.get_ssa().ptr(), optical_props.get_g().ptr(),
@@ -272,11 +272,11 @@ void Cloud_optics_gpu<TF>::cloud_optics(
 
     dim3 grid_m_gpu(grid_col_m, grid_lay_m);
     dim3 block_m_gpu(block_col_m, block_lay_m);
-    
+
     Array_gpu<BOOL_TYPE,2> liqmsk({ncol, nlay});
     set_mask<<<grid_m_gpu, block_m_gpu>>>(
             ncol, nlay, mask_min_value, liqmsk.ptr(), clwp.ptr());
-    
+
     Array_gpu<BOOL_TYPE,2> icemsk({ncol, nlay});
     set_mask<<<grid_m_gpu, block_m_gpu>>>(
             ncol, nlay, mask_min_value, icemsk.ptr(), ciwp.ptr());
@@ -316,7 +316,7 @@ void Cloud_optics_gpu<TF>::cloud_optics(
             this->lut_asyice_gpu.ptr(), itau.ptr(), itaussa.ptr(), itaussag.ptr());
 
     constexpr TF eps = std::numeric_limits<TF>::epsilon();
-    
+
     combine_and_store_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nlay, nbnd, eps,
             optical_props.get_tau().ptr(),

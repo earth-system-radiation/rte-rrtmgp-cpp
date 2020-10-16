@@ -455,7 +455,7 @@ void Radiation_solver_longwave<TF>::solve(
                     dynamic_cast<Optical_props_1scl<TF>&>(*optical_props_subset_in),
                     dynamic_cast<Optical_props_1scl<TF>&>(*cloud_optical_props_subset_in));
         }
-        
+
         // Store the optical properties, if desired.
         if (switch_output_optical)
         {

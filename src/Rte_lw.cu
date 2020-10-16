@@ -39,7 +39,7 @@ namespace
 {
     template<typename TF>__global__
     void expand_and_transpose_kernel(
-        const int ncol, const int nbnd, const int* __restrict__ limits, 
+        const int ncol, const int nbnd, const int* __restrict__ limits,
         TF* __restrict__ arr_out, const TF* __restrict__ arr_in)
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
@@ -139,13 +139,13 @@ void Rte_lw_gpu<TF>::rte_lw(
     Array_gpu<TF,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
 
     rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad(
-            ncol, nlay, ngpt, top_at_1, n_quad_angs, 
-            gauss_Ds_subset, gauss_wts_subset,   
+            ncol, nlay, ngpt, top_at_1, n_quad_angs,
+            gauss_Ds_subset, gauss_wts_subset,
             optical_props->get_tau(),
-            sources.get_lay_source(), 
+            sources.get_lay_source(),
             sources.get_lev_source_inc(), sources.get_lev_source_dec(),
-            sfc_emis_gpt, sources.get_sfc_source(), 
-            gpt_flux_up, gpt_flux_dn, 
+            sfc_emis_gpt, sources.get_sfc_source(),
+            gpt_flux_up, gpt_flux_dn,
             sfc_src_jac, gpt_flux_up_jac);
 
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
@@ -169,7 +169,7 @@ void Rte_lw_gpu<TF>::expand_and_transpose(
     dim3 grid_gpu(grid_col, grid_bnd);
     dim3 block_gpu(block_col, block_bnd);
     Array_gpu<int,2> limits = ops->get_band_lims_gpoint_gpu();
-    
+
     expand_and_transpose_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nbnd, limits.ptr(), arr_out.ptr(), arr_in.ptr());
 

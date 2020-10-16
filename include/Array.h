@@ -463,7 +463,7 @@ class Array_gpu
             offsets = {};
         }
         #endif
-        
+
         inline void copy(const std::array<int, N>& indices, Array_gpu<T, N>& input, const std::array<int, N>& indices_input) const
         {
             #ifdef __CUDACC__
@@ -472,7 +472,7 @@ class Array_gpu
             cuda_safe_call(cudaMemcpy(data_ptr + index, input.ptr() + index_in, sizeof(T), cudaMemcpyDeviceToDevice));
             #endif
         }
-        
+
         inline void insert(const std::array<int, N>& indices, const T value) const
         {
             #ifdef __CUDACC__

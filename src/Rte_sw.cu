@@ -37,7 +37,7 @@ namespace
 {
     template<typename TF>__global__
     void expand_and_transpose_kernel(
-        const int ncol, const int nbnd, const int* __restrict__ limits, 
+        const int ncol, const int nbnd, const int* __restrict__ limits,
         TF* __restrict__ arr_out, const TF* __restrict__ arr_in)
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;

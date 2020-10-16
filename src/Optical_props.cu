@@ -142,24 +142,21 @@ Optical_props_gpu<TF>::Optical_props_gpu(
         const Array<TF,2>& band_lims_wvn,
         const Array<int,2>& band_lims_gpt)
 {
-    Array<int,2> band_lims_gpt_lcl_cpu(band_lims_gpt);
-    Array_gpu<int,2> band_lims_gpt_lcl(band_lims_gpt);
+    Array<int,2> band_lims_gpt_lcl(band_lims_gpt);
+    Array_gpu<int,2> band_lims_gpt_lcl_gpu(band_lims_gpt);
 
-    this->band2gpt_cpu = band_lims_gpt_lcl_cpu;
     this->band2gpt = band_lims_gpt_lcl;
+    this->band2gpt_gpu = this->band2gpt;
     this->band_lims_wvn = band_lims_wvn;
 
     // Make a map between g-points and bands.
-    this->gpt2band.set_dims({band_lims_gpt.max()});
-    
-    std::array<int,1> dd2 = this->gpt2band.get_dims();
-    
+    this->gpt2band.set_dims({band_lims_gpt_lcl.max()});
     for (int iband=1; iband<=band_lims_gpt_lcl.dim(2); ++iband)
     {
         for (int i=band_lims_gpt_lcl({1,iband}); i<=band_lims_gpt_lcl({2,iband}); ++i)
-            this->gpt2band.insert({i}, iband);
+            this->gpt2band({i}) =  iband;
     }
-    this->gpt2band_cpu = this->gpt2band;
+    this->gpt2band_gpu = this->gpt2band;
 }
 
 // Optical properties per band.
@@ -169,15 +166,14 @@ Optical_props_gpu<TF>::Optical_props_gpu(
 {
     Array<int,2> band_lims_gpt_lcl({2, band_lims_wvn.dim(2)});
 
-    Array<int,2> dd = band_lims_gpt_lcl.get_dims();
     for (int iband=1; iband<=band_lims_wvn.dim(2); ++iband)
     {
         band_lims_gpt_lcl({1, iband}) = iband;
         band_lims_gpt_lcl({2, iband}) = iband;
     }
 
-    this->band2gpt_cpu = band_lims_gpt_lcl;
-    this->band2gpt = this->band2gpt_cpu;
+    this->band2gpt = band_lims_gpt_lcl;
+    this->band2gpt_gpu = this->band2gpt;
     this->band_lims_wvn = band_lims_wvn;
 
     // Make a map between g-points and bands.
@@ -185,8 +181,9 @@ Optical_props_gpu<TF>::Optical_props_gpu(
     for (int iband=1; iband<=band_lims_gpt_lcl.dim(2); ++iband)
     {
         for (int i=band_lims_gpt_lcl({1,iband}); i<=band_lims_gpt_lcl({2,iband}); ++i)
-            this->gpt2band.insert({i}, iband);
+            this->gpt2band({i}) =  iband;
     }
+    this->gpt2band_gpu = this->gpt2band;
 }
 
 template<typename TF>

@@ -34,6 +34,7 @@
 template<typename TF> class Gas_concs_gpu;
 template<typename TF> class Gas_concs;
 template<typename TF> class Source_func_lw;
+template<typename TF> class Source_func_lw_gpu;
 
 template<typename TF>
 class Gas_optics : public Optical_props<TF>
@@ -103,17 +104,17 @@ class Gas_optics_gpu : public Optical_props_gpu<TF>
         virtual TF get_temp_min() const = 0;
         virtual TF get_temp_max() const = 0;
 
-//        // Longwave variant.
-//        virtual void gas_optics(
-//                const Array_gpu<TF,2>& play,
-//                const Array_gpu<TF,2>& plev,
-//                const Array_gpu<TF,2>& tlay,
-//                const Array_gpu<TF,1>& tsfc,
-//                const Gas_concs_gpu<TF>& gas_desc,
-//                std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
-//                Source_func_lw<TF>& sources,
-//                const Array_gpu<TF,2>& col_dry,
-//                const Array_gpu<TF,2>& tlev) const = 0;
+        // Longwave variant.
+        virtual void gas_optics(
+                const Array_gpu<TF,2>& play,
+                const Array_gpu<TF,2>& plev,
+                const Array_gpu<TF,2>& tlay,
+                const Array_gpu<TF,1>& tsfc,
+                const Gas_concs_gpu<TF>& gas_desc,
+                std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                Source_func_lw_gpu<TF>& sources,
+                const Array_gpu<TF,2>& col_dry,
+                const Array_gpu<TF,2>& tlev) const = 0;
 
         // Shortwave variant.
         virtual void gas_optics(
@@ -124,7 +125,7 @@ class Gas_optics_gpu : public Optical_props_gpu<TF>
                 std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
                 Array_gpu<TF,2>& toa_src,
                 const Array_gpu<TF,2>& col_dry) const = 0;
-       
+
        virtual TF get_tsi() const = 0;
 };
 #endif

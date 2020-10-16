@@ -50,8 +50,8 @@ namespace
         const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
         if ( ( icol < ncol) && (igpt < ngpt) )
         {
-            const int idx = icol + igpt*ncol;  
-            src_out[idx] = src_in[icol];
+            const int idx = icol + igpt*ncol;
+            src_out[idx] = src_in[igpt];
         }
     }
 
@@ -720,7 +720,7 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
 
     this->is_key = is_key;
 
-    // copy to gpu
+    // copy arrays to gpu
     this->press_ref_log_gpu = this->press_ref_log;
     this->temp_ref_gpu = this->temp_ref;
     this->vmr_ref_gpu = this->vmr_ref;
@@ -742,15 +742,14 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
     this->idx_minor_scaling_upper_gpu = this->idx_minor_scaling_upper;
     this->kminor_start_lower_gpu = this->kminor_start_lower;
     this->kminor_start_upper_gpu = this->kminor_start_upper;
-    this->totplnk_gpu = this->totplnk; 
-    this->planck_frac_gpu = this->planck_frac; 
-    //set dimensions of temporary arrays
+    this->totplnk_gpu = this->totplnk;
+    this->planck_frac_gpu = this->planck_frac;
 }
 
 
 template<typename TF>__global__
 void fill_gases_kernel(
-        const int ncol, const int nlay, const int dim1, const int dim2, const int ngas, const int igas, 
+        const int ncol, const int nlay, const int dim1, const int dim2, const int ngas, const int igas,
         TF* __restrict__ vmr_out, const TF* __restrict__ vmr_in,
         TF* __restrict__ col_gas, const TF* __restrict__ col_dry)
 {
@@ -764,7 +763,7 @@ void fill_gases_kernel(
         if (igas > 0)
         {
             if (dim1 == 1 && dim2 == 1)
-            { 
+            {
                  vmr_out[idx_out1] = vmr_in[0];
             }
             else if (dim1 == 1)
@@ -947,7 +946,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
     Array_gpu<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
     Array_gpu<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
     Array_gpu<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
-    
+
     // Gas optics.
     compute_gas_taus(
             ncol, nlay, ngpt, nband,
@@ -984,7 +983,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
     Array_gpu<TF,4> col_mix({2, this->get_nflav(), ncol, nlay});
     Array_gpu<TF,5> fminor({2, 2, this->get_nflav(), ncol, nlay});
 
-    
+
     // CvH add all the checking...
     const int ngas = this->get_ngas();
     const int nflav = this->get_nflav();
@@ -996,7 +995,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
     const int nminorklower = this->kminor_lower.dim(1);
     const int nminorupper = this->minor_scales_with_density_upper.dim(1);
     const int nminorkupper = this->kminor_upper.dim(1);
-    
+
     const int block_lay = 16;
     const int block_col = 16;
 
@@ -1005,7 +1004,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
 
     dim3 grid_gpu(grid_col, grid_lay);
     dim3 block_gpu(block_col, block_lay);
-   
+
     for (int igas=0; igas<=ngas; ++igas)
     {
         const Array_gpu<TF,2>& vmr_2d = igas > 0 ? gas_desc.get_vmr(this->gas_names({igas})) : gas_desc.get_vmr(this->gas_names({1}));
@@ -1034,7 +1033,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
             col_mix,
             tropo,
             jeta, jpress);
-    
+
     int idx_h2o = -1;
     for  (int i=1; i<=this->gas_names.dim(1); ++i)
         if (gas_names({i}) == "h2o")
@@ -1042,7 +1041,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
             idx_h2o = i;
             break;
         }
-    
+
     if (idx_h2o == -1)
         throw std::runtime_error("idx_h2o cannot be found");
 
@@ -1122,7 +1121,7 @@ void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
     }
 
 
-} 
+}
 
 template<typename TF>
 void Gas_optics_rrtmgp_gpu<TF>::source(
@@ -1165,13 +1164,13 @@ void Gas_optics_rrtmgp_gpu<TF>::source(
 
     rrtmgp_kernel_launcher_cuda::reorder12x21<TF>(
             ncol, ngpt, sfc_source_jac, sources.get_sfc_source_jac());
-    
+
     rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
             ncol, nlay, ngpt, lay_source_t, sources.get_lay_source());
-    
+
     rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
             ncol, nlay, ngpt, lev_source_inc_t, sources.get_lev_source_inc());
-    
+
     rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
             ncol, nlay, ngpt, lev_source_dec_t, sources.get_lev_source_dec());
 
