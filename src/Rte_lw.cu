@@ -27,8 +27,6 @@
 #include "Optical_props.h"
 #include "Source_functions.h"
 #include "Fluxes.h"
-#include <iomanip>
-#include <chrono>
 
 #include "rrtmgp_kernels.h"
 // CUDA TEST
@@ -48,20 +46,18 @@ namespace
         {
             const int gpt_start = limits[2*ibnd] - 1;
             const int gpt_end = limits[2*ibnd+1];
+
             for (int igpt=gpt_start; igpt<gpt_end; ++igpt)
             {
-                const int idx_in = ibnd + icol*nbnd;
+                const int idx_in  = ibnd + icol*nbnd;
                 const int idx_out = icol + igpt*ncol;
+
                 arr_out[idx_out] = arr_in[idx_in];
             }
         }
     }
-
-
-
-
-
 }
+
 //    template<typename TF>
 //    void apply_BC(
 //            int ncol, int nlay, int ngpt,
@@ -82,9 +78,6 @@ namespace
 //                &ncol, &nlay, &ngpt,
 //                &top_at_1, const_cast<TF*>(inc_flux.ptr()), gpt_flux_dn.ptr());
 //    }
-//
-//}
-//
 
 template<typename TF>
 void Rte_lw_gpu<TF>::rte_lw(
@@ -126,7 +119,7 @@ void Rte_lw_gpu<TF>::rte_lw(
     else
         rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, gpt_flux_dn);
 
-    // Run the radiative transfer solver
+    // Run the radiative transfer solver.
     const int n_quad_angs = n_gauss_angles;
 
     Array_gpu<TF,2> gauss_Ds_subset = gauss_Ds.subset(
@@ -163,16 +156,16 @@ void Rte_lw_gpu<TF>::expand_and_transpose(
     const int block_col = 16;
     const int block_bnd = 14;
 
-    const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-    const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
+    const int grid_col = ncol/block_col + (ncol%block_col > 0);
+    const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
 
     dim3 grid_gpu(grid_col, grid_bnd);
     dim3 block_gpu(block_col, block_bnd);
+
     Array_gpu<int,2> limits = ops->get_band_lims_gpoint_gpu();
 
     expand_and_transpose_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nbnd, limits.ptr(), arr_out.ptr(), arr_in.ptr());
-
 }
 
 #ifdef FLOAT_SINGLE_RRTMGP
