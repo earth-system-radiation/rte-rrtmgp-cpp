@@ -163,10 +163,12 @@ namespace
                                         &pfrac[idx_tau]);
 
             // compute surface source irradiances
-            if (ilay == 0)
+            if (ilay == sfc_lay - 1) // Subtract one to correct for fortran indexing.
             {
                 const TF planck_function_sfc1 = interpolate1D(tsfc[icol],               temp_ref_min, totplnk_delta, nPlanckTemp, &totplnk[ibnd * nPlanckTemp]);
-                const TF planck_function_sfc2 = interpolate1D(tsfc[icol] + delta_Tsurf, temp_ref_min, totplnk_delta, nPlanckTemp, &totplnk[ibnd * nPlanckTemp]);                 for (int igpt=gpt_start; igpt<gpt_end; ++igpt)
+                const TF planck_function_sfc2 = interpolate1D(tsfc[icol] + delta_Tsurf, temp_ref_min, totplnk_delta, nPlanckTemp, &totplnk[ibnd * nPlanckTemp]);
+
+                for (int igpt=gpt_start; igpt<gpt_end; ++igpt)
                 {
                     const int idx_in  = igpt + ilay*ngpt + icol*nlay*ngpt;
                     const int idx_out = igpt + icol*ngpt;
