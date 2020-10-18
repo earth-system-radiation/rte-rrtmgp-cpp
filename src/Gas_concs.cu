@@ -59,7 +59,7 @@ const Array_gpu<TF,2>& Gas_concs_gpu<TF>::get_vmr(const std::string& name) const
 // Check if gas exists in map.
 template<typename TF>
 BOOL_TYPE Gas_concs_gpu<TF>::exists(const std::string& name) const
-{ 
+{
     return gas_concs_map.count(name) != 0;
 }
 

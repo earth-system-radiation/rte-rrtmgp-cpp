@@ -26,6 +26,7 @@
 #include "Array.h"
 #include "Optical_props.h"
 
+
 template<typename TF>
 Source_func_lw_gpu<TF>::Source_func_lw_gpu(
         const int n_col,
@@ -38,6 +39,7 @@ Source_func_lw_gpu<TF>::Source_func_lw_gpu(
     lev_source_inc({n_col, n_lay, optical_props.get_ngpt()}),
     lev_source_dec({n_col, n_lay, optical_props.get_ngpt()})
 {}
+
 
 #ifdef FLOAT_SINGLE_RRTMGP
 template class Source_func_lw_gpu<float>;

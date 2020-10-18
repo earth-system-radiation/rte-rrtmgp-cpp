@@ -27,9 +27,6 @@
 #include <cmath>
 #include <boost/algorithm/string.hpp>
 
-//#include "Gas_concs.h"
-//#include "Gas_optics_rrtmgp.h"
-//#include "Array.h"
 #include "Optical_props.h"
 #include "Source_functions.h"
 
@@ -48,6 +45,7 @@ namespace
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+
         if ( ( icol < ncol) && (igpt < ngpt) )
         {
             const int idx = icol + igpt*ncol;
@@ -61,10 +59,12 @@ namespace
     {
         const int block_col = 16;
         const int block_gpt = 16;
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-        const int grid_gpt  = ngpt/block_gpt + (ngpt%block_gpt > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
+
         dim3 grid_gpu(grid_col, grid_gpt);
         dim3 block_gpu(block_col, block_gpt);
+
         spread_col_kernel<<<grid_gpu, block_gpu>>>(
             ncol, ngpt, src_out.ptr(), src_in.ptr());
     }
@@ -383,6 +383,7 @@ namespace
     }
 }
 
+
 // Constructor of longwave variant.
 template<typename TF>
 Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
@@ -450,6 +451,7 @@ Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
     // Planck grid and the Planck grid is equally spaced.
     totplnk_delta = (temp_ref_max - temp_ref_min) / (totplnk.dim(1)-1);
 }
+
 
 // Constructor of the shortwave variant.
 template<typename TF>
@@ -524,6 +526,7 @@ Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
 
     set_solar_variability(mg_default, sb_default);
 }
+
 
 template<typename TF>
 void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
@@ -803,6 +806,7 @@ void compute_delta_plev(
     }
 }
 
+
 template<typename TF> __global__
 void compute_m_air(
         const int ncol, const int nlay,
@@ -820,10 +824,9 @@ void compute_m_air(
         const int idx = icol + ilay*ncol;
 
         m_air[idx] = (m_dry + m_h2o * vmr_h2o[idx]) / (TF(1.) + vmr_h2o[idx]);
-
-        // m_air({icol, ilay}) = (m_dry + m_h2o * vmr_h2o({icol, ilay})) / (1. + vmr_h2o({icol, ilay}));
     }
 }
+
 
 template<typename TF> __global__
 void compute_col_dry(
@@ -843,11 +846,9 @@ void compute_col_dry(
 
         col_dry[idx] = TF(10.) * delta_plev[idx] * avogad / (TF(1000.)*m_air[idx]*TF(100.)*g0);
         col_dry[idx] /= (TF(1.) + vmr_h2o[idx]);
-
-        // col_dry({icol, ilay}) = TF(10.) * delta_plev({icol, ilay}) * avogad / (TF(1000.)*m_air({icol, ilay})*TF(100.)*g0);
-        // col_dry({icol, ilay}) /= (TF(1.) + vmr_h2o({icol, ilay}));
     }
 }
+
 
 // Calculate the molecules of dry air.
 template<typename TF>
@@ -864,8 +865,8 @@ void Gas_optics_rrtmgp_gpu<TF>::get_col_dry(
     const int nlay = col_dry.dim(2);
     const int ncol = col_dry.dim(1);
 
-    const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-    const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
+    const int grid_col = ncol/block_col + (ncol%block_col > 0);
+    const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
 
     dim3 grid_gpu(grid_col, grid_lay);
     dim3 block_gpu(block_col, block_lay);
@@ -885,6 +886,7 @@ void Gas_optics_rrtmgp_gpu<TF>::get_col_dry(
             delta_plev.ptr(), m_air.ptr(), vmr_h2o.ptr(),
             col_dry.ptr());
 }
+
 
 // Gas optics solver longwave variant.
 template<typename TF>
@@ -926,6 +928,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
             sources, tlev);
 }
 
+
 template<typename TF>
 void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
         const Array_gpu<TF,2>& play,
@@ -957,7 +960,6 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
 
     // External source function is constant.
     spread_col(ncol, ngpt, toa_src, this->solar_source_gpu);
-
 }
 
 
@@ -999,8 +1001,8 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
     const int block_lay = 16;
     const int block_col = 16;
 
-    const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-    const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
+    const int grid_col = ncol/block_col + (ncol%block_col > 0);
+    const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
 
     dim3 grid_gpu(grid_col, grid_lay);
     dim3 block_gpu(block_col, block_lay);
@@ -1075,7 +1077,6 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
             jeta, jtemp, jpress,
             tau);
 
-
     bool has_rayleigh = (this->krayl.size() > 0);
 
     if (has_rayleigh)
@@ -1089,11 +1090,11 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 idx_h2o, col_dry, col_gas,
                 fminor, jeta, tropo, jtemp,
                 tau_rayleigh);
-
-
     }
+
     combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
 }
+
 
 template<typename TF>
 void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
@@ -1108,7 +1109,7 @@ void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
 
     if (!has_rayleigh)
     {
-//        // CvH for 2 stream and n-stream zero the g and ssa
+        // CvH for 2 stream and n-stream zero the g and ssa.
         rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
                 ncol, nlay, ngpt, tau, optical_props->get_tau());
     }
@@ -1119,9 +1120,8 @@ void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
                 tau, tau_rayleigh,
                 optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
     }
-
-
 }
+
 
 template<typename TF>
 void Gas_optics_rrtmgp_gpu<TF>::source(
@@ -1173,8 +1173,6 @@ void Gas_optics_rrtmgp_gpu<TF>::source(
 
     rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
             ncol, nlay, ngpt, lev_source_dec_t, sources.get_lev_source_dec());
-
-
 }
 
 

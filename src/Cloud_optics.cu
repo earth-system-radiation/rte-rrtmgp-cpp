@@ -37,10 +37,12 @@ namespace
         const int ibnd = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
         const int icol = blockIdx.z*blockDim.z + threadIdx.z;
+
         if ( ( icol < ncol) && ( ilay < nlay) && (ibnd < nbnd) )
         {
             const int idx_2d = icol + ilay*ncol;
             const int idx_3d = icol + ilay*ncol + ibnd*nlay*ncol;
+
             if (mask[idx_2d])
             {
                 const int index = min(int((re[idx_2d] - offset) / step_size) + 1, nsteps-1) - 1;
@@ -75,10 +77,12 @@ namespace
         const int ibnd = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
         const int icol = blockIdx.z*blockDim.z + threadIdx.z;
+
         if ( (icol < ncol) && (ilay < nlay) && (ibnd < nbnd) )
         {
             const int idx = icol + ilay*ncol + ibnd*nlay*ncol;
             const TF tau_t = (ltau[idx] - ltaussa[idx]) + (itau[idx] - itaussa[idx]);
+
             tau[idx] = tau_t;
         }
     }
@@ -92,6 +96,7 @@ namespace
         const int ibnd = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
         const int icol = blockIdx.z*blockDim.z + threadIdx.z;
+
         if ( (icol < ncol) && (ilay < nlay) && (ibnd < nbnd) )
         {
             const int idx = icol + ilay*ncol + ibnd*nlay*ncol;
@@ -111,14 +116,15 @@ namespace
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+
         if ( (icol < ncol) && (ilay < nlay) )
         {
             const int idx = icol + ilay*ncol;
             mask[idx] = values[idx] > min_value;
         }
     }
-
 }
+
 
 template<typename TF>
 Cloud_optics_gpu<TF>::Cloud_optics_gpu(
@@ -245,7 +251,6 @@ void Cloud_optics_gpu<TF>::cloud_optics(
             optical_props.get_tau().ptr(), optical_props.get_ssa().ptr(), optical_props.get_g().ptr(),
             ltau.ptr(), ltaussa.ptr(), ltaussag.ptr(),
             itau.ptr(), itaussa.ptr(), itaussag.ptr());
-
 }
 
 // 1scl variant of cloud optics.

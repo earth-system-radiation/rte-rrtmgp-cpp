@@ -35,6 +35,7 @@ namespace
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilev = blockIdx.y*blockDim.y + threadIdx.y;
+
         if ( ( icol < ncol) && (ilev < nlev) )
         {
             const int idx_out = icol + ilev*ncol;
@@ -56,6 +57,7 @@ namespace
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilev = blockIdx.y*blockDim.y + threadIdx.y;
+
         if ( ( icol < ncol) && (ilev < nlev) )
         {
             const int idx = icol + ilev*ncol;
@@ -72,12 +74,15 @@ namespace
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilev = blockIdx.y*blockDim.y + threadIdx.y;
         const int ibnd = blockIdx.z*blockDim.z + threadIdx.z;
+
         if ( ( icol < ncol) && (ilev < nlev) && (ibnd < nbnd) )
         {
             const int idx_bnd = icol + ilev*ncol + ibnd*ncol*nlev;
             const int gpt_start = band_lims[2*ibnd];
             const int gpt_end = band_lims[2*ibnd+1];
+
             byband_flux[idx_bnd] = 0;
+
             for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
             {
                 const int idx_gpt = icol + ilev*ncol + igpt*ncol*nlev;
@@ -95,6 +100,7 @@ namespace
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilev = blockIdx.y*blockDim.y + threadIdx.y;
         const int ibnd = blockIdx.z*blockDim.z + threadIdx.z;
+
         if ( ( icol < ncol) && (ilev < nlev) && (ibnd < nbnd) )
         {
             const int idx_bnd = icol + ilev*ncol + ibnd*ncol*nlev;
@@ -108,8 +114,8 @@ namespace
             }
         }
     }
-
 }
+
 //namespace rrtmgp_kernel_launcher
 //{
 //    template<typename TF>
@@ -162,8 +168,7 @@ namespace
 //                const_cast<TF*>(byband_flux_up.ptr()),
 //                byband_flux_net.ptr());
 //    }
-//}
-//
+
 template<typename TF>
 Fluxes_broadband_gpu<TF>::Fluxes_broadband_gpu(const int ncol, const int nlev) :
     flux_up    ({ncol, nlev}),
@@ -185,8 +190,8 @@ void Fluxes_broadband_gpu<TF>::reduce(
     const int block_lev = 16;
     const int block_col = 16;
 
-    const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-    const int grid_lev  = nlev/block_lev + (nlev%block_lev > 0);
+    const int grid_col = ncol/block_col + (ncol%block_col > 0);
+    const int grid_lev = nlev/block_lev + (nlev%block_lev > 0);
 
     dim3 grid_gpu(grid_col, grid_lev);
     dim3 block_gpu(block_col, block_lev);
@@ -217,8 +222,8 @@ void Fluxes_broadband_gpu<TF>::reduce(
     const int block_lev = 16;
     const int block_col = 16;
 
-    const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-    const int grid_lev  = nlev/block_lev + (nlev%block_lev > 0);
+    const int grid_col = ncol/block_col + (ncol%block_col > 0);
+    const int grid_lev = nlev/block_lev + (nlev%block_lev > 0);
 
     dim3 grid_gpu(grid_col, grid_lev);
     dim3 block_gpu(block_col, block_lev);
@@ -253,9 +258,9 @@ void Fluxes_byband_gpu<TF>::reduce(
     const int block_lev = 16;
     const int block_col = 16;
 
-    const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-    const int grid_lev  = nlev/block_lev + (nlev%block_lev > 0);
-    const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
+    const int grid_col = ncol/block_col + (ncol%block_col > 0);
+    const int grid_lev = nlev/block_lev + (nlev%block_lev > 0);
+    const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
 
     dim3 grid_gpu(grid_col, grid_lev, grid_bnd);
     dim3 block_gpu(block_col, block_lev, grid_bnd);
@@ -303,9 +308,9 @@ void Fluxes_byband_gpu<TF>::reduce(
     const int block_lev = 16;
     const int block_col = 16;
 
-    const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-    const int grid_lev  = nlev/block_lev + (nlev%block_lev > 0);
-    const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
+    const int grid_col = ncol/block_col + (ncol%block_col > 0);
+    const int grid_lev = nlev/block_lev + (nlev%block_lev > 0);
+    const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
 
     dim3 grid_gpu(grid_col, grid_lev, grid_bnd);
     dim3 block_gpu(block_col, block_lev, grid_bnd);

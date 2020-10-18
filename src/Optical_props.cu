@@ -25,6 +25,7 @@
 #include "Optical_props.h"
 #include "Array.h"
 #include "rrtmgp_kernels.h"
+
 namespace
 {
     template<typename TF>__global__
@@ -131,8 +132,6 @@ namespace
 
         }
     }
-
-
 }
 
 
@@ -158,6 +157,7 @@ Optical_props_gpu<TF>::Optical_props_gpu(
     }
     this->gpt2band_gpu = this->gpt2band;
 }
+
 
 // Optical properties per band.
 template<typename TF>
@@ -185,6 +185,7 @@ Optical_props_gpu<TF>::Optical_props_gpu(
     }
     this->gpt2band_gpu = this->gpt2band;
 }
+
 
 template<typename TF>
 Optical_props_1scl_gpu<TF>::Optical_props_1scl_gpu(
@@ -436,6 +437,7 @@ void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<T
     }
 }
 
+
 #ifdef FLOAT_SINGLE_RRTMGP
 template class Optical_props_gpu<float>;
 template class Optical_props_1scl_gpu<float>;
@@ -448,5 +450,4 @@ template class Optical_props_1scl_gpu<double>;
 template class Optical_props_2str_gpu<double>;
 template void add_to(Optical_props_2str_gpu<double>&, const Optical_props_2str_gpu<double>&);
 template void add_to(Optical_props_1scl_gpu<double>&, const Optical_props_1scl_gpu<double>&);
-//emplate void rrtmgp_kernel_launcer_cuda::delta_scale_2str_k(int, int, int,
 #endif
