@@ -26,8 +26,6 @@
 #include "Array.h"
 #include "Optical_props.h"
 #include "Fluxes.h"
-#include <iomanip>
-#include <chrono>
 #include "rrtmgp_kernels.h"
 // CUDA TEST
 #include "rte_kernel_launcher_cuda.h"
@@ -42,19 +40,23 @@ namespace
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ibnd = blockIdx.y*blockDim.y + threadIdx.y;
+
         if ( ( icol < ncol) && (ibnd < nbnd) )
         {
             const int gpt_start = limits[2*ibnd] - 1;
             const int gpt_end = limits[2*ibnd+1];
+
             for (int igpt=gpt_start; igpt<gpt_end; ++igpt)
             {
                 const int idx_in = ibnd + icol*nbnd;
                 const int idx_out = icol + igpt*ncol;
+
                 arr_out[idx_out] = arr_in[idx_in];
             }
         }
     }
 }
+
 //namespace rrtmgp_kernel_launcher
 //{
 //    template<typename TF>
@@ -112,8 +114,7 @@ namespace
 //                const_cast<TF*>(sfc_alb_dif_gpt.ptr()),
 //                gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr());
 //    }
-//}
-//
+
 template<typename TF>
 void Rte_sw_gpu<TF>::rte_sw(
         const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
@@ -145,7 +146,7 @@ void Rte_sw_gpu<TF>::rte_sw(
         rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif, gpt_flux_dn);
 
     // Run the radiative transfer solver
-    // CvH: only two-stream solutions, I skipped the sw_solver_noscat
+    // CvH: only two-stream solutions, I skipped the sw_solver_noscat.
     rte_kernel_launcher_cuda::sw_solver_2stream(
             ncol, nlay, ngpt, top_at_1,
             optical_props->get_tau(),
@@ -154,9 +155,9 @@ void Rte_sw_gpu<TF>::rte_sw(
             mu0,
             sfc_alb_dir_gpt, sfc_alb_dif_gpt,
             gpt_flux_up, gpt_flux_dn, gpt_flux_dir);
+
     // CvH: The original fortran code had a call to the reduce here.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
-
 }
 
 template<typename TF>
@@ -170,18 +171,17 @@ void Rte_sw_gpu<TF>::expand_and_transpose(
     const int block_col = 16;
     const int block_bnd = 14;
 
-    const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-    const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
+    const int grid_col = ncol/block_col + (ncol%block_col > 0);
+    const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
 
     dim3 grid_gpu(grid_col, grid_bnd);
     dim3 block_gpu(block_col, block_bnd);
 
     Array_gpu<int,2> limits = ops->get_band_lims_gpoint_gpu();
-    //Array<int,2> limitsc = ops->get_band_lims_gpoint();
-    //Array_gpu<int,2> limits(limitsc);
+
+    // Array_gpu<int,2> limits(limitsc);
     expand_and_transpose_kernel<<<grid_gpu, block_gpu>>>(
         ncol, nbnd, limits.ptr(), arr_out.ptr(), arr_in.ptr());
-
 }
 
 #ifdef FLOAT_SINGLE_RRTMGP
