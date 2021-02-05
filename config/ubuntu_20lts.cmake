@@ -35,3 +35,4 @@ if(USECUDA)
 endif()
 
 add_definitions(-DRESTRICTKEYWORD=__restrict__)
+add_definitions(-DUSE_CBOOL)
