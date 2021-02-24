@@ -256,6 +256,6 @@ bool any_vals_less_than(const Array<T, N>& array, const T lower_limit)
     return std::any_of(
             array.v().begin(),
             array.v().end(),
-            [lower_limit](T val){ return val < lower_limit; });
+            [lower_limit](T val){ return (val < lower_limit); });
 }
 #endif
