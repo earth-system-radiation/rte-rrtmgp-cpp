@@ -128,7 +128,7 @@ namespace
             const TF wf = ssa[idx] * f;
             tau[idx] *= (TF(1.) - wf);
             ssa[idx] = (ssa[idx] - wf) / max(eps,(TF(1.)-wf));
-            g[idx] = (g[idx] - f) / max(eps,(TF(1.)-wf));
+            g[idx] = (g[idx] - f) / max(eps,(TF(1.)-f));
 
         }
     }
