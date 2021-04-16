@@ -348,7 +348,7 @@ class Array_gpu
         {}
 
         #ifdef __CUDACC__
-        ~Array_gpu() { cuda_safe_call(cudaFree(data_ptr)); }
+        ~Array_gpu() { cuda_safe_call(cudaFreeAsync(data_ptr, 0)); }
         #endif
 
         #ifdef __CUDACC__
@@ -362,7 +362,7 @@ class Array_gpu
             strides = array.strides;
             offsets = array.offsets;
 
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
+            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
 
             return (*this);
@@ -393,7 +393,7 @@ class Array_gpu
             strides(array.strides),
             offsets(array.offsets)
         {
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
+            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
         }
         #endif
@@ -417,7 +417,7 @@ class Array_gpu
             strides(calc_strides<N>(dims)),
             offsets({})
         {
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
+            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
         }
         #endif
 
@@ -430,7 +430,7 @@ class Array_gpu
             strides(array.strides),
             offsets(array.offsets)
         {
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
+            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyHostToDevice));
         }
         #endif
@@ -445,7 +445,7 @@ class Array_gpu
         #ifdef __CUDACC__
         inline void set_data(const Array<T, N>& array)
         {
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
+            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyHostToDevice));
         }
         #endif
@@ -458,7 +458,7 @@ class Array_gpu
 
             this->dims = dims;
             ncells = product<N>(dims);
-            cuda_safe_call(cudaMalloc((void **) &data_ptr, ncells*sizeof(T)));
+            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
             strides = calc_strides<N>(dims);
             offsets = {};
         }

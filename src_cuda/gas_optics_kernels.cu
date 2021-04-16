@@ -733,8 +733,8 @@ namespace rrtmgp_kernel_launcher_cuda
         const int tau_size = tau.size()*sizeof(TF);
         TF* tau_major;
         TF* tau_minor;
-        cuda_safe_call(cudaMalloc((void**)& tau_major, tau_size));
-        cuda_safe_call(cudaMalloc((void**)& tau_minor, tau_size));
+        cuda_safe_call(cudaMallocAsync((void**)& tau_major, tau_size, 0));
+        cuda_safe_call(cudaMallocAsync((void**)& tau_minor, tau_size, 0));
 
         const int block_bnd_maj = 14;
         const int block_lay_maj = 1;
@@ -785,8 +785,8 @@ namespace rrtmgp_kernel_launcher_cuda
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                 tropo.ptr(), tau.ptr(), tau_minor);
 
-        cuda_safe_call(cudaFree(tau_major));
-        cuda_safe_call(cudaFree(tau_minor));
+        cuda_safe_call(cudaFreeAsync(tau_major, 0));
+        cuda_safe_call(cudaFreeAsync(tau_minor, 0));
     }
 
     template<typename TF>
@@ -823,8 +823,8 @@ namespace rrtmgp_kernel_launcher_cuda
         TF* pfrac;
         TF* ones;
 
-        cuda_safe_call(cudaMalloc((void**)& pfrac, pfrac_size));
-        cuda_safe_call(cudaMalloc((void**)& ones, ones_size));
+        cuda_safe_call(cudaMallocAsync((void**)& pfrac, pfrac_size, 0));
+        cuda_safe_call(cudaMallocAsync((void**)& ones, ones_size, 0));
 
         // Copy the data to the GPU.
         cuda_safe_call(cudaMemcpy(ones, ones_cpu, ones_size, cudaMemcpyHostToDevice));
@@ -853,8 +853,8 @@ namespace rrtmgp_kernel_launcher_cuda
                 lev_src_inc.ptr(), lev_src_dec.ptr(),
                 sfc_src_jac.ptr(), pfrac);
 
-        cuda_safe_call(cudaFree(pfrac));
-        cuda_safe_call(cudaFree(ones));
+        cuda_safe_call(cudaFreeAsync(pfrac, 0));
+        cuda_safe_call(cudaFreeAsync(ones, 0));
     }
 
 }
