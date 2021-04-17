@@ -35,7 +35,7 @@
 #include "Rte_sw.h"
 #include "subset_kernel_launcher_cuda.h"
 
-#include <cuda_profiler_api.h>
+
 namespace
 {
     template<typename TF>__global__

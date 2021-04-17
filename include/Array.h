@@ -316,22 +316,6 @@ void subset_kernel(
 
         a_sub[idx_out] = a[idx_in];
     }
-    /*
-    for (int i=0; i<a_sub.ncells; ++i)
-    {
-        std::array<int, N> indices;
-        int ic = i;
-        for (int n=N-1; n>0; --n)
-        {
-            indices[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
-            ic %= a_sub.strides[n];
-        }
-        indices[0] = do_spread[0] ? 1 : ic + ranges[0].first;
-    
-        const int index = calc_index<N>(indices, strides, offsets);
-        cuda_safe_call(cudaMemcpy(&a_sub.data_ptr[i], &data_ptr[index], sizeof(T), cudaMemcpyDeviceToDevice));
-    }
-    */
 }
 #endif
 
