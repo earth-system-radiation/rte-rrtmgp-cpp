@@ -44,11 +44,11 @@ class Optical_props
 
         Optical_props(const Optical_props&) = default;
 
-        Array<int,1> get_gpoint_bands() const { return this->gpt2band; }
+        const Array<int,1>& get_gpoint_bands() const { return this->gpt2band; }
         int get_nband() const { return this->band2gpt.dim(2); }
         int get_ngpt() const { return this->band2gpt.max(); }
-        Array<int,2> get_band_lims_gpoint() const { return this->band2gpt; }
-        Array<TF,2> get_band_lims_wavenumber() const { return this->band_lims_wvn; }
+        const Array<int,2>& get_band_lims_gpoint() const { return this->band2gpt; }
+        const Array<TF,2>& get_band_lims_wavenumber() const { return this->band_lims_wvn; }
 
     private:
         Array<int,2> band2gpt;     // (begin g-point, end g-point) = band2gpt(2,band)
@@ -183,12 +183,12 @@ class Optical_props_gpu
 
         Array<int,1> get_gpoint_bands() const { return this->gpt2band; }
  
-        Array_gpu<int,1> get_gpoint_bands_gpu() const { return this->gpt2band_gpu; }
-        Array_gpu<int,2> get_band_lims_gpoint_gpu() const { return this->band2gpt_gpu;}
+        const Array_gpu<int,1>& get_gpoint_bands_gpu() const { return this->gpt2band_gpu; }
+        const Array_gpu<int,2>& get_band_lims_gpoint_gpu() const { return this->band2gpt_gpu;}
         int get_nband() const { return this->band2gpt.dim(2); }
         int get_ngpt() const { return this->band2gpt.max(); }
-        Array<int,2> get_band_lims_gpoint() const { return this->band2gpt;}
-        Array<TF,2> get_band_lims_wavenumber() const { return this->band_lims_wvn; }
+        const Array<int,2>& get_band_lims_gpoint() const { return this->band2gpt;}
+        const Array<TF,2>& get_band_lims_wavenumber() const { return this->band_lims_wvn; }
         
     private:
         Array<int,2> band2gpt;         // (begin g-point, end g-point) = band2gpt(2,band)
