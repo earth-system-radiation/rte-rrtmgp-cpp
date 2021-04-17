@@ -486,12 +486,6 @@ class Array_gpu
 
         inline int size() const { return ncells; }
 
-        // inline std::array<int, N> find_indices(const T& value) const
-        // {
-        //     int pos = std::find(data.begin(), data.end(), value) - data.begin();
-        //     return calc_indices<N>(pos, strides, offsets);
-        // }
-
         #ifdef __CUDACC__
         inline T operator()(const std::array<int, N>& indices) const
         {
@@ -503,7 +497,6 @@ class Array_gpu
         #endif
 
         inline int dim(const int i) const { return dims[i-1]; }
-        // inline bool is_empty() const { return ncells == 0; }
 
         #ifdef __CUDACC__
         inline Array_gpu<T, N> subset(
@@ -511,27 +504,33 @@ class Array_gpu
         {
             // Calculate the dimension sizes based on the range.
             std::array<int, N> subdims;
-            std::array<bool, N> do_spread;
+            std::array<int, N> block_corners;
 
             for (int i=0; i<N; ++i)
             {
                 subdims[i] = ranges[i].second - ranges[i].first + 1;
                 // CvH how flexible / tolerant are we?
-                do_spread[i] = (dims[i] == 1);
+                block_corners[i] = ranges[i].first;
             }
 
             // Create the array and fill it with the subset.
             Array_gpu<T, N> a_sub(subdims);
 
+            return subset_copy(a_sub, block_corners);
+        }
+
+        inline Array_gpu<T, N> subset_copy(Array_gpu<T, N>& a_sub,
+                const std::array<int, N>& block_corners) const
+        {
             Subset_data<N> subset_data;
 
             for (int i=0; i<N; ++i)
             {
                 subset_data.sub_strides[i] = a_sub.strides[i];
                 subset_data.strides[i] = strides[i];
-                subset_data.starts[i] = ranges[i].first;
+                subset_data.starts[i] = block_corners[i];
                 subset_data.offsets[i] = offsets[i];
-                subset_data.do_spread[i] = do_spread[i];
+                subset_data.do_spread[i] = (dims[i] == 1);
             }
 
             constexpr int block_ncells = 64;
@@ -542,31 +541,8 @@ class Array_gpu
 
             subset_kernel<<<grid_gpu, block_gpu>>>(a_sub.data_ptr, data_ptr, subset_data, a_sub.ncells);
 
-            /*
-            for (int i=0; i<a_sub.ncells; ++i)
-            {
-                std::array<int, N> indices;
-                int ic = i;
-                for (int n=N-1; n>0; --n)
-                {
-                    indices[n] = do_spread[n] ? 1 : ic / a_sub.strides[n] + ranges[n].first;
-                    ic %= a_sub.strides[n];
-                }
-                indices[0] = do_spread[0] ? 1 : ic + ranges[0].first;
-
-                const int index = calc_index<N>(indices, strides, offsets);
-                cuda_safe_call(cudaMemcpy(&a_sub.data_ptr[i], &data_ptr[index], sizeof(T), cudaMemcpyDeviceToDevice));
-            }
-            */
-
             return a_sub;
         }
-        #endif
-
-        // inline void fill(const T value)
-        // {
-        //     std::fill(data.begin(), data.end(), value);
-        // }
 
         inline void dump(const std::string& name) const
         {
