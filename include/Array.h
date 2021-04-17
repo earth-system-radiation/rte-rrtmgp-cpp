@@ -543,6 +543,7 @@ class Array_gpu
 
             return a_sub;
         }
+        #endif
 
         inline void dump(const std::string& name) const
         {
