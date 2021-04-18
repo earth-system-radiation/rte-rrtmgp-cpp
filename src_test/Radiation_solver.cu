@@ -482,8 +482,8 @@ void Radiation_solver_longwave<TF>::solve_gpu(
 
             // Add the cloud optical props to the gas optical properties.
             add_to(
-                    dynamic_cast<Optical_props_1scl_gpu<double>&>(*optical_props_subset_in),
-                    dynamic_cast<Optical_props_1scl_gpu<double>&>(*cloud_optical_props_subset_in));
+                    dynamic_cast<Optical_props_1scl_gpu<TF>&>(*optical_props_subset_in),
+                    dynamic_cast<Optical_props_1scl_gpu<TF>&>(*cloud_optical_props_subset_in));
         }
 
         // Store the optical properties, if desired.
@@ -690,8 +690,8 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
 
             // Add the cloud optical props to the gas optical properties.
             add_to(
-                    dynamic_cast<Optical_props_2str_gpu<double>&>(*optical_props_subset_in),
-                    dynamic_cast<Optical_props_2str_gpu<double>&>(*cloud_optical_props_subset_in));
+                    dynamic_cast<Optical_props_2str_gpu<TF>&>(*optical_props_subset_in),
+                    dynamic_cast<Optical_props_2str_gpu<TF>&>(*cloud_optical_props_subset_in));
 
         }
 

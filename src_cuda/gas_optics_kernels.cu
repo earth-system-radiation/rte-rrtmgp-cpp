@@ -860,7 +860,7 @@ namespace rrtmgp_kernel_launcher_cuda
 }
 
 
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
 template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, const Array_gpu<float,3>&, Array_gpu<float,3>&);
 template void rrtmgp_kernel_launcher_cuda::reorder12x21<float>(const int, const int, const Array_gpu<float,2>&, Array_gpu<float,2>&);
 

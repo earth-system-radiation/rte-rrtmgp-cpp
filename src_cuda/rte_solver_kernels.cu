@@ -634,7 +634,13 @@ namespace rte_kernel_launcher_cuda
     }
 }
 
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
+template void rte_kernel_launcher_cuda::apply_BC(const int, const int, const int, const BOOL_TYPE,
+                  const Array_gpu<float,2>&, const Array_gpu<float,1>&, Array_gpu<float,3>&);
+template void rte_kernel_launcher_cuda::apply_BC(const int, const int, const int, const BOOL_TYPE, Array_gpu<float,3>&);
+template void rte_kernel_launcher_cuda::apply_BC(const int, const int, const int, const BOOL_TYPE,
+                  const Array_gpu<float,2>&, Array_gpu<float,3>&);
+
 template void rte_kernel_launcher_cuda::sw_solver_2stream<float>(
             const int, const int, const int, const BOOL_TYPE,
             const Array_gpu<float,3>&, const Array_gpu<float,3>&, const Array_gpu<float,3>&,
@@ -647,14 +653,12 @@ template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<float>(
             const Array_gpu<float,3>& lev_source_inc, const Array_gpu<float,3>& lev_source_dec, const Array_gpu<float,2>& sfc_emis,
             const Array_gpu<float,2>& sfc_src, Array_gpu<float,3>& flux_dn, Array_gpu<float,3>& flux_up,
             const Array_gpu<float,2>& sfc_src_jac, Array_gpu<float,3>& flux_up_jac);
-
 #else
 template void rte_kernel_launcher_cuda::apply_BC(const int, const int, const int, const BOOL_TYPE,
                   const Array_gpu<double,2>&, const Array_gpu<double,1>&, Array_gpu<double,3>&);
 template void rte_kernel_launcher_cuda::apply_BC(const int, const int, const int, const BOOL_TYPE, Array_gpu<double,3>&);
 template void rte_kernel_launcher_cuda::apply_BC(const int, const int, const int, const BOOL_TYPE,
                   const Array_gpu<double,2>&, Array_gpu<double,3>&);
-
 
 template void rte_kernel_launcher_cuda::sw_solver_2stream<double>(
             const int, const int, const int, const BOOL_TYPE,

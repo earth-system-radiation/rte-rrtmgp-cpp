@@ -206,7 +206,7 @@ namespace subset_kernel_launcher_cuda
     }
 }
 
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
 template void subset_kernel_launcher_cuda::get_from_subset(const int ncol, const int nlay, const int ncol_in, const int col_s_in,
               Array_gpu<float,2>&, Array_gpu<float,2>&, Array_gpu<float,2>&, Array_gpu<float,2>&,
               const Array_gpu<float,2>&, const Array_gpu<float,2>&, const Array_gpu<float,2>&, const Array_gpu<float,2>&);
