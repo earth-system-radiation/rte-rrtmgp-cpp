@@ -7,6 +7,10 @@
 
 namespace
 {
+    template<typename TF> __device__ constexpr TF k_min();
+    template<> __device__ constexpr double k_min() { return 1.e-12; }
+    template<> __device__ constexpr float k_min() { return 1.e-4f; }
+
     template<typename TF>__device__
     void lw_source_noscat_kernel(const int icol, const int igpt, const int ncol, const int nlay, const int ngpt, const TF eps,
                                  const TF* __restrict__ lay_source, const TF* __restrict__ lev_source_up, const TF* __restrict__ lev_source_dn,
@@ -357,7 +361,7 @@ namespace
             const TF alpha1 = gamma1 * gamma4 + gamma2 * gamma3;
             const TF alpha2 = gamma1 * gamma3 + gamma2 * gamma4;
 
-            const TF k = sqrt(max((gamma1 - gamma2) * (gamma1 + gamma2), TF(1e-12)));
+            const TF k = sqrt(max((gamma1 - gamma2) * (gamma1 + gamma2), k_min<TF>()));
             const TF exp_minusktau = exp(-tau[idx] * k);
             const TF exp_minus2ktau = exp_minusktau * exp_minusktau;
 
