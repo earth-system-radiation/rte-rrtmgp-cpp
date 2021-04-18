@@ -231,7 +231,6 @@ namespace
                           const TF* __restrict__ sfc_alb_dir, TF* __restrict__ source_up, TF* __restrict__ source_dn,
                           TF* __restrict__ source_sfc, TF* __restrict__ flux_dir)
     {
-
         if (top_at_1)
         {
             for (int ilay=0; ilay<nlay; ++ilay)
@@ -463,8 +462,8 @@ namespace rte_kernel_launcher_cuda
         const int block_col = 32;
         const int block_gpt = 32;
 
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-        const int grid_gpt  = ngpt/block_gpt + (ngpt%block_gpt > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
 
         dim3 grid_gpu(grid_col, grid_gpt);
         dim3 block_gpu(block_col, block_gpt);
@@ -478,8 +477,8 @@ namespace rte_kernel_launcher_cuda
         const int block_col = 32;
         const int block_gpt = 32;
 
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-        const int grid_gpt  = ngpt/block_gpt + (ngpt%block_gpt > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
 
         dim3 grid_gpu(grid_col, grid_gpt);
         dim3 block_gpu(block_col, block_gpt);
@@ -492,8 +491,8 @@ namespace rte_kernel_launcher_cuda
         const int block_col = 32;
         const int block_gpt = 32;
 
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-        const int grid_gpt  = ngpt/block_gpt + (ngpt%block_gpt > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
 
         dim3 grid_gpu(grid_col, grid_gpt);
         dim3 block_gpu(block_col, block_gpt);
@@ -538,8 +537,8 @@ namespace rte_kernel_launcher_cuda
         const int block_col2d = 32;
         const int block_gpt2d = 1;
 
-        const int grid_col2d  = ncol/block_col2d + (ncol%block_col2d > 0);
-        const int grid_gpt2d  = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
+        const int grid_col2d = ncol/block_col2d + (ncol%block_col2d > 0);
+        const int grid_gpt2d = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
 
         dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
         dim3 block_gpu2d(block_col2d, block_gpt2d);
@@ -597,9 +596,9 @@ namespace rte_kernel_launcher_cuda
         const int block_lay3d = 16;
         const int block_gpt3d = 1;
 
-        const int grid_col3d  = ncol/block_col3d + (ncol%block_col3d > 0);
-        const int grid_lay3d  = nlay/block_lay3d + (nlay%block_lay3d > 0);
-        const int grid_gpt3d  = ngpt/block_gpt3d + (ngpt%block_gpt3d > 0);
+        const int grid_col3d = ncol/block_col3d + (ncol%block_col3d > 0);
+        const int grid_lay3d = nlay/block_lay3d + (nlay%block_lay3d > 0);
+        const int grid_gpt3d = ngpt/block_gpt3d + (ngpt%block_gpt3d > 0);
 
         dim3 grid_gpu3d(grid_col3d, grid_lay3d, grid_gpt3d);
         dim3 block_gpu3d(block_col3d, block_lay3d, block_gpt3d);
@@ -611,8 +610,8 @@ namespace rte_kernel_launcher_cuda
         const int block_col2d = 16;
         const int block_gpt2d = 16;
 
-        const int grid_col2d  = ncol/block_col2d + (ncol%block_col2d > 0);
-        const int grid_gpt2d  = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
+        const int grid_col2d = ncol/block_col2d + (ncol%block_col2d > 0);
+        const int grid_gpt2d = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
 
         dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
         dim3 block_gpu2d(block_col2d, block_gpt2d);

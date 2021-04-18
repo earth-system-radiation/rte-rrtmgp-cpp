@@ -319,7 +319,6 @@ namespace
             {
                 const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
                 tau[idx_out] += tau_major[idx_out];
-                //should be '+=' later on, but we first need the zero_arrays for that
             }
         }
     }
@@ -527,10 +526,8 @@ namespace
                 ssa[idx_out] = TF(0.);
         }
     }
-
-
-
 }
+
 
 namespace rrtmgp_kernel_launcher_cuda
 {
@@ -560,8 +557,8 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_i = 32;
         const int block_j = 16;
 
-        const int grid_i  = ni/block_i + (ni%block_i > 0);
-        const int grid_j  = nj/block_j + (nj%block_j > 0);
+        const int grid_i = ni/block_i + (ni%block_i > 0);
+        const int grid_j = nj/block_j + (nj%block_j > 0);
 
         dim3 grid_gpu(grid_i, grid_j);
         dim3 block_gpu(block_i, block_j);
@@ -577,9 +574,9 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_j = 16;
         const int block_k = 1;
 
-        const int grid_i  = ni/block_i + (ni%block_i > 0);
-        const int grid_j  = nj/block_j + (nj%block_j > 0);
-        const int grid_k  = nk/block_k + (nk%block_k > 0);
+        const int grid_i = ni/block_i + (ni%block_i > 0);
+        const int grid_j = nj/block_j + (nj%block_j > 0);
+        const int grid_k = nk/block_k + (nk%block_k > 0);
 
         dim3 grid_gpu(grid_i, grid_j, grid_k);
         dim3 block_gpu(block_i, block_j, block_k);
@@ -614,8 +611,8 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay = 16;
         const int block_col = 32;
 
-        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
 
         dim3 grid_gpu(grid_lay, grid_col);
         dim3 block_gpu(block_lay, block_col);
@@ -643,9 +640,9 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_gpt = 32;
         const int block_lay = 1;
 
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-        const int grid_gpt  = ngpt/block_gpt + (ngpt%block_gpt > 0);
-        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
 
         dim3 grid_gpu(grid_col, grid_gpt, grid_lay);
         dim3 block_gpu(block_col, block_gpt, block_lay);
@@ -678,9 +675,9 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay = 1;
         const int block_col = 32;
 
-        const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
-        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
 
         dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
         dim3 block_gpu(block_bnd, block_lay, block_col);
@@ -740,9 +737,9 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay_maj = 1;
         const int block_col_maj = 32;
 
-        const int grid_bnd_maj  = nband/block_bnd_maj + (nband%block_bnd_maj > 0);
-        const int grid_lay_maj  = nlay/block_lay_maj + (nlay%block_lay_maj > 0);
-        const int grid_col_maj  = ncol/block_col_maj + (ncol%block_col_maj > 0);
+        const int grid_bnd_maj = nband/block_bnd_maj + (nband%block_bnd_maj > 0);
+        const int grid_lay_maj = nlay/block_lay_maj + (nlay%block_lay_maj > 0);
+        const int grid_col_maj = ncol/block_col_maj + (ncol%block_col_maj > 0);
 
         dim3 grid_gpu_maj(grid_bnd_maj, grid_lay_maj, grid_col_maj);
         dim3 block_gpu_maj(block_bnd_maj, block_lay_maj, block_col_maj);
@@ -856,7 +853,6 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaFreeAsync(pfrac, 0));
         cuda_safe_call(cudaFreeAsync(ones, 0));
     }
-
 }
 
 
@@ -946,5 +942,3 @@ template void rrtmgp_kernel_launcher_cuda::Planck_source<double>(const int ncol,
         Array_gpu<double,3>& lev_src_dec, Array_gpu<double,2>& sfc_src_jac);
 
 #endif
-
-
