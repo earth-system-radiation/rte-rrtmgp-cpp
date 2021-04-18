@@ -266,7 +266,7 @@ void add_to(Optical_props_2str<TF>& op_inout, const Optical_props_2str<TF>& op_i
     }
 }
 
-#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
 template class Optical_props<float>;
 template class Optical_props_1scl<float>;
 template class Optical_props_2str<float>;

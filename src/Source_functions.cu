@@ -41,7 +41,7 @@ Source_func_lw_gpu<TF>::Source_func_lw_gpu(
 {}
 
 
-#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
 template class Source_func_lw_gpu<float>;
 #else
 template class Source_func_lw_gpu<double>;

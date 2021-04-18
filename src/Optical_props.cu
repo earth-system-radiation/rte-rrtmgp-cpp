@@ -438,7 +438,7 @@ void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<T
 }
 
 
-#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
 template class Optical_props_gpu<float>;
 template class Optical_props_1scl_gpu<float>;
 template class Optical_props_2str_gpu<float>;

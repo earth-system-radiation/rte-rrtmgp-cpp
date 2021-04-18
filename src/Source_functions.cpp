@@ -77,7 +77,7 @@ void Source_func_lw<TF>::get_subset(
             }
 }
 
-#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
 template class Source_func_lw<float>;
 #else
 template class Source_func_lw<double>;

@@ -169,7 +169,7 @@ void Rte_lw<TF>::expand_and_transpose(
                 arr_out({icol, igpt}) = arr_in({iband, icol});
 }
 
-#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
 template class Rte_lw<float>;
 #else
 template class Rte_lw<double>;

@@ -195,7 +195,7 @@ void Fluxes_byband<TF>::reduce(
             gpt_flux_dn_dir, this->bnd_flux_dn_dir);
 }
 
-#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
 template class Fluxes_broadband<float>;
 template class Fluxes_byband<float>;
 #else

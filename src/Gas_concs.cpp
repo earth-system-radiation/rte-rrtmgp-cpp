@@ -90,7 +90,7 @@ BOOL_TYPE Gas_concs<TF>::exists(const std::string& name) const
     return gas_concs_map.count(name) != 0;
 }
 
-#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
 template class Gas_concs<float>;
 #else
 template class Gas_concs<double>;
