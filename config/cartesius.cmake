@@ -42,11 +42,11 @@ endif()
 
 if(USEICC)
     set(USER_CXX_FLAGS "-std=c++14 -restrict")
-    set(USER_CXX_FLAGS_RELEASE "-Ofast -xAVX -axCORE-AVX-I,CORE-AVX2,CORE-AVX512")
+    set(USER_CXX_FLAGS_RELEASE "-O3 -xAVX -axCORE-AVX-I,CORE-AVX2,CORE-AVX512")
     add_definitions(-DRESTRICTKEYWORD=restrict)
 else()
     set(USER_CXX_FLAGS "-std=c++14 -fopenmp")
-    set(USER_CXX_FLAGS_RELEASE "-Ofast -march=ivybridge") # -march optimized for the CPU present in Cartesius GPU nodes
+    set(USER_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -march=ivybridge") # -march optimized for the CPU present in Cartesius GPU nodes
     add_definitions(-DRESTRICTKEYWORD=__restrict__)
 endif()
 
@@ -69,3 +69,5 @@ if(USECUDA)
     list(APPEND CUDA_NVCC_FLAGS "-std=c++14")
     list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
 endif()
+
+add_definitions(-DRTE_RRTMGP_USE_CBOOL)
