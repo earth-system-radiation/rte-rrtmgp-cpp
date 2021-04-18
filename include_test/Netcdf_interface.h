@@ -264,7 +264,11 @@ inline Netcdf_file::Netcdf_file(const std::string& name, Netcdf_mode mode) :
     else if (mode == Netcdf_mode::Write)
         nc_check_code = nc_open(name.c_str(), NC_WRITE | NC_NETCDF4, &ncid);
     else if (mode == Netcdf_mode::Read)
-        nc_check_code = nc_open(name.c_str(), NC_NOWRITE | NC_NETCDF4, &ncid);
+    {
+        // CvH: I changed this line, as I can no longer open the "classic" coefficient files.
+        // nc_check_code = nc_open(name.c_str(), NC_NOWRITE | NC_NETCDF4, &ncid);
+        nc_check_code = nc_open(name.c_str(), NC_NOWRITE, &ncid);
+    }
 
     try
     {
