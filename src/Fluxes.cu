@@ -320,7 +320,7 @@ void Fluxes_byband_gpu<TF>::reduce(
             gpt_flux_dn_dir.ptr(), this->bnd_flux_dn_dir.ptr());
 }
 
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
 template class Fluxes_broadband_gpu<float>;
 template class Fluxes_byband_gpu<float>;
 #else

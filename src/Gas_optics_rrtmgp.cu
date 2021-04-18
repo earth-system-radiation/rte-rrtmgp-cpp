@@ -1206,7 +1206,7 @@ TF Gas_optics_rrtmgp_gpu<TF>::get_tsi() const
 }
 
 
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
 template class Gas_optics_rrtmgp_gpu<float>;
 #else
 template class Gas_optics_rrtmgp_gpu<double>;

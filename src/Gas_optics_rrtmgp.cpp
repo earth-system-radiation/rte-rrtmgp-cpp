@@ -1308,7 +1308,7 @@ TF Gas_optics_rrtmgp<TF>::get_tsi() const
     return tsi;
 }
 
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
 template class Gas_optics_rrtmgp<float>;
 #else
 template class Gas_optics_rrtmgp<double>;

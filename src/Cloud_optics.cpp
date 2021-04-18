@@ -230,7 +230,7 @@ void Cloud_optics<TF>::cloud_optics(
             }
 }
 
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
 template class Cloud_optics<float>;
 #else
 template class Cloud_optics<double>;

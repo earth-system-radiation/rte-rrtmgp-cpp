@@ -329,7 +329,7 @@ void Cloud_optics_gpu<TF>::cloud_optics(
             itau.ptr(), itaussa.ptr());
 }
 
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
 template class Cloud_optics_gpu<float>;
 #else
 template class Cloud_optics_gpu<double>;

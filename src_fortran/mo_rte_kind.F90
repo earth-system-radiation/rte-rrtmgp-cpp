@@ -26,7 +26,7 @@ module mo_rte_kind
   !
   ! Floating point working precision
   !
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
   integer, parameter :: wp = sp
 #else
   integer, parameter :: wp = dp
@@ -37,7 +37,7 @@ module mo_rte_kind
   !
   ! Note that c_boolians don't work with PGI compiler currently
   !
-#ifdef USE_CBOOL
+#ifdef RTE_RRTMGP_USE_CBOOL
   integer, parameter :: wl = c_bool
 #else
   integer, parameter :: wl = kind(.true.)

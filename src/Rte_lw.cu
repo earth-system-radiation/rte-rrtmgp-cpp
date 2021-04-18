@@ -168,7 +168,7 @@ void Rte_lw_gpu<TF>::expand_and_transpose(
             ncol, nbnd, limits.ptr(), arr_out.ptr(), arr_in.ptr());
 }
 
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION_RRTMGP
 template class Rte_lw_gpu<float>;
 #else
 template class Rte_lw_gpu<double>;
