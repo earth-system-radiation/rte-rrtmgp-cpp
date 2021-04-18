@@ -778,7 +778,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
     }
 }
 
-#ifdef FLOAT_SINGLE_RRTMGP
+#ifdef RTE_RRTMGP_SINGLE_PRECISION
 template class Radiation_solver_longwave<float>;
 template class Radiation_solver_shortwave<float>;
 #else

@@ -28,7 +28,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "define_bool.h"
+#include "Types.h"
 
 // Forward declarations.
 template<typename TF, int> class Array;

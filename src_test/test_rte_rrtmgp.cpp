@@ -24,13 +24,7 @@
 #include "Netcdf_interface.h"
 #include "Array.h"
 #include "Radiation_solver.h"
-
-
-#ifdef FLOAT_SINGLE_RRTMGP
-#define FLOAT_TYPE float
-#else
-#define FLOAT_TYPE double
-#endif
+#include "Types.h"
 
 
 template<typename TF>

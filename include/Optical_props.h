@@ -27,7 +27,7 @@
 
 #include <memory>
 #include "Array.h"
-#include "define_bool.h"
+#include "Types.h"
 
 template<typename TF>
 class Optical_props

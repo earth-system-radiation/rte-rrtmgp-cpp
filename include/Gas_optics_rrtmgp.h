@@ -29,7 +29,7 @@
 
 #include "Array.h"
 #include "Gas_optics.h"
-#include "define_bool.h"
+#include "Types.h"
 #ifdef __CUDACC__
 #include "tools_gpu.h"
 #endif

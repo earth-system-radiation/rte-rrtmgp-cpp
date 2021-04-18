@@ -25,14 +25,7 @@
 #include "Array.h"
 #include "Radiation_solver.h"
 #include "Gas_concs.h"
-
-#include <cuda_profiler_api.h>
-
-#ifdef FLOAT_SINGLE_RRTMGP
-#define FLOAT_TYPE float
-#else
-#define FLOAT_TYPE double
-#endif
+#include "Types.h"
 
 
 template<typename TF>

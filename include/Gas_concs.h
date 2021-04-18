@@ -28,7 +28,7 @@
 #include <map>
 #include <string>
 
-#include "define_bool.h"
+#include "Types.h"
 
 template<typename, int> class Array;
 

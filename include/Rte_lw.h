@@ -26,7 +26,7 @@
 #define RTE_LW_H
 
 #include <memory>
-#include "define_bool.h"
+#include "Types.h"
 
 // Forward declarations.
 template<typename, int> class Array;
