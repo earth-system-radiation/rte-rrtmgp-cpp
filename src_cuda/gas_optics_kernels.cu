@@ -668,7 +668,7 @@ namespace rrtmgp_kernel_launcher_cuda
     {
         const int k_size = ncol*nlay*ngpt*sizeof(TF);
         TF* k;
-        cuda_safe_call(cudaMalloc((void**)&k, k_size));
+        cuda_safe_call(cudaMallocAsync((void**)&k, k_size, 0));
 
         // Call the kernel.
         const int block_bnd = 14;
@@ -693,7 +693,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 tropo.ptr(), jtemp.ptr(),
                 tau_rayleigh.ptr(), k);
 
-        cuda_safe_call(cudaFree(k));
+        cuda_safe_call(cudaFreeAsync(k, 0));
     }
 
     template<typename TF>
