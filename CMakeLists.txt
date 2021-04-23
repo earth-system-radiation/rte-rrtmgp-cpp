@@ -116,12 +116,11 @@ if(USECUDA)
   endif()
 endif()
 
-# Compile the kernels first.
-add_subdirectory(src_fortran)
+add_subdirectory(src_kernels)
+add_subdirectory(src)
 if(USECUDA)
+  add_subdirectory(src_kernels_cuda)
   add_subdirectory(src_cuda)
 endif()
-
-# Compile the other code.
-add_subdirectory(src)
 add_subdirectory(src_test)
+

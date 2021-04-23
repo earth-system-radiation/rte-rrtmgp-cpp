@@ -1,10 +1,8 @@
-FILE(GLOB sourcefiles "../src_cuda/*_kernels.cu" )
+#
+# This file is part of a C++ interface to the Radiative Transfer for Energetics (RTE)
+#
+FILE(GLOB sourcefiles_cuda "../src/*.cu")
 include_directories("../include" SYSTEM ${INCLUDE_DIRS})
 
-if(USESP)
-    message(STATUS "Compiling RRTMGP CUDA kernels in single precision")
-    cuda_add_library(rte_rrtmgp_kernels_cuda STATIC ${sourcefiles})
-else()
-    message(STATUS "Compiling RRTMGP CUDA kernels in double precision")
-    cuda_add_library(rte_rrtmgp_kernels_cuda STATIC ${sourcefiles})
-endif()
+cuda_add_library(rte_rrtmgp STATIC ${sourcefiles_cuda})
+target_link_libraries(rte_rrtmgp_cuda rte_rrtmgp_kernels_cuda)

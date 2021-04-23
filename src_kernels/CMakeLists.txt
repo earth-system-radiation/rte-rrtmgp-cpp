@@ -2,9 +2,9 @@
 # This file is part of a C++ interface to the Radiative Transfer for Energetics (RTE)
 #
 FILE(GLOB sourcefiles
-    "../src_fortran/mo_rte_kind.F90"
-    "../src_fortran/mo_gas_optics_kernels.F90"
-    "../src_fortran/mo_rte_solver_kernels.F90"
+    "../src_kernels/mo_rte_kind.F90"
+    "../src_kernels/mo_gas_optics_kernels.F90"
+    "../src_kernels/mo_rte_solver_kernels.F90"
 
     # CvH: Hopefully this is temporary.
     "../rte-rrtmgp/rte/mo_rte_util_array.F90"
