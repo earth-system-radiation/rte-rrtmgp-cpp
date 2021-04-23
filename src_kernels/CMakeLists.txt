@@ -15,10 +15,4 @@ FILE(GLOB sourcefiles
     "../rte-rrtmgp/rte/kernels/mo_fluxes_broadband_kernels.F90"
     "../rte-rrtmgp/extensions/mo_fluxes_byband_kernels.F90")
 
-if(USESP)
-    message(STATUS "Compiling RRTMGP kernels in single precision")
-    add_library(rte_rrtmgp_kernels STATIC ${sourcefiles})
-else()
-    message(STATUS "Compiling RRTMGP kernels in double precision")
-    add_library(rte_rrtmgp_kernels STATIC ${sourcefiles})
-endif()
+add_library(rte_rrtmgp_kernels STATIC ${sourcefiles})
