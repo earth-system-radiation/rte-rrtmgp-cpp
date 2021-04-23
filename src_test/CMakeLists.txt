@@ -21,7 +21,7 @@ add_definitions(-DGITHASH="${GITHASH}")
 
 if(USECUDA)
   cuda_add_executable(test_rte_rrtmgp_gpu Radiation_solver.cu test_rte_rrtmgp.cu)
-  target_link_libraries(test_rte_rrtmgp_gpu rte_rrtmgp_cuda ${LIBS} m)
+  target_link_libraries(test_rte_rrtmgp_gpu rte_rrtmgp rte_rrtmgp_cuda ${LIBS} m)
 endif()
 
 add_executable(test_rte_rrtmgp Radiation_solver.cpp test_rte_rrtmgp.cpp)
