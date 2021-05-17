@@ -1,3 +1,5 @@
+#include "Types.h"
+
 template<typename TF>__device__
 TF interpolate1D(const TF val,
                  const TF offset,

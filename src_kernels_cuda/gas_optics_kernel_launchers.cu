@@ -215,9 +215,9 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaMallocAsync((void**)& tau_major, tau_size, 0));
         cuda_safe_call(cudaMallocAsync((void**)& tau_minor, tau_size, 0));
 
-        const int block_bnd_maj = 14;
-        const int block_lay_maj = 1;
-        const int block_col_maj = 32;
+        const int block_bnd_maj = 11;  // 14
+        const int block_lay_maj = 1;   // 1
+        const int block_col_maj = 3;   // 32
 
         const int grid_bnd_maj = nband/block_bnd_maj + (nband%block_bnd_maj > 0);
         const int grid_lay_maj = nlay/block_lay_maj + (nlay%block_lay_maj > 0);
@@ -236,8 +236,9 @@ namespace rrtmgp_kernel_launcher_cuda
 
         const int nscale_lower = scale_by_complement_lower.dim(1);
         const int nscale_upper = scale_by_complement_upper.dim(1);
-        const int block_lay_min = 32;
-        const int block_col_min = 32;
+
+        const int block_lay_min = 1;  // 32;
+        const int block_col_min = 3;  // 32;
 
         const int grid_lay_min  = nlay/block_lay_min + (nlay%block_lay_min > 0);
         const int grid_col_min  = ncol/block_col_min + (ncol%block_col_min > 0);
