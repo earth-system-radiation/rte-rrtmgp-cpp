@@ -101,6 +101,7 @@ namespace rte_kernel_launcher_cuda
 
         dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
         dim3 block_gpu2d(block_col2d, block_gpt2d);
+
         lw_solver_noscat_gaussquad_kernel<<<grid_gpu2d, block_gpu2d>>>(
                 ncol, nlay, ngpt, eps, top_at_1, nmus, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
                 lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), radn_up,

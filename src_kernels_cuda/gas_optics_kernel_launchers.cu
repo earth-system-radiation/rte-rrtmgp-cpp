@@ -310,9 +310,9 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaMemcpy(ones, ones_cpu, ones_size, cudaMemcpyHostToDevice));
 
         // Call the kernel.
-        const int block_bnd = 14;
-        const int block_lay = 1;
-        const int block_col = 32;
+        const int block_bnd = 1; // 14;
+        const int block_lay = 3; // 1;
+        const int block_col = 2; // 32;
 
         const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
         const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
