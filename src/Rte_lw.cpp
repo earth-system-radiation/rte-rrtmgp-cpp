@@ -83,10 +83,10 @@ namespace rrtmgp_kernel_launcher
                 const_cast<TF*>(sfc_source.ptr()),
                 gpt_flux_up.ptr(),
                 gpt_flux_dn.ptr(),
-                do_jacobians,
+                &do_jacobians,
                 const_cast<TF*>(sfc_source_jac.ptr()),
                 gpt_flux_up_jac.ptr(),
-                do_rescaling,
+                &do_rescaling,
                 const_cast<TF*>(ssa.ptr()),
                 const_cast<TF*>(g.ptr()));
     }
@@ -145,7 +145,7 @@ void Rte_lw<TF>::rte_lw(
     Array<TF,2> sfc_src_jac(sources.get_sfc_source().get_dims());
     Array<TF,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
 
-    // Do not rescale.
+    // Do not rescale and pass tau in twice in the last line to not trigger an exception.
     const BOOL_TYPE do_rescaling = false;
 
     rrtmgp_kernel_launcher::lw_solver_noscat_GaussQuad(
@@ -157,7 +157,7 @@ void Rte_lw<TF>::rte_lw(
             sfc_emis_gpt, sources.get_sfc_source(),
             gpt_flux_up, gpt_flux_dn,
             do_jacobians, sfc_src_jac, gpt_flux_up_jac,
-            do_rescaling, optical_props->get_ssa(), optical_props->get_g());
+            do_rescaling, optical_props->get_tau(), optical_props->get_tau());
 
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);
