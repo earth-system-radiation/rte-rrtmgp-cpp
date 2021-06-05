@@ -75,26 +75,21 @@ namespace
         Netcdf_file coef_nc(coef_file, Netcdf_mode::Read);
 
         // Read k-distribution information.
-        int n_temps = coef_nc.get_dimension_size("temperature");
-        int n_press = coef_nc.get_dimension_size("pressure");
-        int n_absorbers = coef_nc.get_dimension_size("absorber");
-
-        // CvH: I hardcode the value to 32 now, because coef files
-        // CvH: changed dimension name inconsistently.
-        // int n_char = coef_nc.get_dimension_size("string_len");
-        constexpr int n_char = 32;
-
-        int n_minorabsorbers = coef_nc.get_dimension_size("minor_absorber");
-        int n_extabsorbers = coef_nc.get_dimension_size("absorber_ext");
-        int n_mixingfracs = coef_nc.get_dimension_size("mixing_fraction");
-        int n_layers = coef_nc.get_dimension_size("atmos_layer");
-        int n_bnds = coef_nc.get_dimension_size("bnd");
-        int n_gpts = coef_nc.get_dimension_size("gpt");
-        int n_pairs = coef_nc.get_dimension_size("pair");
-        int n_minor_absorber_intervals_lower = coef_nc.get_dimension_size("minor_absorber_intervals_lower");
-        int n_minor_absorber_intervals_upper = coef_nc.get_dimension_size("minor_absorber_intervals_upper");
-        int n_contributors_lower = coef_nc.get_dimension_size("contributors_lower");
-        int n_contributors_upper = coef_nc.get_dimension_size("contributors_upper");
+        const int n_temps = coef_nc.get_dimension_size("temperature");
+        const int n_press = coef_nc.get_dimension_size("pressure");
+        const int n_absorbers = coef_nc.get_dimension_size("absorber");
+        const int n_char = coef_nc.get_dimension_size("string_len");
+        const int n_minorabsorbers = coef_nc.get_dimension_size("minor_absorber");
+        const int n_extabsorbers = coef_nc.get_dimension_size("absorber_ext");
+        const int n_mixingfracs = coef_nc.get_dimension_size("mixing_fraction");
+        const int n_layers = coef_nc.get_dimension_size("atmos_layer");
+        const int n_bnds = coef_nc.get_dimension_size("bnd");
+        const int n_gpts = coef_nc.get_dimension_size("gpt");
+        const int n_pairs = coef_nc.get_dimension_size("pair");
+        const int n_minor_absorber_intervals_lower = coef_nc.get_dimension_size("minor_absorber_intervals_lower");
+        const int n_minor_absorber_intervals_upper = coef_nc.get_dimension_size("minor_absorber_intervals_upper");
+        const int n_contributors_lower = coef_nc.get_dimension_size("contributors_lower");
+        const int n_contributors_upper = coef_nc.get_dimension_size("contributors_upper");
 
         // Read gas names.
         Array<std::string,1> gas_names(
