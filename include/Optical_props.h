@@ -117,7 +117,7 @@ class Optical_props_1scl : public Optical_props_arry<TF>
 
         const Array<TF,3>& get_tau() const { return tau; }
         const Array<TF,3>& get_ssa() const { throw std::runtime_error("ssa is not available in this class"); }
-        const Array<TF,3>& get_g  () const { throw std::runtime_error("g is available in this class"); }
+        const Array<TF,3>& get_g  () const { throw std::runtime_error("g is not available in this class"); }
 
         void delta_scale(const Array<TF,3>& forward_frac=Array<TF,3>()) {}
 
