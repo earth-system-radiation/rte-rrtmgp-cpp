@@ -66,10 +66,6 @@ namespace rte_kernel_launcher_cuda
                                     const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac)
     {
         TF eps = std::numeric_limits<TF>::epsilon();
-        const int flx_size = flux_dn.size() * sizeof(TF);
-        const int opt_size = tau.size() * sizeof(TF);
-        // const int mus_size = nmus * sizeof(TF);
-        const int sfc_size = sfc_src.size() * sizeof(TF);
 
         TF* tau_loc;
         TF* radn_up;
@@ -82,16 +78,20 @@ namespace rte_kernel_launcher_cuda
         TF* source_sfc_jac;
         TF* sfc_albedo;
 
-        cuda_safe_call(cudaMallocAsync((void **) &source_sfc, sfc_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &source_sfc_jac, sfc_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &sfc_albedo, sfc_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &tau_loc, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &trans, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &source_dn, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &source_up, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &radn_dn, flx_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &radn_up, flx_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &radn_up_jac, flx_size, 0));
+        const int flx_size = flux_dn.size();
+        const int opt_size = tau.size();
+        const int sfc_size = sfc_src.size();
+
+        Tools_gpu::allocate_gpu(source_sfc, sfc_size);
+        Tools_gpu::allocate_gpu(source_sfc_jac, sfc_size);
+        Tools_gpu::allocate_gpu(sfc_albedo, sfc_size);
+        Tools_gpu::allocate_gpu(tau_loc, opt_size);
+        Tools_gpu::allocate_gpu(trans, opt_size);
+        Tools_gpu::allocate_gpu(source_dn, opt_size);
+        Tools_gpu::allocate_gpu(source_up, opt_size);
+        Tools_gpu::allocate_gpu(radn_dn, flx_size);
+        Tools_gpu::allocate_gpu(radn_up, flx_size);
+        Tools_gpu::allocate_gpu(radn_up_jac, flx_size);
 
         const int block_col2d = 32;
         const int block_gpt2d = 1;
@@ -108,16 +108,16 @@ namespace rte_kernel_launcher_cuda
                 radn_dn, sfc_src_jac.ptr(), radn_up_jac, tau_loc, trans, source_dn, source_up,
                 source_sfc, sfc_albedo, source_sfc_jac, flux_up.ptr(), flux_dn.ptr(), flux_up_jac.ptr());
 
-        cuda_safe_call(cudaFreeAsync(tau_loc, 0));
-        cuda_safe_call(cudaFreeAsync(radn_up, 0));
-        cuda_safe_call(cudaFreeAsync(radn_up_jac, 0));
-        cuda_safe_call(cudaFreeAsync(radn_dn, 0));
-        cuda_safe_call(cudaFreeAsync(trans, 0));
-        cuda_safe_call(cudaFreeAsync(source_dn, 0));
-        cuda_safe_call(cudaFreeAsync(source_up, 0));
-        cuda_safe_call(cudaFreeAsync(source_sfc, 0));
-        cuda_safe_call(cudaFreeAsync(source_sfc_jac, 0));
-        cuda_safe_call(cudaFreeAsync(sfc_albedo, 0));
+        Tools_gpu::free_gpu(tau_loc);
+        Tools_gpu::free_gpu(radn_up);
+        Tools_gpu::free_gpu(radn_up_jac);
+        Tools_gpu::free_gpu(radn_dn);
+        Tools_gpu::free_gpu(trans);
+        Tools_gpu::free_gpu(source_dn);
+        Tools_gpu::free_gpu(source_up);
+        Tools_gpu::free_gpu(source_sfc);
+        Tools_gpu::free_gpu(source_sfc_jac);
+        Tools_gpu::free_gpu(sfc_albedo);
     }
 
     template<typename TF>
@@ -126,9 +126,6 @@ namespace rte_kernel_launcher_cuda
                            const Array_gpu<TF,1>& mu0, const Array_gpu<TF,2>& sfc_alb_dir, const Array_gpu<TF,2>& sfc_alb_dif,
                            Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn, Array_gpu<TF,3>& flux_dir)
     {
-        const int opt_size = tau.size() * sizeof(TF);
-        const int alb_size  = sfc_alb_dir.size() * sizeof(TF);
-        const int flx_size  = flux_up.size() * sizeof(TF);
         TF* r_dif;
         TF* t_dif;
         TF* r_dir;
@@ -141,17 +138,22 @@ namespace rte_kernel_launcher_cuda
         TF* src;
         TF* denom;
 
-        cuda_safe_call(cudaMallocAsync((void **) &r_dif, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &t_dif, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &r_dir, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &t_dir, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &t_noscat, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &source_up, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &source_dn, opt_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &source_sfc, alb_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &albedo, flx_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &src, flx_size, 0));
-        cuda_safe_call(cudaMallocAsync((void **) &denom, opt_size, 0));
+        const int opt_size = tau.size();
+        const int alb_size = sfc_alb_dir.size();
+        const int flx_size = flux_up.size();
+
+        Tools_gpu::allocate_gpu(r_dif, opt_size);
+        Tools_gpu::allocate_gpu(t_dif, opt_size);
+        Tools_gpu::allocate_gpu(r_dir, opt_size);
+        Tools_gpu::allocate_gpu(t_dir, opt_size);
+        Tools_gpu::allocate_gpu(t_noscat, opt_size);
+        Tools_gpu::allocate_gpu(source_up, opt_size);
+        Tools_gpu::allocate_gpu(source_dn, opt_size);
+        Tools_gpu::allocate_gpu(source_sfc, alb_size);
+        Tools_gpu::allocate_gpu(albedo, flx_size);
+        Tools_gpu::allocate_gpu(src, flx_size);
+        Tools_gpu::allocate_gpu(denom, opt_size);
+
         const int block_col3d = 16;
         const int block_lay3d = 16;
         const int block_gpt3d = 1;
@@ -175,21 +177,22 @@ namespace rte_kernel_launcher_cuda
 
         dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
         dim3 block_gpu2d(block_col2d, block_gpt2d);
+
         sw_source_adding_kernel<<<grid_gpu2d, block_gpu2d>>>(
                 ncol, nlay, ngpt, top_at_1, sfc_alb_dir.ptr(), sfc_alb_dif.ptr(), r_dif, t_dif, r_dir, t_dir, t_noscat,
                 flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), source_up, source_dn, source_sfc, albedo, src, denom);
 
-        cuda_safe_call(cudaFreeAsync(r_dif, 0));
-        cuda_safe_call(cudaFreeAsync(t_dif, 0));
-        cuda_safe_call(cudaFreeAsync(r_dir, 0));
-        cuda_safe_call(cudaFreeAsync(t_dir, 0));
-        cuda_safe_call(cudaFreeAsync(t_noscat, 0));
-        cuda_safe_call(cudaFreeAsync(source_up, 0));
-        cuda_safe_call(cudaFreeAsync(source_dn, 0));
-        cuda_safe_call(cudaFreeAsync(source_sfc, 0));
-        cuda_safe_call(cudaFreeAsync(albedo, 0));
-        cuda_safe_call(cudaFreeAsync(src, 0));
-        cuda_safe_call(cudaFreeAsync(denom, 0));
+        Tools_gpu::free_gpu(r_dif);
+        Tools_gpu::free_gpu(t_dif);
+        Tools_gpu::free_gpu(r_dir);
+        Tools_gpu::free_gpu(t_dir);
+        Tools_gpu::free_gpu(t_noscat);
+        Tools_gpu::free_gpu(source_up);
+        Tools_gpu::free_gpu(source_dn);
+        Tools_gpu::free_gpu(source_sfc);
+        Tools_gpu::free_gpu(albedo);
+        Tools_gpu::free_gpu(src);
+        Tools_gpu::free_gpu(denom);
     }
 }
 

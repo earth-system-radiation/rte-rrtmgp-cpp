@@ -62,5 +62,30 @@ namespace Tools_gpu
         printf("GPU memory usage at %s:%i: %f MB\n", file, line, used_db/(1024.0*1024.0));
         #endif
     }
+
+    template<typename T>
+    void allocate_gpu(T*& data_ptr, int length)
+    {
+        #ifndef CUDART_VERSION
+        #error CUDART_VERSION Undefined!
+        #elif (CUDART_VERSION >= 11020)  
+        cuda_safe_call(cudaMallocAsync((void **) &data_ptr, length*sizeof(T), 0));
+        #else
+        cuda_safe_call(cudaMalloc((void **) &data_ptr, length*sizeof(T)));
+        #endif
+    }
+
+    template<typename T>
+    void free_gpu(T*& data_ptr)
+    {
+        #ifndef CUDART_VERSION
+        #error CUDART_VERSION Undefined!
+        #elif (CUDART_VERSION >= 11020)  
+        cuda_safe_call(cudaFreeAsync(data_ptr, 0));
+        #else
+        cuda_safe_call(cudaFree(data_ptr));
+        #endif
+        data_ptr = nullptr;
+    }
 }
 #endif

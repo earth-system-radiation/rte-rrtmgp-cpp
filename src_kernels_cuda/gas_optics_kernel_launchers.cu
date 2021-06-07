@@ -148,9 +148,8 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
             Array_gpu<TF,3>& tau_rayleigh)
     {
-        const int k_size = ncol*nlay*ngpt*sizeof(TF);
         TF* k;
-        cuda_safe_call(cudaMallocAsync((void**)&k, k_size, 0));
+        Tools_gpu::allocate_gpu(k, ncol*nlay*ngpt);
 
         // Call the kernel.
         const int block_bnd = 14;
@@ -175,7 +174,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 tropo.ptr(), jtemp.ptr(),
                 tau_rayleigh.ptr(), k);
 
-        cuda_safe_call(cudaFreeAsync(k, 0));
+        Tools_gpu::free_gpu(k);
     }
 
     template<typename TF>
@@ -209,11 +208,10 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<int,4>& jeta, const Array_gpu<int,2>& jtemp,
             const Array_gpu<int,2>& jpress, Array_gpu<TF,3>& tau)
     {
-        const int tau_size = tau.size()*sizeof(TF);
         TF* tau_major;
         TF* tau_minor;
-        cuda_safe_call(cudaMallocAsync((void**)& tau_major, tau_size, 0));
-        cuda_safe_call(cudaMallocAsync((void**)& tau_minor, tau_size, 0));
+        Tools_gpu::allocate_gpu(tau_major, tau.size());
+        Tools_gpu::allocate_gpu(tau_minor, tau.size());
 
         const int block_bnd_maj = 11;  // 14
         const int block_lay_maj = 1;   // 1
@@ -265,8 +263,8 @@ namespace rrtmgp_kernel_launcher_cuda
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                 tropo.ptr(), tau.ptr(), tau_minor);
 
-        cuda_safe_call(cudaFreeAsync(tau_major, 0));
-        cuda_safe_call(cudaFreeAsync(tau_minor, 0));
+        Tools_gpu::free_gpu(tau_major);
+        Tools_gpu::free_gpu(tau_minor);
     }
 
     template<typename TF>
@@ -298,16 +296,13 @@ namespace rrtmgp_kernel_launcher_cuda
         TF ones_cpu[2] = {TF(1.), TF(1.)};
         const TF delta_Tsurf = TF(1.);
 
-        const int pfrac_size = lay_src.size() * sizeof(TF);
-        const int ones_size = 2 * sizeof(TF);
         TF* pfrac;
         TF* ones;
-
-        cuda_safe_call(cudaMallocAsync((void**)& pfrac, pfrac_size, 0));
-        cuda_safe_call(cudaMallocAsync((void**)& ones, ones_size, 0));
+        Tools_gpu::allocate_gpu(pfrac, lay_src.size());
+        Tools_gpu::allocate_gpu(ones, 2);
 
         // Copy the data to the GPU.
-        cuda_safe_call(cudaMemcpy(ones, ones_cpu, ones_size, cudaMemcpyHostToDevice));
+        cuda_safe_call(cudaMemcpy(ones, ones_cpu, 2*sizeof(TF), cudaMemcpyHostToDevice));
 
         // Call the kernel.
         const int block_bnd = 1; // 14;
@@ -333,8 +328,8 @@ namespace rrtmgp_kernel_launcher_cuda
                 lev_src_inc.ptr(), lev_src_dec.ptr(),
                 sfc_src_jac.ptr(), pfrac);
 
-        cuda_safe_call(cudaFreeAsync(pfrac, 0));
-        cuda_safe_call(cudaFreeAsync(ones, 0));
+        Tools_gpu::free_gpu(pfrac);
+        Tools_gpu::free_gpu(ones);
     }
 }
 

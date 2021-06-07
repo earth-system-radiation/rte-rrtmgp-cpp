@@ -332,7 +332,7 @@ class Array_gpu
         {}
 
         #ifdef __CUDACC__
-        ~Array_gpu() { cuda_safe_call(cudaFreeAsync(data_ptr, 0)); }
+        ~Array_gpu() { Tools_gpu::free_gpu(data_ptr); }
         #endif
 
         #ifdef __CUDACC__
@@ -346,7 +346,7 @@ class Array_gpu
             strides = array.strides;
             offsets = array.offsets;
 
-            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
+            Tools_gpu::allocate_gpu(data_ptr, ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
 
             return (*this);
@@ -377,7 +377,7 @@ class Array_gpu
             strides(array.strides),
             offsets(array.offsets)
         {
-            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
+            Tools_gpu::allocate_gpu(data_ptr, ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
         }
         #endif
@@ -401,7 +401,7 @@ class Array_gpu
             strides(calc_strides<N>(dims)),
             offsets({})
         {
-            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
+            Tools_gpu::allocate_gpu(data_ptr, ncells);
         }
         #endif
 
@@ -414,7 +414,7 @@ class Array_gpu
             strides(array.strides),
             offsets(array.offsets)
         {
-            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
+            Tools_gpu::allocate_gpu(data_ptr, ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyHostToDevice));
         }
         #endif
@@ -429,7 +429,7 @@ class Array_gpu
         #ifdef __CUDACC__
         inline void set_data(const Array<T, N>& array)
         {
-            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
+            Tools_gpu::allocate_gpu(data_ptr, ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyHostToDevice));
         }
         #endif
@@ -442,7 +442,7 @@ class Array_gpu
 
             this->dims = dims;
             ncells = product<N>(dims);
-            cuda_safe_call(cudaMallocAsync((void **) &data_ptr, ncells*sizeof(T), 0));
+            Tools_gpu::allocate_gpu(data_ptr, ncells);
             strides = calc_strides<N>(dims);
             offsets = {};
         }
