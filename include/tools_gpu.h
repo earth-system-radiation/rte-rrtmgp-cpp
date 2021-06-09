@@ -8,7 +8,7 @@
 
 namespace Tools_gpu
 {
-    /* CUDA error checking, from: http://choorucode.com/2011/03/02/how-to-do-error-checking-in-cuda/
+    /* CUDA error checking.
        In debug mode, CUDACHECKS is defined and all kernel calls are checked with cudaCheckError().
        All CUDA api calls are always checked with cudaSafeCall() */
 
