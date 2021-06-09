@@ -67,31 +67,20 @@ namespace rte_kernel_launcher_cuda
     {
         TF eps = std::numeric_limits<TF>::epsilon();
 
-        TF* tau_loc;
-        TF* radn_up;
-        TF* radn_up_jac;
-        TF* radn_dn;
-        TF* trans;
-        TF* source_dn;
-        TF* source_up;
-        TF* source_sfc;
-        TF* source_sfc_jac;
-        TF* sfc_albedo;
-
         const int flx_size = flux_dn.size();
         const int opt_size = tau.size();
         const int sfc_size = sfc_src.size();
 
-        Tools_gpu::allocate_gpu(source_sfc, sfc_size);
-        Tools_gpu::allocate_gpu(source_sfc_jac, sfc_size);
-        Tools_gpu::allocate_gpu(sfc_albedo, sfc_size);
-        Tools_gpu::allocate_gpu(tau_loc, opt_size);
-        Tools_gpu::allocate_gpu(trans, opt_size);
-        Tools_gpu::allocate_gpu(source_dn, opt_size);
-        Tools_gpu::allocate_gpu(source_up, opt_size);
-        Tools_gpu::allocate_gpu(radn_dn, flx_size);
-        Tools_gpu::allocate_gpu(radn_up, flx_size);
-        Tools_gpu::allocate_gpu(radn_up_jac, flx_size);
+        TF* source_sfc = Tools_gpu::allocate_gpu<TF>(sfc_size);
+        TF* source_sfc_jac = Tools_gpu::allocate_gpu<TF>(sfc_size);
+        TF* sfc_albedo = Tools_gpu::allocate_gpu<TF>(sfc_size);
+        TF* tau_loc = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* trans = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* source_dn = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* source_up = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* radn_dn = Tools_gpu::allocate_gpu<TF>(flx_size);
+        TF* radn_up = Tools_gpu::allocate_gpu<TF>(flx_size);
+        TF* radn_up_jac = Tools_gpu::allocate_gpu<TF>(flx_size);
 
         const int block_col2d = 32;
         const int block_gpt2d = 1;
@@ -126,33 +115,21 @@ namespace rte_kernel_launcher_cuda
                            const Array_gpu<TF,1>& mu0, const Array_gpu<TF,2>& sfc_alb_dir, const Array_gpu<TF,2>& sfc_alb_dif,
                            Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn, Array_gpu<TF,3>& flux_dir)
     {
-        TF* r_dif;
-        TF* t_dif;
-        TF* r_dir;
-        TF* t_dir;
-        TF* t_noscat;
-        TF* source_up;
-        TF* source_dn;
-        TF* source_sfc;
-        TF* albedo;
-        TF* src;
-        TF* denom;
-
         const int opt_size = tau.size();
         const int alb_size = sfc_alb_dir.size();
         const int flx_size = flux_up.size();
 
-        Tools_gpu::allocate_gpu(r_dif, opt_size);
-        Tools_gpu::allocate_gpu(t_dif, opt_size);
-        Tools_gpu::allocate_gpu(r_dir, opt_size);
-        Tools_gpu::allocate_gpu(t_dir, opt_size);
-        Tools_gpu::allocate_gpu(t_noscat, opt_size);
-        Tools_gpu::allocate_gpu(source_up, opt_size);
-        Tools_gpu::allocate_gpu(source_dn, opt_size);
-        Tools_gpu::allocate_gpu(source_sfc, alb_size);
-        Tools_gpu::allocate_gpu(albedo, flx_size);
-        Tools_gpu::allocate_gpu(src, flx_size);
-        Tools_gpu::allocate_gpu(denom, opt_size);
+        TF* r_dif = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* t_dif = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* r_dir = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* t_dir = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* t_noscat = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* source_up = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* source_dn = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* source_sfc = Tools_gpu::allocate_gpu<TF>(alb_size);
+        TF* albedo = Tools_gpu::allocate_gpu<TF>(flx_size);
+        TF* src = Tools_gpu::allocate_gpu<TF>(flx_size);
+        TF* denom = Tools_gpu::allocate_gpu<TF>(opt_size);
 
         const int block_col3d = 16;
         const int block_lay3d = 16;

@@ -64,15 +64,19 @@ namespace Tools_gpu
     }
 
     template<typename T>
-    void allocate_gpu(T*& data_ptr, int length)
+    T* allocate_gpu(int length)
     {
+        T* data_ptr = nullptr;
+
         #ifndef CUDART_VERSION
         #error CUDART_VERSION Undefined!
-        #elif (CUDART_VERSION >= 11020)  
+        #elif (CUDART_VERSION >= 11020)
         cuda_safe_call(cudaMallocAsync((void **) &data_ptr, length*sizeof(T), 0));
         #else
         cuda_safe_call(cudaMalloc((void **) &data_ptr, length*sizeof(T)));
         #endif
+
+        return data_ptr;
     }
 
     template<typename T>
@@ -80,7 +84,7 @@ namespace Tools_gpu
     {
         #ifndef CUDART_VERSION
         #error CUDART_VERSION Undefined!
-        #elif (CUDART_VERSION >= 11020)  
+        #elif (CUDART_VERSION >= 11020)
         cuda_safe_call(cudaFreeAsync(data_ptr, 0));
         #else
         cuda_safe_call(cudaFree(data_ptr));
