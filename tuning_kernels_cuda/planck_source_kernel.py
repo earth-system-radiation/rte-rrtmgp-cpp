@@ -13,7 +13,7 @@ def parse_command_line():
     parser = argparse.ArgumentParser(description="Tuning script for Planck_source_kernel()")
     parser.add_argument("--tune", default=False, action="store_true")
     parser.add_argument("--run", default=False, action="store_true")
-    parser.add_argument("--best_params", default=False, action="store_true")
+    parser.add_argument("--best_configuration", default=False, action="store_true")
     parser.add_argument("--block_size_x", type=int, default=14)
     parser.add_argument("--block_size_y", type=int, default=1)
     parser.add_argument("--block_size_z", type=int, default=32)
@@ -157,15 +157,15 @@ if __name__ == "__main__":
         tune()
     elif command_line.run:
         parameters = dict()
-        if command_line.best_params:
+        if command_line.best_configuration:
             with open("timings_planck_source_kernel.json", "r") as file:
                 configurations = json.load(file)
             best_configuration = min(configurations, key=lambda x: x["time"])
-            parameters = {'block_size_x': best_configuration["block_size_x"],
-                          'block_size_y': best_configuration["block_size_y"],
-                          'block_size_z': best_configuration["block_size_z"]}
+            parameters['block_size_x'] = best_configuration["block_size_x"]
+            parameters['block_size_y'] = best_configuration["block_size_y"]
+            parameters['block_size_z'] = best_configuration["block_size_z"]
         else:
-            parameters = {'block_size_x': command_line.block_size_x,
-                          'block_size_y': command_line.block_size_y,
-                          'block_size_z': command_line.block_size_z}
+            parameters['block_size_x'] = command_line.block_size_x
+            parameters['block_size_y'] = command_line.block_size_y
+            parameters['block_size_z'] = command_line.block_size_z
         run_and_test(parameters)
