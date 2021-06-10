@@ -14,7 +14,7 @@ def parse_command_line():
     parser = argparse.ArgumentParser(description="Tuning script for Tau_absorption_kernel()")
     parser.add_argument("--tune", default=False, action="store_true")
     parser.add_argument("--run", default=False, action="store_true")
-    parser.add_argument("--best_params", default=False, action="store_true")
+    parser.add_argument("--best_configuration", default=False, action="store_true")
     parser.add_argument("--major_block_size_x", type=int, default=14)
     parser.add_argument("--major_block_size_y", type=int, default=1)
     parser.add_argument("--major_block_size_z", type=int, default=32)
