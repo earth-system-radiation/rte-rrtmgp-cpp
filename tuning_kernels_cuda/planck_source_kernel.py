@@ -156,10 +156,10 @@ if __name__ == "__main__":
         if command_line.best_params:
             with open("timings_planck_source_kernel.json", "r") as file:
                 configurations = json.load(file)
-            best_configuration = min(configurations.values(), key=lambda x: x["time"])
-            parameters = {'block_size_x': best_configuration.block_size_x,
-                          'block_size_y': best_configuration.block_size_y,
-                          'block_size_z': best_configuration.block_size_z}
+            best_configuration = min(configurations, key=lambda x: x["time"])
+            parameters = {'block_size_x': best_configuration["block_size_x"],
+                          'block_size_y': best_configuration["block_size_y"],
+                          'block_size_z': best_configuration["block_size_z"]}
         else:
             parameters = {'block_size_x': command_line.block_size_x,
                           'block_size_y': command_line.block_size_y,
