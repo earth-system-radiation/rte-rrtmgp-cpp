@@ -30,6 +30,7 @@ namespace rte_kernel_launcher_cuda
 
     }
 
+
     template<typename TF>
     void apply_BC(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, Array_gpu<TF,3>& gpt_flux_dn)
     {
@@ -43,6 +44,7 @@ namespace rte_kernel_launcher_cuda
         dim3 block_gpu(block_col, block_gpt);
         apply_BC_kernel<<<grid_gpu, block_gpu>>>(ncol, nlay, ngpt, top_at_1, gpt_flux_dn.ptr());
     }
+
 
     template<typename TF>
     void apply_BC(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const Array_gpu<TF,2>& inc_flux_dif, Array_gpu<TF,3>& gpt_flux_dn)
@@ -58,6 +60,7 @@ namespace rte_kernel_launcher_cuda
         apply_BC_kernel<<<grid_gpu, block_gpu>>>(ncol, nlay, ngpt, top_at_1, inc_flux_dif.ptr(), gpt_flux_dn.ptr());
     }
 
+
     template<typename TF>
     void lw_solver_noscat_gaussquad(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,
                                     const Array_gpu<TF,2>& ds, const Array_gpu<TF,2>& weights, const Array_gpu<TF,3>& tau, const Array_gpu<TF,3> lay_source,
@@ -67,40 +70,87 @@ namespace rte_kernel_launcher_cuda
     {
         TF eps = std::numeric_limits<TF>::epsilon();
 
-        TF* tau_loc;
-        TF* radn_up;
-        TF* radn_up_jac;
-        TF* radn_dn;
-        TF* trans;
-        TF* source_dn;
-        TF* source_up;
-        TF* source_sfc;
-        TF* source_sfc_jac;
-        TF* sfc_albedo;
-
         const int flx_size = flux_dn.size();
         const int opt_size = tau.size();
         const int sfc_size = sfc_src.size();
 
-        Tools_gpu::allocate_gpu(source_sfc, sfc_size);
-        Tools_gpu::allocate_gpu(source_sfc_jac, sfc_size);
-        Tools_gpu::allocate_gpu(sfc_albedo, sfc_size);
-        Tools_gpu::allocate_gpu(tau_loc, opt_size);
-        Tools_gpu::allocate_gpu(trans, opt_size);
-        Tools_gpu::allocate_gpu(source_dn, opt_size);
-        Tools_gpu::allocate_gpu(source_up, opt_size);
-        Tools_gpu::allocate_gpu(radn_dn, flx_size);
-        Tools_gpu::allocate_gpu(radn_up, flx_size);
-        Tools_gpu::allocate_gpu(radn_up_jac, flx_size);
+        TF* source_sfc = Tools_gpu::allocate_gpu<TF>(sfc_size);
+        TF* source_sfc_jac = Tools_gpu::allocate_gpu<TF>(sfc_size);
+        TF* sfc_albedo = Tools_gpu::allocate_gpu<TF>(sfc_size);
+        TF* tau_loc = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* trans = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* source_dn = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* source_up = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* radn_dn = Tools_gpu::allocate_gpu<TF>(flx_size);
+        TF* radn_up = Tools_gpu::allocate_gpu<TF>(flx_size);
+        TF* radn_up_jac = Tools_gpu::allocate_gpu<TF>(flx_size);
 
         const int block_col2d = 32;
-        const int block_gpt2d = 1;
+        const int block_gpt2d = 8;
 
         const int grid_col2d = ncol/block_col2d + (ncol%block_col2d > 0);
         const int grid_gpt2d = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
 
         dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
         dim3 block_gpu2d(block_col2d, block_gpt2d);
+
+        /*
+        // Running some permutations of block sizes.
+        {
+            std::cout << "TUNING lw_solver_noscat_gaussquad_kernel" << std::endl;
+            std::vector<std::pair<int, int>> col_gpt_combis;
+            std::vector<int> cols{ 1, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
+            std::vector<int> gpts{ 1, 2, 4, 8, 16, 32, 64, 128};
+            for (const int igpt : gpts)
+                for (const int icol : cols)
+                    col_gpt_combis.emplace_back(icol, igpt);
+
+            // Create tmp arrays to write output to.
+            Array_gpu<TF,3> flux_up_tmp{flux_up}, flux_dn_tmp{flux_dn}, flux_up_jac_tmp{flux_up_jac};
+
+            for (const auto& p : col_gpt_combis)
+            {
+                std::cout << "(" << p.first << ", " << p.second << "): ";
+
+                const int block_col2d = p.first;
+                const int block_gpt2d = p.second;
+
+                const int grid_col2d = ncol/block_col2d + (ncol%block_col2d > 0);
+                const int grid_gpt2d = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
+
+                dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
+                dim3 block_gpu2d(block_col2d, block_gpt2d);
+
+                cudaEvent_t start;
+                cudaEvent_t stop;
+                cudaEventCreate(&start);
+                cudaEventCreate(&stop);
+
+                cudaEventRecord(start, 0);
+                lw_solver_noscat_gaussquad_kernel<<<grid_gpu2d, block_gpu2d>>>(
+                        ncol, nlay, ngpt, eps, top_at_1, nmus, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+                        lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), radn_up,
+                        radn_dn, sfc_src_jac.ptr(), radn_up_jac, tau_loc, trans, source_dn, source_up,
+                        source_sfc, sfc_albedo, source_sfc_jac, flux_up_tmp.ptr(), flux_dn_tmp.ptr(), flux_up_jac_tmp.ptr());
+                cudaEventRecord(stop, 0);
+                cudaEventSynchronize(stop);
+                float duration = 0.f;
+                cudaEventElapsedTime(&duration, start, stop);
+
+                std::cout << std::setprecision(10) << duration << " (ns), check: " << flux_up_tmp({ncol, nlay+1, ngpt}) << ", ";
+
+                // Check whether kernel has succeeded;
+                cudaError err = cudaGetLastError();
+                if (err != cudaSuccess)
+                    std::cout << cudaGetErrorString(err) << std::endl;
+                else
+                    std::cout << std::endl;
+            }
+
+            std::cout << "STOP TUNING lw_solver_noscat_gaussquad_kernel" << std::endl;
+        }
+        // End of performance tuning.
+        */
 
         lw_solver_noscat_gaussquad_kernel<<<grid_gpu2d, block_gpu2d>>>(
                 ncol, nlay, ngpt, eps, top_at_1, nmus, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
@@ -120,39 +170,28 @@ namespace rte_kernel_launcher_cuda
         Tools_gpu::free_gpu(sfc_albedo);
     }
 
+
     template<typename TF>
     void sw_solver_2stream(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
                            const Array_gpu<TF,3>& tau, const Array_gpu<TF,3>& ssa, const Array_gpu<TF,3>& g,
                            const Array_gpu<TF,1>& mu0, const Array_gpu<TF,2>& sfc_alb_dir, const Array_gpu<TF,2>& sfc_alb_dif,
                            Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn, Array_gpu<TF,3>& flux_dir)
     {
-        TF* r_dif;
-        TF* t_dif;
-        TF* r_dir;
-        TF* t_dir;
-        TF* t_noscat;
-        TF* source_up;
-        TF* source_dn;
-        TF* source_sfc;
-        TF* albedo;
-        TF* src;
-        TF* denom;
-
         const int opt_size = tau.size();
         const int alb_size = sfc_alb_dir.size();
         const int flx_size = flux_up.size();
 
-        Tools_gpu::allocate_gpu(r_dif, opt_size);
-        Tools_gpu::allocate_gpu(t_dif, opt_size);
-        Tools_gpu::allocate_gpu(r_dir, opt_size);
-        Tools_gpu::allocate_gpu(t_dir, opt_size);
-        Tools_gpu::allocate_gpu(t_noscat, opt_size);
-        Tools_gpu::allocate_gpu(source_up, opt_size);
-        Tools_gpu::allocate_gpu(source_dn, opt_size);
-        Tools_gpu::allocate_gpu(source_sfc, alb_size);
-        Tools_gpu::allocate_gpu(albedo, flx_size);
-        Tools_gpu::allocate_gpu(src, flx_size);
-        Tools_gpu::allocate_gpu(denom, opt_size);
+        TF* r_dif = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* t_dif = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* r_dir = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* t_dir = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* t_noscat = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* source_up = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* source_dn = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* source_sfc = Tools_gpu::allocate_gpu<TF>(alb_size);
+        TF* albedo = Tools_gpu::allocate_gpu<TF>(flx_size);
+        TF* src = Tools_gpu::allocate_gpu<TF>(flx_size);
+        TF* denom = Tools_gpu::allocate_gpu<TF>(opt_size);
 
         const int block_col3d = 16;
         const int block_lay3d = 16;
@@ -195,6 +234,7 @@ namespace rte_kernel_launcher_cuda
         Tools_gpu::free_gpu(denom);
     }
 }
+
 
 #ifdef RTE_RRTMGP_SINGLE_PRECISION
 template void rte_kernel_launcher_cuda::apply_BC(const int, const int, const int, const BOOL_TYPE,

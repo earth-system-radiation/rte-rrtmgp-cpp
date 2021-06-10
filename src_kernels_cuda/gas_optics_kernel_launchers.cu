@@ -21,9 +21,9 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_j = 16;
         const int block_k = 1;
 
-        const int grid_i  = ni/block_i + (ni%block_i > 0);
-        const int grid_j  = nj/block_j + (nj%block_j > 0);
-        const int grid_k  = nk/block_k + (nk%block_k > 0);
+        const int grid_i = ni/block_i + (ni%block_i > 0);
+        const int grid_j = nj/block_j + (nj%block_j > 0);
+        const int grid_k = nk/block_k + (nk%block_k > 0);
 
         dim3 grid_gpu(grid_i, grid_j, grid_k);
         dim3 block_gpu(block_i, block_j, block_k);
@@ -148,8 +148,7 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
             Array_gpu<TF,3>& tau_rayleigh)
     {
-        TF* k;
-        Tools_gpu::allocate_gpu(k, ncol*nlay*ngpt);
+        TF* k = Tools_gpu::allocate_gpu<TF>(ncol*nlay*ngpt);
 
         // Call the kernel.
         const int block_bnd = 14;
@@ -208,10 +207,8 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<int,4>& jeta, const Array_gpu<int,2>& jtemp,
             const Array_gpu<int,2>& jpress, Array_gpu<TF,3>& tau)
     {
-        TF* tau_major;
-        TF* tau_minor;
-        Tools_gpu::allocate_gpu(tau_major, tau.size());
-        Tools_gpu::allocate_gpu(tau_minor, tau.size());
+        TF* tau_major = Tools_gpu::allocate_gpu<TF>(tau.size());
+        TF* tau_minor = Tools_gpu::allocate_gpu<TF>(tau.size());
 
         const int block_bnd_maj = 11;  // 14
         const int block_lay_maj = 1;   // 1
@@ -296,10 +293,8 @@ namespace rrtmgp_kernel_launcher_cuda
         TF ones_cpu[2] = {TF(1.), TF(1.)};
         const TF delta_Tsurf = TF(1.);
 
-        TF* pfrac;
-        TF* ones;
-        Tools_gpu::allocate_gpu(pfrac, lay_src.size());
-        Tools_gpu::allocate_gpu(ones, 2);
+        TF* pfrac = Tools_gpu::allocate_gpu<TF>(lay_src.size());
+        TF* ones = Tools_gpu::allocate_gpu<TF>(2);
 
         // Copy the data to the GPU.
         cuda_safe_call(cudaMemcpy(ones, ones_cpu, 2*sizeof(TF), cudaMemcpyHostToDevice));
@@ -309,9 +304,9 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay = 3; // 1;
         const int block_col = 2; // 32;
 
-        const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
-        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
 
         dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
         dim3 block_gpu(block_bnd, block_lay, block_col);

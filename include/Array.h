@@ -346,7 +346,7 @@ class Array_gpu
             strides = array.strides;
             offsets = array.offsets;
 
-            Tools_gpu::allocate_gpu(data_ptr, ncells);
+            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
 
             return (*this);
@@ -377,7 +377,7 @@ class Array_gpu
             strides(array.strides),
             offsets(array.offsets)
         {
-            Tools_gpu::allocate_gpu(data_ptr, ncells);
+            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
         }
         #endif
@@ -401,7 +401,7 @@ class Array_gpu
             strides(calc_strides<N>(dims)),
             offsets({})
         {
-            Tools_gpu::allocate_gpu(data_ptr, ncells);
+            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
         }
         #endif
 
@@ -414,7 +414,7 @@ class Array_gpu
             strides(array.strides),
             offsets(array.offsets)
         {
-            Tools_gpu::allocate_gpu(data_ptr, ncells);
+            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyHostToDevice));
         }
         #endif
@@ -429,7 +429,7 @@ class Array_gpu
         #ifdef __CUDACC__
         inline void set_data(const Array<T, N>& array)
         {
-            Tools_gpu::allocate_gpu(data_ptr, ncells);
+            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyHostToDevice));
         }
         #endif
@@ -442,7 +442,7 @@ class Array_gpu
 
             this->dims = dims;
             ncells = product<N>(dims);
-            Tools_gpu::allocate_gpu(data_ptr, ncells);
+            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
             strides = calc_strides<N>(dims);
             offsets = {};
         }
