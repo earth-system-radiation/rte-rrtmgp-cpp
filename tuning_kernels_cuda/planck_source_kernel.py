@@ -32,6 +32,10 @@ def compare_fields(arr1, arr2, name):
 
 # Run one instance of the kernel and test output
 def run_and_test(params: dict):
+    print("Running {} [block_size_x: {}, block_size_y: {}, block_size_z: {}]".format(kernel_name,
+                                                                                     params["block_size_x"],
+                                                                                     params["block_size_y"],
+                                                                                     params["block_size_z"]))
     result = kt.run_kernel(
             kernel_name, kernel_string, problem_size,
             args, params, compiler_options=cp)
