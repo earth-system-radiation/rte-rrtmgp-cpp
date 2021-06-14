@@ -117,7 +117,7 @@ if __name__ == "__main__":
     cp = ['-I{}'.format(include)]
 
     ncol = type_int(144)
-    nlay = type_int(200)
+    nlay = type_int(140)
     nband = type_int(16)
     ngpt = type_int(256)
     nflav = type_int(10)
