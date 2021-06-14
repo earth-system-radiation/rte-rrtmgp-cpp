@@ -208,8 +208,8 @@ namespace rte_kernel_launcher_cuda
         sw_2stream_kernel<<<grid_gpu3d, block_gpu3d>>>(
                 ncol, nlay, ngpt, tmin, tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(), r_dif, t_dif, r_dir, t_dir, t_noscat);
 
-        const int block_col2d = 16;
-        const int block_gpt2d = 16;
+        const int block_col2d = 32;
+        const int block_gpt2d = 4;
 
         const int grid_col2d = ncol/block_col2d + (ncol%block_col2d > 0);
         const int grid_gpt2d = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);

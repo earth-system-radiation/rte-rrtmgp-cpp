@@ -1,3 +1,5 @@
+#include "Types.h"
+
 template<typename TF> __device__ constexpr TF k_min();
 template<> __device__ constexpr double k_min() { return 1.e-12; }
 template<> __device__ constexpr float k_min() { return 1.e-4f; }
