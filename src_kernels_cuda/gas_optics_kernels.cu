@@ -360,29 +360,30 @@ void compute_tau_minor_absorption_kernel(
         TF* __restrict__ tau_minor)
 {
     // Fetch the three coordinates.
-    const int ilay = blockIdx.x * blockDim.x + threadIdx.x;
-    const int icol = blockIdx.y * blockDim.y + threadIdx.y;
+    const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
+    const int icol = (blockIdx.z * blockDim.z) + threadIdx.z;
     const TF PaTohPa = 0.01;
     const int ncl = ncol * nlay;
-    if ((icol < ncol) && (ilay < nlay))
+
+    if ( (icol < ncol) && (ilay < nlay) )
     {
         //kernel implementation
         const int idx_collay = icol + ilay * ncol;
         const int idx_collaywv = icol + ilay * ncol + idx_h2o * ncl;
 
-        if (tropo[idx_collay] == 1)
+        if ( tropo[idx_collay] == 1 )
         {
-            for (int imnr = 0; imnr < nscale_lower; ++imnr)
+            for ( int imnr = threadIdx.x; imnr < nscale_lower; imnr += blockDim.x )
             {
                 TF scaling = col_gas[idx_collay + idx_minor_lower[imnr] * ncl];
-                if (minor_scales_with_density_lower[imnr])
+                if ( minor_scales_with_density_lower[imnr] )
                 {
                     scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
-                    if (idx_minor_scaling_lower[imnr] > 0)
+                    if ( idx_minor_scaling_lower[imnr] > 0 )
                     {
                         TF vmr_fact = TF(1.) / col_gas[idx_collay];
                         TF dry_fact = TF(1.) / (TF(1.) + col_gas[idx_collaywv] * vmr_fact);
-                        if (scale_by_complement_lower[imnr])
+                        if ( scale_by_complement_lower[imnr] )
                         {
                             scaling *= (TF(1.) - col_gas[idx_collay + idx_minor_scaling_lower[imnr] * ncl] * vmr_fact * dry_fact);
                         }
@@ -404,7 +405,7 @@ void compute_tau_minor_absorption_kernel(
                                             &tau_minor[idx_tau], &jeta[idx_fcl1],
                                             jtemp[idx_collay], nminork_lower, neta);
 
-                for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
+                for ( int igpt = gpt_start; igpt < gpt_end; ++igpt )
                 {
                     const int idx_out = igpt + ilay * ngpt + icol * nlay * ngpt;
                     tau[idx_out] += tau_minor[idx_out] * scaling;
@@ -413,17 +414,17 @@ void compute_tau_minor_absorption_kernel(
         }
         else
         {
-            for (int imnr = 0; imnr < nscale_upper; ++imnr)
+            for ( int imnr = threadIdx.x; imnr < nscale_upper; imnr += blockDim.x )
             {
                 TF scaling = col_gas[idx_collay + idx_minor_upper[imnr] * ncl];
-                if (minor_scales_with_density_upper[imnr])
+                if ( minor_scales_with_density_upper[imnr] )
                 {
                     scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
-                    if (idx_minor_scaling_upper[imnr] > 0)
+                    if ( idx_minor_scaling_upper[imnr] > 0 )
                     {
                         TF vmr_fact = TF(1.) / col_gas[idx_collay];
                         TF dry_fact = TF(1.) / (TF(1.) + col_gas[idx_collaywv] * vmr_fact);
-                        if (scale_by_complement_upper[imnr])
+                        if ( scale_by_complement_upper[imnr] )
                         {
                             scaling *= (TF(1.) - col_gas[idx_collay + idx_minor_scaling_upper[imnr] * ncl] * vmr_fact * dry_fact);
                         }
@@ -445,7 +446,7 @@ void compute_tau_minor_absorption_kernel(
                                             &tau_minor[idx_tau], &jeta[idx_fcl1],
                                             jtemp[idx_collay], nminork_upper, neta);
 
-                for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
+                for ( int igpt = gpt_start; igpt < gpt_end; ++igpt )
                 {
                     const int idx_out = igpt + ilay * ngpt + icol * nlay * ngpt;
                     tau[idx_out] += tau_minor[idx_out] * scaling;
