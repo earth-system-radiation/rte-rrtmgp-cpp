@@ -222,7 +222,7 @@ if __name__ == "__main__":
 
     problem_size_major = (nband, nlay, ncol)
     kernel_name_major = 'compute_tau_major_absorption_kernel<{}>'.format(str_float)
-    problem_size_minor = (nlay, ncol)
+    problem_size_minor = (ncol, nlay)
     kernel_name_minor = 'compute_tau_minor_absorption_kernel<{}>'.format(str_float)
 
     if command_line.tune:
