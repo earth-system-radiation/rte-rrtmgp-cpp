@@ -238,7 +238,7 @@ if __name__ == "__main__":
             parameters['major_block_size_z'] = best_configuration["block_size_z"]
             with open("timings_compute_tau_minor.json", "r") as file:
                 configurations_minor = json.load(file)
-            best_configuration = min(configurations_major, key=lambda x: x["time"])
+            best_configuration = min(configurations_minor, key=lambda x: x["time"])
             parameters['minor_block_size_x'] = best_configuration["block_size_x"]
             parameters['minor_block_size_y'] = best_configuration["block_size_y"]
         else:
