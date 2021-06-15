@@ -19,8 +19,7 @@ def parse_command_line():
     parser.add_argument("--major_block_size_y", type=int, default=1)
     parser.add_argument("--major_block_size_z", type=int, default=32)
     parser.add_argument("--minor_block_size_x", type=int, default=32)
-    parser.add_argument("--minor_block_size_y", type=int, default=1)
-    parser.add_argument("--minor_block_size_z", type=int, default=1)
+    parser.add_argument("--minor_block_size_y", type=int, default=32)
     return parser.parse_args()
 
 
@@ -49,10 +48,9 @@ def run_and_test(params: dict):
         args_major, params_major, compiler_options=cp)
     compare_fields(result[-2], tau_after_major, 'major')
     # Minor
-    print("Running {} [block_size_x: {}, block_size_y: {}, block_size_z: {}]".format(kernel_name_minor, params["minor_block_size_x"], params["minor_block_size_y"], params["minor_block_size_z"]))
+    print("Running {} [block_size_x: {}, block_size_y: {}]".format(kernel_name_minor, params["minor_block_size_x"], params["minor_block_size_y"]))
     params_minor = {'block_size_x': params["minor_block_size_x"],
-                    'block_size_y': params["minor_block_size_y"],
-                    'block_size_z': params["minor_block_size_z"]}
+                    'block_size_y': params["minor_block_size_y"]}
     # Use output from major as input for minor
     tau[:] = result[-2][:]
     result = kt.run_kernel(
@@ -71,7 +69,6 @@ def tune():
     params_minor = dict()
     params_minor["block_size_x"] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 32]
     params_minor["block_size_y"] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 32]
-    params_minor["block_size_z"] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 32]
 
     answer_major = len(args_major) * [None]
     answer_major[-2] = tau_after_major
@@ -244,12 +241,10 @@ if __name__ == "__main__":
             best_configuration = min(configurations_major, key=lambda x: x["time"])
             parameters['minor_block_size_x'] = best_configuration["block_size_x"]
             parameters['minor_block_size_y'] = best_configuration["block_size_y"]
-            parameters['minor_block_size_z'] = best_configuration["block_size_z"]
         else:
             parameters['major_block_size_x'] = command_line.major_block_size_x
             parameters['major_block_size_y'] = command_line.major_block_size_y
             parameters['major_block_size_z'] = command_line.major_block_size_z
             parameters['minor_block_size_x'] = command_line.minor_block_size_x
             parameters['minor_block_size_y'] = command_line.minor_block_size_y
-            parameters['minor_block_size_z'] = command_line.minor_block_size_z
         run_and_test(parameters)

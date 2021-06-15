@@ -361,7 +361,7 @@ void compute_tau_minor_absorption_kernel(
 {
     // Fetch the three coordinates.
     const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
-    const int icol = (blockIdx.z * blockDim.z) + threadIdx.z;
+    const int icol = (blockIdx.x * blockDim.x) + threadIdx.x;
     const TF PaTohPa = 0.01;
     const int ncl = ncol * nlay;
 
@@ -373,7 +373,7 @@ void compute_tau_minor_absorption_kernel(
 
         if ( tropo[idx_collay] == 1 )
         {
-            for ( int imnr = threadIdx.x; imnr < nscale_lower; imnr += blockDim.x )
+            for ( int imnr = 0; imnr < nscale_lower; ++imnr )
             {
                 TF scaling = col_gas[idx_collay + idx_minor_lower[imnr] * ncl];
                 if ( minor_scales_with_density_lower[imnr] )
@@ -414,7 +414,7 @@ void compute_tau_minor_absorption_kernel(
         }
         else
         {
-            for ( int imnr = threadIdx.x; imnr < nscale_upper; imnr += blockDim.x )
+            for ( int imnr = 0; imnr < nscale_upper; ++imnr )
             {
                 TF scaling = col_gas[idx_collay + idx_minor_upper[imnr] * ncl];
                 if ( minor_scales_with_density_upper[imnr] )
