@@ -76,10 +76,12 @@ void reorder12x21_kernel(
 {
     const int ii = blockIdx.x*blockDim.x + threadIdx.x;
     const int ij = blockIdx.y*blockDim.y + threadIdx.y;
+
     if ( (ii < ni) && (ij < nj) )
     {
         const int idx_out = ii + ij*ni;
         const int idx_in = ij + ii*nj;
+
         arr_out[idx_out] = arr_in[idx_in];
     }
 }
@@ -93,10 +95,12 @@ void reorder123x321_kernel(
     const int ii = blockIdx.x*blockDim.x + threadIdx.x;
     const int ij = blockIdx.y*blockDim.y + threadIdx.y;
     const int ik = blockIdx.z*blockDim.z + threadIdx.z;
+
     if ( (ii < ni) && (ij < nj) && (ik < nk))
     {
         const int idx_out = ii + ij*ni + ik*nj*ni;
-        const int idx_in = ik + ij*nk + ii*nj*nk;
+        const int idx_in  = ik + ij*nk + ii*nj*nk;
+
         arr_out[idx_out] = arr_in[idx_in];
     }
 }

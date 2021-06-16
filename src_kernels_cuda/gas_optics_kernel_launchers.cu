@@ -17,9 +17,9 @@ namespace rrtmgp_kernel_launcher_cuda
     void reorder123x321(const int ni, const int nj, const int nk,
                         const Array_gpu<TF,3>& arr_in, Array_gpu<TF,3>& arr_out)
     {
-        const int block_i = 32;
-        const int block_j = 16;
-        const int block_k = 1;
+        const int block_i = 8;
+        const int block_j = 4;
+        const int block_k = 16;
 
         const int grid_i = ni/block_i + (ni%block_i > 0);
         const int grid_j = nj/block_j + (nj%block_j > 0);
