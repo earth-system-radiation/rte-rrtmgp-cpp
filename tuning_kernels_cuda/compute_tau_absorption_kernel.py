@@ -62,13 +62,13 @@ def run_and_test(params: dict):
 # Tuning
 def tune():
     params_major = dict()
-    params_major["block_size_x"] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14]
-    params_major["block_size_y"] = [1, 2, 3, 4, 5, 6]
-    params_major["block_size_z"] = [1, 2, 3, 4, 5, 6, 32]
+    params_major["block_size_x"] = [i for i in range(1, 32 + 1)]
+    params_major["block_size_y"] = [i for i in range(1, 32 + 1)]
+    params_major["block_size_z"] = [i for i in range(1, 32 + 1)]
 
     params_minor = dict()
-    params_minor["block_size_x"] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 32]
-    params_minor["block_size_y"] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 32]
+    params_minor["block_size_x"] = [i for i in range(1, 32 + 1)]
+    params_minor["block_size_y"] = [i for i in range(1, 32 + 1)]
 
     answer_major = len(args_major) * [None]
     answer_major[-2] = tau_after_major
@@ -220,7 +220,7 @@ if __name__ == "__main__":
         tau,
         tau_minor]
 
-    problem_size_major = (nband, nlay, ncol)
+    problem_size_major = (ncol, nlay, nband)
     kernel_name_major = 'compute_tau_major_absorption_kernel<{}>'.format(str_float)
     problem_size_minor = (ncol, nlay)
     kernel_name_minor = 'compute_tau_minor_absorption_kernel<{}>'.format(str_float)
