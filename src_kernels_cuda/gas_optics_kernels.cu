@@ -314,6 +314,7 @@ void compute_tau_major_absorption_kernel(
                                     jpress[idx_collay]+itropo, ngpt, neta, npres+1,
                                     &tau_major[idx_tau]);
 
+        #pragma unroll
         for (int igpt=gpt_start; igpt<gpt_end; ++igpt)
         {
             const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
@@ -412,7 +413,7 @@ void compute_tau_minor_absorption_kernel(
             {
                 interpolate2D_byflav_kernel(&fminor[idx_fcl2], &kminor_upper[kminor_start_upper[imnr]-1], kminor_start_upper[imnr]-1, kminor_start_upper[imnr]-1 + (gpt_end - gpt_start), &tau_minor[idx_tau], &jeta[idx_fcl1], jtemp[idx_collay], nminork_upper, neta);
             }
-            
+            #pragma unroll
             for ( int igpt = gpt_start; igpt < gpt_end; ++igpt )
             {
                 const int idx_out = igpt + ilay * ngpt + icol * nlay * ngpt;
