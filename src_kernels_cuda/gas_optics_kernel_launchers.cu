@@ -90,14 +90,14 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<int,4>& jeta,
             Array_gpu<int,2>& jpress)
     {
-        const int block_lay = 1;
-        const int block_col = 2;
+        const int block_lay = 2;
+        const int block_col = 1;
 
         const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
         const int grid_col = ncol/block_col + (ncol%block_col > 0);
 
-        dim3 grid_gpu(grid_lay, grid_col);
-        dim3 block_gpu(block_lay, block_col);
+        dim3 grid_gpu(grid_col, grid_lay);
+        dim3 block_gpu(block_col, block_lay);
 
         TF tmin = std::numeric_limits<TF>::min();
         interpolation_kernel<<<grid_gpu, block_gpu>>>(
@@ -109,7 +109,6 @@ namespace rrtmgp_kernel_launcher_cuda
                 col_gas.ptr(), jtemp.ptr(), fmajor.ptr(),
                 fminor.ptr(), col_mix.ptr(), tropo.ptr(),
                 jeta.ptr(), jpress.ptr());
-
     }
 
     template<typename TF>

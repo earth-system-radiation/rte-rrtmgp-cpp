@@ -220,8 +220,8 @@ void interpolation_kernel(
         int* __restrict__ jeta,
         int* __restrict__ jpress)
 {
-    const int ilay = blockIdx.x*blockDim.x + threadIdx.x;
-    const int icol = blockIdx.y*blockDim.y + threadIdx.y;
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
 
     if ( (icol < ncol) && (ilay < nlay) )
     {
@@ -273,7 +273,6 @@ void interpolation_kernel(
                 fmajor[fmajor_idx+1] = (TF(1.0)-fpress) * fminor[fminor_idx+1];
                 fmajor[fmajor_idx+2] = fpress * fminor[fminor_idx];
                 fmajor[fmajor_idx+3] = fpress * fminor[fminor_idx+1];
-
             }
         }
     }

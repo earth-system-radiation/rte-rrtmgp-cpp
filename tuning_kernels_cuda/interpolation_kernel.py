@@ -140,7 +140,7 @@ if __name__ == '__main__':
             jtemp, fmajor, fminor, col_mix,
             tropo, jeta, jpress]
 
-    problem_size = (nlay, ncol)
+    problem_size = (ncol, nlay)
     kernel_name = 'interpolation_kernel<{}>'.format(str_float)
 
     if command_line.tune:
