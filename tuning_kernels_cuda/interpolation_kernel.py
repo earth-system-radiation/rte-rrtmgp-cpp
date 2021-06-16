@@ -14,8 +14,9 @@ def parse_command_line():
     parser.add_argument('--tune', default=False, action='store_true')
     parser.add_argument('--run', default=False, action='store_true')
     parser.add_argument('--best_configuration', default=False, action='store_true')
-    parser.add_argument('--block_size_x', type=int, default=16)
-    parser.add_argument('--block_size_y', type=int, default=32)
+    parser.add_argument('--block_size_x', type=int, default=2)
+    parser.add_argument('--block_size_y', type=int, default=1)
+    parser.add_argument('--block_size_z', type=int, default=1)
     return parser.parse_args()
 
 # Compare results against reference
@@ -30,10 +31,11 @@ def compare_fields(arr1, arr2, name):
 
 # Run one instance of the kernel and test output
 def run_and_test(params: dict):
-    print('Running {} [block_size_x: {}, block_size_y: {}]'.format(
+    print('Running {} [block_size_x: {}, block_size_y: {}, block_size_z: {}]'.format(
             kernel_name,
             params['block_size_x'],
-            params['block_size_y']))
+            params['block_size_y'],
+            params['block_size_z']))
 
     result = kt.run_kernel(
             kernel_name, kernel_string, problem_size,
@@ -51,6 +53,7 @@ def tune():
     tune_params = dict()
     tune_params['block_size_x'] = [1,2,4,8,12,16,24,32]
     tune_params['block_size_y'] = [1,2,4,8,12,16,24,32]
+    tune_params['block_size_z'] = [1,2,4,8]
 
     answer = len(args)*[None]
     answer[-6] = fmajor_ref
@@ -140,7 +143,7 @@ if __name__ == '__main__':
             jtemp, fmajor, fminor, col_mix,
             tropo, jeta, jpress]
 
-    problem_size = (ncol, nlay)
+    problem_size = (nflav, ncol, nlay)
     kernel_name = 'interpolation_kernel<{}>'.format(str_float)
 
     if command_line.tune:
@@ -153,8 +156,10 @@ if __name__ == '__main__':
             best_configuration = min(configurations, key=lambda x: x['time'])
             parameters['block_size_x'] = best_configuration['block_size_x']
             parameters['block_size_y'] = best_configuration['block_size_y']
+            parameters['block_size_z'] = best_configuration['block_size_z']
         else:
             parameters['block_size_x'] = command_line.block_size_x
             parameters['block_size_y'] = command_line.block_size_y
+            parameters['block_size_z'] = command_line.block_size_z
 
         run_and_test(parameters)
