@@ -293,9 +293,9 @@ void compute_tau_major_absorption_kernel(
         TF* __restrict__ tau, TF* __restrict__ tau_major)
 {
     // Fetch the three coordinates.
-    const int ibnd = blockIdx.x*blockDim.x + threadIdx.x;
-    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-    const int icol = blockIdx.z*blockDim.z + threadIdx.z;
+    const int ibnd = (blockIdx.z * blockDim.z) + threadIdx.z;
+    const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
+    const int icol = (blockIdx.x * blockDim.x) + threadIdx.x;
 
     if ( (icol < ncol) && (ilay < nlay) && (ibnd < nband) ) {
         const int idx_collay = icol + ilay * ncol;
