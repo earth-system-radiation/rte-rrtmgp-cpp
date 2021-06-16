@@ -27,6 +27,8 @@ void interpolate2D_byflav_kernel(const TF* __restrict__ fminor,
     const int band_gpt = gpt_end-gpt_start;
     const int j0 = jeta[0];
     const int j1 = jeta[1];
+
+    #pragma unroll
     for (int igpt=0; igpt<band_gpt; ++igpt)
     {
         k[igpt] = fminor[0] * kin[igpt + (j0-1)*ngpt + (jtemp-1)*neta*ngpt] +
@@ -53,6 +55,8 @@ void interpolate3D_byflav_kernel(const TF* __restrict__ scaling,
     const int band_gpt = gpt_end-gpt_start;
     const int j0 = jeta[0];
     const int j1 = jeta[1];
+
+    #pragma unroll
     for (int igpt=0; igpt<band_gpt; ++igpt)
     {
         tau_major[igpt] = scaling[0]*
