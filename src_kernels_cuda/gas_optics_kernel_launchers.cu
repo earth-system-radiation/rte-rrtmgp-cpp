@@ -90,8 +90,8 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<int,4>& jeta,
             Array_gpu<int,2>& jpress)
     {
-        const int block_lay = 16;
-        const int block_col = 32;
+        const int block_lay = 1;
+        const int block_col = 2;
 
         const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
         const int grid_col = ncol/block_col + (ncol%block_col > 0);
