@@ -17,9 +17,9 @@ namespace rrtmgp_kernel_launcher_cuda
     void reorder123x321(const int ni, const int nj, const int nk,
                         const Array_gpu<TF,3>& arr_in, Array_gpu<TF,3>& arr_out)
     {
-        const int block_i = 32;
-        const int block_j = 16;
-        const int block_k = 1;
+        const int block_i = 8;
+        const int block_j = 4;
+        const int block_k = 16;
 
         const int grid_i = ni/block_i + (ni%block_i > 0);
         const int grid_j = nj/block_j + (nj%block_j > 0);
@@ -90,14 +90,16 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<int,4>& jeta,
             Array_gpu<int,2>& jpress)
     {
-        const int block_lay = 16;
-        const int block_col = 32;
+        const int block_flav = 16;
+        const int block_lay  = 2;
+        const int block_col  = 4;
 
-        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        const int grid_flav = nflav/block_flav + (nflav%block_flav > 0);
+        const int grid_lay  = nlay /block_lay  + (nlay%block_lay   > 0);
+        const int grid_col  = ncol /block_col  + (ncol%block_col   > 0);
 
-        dim3 grid_gpu(grid_lay, grid_col);
-        dim3 block_gpu(block_lay, block_col);
+        dim3 grid_gpu(grid_flav, grid_col, grid_lay);
+        dim3 block_gpu(block_flav, block_col, block_lay);
 
         TF tmin = std::numeric_limits<TF>::min();
         interpolation_kernel<<<grid_gpu, block_gpu>>>(
@@ -109,7 +111,6 @@ namespace rrtmgp_kernel_launcher_cuda
                 col_gas.ptr(), jtemp.ptr(), fmajor.ptr(),
                 fminor.ptr(), col_mix.ptr(), tropo.ptr(),
                 jeta.ptr(), jpress.ptr());
-
     }
 
     template<typename TF>
