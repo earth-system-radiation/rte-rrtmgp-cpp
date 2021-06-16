@@ -368,7 +368,7 @@ void compute_tau_minor_absorption_kernel(
     if ( (icol < ncol) && (ilay < nlay) )
     {
         //kernel implementation
-        const int idx_collay = (ilay * ncol+ + icol;
+        const int idx_collay = (ilay * ncol) + icol;
         const int idx_collaywv = (idx_h2o * ncl) + (ilay * ncol) + icol;
 
         for ( int imnr = 0; imnr < (tropo[idx_collay] == 1 ? nscale_lower : nscale_upper); ++imnr )
