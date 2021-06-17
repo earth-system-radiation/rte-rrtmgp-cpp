@@ -463,3 +463,24 @@ void lw_solver_noscat_gaussquad_kernel(const int ncol, const int nlay, const int
         }
     }
 }
+
+
+template<typename TF> __global__
+void add_fluxes_kernel(
+        const int ncol, const int nlev, const int ngpt,
+        const TF* __restrict__ radn_up, const TF* __restrict__ radn_dn, const TF* __restrict__ radn_up_jac,
+        TF* __restrict__ flux_up, TF* __restrict__ flux_dn, TF* __restrict__ flux_up_jac)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilev = blockIdx.y*blockDim.y + threadIdx.y;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
+    if ( (icol < ncol) && (ilev < nlev) && (igpt < ngpt) )
+    {
+        const int idx = icol + ilev*ncol + igpt*ncol*nlev;
+
+        flux_up[idx] += radn_up[idx];
+        flux_dn[idx] += radn_dn[idx];
+        flux_up_jac[idx] += radn_up_jac[idx];
+    }
+}

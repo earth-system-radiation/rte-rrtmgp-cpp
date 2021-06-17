@@ -163,9 +163,18 @@ namespace rte_kernel_launcher_cuda
         dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
         dim3 block_gpu2d(block_col2d, block_gpt2d);
 
-        const int top_level = top_at_1 ? 0 : nlay;
+        const int block_col3d = 64;
+        const int block_lay3d = 2;
+        const int block_gpt3d = 1;
 
-        // if ( (icol < ncol) && (igpt < ngpt) )
+        const int grid_col3d = ncol/block_col3d + (ncol%block_col3d > 0);
+        const int grid_lay3d = (nlay+1)/block_lay3d + ((nlay+1)%block_lay3d > 0);
+        const int grid_gpt3d = ngpt/block_gpt3d + (ngpt%block_gpt3d > 0);
+
+        dim3 grid_gpu3d(grid_col3d, grid_lay3d, grid_gpt3d);
+        dim3 block_gpu3d(block_col3d, block_lay3d, block_gpt3d);
+
+        const int top_level = top_at_1 ? 0 : nlay;
 
         lw_solver_noscat_kernel<<<grid_gpu2d, block_gpu2d>>>(
                 ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
@@ -183,6 +192,11 @@ namespace rte_kernel_launcher_cuda
                         lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), radn_up.ptr(), radn_dn.ptr(), sfc_src_jac.ptr(),
                         radn_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
 
+                add_fluxes_kernel<<<grid_gpu3d, block_gpu3d>>>(
+                        ncol, nlay+1, ngpt,
+                        radn_up.ptr(), radn_dn.ptr(), radn_up_jac.ptr(),
+                        flux_up.ptr(), flux_dn.ptr(), flux_up_jac.ptr());
+
                 // for (int ilev=0; ilev<(nlay+1); ++ilev)
                 // {
                 //     const int idx = icol + ilev*ncol + igpt*ncol*(nlay+1);
@@ -192,23 +206,6 @@ namespace rte_kernel_launcher_cuda
                 // }
             }
         }
-
-        //     lw_solver_noscat_gaussquad_kernel<<<grid_gpu2d, block_gpu2d>>>(
-        //             ncol, nlay, ngpt, eps, top_at_1, nmus, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
-        //             lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), radn_up,
-        //             radn_dn, sfc_src_jac.ptr(), radn_up_jac, tau_loc, trans, source_dn, source_up,
-        //             source_sfc, sfc_albedo, source_sfc_jac, flux_up.ptr(), flux_dn.ptr(), flux_up_jac.ptr());
-
-        // Tools_gpu::free_gpu(tau_loc);
-        // Tools_gpu::free_gpu(radn_up);
-        // Tools_gpu::free_gpu(radn_up_jac);
-        // Tools_gpu::free_gpu(radn_dn);
-        // Tools_gpu::free_gpu(trans);
-        // Tools_gpu::free_gpu(source_dn);
-        // Tools_gpu::free_gpu(source_up);
-        // Tools_gpu::free_gpu(source_sfc);
-        // Tools_gpu::free_gpu(source_sfc_jac);
-        // Tools_gpu::free_gpu(sfc_albedo);
     }
 
 
