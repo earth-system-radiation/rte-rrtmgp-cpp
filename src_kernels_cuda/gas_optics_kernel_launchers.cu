@@ -152,9 +152,9 @@ namespace rrtmgp_kernel_launcher_cuda
         TF* k = Tools_gpu::allocate_gpu<TF>(ncol*nlay*ngpt);
 
         // Call the kernel.
-        const int block_bnd = 14;
+        const int block_bnd = 1;
         const int block_lay = 1;
-        const int block_col = 32;
+        const int block_col = 8;
 
         const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
         const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
