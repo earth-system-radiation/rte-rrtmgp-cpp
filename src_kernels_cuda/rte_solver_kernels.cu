@@ -78,8 +78,9 @@ void lw_transport_noscat_kernel(
     }
 }
 
+
 template<typename TF> __global__
-void lw_solver_noscat_kernel(
+void lw_solver_noscat_step1_kernel(
         const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
         const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
         const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
@@ -130,6 +131,42 @@ void lw_solver_noscat_kernel(
         sfc_albedo[idx2d] = TF(1.) - sfc_emis[idx2d];
         source_sfc[idx2d] = sfc_emis[idx2d] * sfc_src[idx2d];
         source_sfc_jac[idx2d] = sfc_emis[idx2d] * sfc_src_jac[idx2d];
+    }
+}
+
+
+template<typename TF> __global__
+void lw_solver_noscat_step2_kernel(
+        const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
+        const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
+        const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
+        const TF* __restrict__ sfc_src, TF* __restrict__ radn_up, TF* __restrict__ radn_dn,
+        const TF* __restrict__ sfc_src_jac, TF* __restrict__ radn_up_jac, TF* __restrict__ tau_loc,
+        TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up,
+        TF* __restrict__ source_sfc, TF* __restrict__ sfc_albedo, TF* __restrict__ source_sfc_jac)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+
+    if ( (icol < ncol) && (igpt < ngpt) )
+    {
+        const TF pi = acos(TF(-1.));
+        const TF* lev_source_up;
+        const TF* lev_source_dn;
+        int top_level;
+
+        if (top_at_1)
+        {
+            top_level = 0;
+            lev_source_up = lev_source_dec;
+            lev_source_dn = lev_source_inc;
+        }
+        else
+        {
+            top_level = nlay;
+            lev_source_up = lev_source_inc;
+            lev_source_dn = lev_source_dec;
+        }
 
         lw_transport_noscat_kernel(
                 icol, igpt, ncol, nlay, ngpt, top_at_1, tau, trans, sfc_albedo, source_dn,
