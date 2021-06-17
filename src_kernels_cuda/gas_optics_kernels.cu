@@ -96,22 +96,16 @@ void reorder123x321_kernel(
         const int ni, const int nj, const int nk,
         const TF* __restrict__ arr_in, TF* __restrict__ arr_out)
 {
-    const int ii = (blockIdx.x * blockDim.x) + threadIdx.x;
-    const int ij = (blockIdx.y * blockDim.y) + threadIdx.y;
-    const int ik = (blockIdx.z * blockDim.z) + threadIdx.z;
-    const int temp_index = (threadIdx.x * blockDim.y * blockDim.z) + (threadIdx.y * blockDim.z) + threadIdx.z;
-    extern __shared__ TF temp_array[];
+    const int ii = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ij = blockIdx.y*blockDim.y + threadIdx.y;
+    const int ik = blockIdx.z*blockDim.z + threadIdx.z;
 
-    // Load input from arr_in to temp_array
-    if ( (ii < nk) && (ij < nj) && (ik < ni))
-    {
-        temp_array[temp_index] = arr_in[(ik * nj * nk) + (ij * nk) + ii];
-    }
-    __syncthreads();
-    // Store output from temp_array to arr_out
     if ( (ii < ni) && (ij < nj) && (ik < nk))
     {
-        arr_out[(ik * nj * ni) + (ij * ni) + ii] = temp_array[temp_index];
+        const int idx_out = ii + ij*ni + ik*nj*ni;
+        const int idx_in  = ik + ij*nk + ii*nj*nk;
+
+        arr_out[idx_out] = arr_in[idx_in];
     }
 }
 
