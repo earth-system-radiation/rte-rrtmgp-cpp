@@ -152,9 +152,9 @@ namespace rrtmgp_kernel_launcher_cuda
         TF* k = Tools_gpu::allocate_gpu<TF>(ncol*nlay*ngpt);
 
         // Call the kernel.
-        const int block_bnd = 14;
+        const int block_bnd = 1;
         const int block_lay = 1;
-        const int block_col = 32;
+        const int block_col = 8;
 
         const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
         const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
@@ -353,7 +353,7 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float>(
         const Array_gpu<int,2>&, Array_gpu<float,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const int, const int, const int, const int, const int, const int,
-	const int, const int, const int, const int, const int, const int, const int, const int,
+        const int, const int, const int, const int, const int, const int, const int, const int,
         const Array_gpu<int,2>&, const Array_gpu<int,2>&, const Array_gpu<float,4>&, const Array_gpu<float,3>&, const Array_gpu<float,3>&,
         const Array_gpu<int,2>&, const Array_gpu<int,2>&, const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<BOOL_TYPE,1>&,
         const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&,
@@ -396,7 +396,7 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
         const Array_gpu<int,2>&, Array_gpu<double,3>&);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<double>(const int, const int, const int, const int, const int, const int,
-	const int, const int, const int, const int, const int, const int, const int, const int,
+        const int, const int, const int, const int, const int, const int, const int, const int,
         const Array_gpu<int,2>&, const Array_gpu<int,2>&, const Array_gpu<double,4>&, const Array_gpu<double,3>&, const Array_gpu<double,3>&,
         const Array_gpu<int,2>&, const Array_gpu<int,2>&, const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<BOOL_TYPE,1>&,
         const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&,

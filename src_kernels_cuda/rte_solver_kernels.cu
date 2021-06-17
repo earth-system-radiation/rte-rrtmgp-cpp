@@ -4,26 +4,26 @@ template<typename TF> __device__ constexpr TF k_min();
 template<> __device__ constexpr double k_min() { return 1.e-12; }
 template<> __device__ constexpr float k_min() { return 1.e-4f; }
 
-template<typename TF>__device__
-void lw_source_noscat_kernel(const int icol, const int igpt, const int ncol, const int nlay, const int ngpt, const TF eps,
-                             const TF* __restrict__ lay_source, const TF* __restrict__ lev_source_up, const TF* __restrict__ lev_source_dn,
-                             const TF* __restrict__ tau, const TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up)
+template<typename TF> __device__
+void lw_source_noscat_kernel(
+        const int icol, const int ilay, const int igpt, const int ncol, const int nlay, const int ngpt, const TF eps,
+        const TF* __restrict__ lay_source, const TF* __restrict__ lev_source_up, const TF* __restrict__ lev_source_dn,
+        const TF* __restrict__ tau, const TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up)
 {
     const TF tau_thres = sqrt(eps);
-    for (int ilay=0; ilay<nlay; ++ilay)
-    {
-        const int idx = icol + ilay*ncol + igpt*ncol*nlay;
-        const TF fact = (tau[idx]>tau_thres) ? (TF(1.) - trans[idx]) / tau[idx] - trans[idx] : tau[idx] * (TF(.5) - TF(1.)/TF(3.)*tau[idx]);
-        source_dn[idx] = (TF(1.) - trans[idx]) * lev_source_dn[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_dn[idx]);
-        source_up[idx] = (TF(1.) - trans[idx]) * lev_source_up[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_up[idx]);
-    }
+
+    const int idx = icol + ilay*ncol + igpt*ncol*nlay;
+    const TF fact = (tau[idx]>tau_thres) ? (TF(1.) - trans[idx]) / tau[idx] - trans[idx] : tau[idx] * (TF(.5) - TF(1.)/TF(3.)*tau[idx]);
+    source_dn[idx] = (TF(1.) - trans[idx]) * lev_source_dn[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_dn[idx]);
+    source_up[idx] = (TF(1.) - trans[idx]) * lev_source_up[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_up[idx]);
 }
 
 template<typename TF>__device__
-void lw_transport_noscat_kernel(const int icol, const int igpt, const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
-                             const TF* __restrict__ tau, const TF* __restrict__ trans, const TF* __restrict__ sfc_albedo,
-                             const TF* __restrict__ source_dn, const TF* __restrict__ source_up, const TF* __restrict__ source_sfc,
-                             TF* __restrict__ radn_up, TF* __restrict__ radn_dn, const TF* __restrict__ source_sfc_jac, TF* __restrict__ radn_up_jac)
+void lw_transport_noscat_kernel(
+        const int icol, const int igpt, const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
+        const TF* __restrict__ tau, const TF* __restrict__ trans, const TF* __restrict__ sfc_albedo,
+        const TF* __restrict__ source_dn, const TF* __restrict__ source_up, const TF* __restrict__ source_sfc,
+        TF* __restrict__ radn_up, TF* __restrict__ radn_dn, const TF* __restrict__ source_sfc_jac, TF* __restrict__ radn_up_jac)
 {
     if (top_at_1)
     {
@@ -73,64 +73,110 @@ void lw_transport_noscat_kernel(const int icol, const int igpt, const int ncol, 
             radn_up_jac[idx1] = trans[idx3] * radn_up_jac[idx2];;
         }
     }
-
 }
 
-template<typename TF>__device__
-void lw_solver_noscat_kernel(const int icol, const int igpt, const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
-                             const TF D, const TF weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
-                             const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
-                             const TF* __restrict__ sfc_src, TF* __restrict__ radn_up, TF* __restrict__ radn_dn,
-                             const TF* __restrict__ sfc_src_jac, TF* __restrict__ radn_up_jac, TF* __restrict__ tau_loc,
-                             TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up,
-                             TF* __restrict__ source_sfc, TF* __restrict__ sfc_albedo, TF* __restrict__ source_sfc_jac)
+
+template<typename TF> __global__
+void lw_solver_noscat_step1_kernel(
+        const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
+        const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
+        const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
+        const TF* __restrict__ sfc_src, TF* __restrict__ radn_up, TF* __restrict__ radn_dn,
+        const TF* __restrict__ sfc_src_jac, TF* __restrict__ radn_up_jac, TF* __restrict__ tau_loc,
+        TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up,
+        TF* __restrict__ source_sfc, TF* __restrict__ sfc_albedo, TF* __restrict__ source_sfc_jac)
 {
-    const TF pi = acos(TF(-1.));
-    const TF* lev_source_up;
-    const TF* lev_source_dn;
-    int top_level;
-    if (top_at_1)
-    {
-        top_level = 0;
-        lev_source_up = lev_source_dec;
-        lev_source_dn = lev_source_inc;
-    }
-    else
-    {
-        top_level = nlay;
-        lev_source_up = lev_source_inc;
-        lev_source_dn = lev_source_dec;
-    }
-    const int idx_top = icol + top_level*ncol + igpt*ncol*(nlay+1);
-    radn_dn[idx_top] = radn_dn[idx_top] / (TF(2.) * pi * weight);
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
 
-    const int idx2d = icol + igpt*ncol;
-
-    for (int ilay=0; ilay<nlay; ++ilay)
+    if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
+        const TF pi = acos(TF(-1.));
+        const TF* lev_source_up;
+        const TF* lev_source_dn;
+        int top_level;
+
+        if (top_at_1)
+        {
+            top_level = 0;
+            lev_source_up = lev_source_dec;
+            lev_source_dn = lev_source_inc;
+        }
+        else
+        {
+            top_level = nlay;
+            lev_source_up = lev_source_inc;
+            lev_source_dn = lev_source_dec;
+        }
+
+        const int idx_top = icol + top_level*ncol + igpt*ncol*(nlay+1);
+        radn_dn[idx_top] = radn_dn[idx_top] / (TF(2.) * pi * weight[0]);
+
+        const int idx2d = icol + igpt*ncol;
+
         const int idx3d = icol + ilay*ncol + igpt*ncol*nlay;
-        tau_loc[idx3d] = tau[idx3d] * D;
-        trans[idx3d]   = exp(-tau_loc[idx3d]);
-    }
+        tau_loc[idx3d] = tau[idx3d] * D[0];
+        trans[idx3d] = exp(-tau_loc[idx3d]);
 
-    lw_source_noscat_kernel(icol, igpt, ncol, nlay, ngpt, eps, lay_source, lev_source_up, lev_source_dn,
-                     tau_loc, trans, source_dn, source_up);
+        lw_source_noscat_kernel(
+                icol, ilay, igpt, ncol, nlay, ngpt, eps, lay_source, lev_source_up, lev_source_dn,
+                tau_loc, trans, source_dn, source_up);
 
-    sfc_albedo[idx2d] = TF(1.) - sfc_emis[idx2d];
-    source_sfc[idx2d] = sfc_emis[idx2d] * sfc_src[idx2d];
-    source_sfc_jac[idx2d] = sfc_emis[idx2d] * sfc_src_jac[idx2d];
-
-    lw_transport_noscat_kernel(icol, igpt, ncol, nlay, ngpt, top_at_1, tau, trans, sfc_albedo, source_dn,
-                               source_up, source_sfc, radn_up, radn_dn, source_sfc_jac, radn_up_jac);
-
-    for (int ilev=0; ilev<(nlay+1); ++ilev)
-    {
-        const int idx = icol + ilev*ncol + igpt*ncol*(nlay+1);
-        radn_up[idx] *= TF(2.) * pi * weight;
-        radn_dn[idx] *= TF(2.) * pi * weight;
-        radn_up_jac[idx] *= TF(2.) * pi * weight;
+        sfc_albedo[idx2d] = TF(1.) - sfc_emis[idx2d];
+        source_sfc[idx2d] = sfc_emis[idx2d] * sfc_src[idx2d];
+        source_sfc_jac[idx2d] = sfc_emis[idx2d] * sfc_src_jac[idx2d];
     }
 }
+
+
+template<typename TF> __global__
+void lw_solver_noscat_step2_kernel(
+        const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
+        const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
+        const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
+        const TF* __restrict__ sfc_src, TF* __restrict__ radn_up, TF* __restrict__ radn_dn,
+        const TF* __restrict__ sfc_src_jac, TF* __restrict__ radn_up_jac, TF* __restrict__ tau_loc,
+        TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up,
+        TF* __restrict__ source_sfc, TF* __restrict__ sfc_albedo, TF* __restrict__ source_sfc_jac)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+
+    if ( (icol < ncol) && (igpt < ngpt) )
+    {
+        lw_transport_noscat_kernel(
+                icol, igpt, ncol, nlay, ngpt, top_at_1, tau, trans, sfc_albedo, source_dn,
+                source_up, source_sfc, radn_up, radn_dn, source_sfc_jac, radn_up_jac);
+    }
+}
+
+
+template<typename TF> __global__
+void lw_solver_noscat_step3_kernel(
+        const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
+        const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
+        const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
+        const TF* __restrict__ sfc_src, TF* __restrict__ radn_up, TF* __restrict__ radn_dn,
+        const TF* __restrict__ sfc_src_jac, TF* __restrict__ radn_up_jac, TF* __restrict__ tau_loc,
+        TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up,
+        TF* __restrict__ source_sfc, TF* __restrict__ sfc_albedo, TF* __restrict__ source_sfc_jac)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilev = blockIdx.y*blockDim.y + threadIdx.y;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
+    if ( (icol < ncol) && (ilev < (nlay+1)) && (igpt < ngpt) )
+    {
+        const TF pi = acos(TF(-1.));
+
+        const int idx = icol + ilev*ncol + igpt*ncol*(nlay+1);
+        radn_up[idx] *= TF(2.) * pi * weight[0];
+        radn_dn[idx] *= TF(2.) * pi * weight[0];
+        radn_up_jac[idx] *= TF(2.) * pi * weight[0];
+    }
+}
+
 
 template<typename TF>__device__
 void sw_adding_kernel(const int icol, const int igpt,
@@ -259,12 +305,18 @@ void sw_source_kernel(const int icol, const int igpt,
 
 }
 
-template<typename TF>__device__
-void apply_BC_kernel_lw(const int icol, const int igpt, const int isfc, int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const TF* __restrict__ inc_flux, TF* __restrict__ flux_dn)
+template<typename TF> __global__
+void apply_BC_kernel_lw(const int isfc, int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const TF* __restrict__ inc_flux, TF* __restrict__ flux_dn)
 {
-    const int idx_in  = icol + isfc*ncol + igpt*ncol*(nlay+1);
-    const int idx_out = (top_at_1) ? icol + igpt*ncol*(nlay+1) : icol + nlay*ncol + igpt*ncol*(nlay+1);
-    flux_dn[idx_out] = inc_flux[idx_in];
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+
+    if ( (icol < ncol) && (igpt < ngpt) )
+    {
+        const int idx_in  = icol + isfc*ncol + igpt*ncol*(nlay+1);
+        const int idx_out = (top_at_1) ? icol + igpt*ncol*(nlay+1) : icol + nlay*ncol + igpt*ncol*(nlay+1);
+        flux_dn[idx_out] = inc_flux[idx_in];
+    }
 }
 
 template<typename TF>__global__ //apply_BC_gpt
@@ -332,10 +384,13 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_
 }
 
 template<typename TF>__global__
-void sw_2stream_kernel(const int ncol, const int nlay, const int ngpt, const TF tmin,
-        const TF* __restrict__ tau, const TF* __restrict__ ssa, const TF* __restrict__ g, const TF* __restrict__ mu0,
+void sw_2stream_kernel(
+        const int ncol, const int nlay, const int ngpt, const TF tmin,
+        const TF* __restrict__ tau, const TF* __restrict__ ssa,
+        const TF* __restrict__ g, const TF* __restrict__ mu0,
         TF* __restrict__ r_dif, TF* __restrict__ t_dif,
-        TF* __restrict__ r_dir, TF* __restrict__ t_dir, TF* __restrict__ t_noscat)
+        TF* __restrict__ r_dir, TF* __restrict__ t_dir,
+        TF* __restrict__ t_noscat)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -347,7 +402,7 @@ void sw_2stream_kernel(const int ncol, const int nlay, const int ngpt, const TF 
         const TF mu0_inv = TF(1.)/mu0[icol];
         const TF gamma1 = (TF(8.) - ssa[idx] * (TF(5.) + TF(3.) * g[idx])) * TF(.25);
         const TF gamma2 = TF(3.) * (ssa[idx] * (TF(1.) -          g[idx])) * TF(.25);
-        const TF gamma3 = (TF(2.) - TF(3.) * mu0[icol] *          g[idx]) * TF(.25);
+        const TF gamma3 = (TF(2.) - TF(3.) * mu0[icol] *          g[idx])  * TF(.25);
         const TF gamma4 = TF(1.) - gamma3;
 
         const TF alpha1 = gamma1 * gamma4 + gamma2 * gamma3;
@@ -372,11 +427,11 @@ void sw_2stream_kernel(const int ncol, const int nlay, const int ngpt, const TF 
 
         r_dir[idx] = rt_term2  * ((TF(1.) - k_mu) * (alpha2 + k_gamma3)   -
                                   (TF(1.) + k_mu) * (alpha2 - k_gamma3) * exp_minus2ktau -
-                                  TF(2.) * (k_gamma3 - alpha2 * k_mu)  * exp_minusktau * t_noscat[idx]);
+                                   TF(2.) * (k_gamma3 - alpha2 * k_mu)  * exp_minusktau * t_noscat[idx]);
 
         t_dir[idx] = -rt_term2 * ((TF(1.) + k_mu) * (alpha1 + k_gamma4) * t_noscat[idx]   -
                                   (TF(1.) - k_mu) * (alpha1 - k_gamma4) * exp_minus2ktau * t_noscat[idx] -
-                                   TF(2.) * (k_gamma4 + alpha1 * k_mu) * exp_minusktau);
+                                   TF(2.) * (k_gamma4 + alpha1 * k_mu)  * exp_minusktau);
     }
 }
 
@@ -442,5 +497,26 @@ void lw_solver_noscat_gaussquad_kernel(const int ncol, const int nlay, const int
                 }
             }
         }
+    }
+}
+
+
+template<typename TF> __global__
+void add_fluxes_kernel(
+        const int ncol, const int nlev, const int ngpt,
+        const TF* __restrict__ radn_up, const TF* __restrict__ radn_dn, const TF* __restrict__ radn_up_jac,
+        TF* __restrict__ flux_up, TF* __restrict__ flux_dn, TF* __restrict__ flux_up_jac)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilev = blockIdx.y*blockDim.y + threadIdx.y;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
+    if ( (icol < ncol) && (ilev < nlev) && (igpt < ngpt) )
+    {
+        const int idx = icol + ilev*ncol + igpt*ncol*nlev;
+
+        flux_up[idx] += radn_up[idx];
+        flux_dn[idx] += radn_dn[idx];
+        flux_up_jac[idx] += radn_up_jac[idx];
     }
 }
