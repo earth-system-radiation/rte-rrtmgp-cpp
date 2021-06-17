@@ -47,9 +47,13 @@ def tune():
     tune_params['block_size_y'] = [2**i for i in range(0, 11)]
     tune_params['block_size_z'] = [2**i for i in range(0, 7)]
 
+    answer = len(args)*[None]
+    answer[-1] = ref
+
     result, env = kt.tune_kernel(
             kernel_name, kernel_string, problem_size,
-            args, tune_params, compiler_options=cp)
+            args, tune_params, compiler_options=cp,
+            answer=answer, atol=1e-14)
 
     with open('timings_reorder123x321_kernel.json', 'w') as fp:
         json.dump(result, fp)
