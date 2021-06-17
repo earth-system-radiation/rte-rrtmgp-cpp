@@ -75,25 +75,16 @@ namespace rte_kernel_launcher_cuda
         const int opt_size = tau.size();
         const int sfc_size = sfc_src.size();
 
-        TF* source_sfc = Tools_gpu::allocate_gpu<TF>(sfc_size);
-        TF* source_sfc_jac = Tools_gpu::allocate_gpu<TF>(sfc_size);
-        TF* sfc_albedo = Tools_gpu::allocate_gpu<TF>(sfc_size);
-        TF* tau_loc = Tools_gpu::allocate_gpu<TF>(opt_size);
-        TF* trans = Tools_gpu::allocate_gpu<TF>(opt_size);
-        TF* source_dn = Tools_gpu::allocate_gpu<TF>(opt_size);
-        TF* source_up = Tools_gpu::allocate_gpu<TF>(opt_size);
-        TF* radn_dn = Tools_gpu::allocate_gpu<TF>(flx_size);
-        TF* radn_up = Tools_gpu::allocate_gpu<TF>(flx_size);
-        TF* radn_up_jac = Tools_gpu::allocate_gpu<TF>(flx_size);
-
-        const int block_col2d = 64;
-        const int block_gpt2d = 2;
-
-        const int grid_col2d = ncol/block_col2d + (ncol%block_col2d > 0);
-        const int grid_gpt2d = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
-
-        dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
-        dim3 block_gpu2d(block_col2d, block_gpt2d);
+        Array_gpu<TF,2> source_sfc(sfc_src.get_dims());
+        Array_gpu<TF,2> source_sfc_jac(sfc_src.get_dims());
+        Array_gpu<TF,2> sfc_albedo(sfc_src.get_dims());
+        Array_gpu<TF,3> tau_loc(tau.get_dims());
+        Array_gpu<TF,3> trans(tau.get_dims());
+        Array_gpu<TF,3> source_dn(tau.get_dims());
+        Array_gpu<TF,3> source_up(tau.get_dims());
+        Array_gpu<TF,3> radn_dn(flux_dn.get_dims());
+        Array_gpu<TF,3> radn_up(flux_dn.get_dims());
+        Array_gpu<TF,3> radn_up_jac(flux_dn.get_dims());
 
         // Running some permutations of block sizes.
         /*`
@@ -163,22 +154,61 @@ namespace rte_kernel_launcher_cuda
         */
         // End of performance tuning.
 
-        lw_solver_noscat_gaussquad_kernel<<<grid_gpu2d, block_gpu2d>>>(
-                ncol, nlay, ngpt, eps, top_at_1, nmus, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
-                lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), radn_up,
-                radn_dn, sfc_src_jac.ptr(), radn_up_jac, tau_loc, trans, source_dn, source_up,
-                source_sfc, sfc_albedo, source_sfc_jac, flux_up.ptr(), flux_dn.ptr(), flux_up_jac.ptr());
+        const int block_col2d = 64;
+        const int block_gpt2d = 2;
 
-        Tools_gpu::free_gpu(tau_loc);
-        Tools_gpu::free_gpu(radn_up);
-        Tools_gpu::free_gpu(radn_up_jac);
-        Tools_gpu::free_gpu(radn_dn);
-        Tools_gpu::free_gpu(trans);
-        Tools_gpu::free_gpu(source_dn);
-        Tools_gpu::free_gpu(source_up);
-        Tools_gpu::free_gpu(source_sfc);
-        Tools_gpu::free_gpu(source_sfc_jac);
-        Tools_gpu::free_gpu(sfc_albedo);
+        const int grid_col2d = ncol/block_col2d + (ncol%block_col2d > 0);
+        const int grid_gpt2d = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
+
+        dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
+        dim3 block_gpu2d(block_col2d, block_gpt2d);
+
+        const int top_level = top_at_1 ? 0 : nlay;
+
+        // if ( (icol < ncol) && (igpt < ngpt) )
+
+        lw_solver_noscat_kernel<<<grid_gpu2d, block_gpu2d>>>(
+                ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+                lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
+                flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+
+        apply_BC_kernel_lw<<<grid_gpu2d, block_gpu2d>>>(top_level, ncol, nlay, ngpt, top_at_1, flux_dn.ptr(), radn_dn.ptr());
+
+        if (nmus > 1)
+        {
+            for (int imu=1; imu<nmus; ++imu)
+            {
+                lw_solver_noscat_kernel<<<grid_gpu2d, block_gpu2d>>>(
+                        ncol, nlay, ngpt, eps, top_at_1, ds.ptr()+imu, weights.ptr()+imu, tau.ptr(), lay_source.ptr(),
+                        lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), radn_up.ptr(), radn_dn.ptr(), sfc_src_jac.ptr(),
+                        radn_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+
+                // for (int ilev=0; ilev<(nlay+1); ++ilev)
+                // {
+                //     const int idx = icol + ilev*ncol + igpt*ncol*(nlay+1);
+                //     flux_up[idx] += radn_up[idx];
+                //     flux_dn[idx] += radn_dn[idx];
+                //     flux_up_jac[idx] += radn_up_jac[idx];
+                // }
+            }
+        }
+
+        //     lw_solver_noscat_gaussquad_kernel<<<grid_gpu2d, block_gpu2d>>>(
+        //             ncol, nlay, ngpt, eps, top_at_1, nmus, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+        //             lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), radn_up,
+        //             radn_dn, sfc_src_jac.ptr(), radn_up_jac, tau_loc, trans, source_dn, source_up,
+        //             source_sfc, sfc_albedo, source_sfc_jac, flux_up.ptr(), flux_dn.ptr(), flux_up_jac.ptr());
+
+        // Tools_gpu::free_gpu(tau_loc);
+        // Tools_gpu::free_gpu(radn_up);
+        // Tools_gpu::free_gpu(radn_up_jac);
+        // Tools_gpu::free_gpu(radn_dn);
+        // Tools_gpu::free_gpu(trans);
+        // Tools_gpu::free_gpu(source_dn);
+        // Tools_gpu::free_gpu(source_up);
+        // Tools_gpu::free_gpu(source_sfc);
+        // Tools_gpu::free_gpu(source_sfc_jac);
+        // Tools_gpu::free_gpu(sfc_albedo);
     }
 
 
