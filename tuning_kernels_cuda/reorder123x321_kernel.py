@@ -53,7 +53,7 @@ def tune():
             args, tune_params, compiler_options=cp,
             smem_args={"size": 1024 * np.dtype(type_float).itemsize})
 
-    with open('reorder123x321_kernel.json', 'w') as fp:
+    with open('timings_reorder123x321_kernel.json', 'w') as fp:
         json.dump(result, fp)
 
 
