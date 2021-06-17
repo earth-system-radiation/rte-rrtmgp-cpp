@@ -196,14 +196,6 @@ namespace rte_kernel_launcher_cuda
                         ncol, nlay+1, ngpt,
                         radn_up.ptr(), radn_dn.ptr(), radn_up_jac.ptr(),
                         flux_up.ptr(), flux_dn.ptr(), flux_up_jac.ptr());
-
-                // for (int ilev=0; ilev<(nlay+1); ++ilev)
-                // {
-                //     const int idx = icol + ilev*ncol + igpt*ncol*(nlay+1);
-                //     flux_up[idx] += radn_up[idx];
-                //     flux_dn[idx] += radn_dn[idx];
-                //     flux_up_jac[idx] += radn_up_jac[idx];
-                // }
             }
         }
     }
