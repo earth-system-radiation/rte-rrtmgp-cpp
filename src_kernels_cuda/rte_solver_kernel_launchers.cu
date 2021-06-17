@@ -163,8 +163,8 @@ namespace rte_kernel_launcher_cuda
         dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
         dim3 block_gpu2d(block_col2d, block_gpt2d);
 
-        const int block_col3d = 64;
-        const int block_lay3d = 2;
+        const int block_col3d = 128;
+        const int block_lay3d = 1;
         const int block_gpt3d = 1;
 
         const int grid_col3d = ncol/block_col3d + (ncol%block_col3d > 0);

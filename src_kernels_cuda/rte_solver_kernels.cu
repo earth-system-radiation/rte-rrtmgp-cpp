@@ -146,22 +146,6 @@ void lw_solver_noscat_step2_kernel(
     if ( (icol < ncol) && (igpt < ngpt) )
     {
         const TF pi = acos(TF(-1.));
-        const TF* lev_source_up;
-        const TF* lev_source_dn;
-        int top_level;
-
-        if (top_at_1)
-        {
-            top_level = 0;
-            lev_source_up = lev_source_dec;
-            lev_source_dn = lev_source_inc;
-        }
-        else
-        {
-            top_level = nlay;
-            lev_source_up = lev_source_inc;
-            lev_source_dn = lev_source_dec;
-        }
 
         lw_transport_noscat_kernel(
                 icol, igpt, ncol, nlay, ngpt, top_at_1, tau, trans, sfc_albedo, source_dn,
