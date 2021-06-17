@@ -145,21 +145,38 @@ void lw_solver_noscat_step2_kernel(
 
     if ( (icol < ncol) && (igpt < ngpt) )
     {
-        const TF pi = acos(TF(-1.));
-
         lw_transport_noscat_kernel(
                 icol, igpt, ncol, nlay, ngpt, top_at_1, tau, trans, sfc_albedo, source_dn,
                 source_up, source_sfc, radn_up, radn_dn, source_sfc_jac, radn_up_jac);
-
-        for (int ilev=0; ilev<(nlay+1); ++ilev)
-        {
-            const int idx = icol + ilev*ncol + igpt*ncol*(nlay+1);
-            radn_up[idx] *= TF(2.) * pi * weight[0];
-            radn_dn[idx] *= TF(2.) * pi * weight[0];
-            radn_up_jac[idx] *= TF(2.) * pi * weight[0];
-        }
     }
 }
+
+
+template<typename TF> __global__
+void lw_solver_noscat_step3_kernel(
+        const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
+        const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
+        const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
+        const TF* __restrict__ sfc_src, TF* __restrict__ radn_up, TF* __restrict__ radn_dn,
+        const TF* __restrict__ sfc_src_jac, TF* __restrict__ radn_up_jac, TF* __restrict__ tau_loc,
+        TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up,
+        TF* __restrict__ source_sfc, TF* __restrict__ sfc_albedo, TF* __restrict__ source_sfc_jac)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilev = blockIdx.y*blockDim.y + threadIdx.y;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
+    if ( (icol < ncol) && (ilev < (nlay+1)) && (igpt < ngpt) )
+    {
+        const TF pi = acos(TF(-1.));
+
+        const int idx = icol + ilev*ncol + igpt*ncol*(nlay+1);
+        radn_up[idx] *= TF(2.) * pi * weight[0];
+        radn_dn[idx] *= TF(2.) * pi * weight[0];
+        radn_up_jac[idx] *= TF(2.) * pi * weight[0];
+    }
+}
+
 
 template<typename TF>__device__
 void sw_adding_kernel(const int icol, const int igpt,
