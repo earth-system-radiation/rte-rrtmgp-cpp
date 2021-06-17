@@ -43,9 +43,9 @@ def run_and_test(params: dict):
 # Tuning the kernel
 def tune():
     tune_params = dict()
-    tune_params['block_size_x'] = [1,2,4,8,16,24,32]
-    tune_params['block_size_y'] = [1,2,4,8,16,24,32]
-    tune_params['block_size_z'] = [1,2,4,8,16,24,32]
+    tune_params['block_size_x'] = [2**i for i in range(0, 11)]
+    tune_params['block_size_y'] = [2**i for i in range(0, 11)]
+    tune_params['block_size_z'] = [2**i for i in range(0, 7)]
 
     answer = len(args)*[None]
     answer[-1] = ref
@@ -55,7 +55,7 @@ def tune():
             args, tune_params, compiler_options=cp,
             answer=answer, atol=1e-14)
 
-    with open('reorder123x321_kernel.json', 'w') as fp:
+    with open('timings_reorder123x321_kernel.json', 'w') as fp:
         json.dump(result, fp)
 
 
