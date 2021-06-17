@@ -6,19 +6,16 @@ template<> __device__ constexpr float k_min() { return 1.e-4f; }
 
 template<typename TF> __device__
 void lw_source_noscat_kernel(
-        const int icol, const int igpt, const int ncol, const int nlay, const int ngpt, const TF eps,
+        const int icol, const int ilay, const int igpt, const int ncol, const int nlay, const int ngpt, const TF eps,
         const TF* __restrict__ lay_source, const TF* __restrict__ lev_source_up, const TF* __restrict__ lev_source_dn,
         const TF* __restrict__ tau, const TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up)
 {
     const TF tau_thres = sqrt(eps);
 
-    for (int ilay=0; ilay<nlay; ++ilay)
-    {
-        const int idx = icol + ilay*ncol + igpt*ncol*nlay;
-        const TF fact = (tau[idx]>tau_thres) ? (TF(1.) - trans[idx]) / tau[idx] - trans[idx] : tau[idx] * (TF(.5) - TF(1.)/TF(3.)*tau[idx]);
-        source_dn[idx] = (TF(1.) - trans[idx]) * lev_source_dn[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_dn[idx]);
-        source_up[idx] = (TF(1.) - trans[idx]) * lev_source_up[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_up[idx]);
-    }
+    const int idx = icol + ilay*ncol + igpt*ncol*nlay;
+    const TF fact = (tau[idx]>tau_thres) ? (TF(1.) - trans[idx]) / tau[idx] - trans[idx] : tau[idx] * (TF(.5) - TF(1.)/TF(3.)*tau[idx]);
+    source_dn[idx] = (TF(1.) - trans[idx]) * lev_source_dn[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_dn[idx]);
+    source_up[idx] = (TF(1.) - trans[idx]) * lev_source_up[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_up[idx]);
 }
 
 template<typename TF>__device__
@@ -90,9 +87,10 @@ void lw_solver_noscat_step1_kernel(
         TF* __restrict__ source_sfc, TF* __restrict__ sfc_albedo, TF* __restrict__ source_sfc_jac)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-    const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
 
-    if ( (icol < ncol) && (igpt < ngpt) )
+    if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
         const TF pi = acos(TF(-1.));
         const TF* lev_source_up;
@@ -117,15 +115,12 @@ void lw_solver_noscat_step1_kernel(
 
         const int idx2d = icol + igpt*ncol;
 
-        for (int ilay=0; ilay<nlay; ++ilay)
-        {
-            const int idx3d = icol + ilay*ncol + igpt*ncol*nlay;
-            tau_loc[idx3d] = tau[idx3d] * D[0];
-            trans[idx3d] = exp(-tau_loc[idx3d]);
-        }
+        const int idx3d = icol + ilay*ncol + igpt*ncol*nlay;
+        tau_loc[idx3d] = tau[idx3d] * D[0];
+        trans[idx3d] = exp(-tau_loc[idx3d]);
 
         lw_source_noscat_kernel(
-                icol, igpt, ncol, nlay, ngpt, eps, lay_source, lev_source_up, lev_source_dn,
+                icol, ilay, igpt, ncol, nlay, ngpt, eps, lay_source, lev_source_up, lev_source_dn,
                 tau_loc, trans, source_dn, source_up);
 
         sfc_albedo[idx2d] = TF(1.) - sfc_emis[idx2d];
