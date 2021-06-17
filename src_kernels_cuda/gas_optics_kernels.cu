@@ -100,7 +100,7 @@ void reorder123x321_kernel(
     const int ij = (blockIdx.y * blockDim.y) + threadIdx.y;
     const int ik = (blockIdx.z * blockDim.z) + threadIdx.z;
     const int temp_index = (threadIdx.x * blockDim.y * blockDim.z) + (threadIdx.y * blockDim.z) + threadIdx.z;
-    __shared__ TF temp_array[];
+    extern __shared__ TF temp_array[];
 
     // Load input from arr_in to temp_array
     if ( (ii < nk) && (ij < nj) && (ik < ni))
