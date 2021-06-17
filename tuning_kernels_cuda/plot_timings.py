@@ -34,7 +34,7 @@ def plot_timings(json_file):
     z_best = block_z[i]
     
     # Plot!
-    pl.figure()
+    pl.figure(figsize=(6,4))
     ax=pl.subplot(111)
     pl.title(json_file, loc='left')
     pl.scatter(block_tot, time, marker='x', label='Best blocksize = ({}x{}x{})'.format(
@@ -48,4 +48,5 @@ def plot_timings(json_file):
 
 
 if __name__ == '__main__':
-    plot_timings('timings_interpolation_kernel.json')
+    #plot_timings('timings_interpolation_kernel.json')
+    plot_timings('timings_sw_2stream_kernel.json')

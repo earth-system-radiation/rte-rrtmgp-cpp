@@ -234,9 +234,13 @@ namespace rte_kernel_launcher_cuda
         dim3 grid_gpu3d(grid_col3d, grid_lay3d, grid_gpt3d);
         dim3 block_gpu3d(block_col3d, block_lay3d, block_gpt3d);
 
+        std::cout << tau.size() << " " << ssa.size() << " " << g.size() << " " << mu0.size() << std::endl;
+
         TF tmin = std::numeric_limits<TF>::epsilon();
         sw_2stream_kernel<<<grid_gpu3d, block_gpu3d>>>(
-                ncol, nlay, ngpt, tmin, tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(), r_dif, t_dif, r_dir, t_dir, t_noscat);
+                ncol, nlay, ngpt, tmin,
+                tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(),
+                r_dif, t_dif, r_dir, t_dir, t_noscat);
 
         const int block_col2d = 32;
         const int block_gpt2d = 4;

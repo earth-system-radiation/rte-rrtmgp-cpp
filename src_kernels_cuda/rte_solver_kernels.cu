@@ -351,10 +351,13 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_
 }
 
 template<typename TF>__global__
-void sw_2stream_kernel(const int ncol, const int nlay, const int ngpt, const TF tmin,
-        const TF* __restrict__ tau, const TF* __restrict__ ssa, const TF* __restrict__ g, const TF* __restrict__ mu0,
+void sw_2stream_kernel(
+        const int ncol, const int nlay, const int ngpt, const TF tmin,
+        const TF* __restrict__ tau, const TF* __restrict__ ssa,
+        const TF* __restrict__ g, const TF* __restrict__ mu0,
         TF* __restrict__ r_dif, TF* __restrict__ t_dif,
-        TF* __restrict__ r_dir, TF* __restrict__ t_dir, TF* __restrict__ t_noscat)
+        TF* __restrict__ r_dir, TF* __restrict__ t_dir,
+        TF* __restrict__ t_noscat)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -366,7 +369,7 @@ void sw_2stream_kernel(const int ncol, const int nlay, const int ngpt, const TF 
         const TF mu0_inv = TF(1.)/mu0[icol];
         const TF gamma1 = (TF(8.) - ssa[idx] * (TF(5.) + TF(3.) * g[idx])) * TF(.25);
         const TF gamma2 = TF(3.) * (ssa[idx] * (TF(1.) -          g[idx])) * TF(.25);
-        const TF gamma3 = (TF(2.) - TF(3.) * mu0[icol] *          g[idx]) * TF(.25);
+        const TF gamma3 = (TF(2.) - TF(3.) * mu0[icol] *          g[idx])  * TF(.25);
         const TF gamma4 = TF(1.) - gamma3;
 
         const TF alpha1 = gamma1 * gamma4 + gamma2 * gamma3;
@@ -391,11 +394,11 @@ void sw_2stream_kernel(const int ncol, const int nlay, const int ngpt, const TF 
 
         r_dir[idx] = rt_term2  * ((TF(1.) - k_mu) * (alpha2 + k_gamma3)   -
                                   (TF(1.) + k_mu) * (alpha2 - k_gamma3) * exp_minus2ktau -
-                                  TF(2.) * (k_gamma3 - alpha2 * k_mu)  * exp_minusktau * t_noscat[idx]);
+                                   TF(2.) * (k_gamma3 - alpha2 * k_mu)  * exp_minusktau * t_noscat[idx]);
 
         t_dir[idx] = -rt_term2 * ((TF(1.) + k_mu) * (alpha1 + k_gamma4) * t_noscat[idx]   -
                                   (TF(1.) - k_mu) * (alpha1 - k_gamma4) * exp_minus2ktau * t_noscat[idx] -
-                                   TF(2.) * (k_gamma4 + alpha1 * k_mu) * exp_minusktau);
+                                   TF(2.) * (k_gamma4 + alpha1 * k_mu)  * exp_minusktau);
     }
 }
 
