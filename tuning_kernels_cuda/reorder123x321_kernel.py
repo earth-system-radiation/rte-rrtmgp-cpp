@@ -35,7 +35,8 @@ def run_and_test(params: dict):
 
     result = kt.run_kernel(
             kernel_name, kernel_string, problem_size,
-            args, params, compiler_options=cp)
+            args, params, compiler_options=cp,
+            smem_args={"size": 1024 * type_float.itemsize})
 
     compare_fields(result[-1], ref, '123x321')
 
@@ -43,13 +44,14 @@ def run_and_test(params: dict):
 # Tuning the kernel
 def tune():
     tune_params = dict()
-    tune_params['block_size_x'] = [1,2,4,8,16,24,32]
-    tune_params['block_size_y'] = [1,2,4,8,16,24,32]
-    tune_params['block_size_z'] = [1,2,4,8,16,24,32]
+    tune_params['block_size_x'] = [2**i for i in range(0, 11)]
+    tune_params['block_size_y'] = [2**i for i in range(0, 11)]
+    tune_params['block_size_z'] = [2**i for i in range(0, 11)]
 
     result, env = kt.tune_kernel(
             kernel_name, kernel_string, problem_size,
-            args, tune_params, compiler_options=cp)
+            args, tune_params, compiler_options=cp,
+            smem_args={"size": 1024 * type_float.itemsize})
 
     with open('reorder123x321_kernel.json', 'w') as fp:
         json.dump(result, fp)
@@ -74,7 +76,7 @@ if __name__ == '__main__':
     ni = type_int(144)
     nj = type_int(140)
     nk = type_int(256)
-    n = ni*nj*nk
+    n = ni * nj * nk
 
     # Kernel input and output
     arr_in  = np.random.random(n).astype(type_float)
