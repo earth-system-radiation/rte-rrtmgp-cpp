@@ -36,7 +36,7 @@ def run_and_test(params: dict):
     result = kt.run_kernel(
             kernel_name, kernel_string, problem_size,
             args, params, compiler_options=cp,
-            smem_args={"size": 1024 * type_float.itemsize})
+            smem_args={"size": 1024 * np.dtype(type_float).itemsize})
 
     compare_fields(result[-1], ref, '123x321')
 
@@ -51,7 +51,7 @@ def tune():
     result, env = kt.tune_kernel(
             kernel_name, kernel_string, problem_size,
             args, tune_params, compiler_options=cp,
-            smem_args={"size": 1024 * type_float.itemsize})
+            smem_args={"size": 1024 * np.dtype(type_float).itemsize})
 
     with open('reorder123x321_kernel.json', 'w') as fp:
         json.dump(result, fp)
