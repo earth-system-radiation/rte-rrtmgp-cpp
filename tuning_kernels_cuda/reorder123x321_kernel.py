@@ -46,7 +46,7 @@ def tune():
     tune_params = dict()
     tune_params['block_size_x'] = [2**i for i in range(0, 11)]
     tune_params['block_size_y'] = [2**i for i in range(0, 11)]
-    tune_params['block_size_z'] = [2**i for i in range(0, 11)]
+    tune_params['block_size_z'] = [2**i for i in range(0, 7)]
 
     result, env = kt.tune_kernel(
             kernel_name, kernel_string, problem_size,
