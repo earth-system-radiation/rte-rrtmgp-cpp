@@ -236,8 +236,8 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay_min = 1;  // 32;
         const int block_col_min = 3;  // 32;
 
-        const int grid_lay_min  = nlay/block_lay_min + (nlay%block_lay_min > 0);
         const int grid_col_min  = ncol/block_col_min + (ncol%block_col_min > 0);
+        const int grid_lay_min  = nlay/block_lay_min + (nlay%block_lay_min > 0);
 
         dim3 grid_gpu_min(grid_col_min, grid_lay_min);
         dim3 block_gpu_min(block_col_min, block_lay_min);

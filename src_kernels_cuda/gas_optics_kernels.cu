@@ -357,8 +357,8 @@ void compute_tau_minor_absorption_kernel_split(
         TF* __restrict__ tau_minor)
 {
     // Fetch the three coordinates.
-    const int ilay = blockIdx.x * blockDim.x + threadIdx.x;
-    const int icol = blockIdx.y * blockDim.y + threadIdx.y;
+    const int icol = blockIdx.x * blockDim.x + threadIdx.x;
+    const int ilay = blockIdx.y * blockDim.y + threadIdx.y;
 
     const TF PaTohPa = 0.01;
     const int ncl = ncol * nlay;
@@ -456,8 +456,9 @@ void compute_tau_minor_absorption_kernel(
         TF* __restrict__ tau_minor)
 {
     // Fetch the three coordinates.
-    const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
     const int icol = (blockIdx.x * blockDim.x) + threadIdx.x;
+    const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
+
     const TF PaTohPa = 0.01;
     const int ncl = ncol * nlay;
 
