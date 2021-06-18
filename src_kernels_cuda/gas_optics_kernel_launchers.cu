@@ -211,9 +211,9 @@ namespace rrtmgp_kernel_launcher_cuda
         TF* tau_major = Tools_gpu::allocate_gpu<TF>(tau.size());
         TF* tau_minor = Tools_gpu::allocate_gpu<TF>(tau.size());
 
-        const int block_bnd_maj = 11;  // 14
+        const int block_bnd_maj = 2;  // 14
         const int block_lay_maj = 1;   // 1
-        const int block_col_maj = 3;   // 32
+        const int block_col_maj = 2;   // 32
 
         const int grid_bnd_maj = nband/block_bnd_maj + (nband%block_bnd_maj > 0);
         const int grid_lay_maj = nlay/block_lay_maj + (nlay%block_lay_maj > 0);
