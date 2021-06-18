@@ -408,6 +408,7 @@ void compute_tau_minor_absorption_kernel_split(
                         jtemp[idx_collay],
                         nminork, neta);
 
+                #pragma unroll
                 for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
                 {
                     const int idx_out = igpt + ilay * ngpt + icol * nlay * ngpt;

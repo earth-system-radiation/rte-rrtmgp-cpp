@@ -211,9 +211,9 @@ namespace rrtmgp_kernel_launcher_cuda
         TF* tau_major = Tools_gpu::allocate_gpu<TF>(tau.size());
         TF* tau_minor = Tools_gpu::allocate_gpu<TF>(tau.size());
 
-        const int block_bnd_maj = 11;  // 14
+        const int block_bnd_maj = 2;  // 14
         const int block_lay_maj = 1;   // 1
-        const int block_col_maj = 3;   // 32
+        const int block_col_maj = 2;   // 32
 
         const int grid_bnd_maj = nband/block_bnd_maj + (nband%block_bnd_maj > 0);
         const int grid_lay_maj = nlay/block_lay_maj + (nlay%block_lay_maj > 0);
@@ -233,17 +233,19 @@ namespace rrtmgp_kernel_launcher_cuda
         const int nscale_lower = scale_by_complement_lower.dim(1);
         const int nscale_upper = scale_by_complement_upper.dim(1);
 
-        const int block_lay_min = 1;  // 32;
-        const int block_col_min = 3;  // 32;
+        // Lower
+        int idx_tropo = 1;
 
-        const int grid_col_min  = ncol/block_col_min + (ncol%block_col_min > 0);
-        const int grid_lay_min  = nlay/block_lay_min + (nlay%block_lay_min > 0);
+        const int block_lay_min_1 = 8;
+        const int block_col_min_1 = 2;
 
-        dim3 grid_gpu_min(grid_col_min, grid_lay_min);
-        dim3 block_gpu_min(block_col_min, block_lay_min);
+        const int grid_col_min_1  = ncol/block_col_min_1 + (ncol%block_col_min_1 > 0);
+        const int grid_lay_min_1  = nlay/block_lay_min_1 + (nlay%block_lay_min_1 > 0);
 
-        int idx_tropo = 1;  // lower
-        compute_tau_minor_absorption_kernel_split<<<grid_gpu_min, block_gpu_min>>>(
+        dim3 grid_gpu_min_1(grid_col_min_1, grid_lay_min_1);
+        dim3 block_gpu_min_1(block_col_min_1, block_lay_min_1);
+
+        compute_tau_minor_absorption_kernel_split<<<grid_gpu_min_1, block_gpu_min_1>>>(
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
                 nscale_lower,
@@ -262,8 +264,19 @@ namespace rrtmgp_kernel_launcher_cuda
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                 tropo.ptr(), tau.ptr(), tau_minor);
 
-        idx_tropo = 0;  // upper
-        compute_tau_minor_absorption_kernel_split<<<grid_gpu_min, block_gpu_min>>>(
+        // Upper
+        idx_tropo = 0;
+
+        const int block_lay_min_2 = 1;
+        const int block_col_min_2 = 2;
+
+        const int grid_col_min_2  = ncol/block_col_min_2 + (ncol%block_col_min_2 > 0);
+        const int grid_lay_min_2  = nlay/block_lay_min_2 + (nlay%block_lay_min_2 > 0);
+
+        dim3 grid_gpu_min_2(grid_col_min_2, grid_lay_min_2);
+        dim3 block_gpu_min_2(block_col_min_2, block_lay_min_2);
+
+        compute_tau_minor_absorption_kernel_split<<<grid_gpu_min_2, block_gpu_min_2>>>(
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
                 nscale_upper,
@@ -281,6 +294,18 @@ namespace rrtmgp_kernel_launcher_cuda
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                 tropo.ptr(), tau.ptr(), tau_minor);
+
+
+
+
+        //const int block_lay_min = 1;
+        //const int block_col_min = 2;
+
+        //const int grid_col_min  = ncol/block_col_min + (ncol%block_col_min > 0);
+        //const int grid_lay_min  = nlay/block_lay_min + (nlay%block_lay_min > 0);
+
+        //dim3 grid_gpu_min(grid_col_min, grid_lay_min);
+        //dim3 block_gpu_min(block_col_min, block_lay_min);
 
         //compute_tau_minor_absorption_kernel<<<grid_gpu_min, block_gpu_min>>>(
         //        ncol, nlay, ngpt,
