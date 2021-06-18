@@ -331,6 +331,95 @@ void compute_tau_major_absorption_kernel(
 
 
 template<typename TF>__global__
+void compute_tau_minor_absorption_kernel_split(
+        const int ncol, const int nlay, const int ngpt,
+        const int ngas, const int nflav, const int ntemp, const int neta,
+        const int nscale,
+        const int nminor,
+        const int nminork,
+        const int idx_h2o, const int idx_tropo,
+        const int* __restrict__ gpoint_flavor,
+        const TF* __restrict__ kminor,
+        const int* __restrict__ minor_limits_gpt,
+        const BOOL_TYPE* __restrict__ minor_scales_with_density,
+        const BOOL_TYPE* __restrict__ scale_by_complement,
+        const int* __restrict__ idx_minor,
+        const int* __restrict__ idx_minor_scaling,
+        const int* __restrict__ kminor_start,
+        const TF* __restrict__ play,
+        const TF* __restrict__ tlay,
+        const TF* __restrict__ col_gas,
+        const TF* __restrict__ fminor,
+        const int* __restrict__ jeta,
+        const int* __restrict__ jtemp,
+        const BOOL_TYPE* __restrict__ tropo,
+        TF* __restrict__ tau,
+        TF* __restrict__ tau_minor)
+{
+    // Fetch the three coordinates.
+    const int ilay = blockIdx.x * blockDim.x + threadIdx.x;
+    const int icol = blockIdx.y * blockDim.y + threadIdx.y;
+
+    const TF PaTohPa = 0.01;
+    const int ncl = ncol * nlay;
+
+    if ((icol < ncol) && (ilay < nlay))
+    {
+        const int idx_collay = icol + ilay * ncol;
+        const int idx_collaywv = icol + ilay * ncol + idx_h2o * ncl;
+
+        if (tropo[idx_collay] == idx_tropo)
+        {
+            for (int imnr = 0; imnr < nscale; ++imnr)
+            {
+                TF scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
+
+                if (minor_scales_with_density[imnr])
+                {
+                    scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
+
+                    if (idx_minor_scaling[imnr] > 0)
+                    {
+                        TF vmr_fact = TF(1.) / col_gas[idx_collay];
+                        TF dry_fact = TF(1.) / (TF(1.) + col_gas[idx_collaywv] * vmr_fact);
+
+                        if (scale_by_complement[imnr])
+                            scaling *= (TF(1.) - col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact);
+                        else
+                            scaling *= col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact;
+                    }
+                }
+
+                const int gpt_start = minor_limits_gpt[2*imnr]-1;
+                const int gpt_end = minor_limits_gpt[2*imnr+1];
+                const int gpt_offs = 1-idx_tropo;
+                const int iflav = gpoint_flavor[2*gpt_start + gpt_offs]-1;
+                const int idx_fcl2 = 2 * 2 * (iflav + icol * nflav + ilay * ncol * nflav);
+                const int idx_fcl1 = 2 * (iflav + icol * nflav + ilay * ncol * nflav);
+                const int idx_tau = gpt_start + ilay*ngpt + icol*nlay*ngpt;
+
+                interpolate2D_byflav_kernel(
+                        &fminor[idx_fcl2],
+                        &kminor[kminor_start[imnr]-1],
+                        kminor_start[imnr]-1,
+                        kminor_start[imnr]-1 + (gpt_end - gpt_start),
+                        &tau_minor[idx_tau],
+                        &jeta[idx_fcl1],
+                        jtemp[idx_collay],
+                        nminork, neta);
+
+                for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
+                {
+                    const int idx_out = igpt + ilay * ngpt + icol * nlay * ngpt;
+                    tau[idx_out] += tau_minor[idx_out] * scaling;
+                }
+            }
+        }
+    }
+}
+
+
+template<typename TF>__global__
 void compute_tau_minor_absorption_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
