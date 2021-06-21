@@ -1,4 +1,7 @@
 #include <chrono>
+#include <functional>
+#include <iostream>
+#include <iomanip>
 
 #include "rrtmgp_kernel_launcher_cuda.h"
 #include "tools_gpu.h"
@@ -177,6 +180,34 @@ namespace rrtmgp_kernel_launcher_cuda
         Tools_gpu::free_gpu(k);
     }
 
+
+    template<class Func, class... Args>
+    void tune(Func&& f, dim3 grid, dim3 block, Args&&... args)
+    {
+        std::cout << "TUNING" << std::endl;
+
+        cudaEvent_t start;
+        cudaEvent_t stop;
+        cudaEventCreate(&start);
+        cudaEventCreate(&stop);
+
+        const int n_samples = 1;
+
+        cudaEventRecord(start, 0);
+
+        for (int i=0; i<n_samples; ++i)
+            f<<<grid, block>>>(args...);
+
+        cudaEventRecord(stop, 0);
+        cudaEventSynchronize(stop);
+        float duration = 0.f;
+        cudaEventElapsedTime(&duration, start, stop);
+
+        std::cout << std::setprecision(10) << duration << " (ns)" << std::endl;
+        std::cout << "DONE TUNING" << std::endl;
+    }
+
+
     template<typename TF>
     void compute_tau_absorption(
             const int ncol, const int nlay, const int nband, const int ngpt,
@@ -206,14 +237,15 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<TF,5>& fminor, const Array_gpu<TF,2>& play,
             const Array_gpu<TF,2>& tlay, const Array_gpu<TF,3>& col_gas,
             const Array_gpu<int,4>& jeta, const Array_gpu<int,2>& jtemp,
-            const Array_gpu<int,2>& jpress, Array_gpu<TF,3>& tau)
+            const Array_gpu<int,2>& jpress,
+            Array_gpu<TF,3>& tau)
     {
         TF* tau_major = Tools_gpu::allocate_gpu<TF>(tau.size());
         TF* tau_minor = Tools_gpu::allocate_gpu<TF>(tau.size());
 
-        const int block_bnd_maj = 2;  // 14
-        const int block_lay_maj = 1;   // 1
-        const int block_col_maj = 2;   // 32
+        const int block_bnd_maj = 2;
+        const int block_lay_maj = 1;
+        const int block_col_maj = 2;
 
         const int grid_bnd_maj = nband/block_bnd_maj + (nband%block_bnd_maj > 0);
         const int grid_lay_maj = nlay/block_lay_maj + (nlay%block_lay_maj > 0);
@@ -222,7 +254,9 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 grid_gpu_maj(grid_col_maj, grid_lay_maj, grid_bnd_maj);
         dim3 block_gpu_maj(block_col_maj, block_lay_maj, block_bnd_maj);
 
-        compute_tau_major_absorption_kernel<<<grid_gpu_maj, block_gpu_maj>>>(
+        auto_tune(
+                compute_tau_major_absorption_kernel<TF>,
+                grid_gpu_maj, block_gpu_maj,
                 ncol, nlay, nband, ngpt,
                 nflav, neta, npres, ntemp,
                 gpoint_flavor.ptr(), band_lims_gpt.ptr(),
@@ -239,8 +273,8 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_col_min_1 = 8;
         const int block_lay_min_1 = 2;
 
-        const int grid_col_min_1  = ncol/block_col_min_1 + (ncol%block_col_min_1 > 0);
-        const int grid_lay_min_1  = nlay/block_lay_min_1 + (nlay%block_lay_min_1 > 0);
+        const int grid_col_min_1 = ncol/block_col_min_1 + (ncol%block_col_min_1 > 0);
+        const int grid_lay_min_1 = nlay/block_lay_min_1 + (nlay%block_lay_min_1 > 0);
 
         dim3 grid_gpu_min_1(grid_col_min_1, grid_lay_min_1);
         dim3 block_gpu_min_1(block_col_min_1, block_lay_min_1);
