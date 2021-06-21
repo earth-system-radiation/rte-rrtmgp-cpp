@@ -4,6 +4,9 @@ import argparse
 import json
 import os
 
+import matplotlib.pyplot as pl
+pl.close('all')
+
 
 # Path to the RCEMIP bins
 bin_path = '../rcemip'
@@ -18,8 +21,9 @@ def parse_command_line():
     parser.add_argument("--major_block_size_x", type=int, default=14)
     parser.add_argument("--major_block_size_y", type=int, default=1)
     parser.add_argument("--major_block_size_z", type=int, default=32)
-    parser.add_argument("--minor_block_size_x", type=int, default=32)
-    parser.add_argument("--minor_block_size_y", type=int, default=32)
+
+    parser.add_argument("--minor_block_size_x", type=int, default=4)
+    parser.add_argument("--minor_block_size_y", type=int, default=4)
     return parser.parse_args()
 
 
@@ -31,31 +35,44 @@ def compare_fields(arr1, arr2, name):
         print('results for {}: OKAY!'.format(name))
     else:
         print('results for {}: NOT OKAY, max diff={}'.format(name, max_diff))
+        pl.figure()
+        pl.plot(arr1-arr2)
+        pl.show()
 
 
 # Run one instance of the kernel and test output
 def run_and_test(params: dict):
     # Major
-    print("Running {} [block_size_x: {}, block_size_y: {}, block_size_z: {}]".format(kernel_name_major,
-                                                                                     params["major_block_size_x"],
-                                                                                     params["major_block_size_y"],
-                                                                                     params["major_block_size_z"]))
+    print("Running {} [block_size_x: {}, block_size_y: {}, block_size_z: {}]".format(
+            kernel_name_major,
+            params["major_block_size_x"],
+            params["major_block_size_y"],
+            params["major_block_size_z"]))
+
     params_major = {'block_size_x': params["major_block_size_x"],
                     'block_size_y': params["major_block_size_y"],
                     'block_size_z': params["major_block_size_z"]}
+
     result = kt.run_kernel(
         kernel_name_major, kernel_string, problem_size_major,
         args_major, params_major, compiler_options=cp)
+
     compare_fields(result[-2], tau_after_major, 'major')
+
     # Minor
-    print("Running {} [block_size_x: {}, block_size_y: {}]".format(kernel_name_minor, params["minor_block_size_x"], params["minor_block_size_y"]))
+    print("Running {} [block_size_x: {}, block_size_y: {}]".format(
+            kernel_name_minor, params["minor_block_size_x"], params["minor_block_size_y"]))
+
     params_minor = {'block_size_x': params["minor_block_size_x"],
                     'block_size_y': params["minor_block_size_y"]}
+
     # Use output from major as input for minor
-    tau[:] = result[-2][:]
+    tau[:] = tau_after_major
+
     result = kt.run_kernel(
         kernel_name_minor, kernel_string, problem_size_minor,
         args_minor, params_minor, compiler_options=cp)
+
     compare_fields(result[-2], tau_after_minor, 'minor')
 
 
@@ -67,8 +84,8 @@ def tune():
     params_major["block_size_z"] = [i for i in range(1, 32 + 1)]
 
     params_minor = dict()
-    params_minor["block_size_x"] = [i for i in range(1, 32 + 1)]
-    params_minor["block_size_y"] = [i for i in range(1, 32 + 1)]
+    params_minor["block_size_x"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
+    params_minor["block_size_y"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
 
     answer_major = len(args_major) * [None]
     answer_major[-2] = tau_after_major
@@ -79,13 +96,13 @@ def tune():
     # Reset input tau
     tau[:] = 0.
 
-    result, env = kt.tune_kernel(
-        kernel_name_major, kernel_string, problem_size_major,
-        args_major, params_major, compiler_options=cp,
-        answer=answer_major, atol=1e-14)
+    #result, env = kt.tune_kernel(
+    #    kernel_name_major, kernel_string, problem_size_major,
+    #    args_major, params_major, compiler_options=cp,
+    #    answer=answer_major, atol=1e-14)
 
-    with open("timings_compute_tau_major.json", 'w') as fp:
-        json.dump(result, fp)
+    #with open("timings_compute_tau_major.json", 'w') as fp:
+    #    json.dump(result, fp)
 
     tau[:] = tau_after_major
 
@@ -114,7 +131,8 @@ if __name__ == "__main__":
     include = os.path.abspath('../include')
     cp = ['-I{}'.format(include)]
 
-    ncol = type_int(144)
+    ncol = type_int(512)
+    #ncol = type_int(144)
     nlay = type_int(140)
     nband = type_int(16)
     ngpt = type_int(256)

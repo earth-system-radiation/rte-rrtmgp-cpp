@@ -236,8 +236,8 @@ namespace rrtmgp_kernel_launcher_cuda
         // Lower
         int idx_tropo = 1;
 
-        const int block_lay_min_1 = 8;
-        const int block_col_min_1 = 2;
+        const int block_col_min_1 = 8;
+        const int block_lay_min_1 = 2;
 
         const int grid_col_min_1  = ncol/block_col_min_1 + (ncol%block_col_min_1 > 0);
         const int grid_lay_min_1  = nlay/block_lay_min_1 + (nlay%block_lay_min_1 > 0);
@@ -267,8 +267,8 @@ namespace rrtmgp_kernel_launcher_cuda
         // Upper
         idx_tropo = 0;
 
-        const int block_lay_min_2 = 1;
-        const int block_col_min_2 = 2;
+        const int block_col_min_2 = 1;
+        const int block_lay_min_2 = 4;
 
         const int grid_col_min_2  = ncol/block_col_min_2 + (ncol%block_col_min_2 > 0);
         const int grid_lay_min_2  = nlay/block_lay_min_2 + (nlay%block_lay_min_2 > 0);
@@ -296,35 +296,33 @@ namespace rrtmgp_kernel_launcher_cuda
                 tropo.ptr(), tau.ptr(), tau_minor);
 
 
-
-
-        //const int block_lay_min = 1;
-        //const int block_col_min = 2;
-
-        //const int grid_col_min  = ncol/block_col_min + (ncol%block_col_min > 0);
-        //const int grid_lay_min  = nlay/block_lay_min + (nlay%block_lay_min > 0);
-
-        //dim3 grid_gpu_min(grid_col_min, grid_lay_min);
-        //dim3 block_gpu_min(block_col_min, block_lay_min);
-
-        //compute_tau_minor_absorption_kernel<<<grid_gpu_min, block_gpu_min>>>(
-        //        ncol, nlay, ngpt,
-        //        ngas, nflav, ntemp, neta,
-        //        nscale_lower, nscale_upper,
-        //        nminorlower, nminorupper,
-        //        nminorklower,nminorkupper,
-        //        idx_h2o,
-        //        gpoint_flavor.ptr(),
-        //        kminor_lower.ptr(), kminor_upper.ptr(),
-        //        minor_limits_gpt_lower.ptr(), minor_limits_gpt_upper.ptr(),
-        //        minor_scales_with_density_lower.ptr(), minor_scales_with_density_upper.ptr(),
-        //        scale_by_complement_lower.ptr(), scale_by_complement_upper.ptr(),
-        //        idx_minor_lower.ptr(), idx_minor_upper.ptr(),
-        //        idx_minor_scaling_lower.ptr(), idx_minor_scaling_upper.ptr(),
-        //        kminor_start_lower.ptr(), kminor_start_upper.ptr(),
-        //        play.ptr(), tlay.ptr(), col_gas.ptr(),
-        //        fminor.ptr(), jeta.ptr(), jtemp.ptr(),
-        //        tropo.ptr(), tau.ptr(), tau_minor);
+//        const int block_col_min = 1;
+//        const int block_lay_min = 3;
+//
+//        const int grid_col_min  = ncol/block_col_min + (ncol%block_col_min > 0);
+//        const int grid_lay_min  = nlay/block_lay_min + (nlay%block_lay_min > 0);
+//
+//        dim3 grid_gpu_min(grid_col_min, grid_lay_min);
+//        dim3 block_gpu_min(block_col_min, block_lay_min);
+//
+//        compute_tau_minor_absorption_kernel<<<grid_gpu_min, block_gpu_min>>>(
+//                ncol, nlay, ngpt,
+//                ngas, nflav, ntemp, neta,
+//                nscale_lower, nscale_upper,
+//                nminorlower, nminorupper,
+//                nminorklower,nminorkupper,
+//                idx_h2o,
+//                gpoint_flavor.ptr(),
+//                kminor_lower.ptr(), kminor_upper.ptr(),
+//                minor_limits_gpt_lower.ptr(), minor_limits_gpt_upper.ptr(),
+//                minor_scales_with_density_lower.ptr(), minor_scales_with_density_upper.ptr(),
+//                scale_by_complement_lower.ptr(), scale_by_complement_upper.ptr(),
+//                idx_minor_lower.ptr(), idx_minor_upper.ptr(),
+//                idx_minor_scaling_lower.ptr(), idx_minor_scaling_upper.ptr(),
+//                kminor_start_lower.ptr(), kminor_start_upper.ptr(),
+//                play.ptr(), tlay.ptr(), col_gas.ptr(),
+//                fminor.ptr(), jeta.ptr(), jtemp.ptr(),
+//                tropo.ptr(), tau.ptr(), tau_minor);
 
         Tools_gpu::free_gpu(tau_major);
         Tools_gpu::free_gpu(tau_minor);
