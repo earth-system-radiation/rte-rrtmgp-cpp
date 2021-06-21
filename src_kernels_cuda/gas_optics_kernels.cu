@@ -1,6 +1,6 @@
 #include "Types.h"
 
-template<typename TF>__device__
+template<typename TF> __device__
 TF interpolate1D(const TF val,
                  const TF offset,
                  const TF delta,
@@ -14,7 +14,7 @@ TF interpolate1D(const TF val,
 }
 
 
-template<typename TF>__device__
+template<typename TF> __device__
 void interpolate2D_byflav_kernel(const TF* __restrict__ fminor,
                                  const TF* __restrict__ kin,
                                  const int gpt_start, const int gpt_end,
@@ -39,18 +39,19 @@ void interpolate2D_byflav_kernel(const TF* __restrict__ fminor,
 }
 
 
-template<typename TF>__device__
-void interpolate3D_byflav_kernel(const TF* __restrict__ scaling,
-                                 const TF* __restrict__ fmajor,
-                                 const TF* __restrict__ k,
-                                 const int gpt_start, const int gpt_end,
-                                 const int* __restrict__ jeta,
-                                 const int jtemp,
-                                 const int jpress,
-                                 const int ngpt,
-                                 const int neta,
-                                 const int npress,
-                                 TF* __restrict__ tau_major)
+template<typename TF> __device__
+void interpolate3D_byflav_kernel(
+        const TF* __restrict__ scaling,
+        const TF* __restrict__ fmajor,
+        const TF* __restrict__ k,
+        const int gpt_start, const int gpt_end,
+        const int* __restrict__ jeta,
+        const int jtemp,
+        const int jpress,
+        const int ngpt,
+        const int neta,
+        const int npress,
+        TF* __restrict__ tau_major)
 {
     const int band_gpt = gpt_end-gpt_start;
     const int j0 = jeta[0];
@@ -73,7 +74,7 @@ void interpolate3D_byflav_kernel(const TF* __restrict__ scaling,
 }
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void reorder12x21_kernel(
         const int ni, const int nj,
         const TF* __restrict__ arr_in, TF* __restrict__ arr_out)
@@ -91,7 +92,7 @@ void reorder12x21_kernel(
 }
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void reorder123x321_kernel(
         const int ni, const int nj, const int nk,
         const TF* __restrict__ arr_in, TF* __restrict__ arr_out)
@@ -110,7 +111,7 @@ void reorder123x321_kernel(
 }
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void zero_array_kernel(
         const int ni, const int nj, const int nk,
         TF* __restrict__ arr)
@@ -126,7 +127,7 @@ void zero_array_kernel(
 }
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void Planck_source_kernel(
         const int ncol, const int nlay, const int nband, const int ngpt,
         const int nflav, const int neta, const int npres, const int ntemp,
@@ -153,19 +154,20 @@ void Planck_source_kernel(
     {
         const int idx_collay = icol + ilay * ncol;
         const int itropo = !tropo[idx_collay];
-        const int gpt_start = band_lims_gpt[2 * ibnd] - 1;
-        const int gpt_end = band_lims_gpt[2 * ibnd + 1];
+        const int gpt_start = band_lims_gpt[2*ibnd] - 1;
+        const int gpt_end = band_lims_gpt[2*ibnd + 1];
         const int iflav = gpoint_flavor[itropo + 2 * gpt_start] - 1;
-        const int idx_fcl3 = 2 * 2 * 2* (iflav + icol * nflav + ilay * ncol * nflav);
-        const int idx_fcl1 = 2 * (iflav + icol * nflav + ilay * ncol * nflav);
-        const int idx_tau = gpt_start + ilay * ngpt + icol * nlay * ngpt;
+        const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav);
+        const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav);
+        const int idx_tau = gpt_start + ilay*ngpt + icol*nlay*ngpt;
 
         //major gases//
-        interpolate3D_byflav_kernel(ones, &fmajor[idx_fcl3],
-                                    &pfracin[gpt_start], gpt_start, gpt_end,
-                                    &jeta[idx_fcl1], jtemp[idx_collay],
-                                    jpress[idx_collay]+itropo, ngpt, neta, npres+1,
-                                    &pfrac[idx_tau]);
+        interpolate3D_byflav_kernel(
+                ones, &fmajor[idx_fcl3],
+                &pfracin[gpt_start], gpt_start, gpt_end,
+                &jeta[idx_fcl1], jtemp[idx_collay],
+                jpress[idx_collay]+itropo, ngpt, neta, npres+1,
+                &pfrac[idx_tau]);
 
         // compute surface source irradiances
         if (ilay == sfc_lay - 1) // Subtract one to correct for fortran indexing.
@@ -206,7 +208,7 @@ void Planck_source_kernel(
 }
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void interpolation_kernel(
         const int ncol, const int nlay, const int ngas, const int nflav,
         const int neta, const int npres, const int ntemp, const TF tmin,
@@ -249,14 +251,15 @@ void interpolation_kernel(
 
         const int gas1 = flavor[2*iflav];
         const int gas2 = flavor[2*iflav+1];
+
         for (int itemp=0; itemp<2; ++itemp)
         {
             const int vmr_base_idx = itropo + (jtemp[idx]+itemp-1) * (ngas+1) * 2;
             const int colmix_idx = itemp + 2*(iflav + nflav*icol + nflav*ncol*ilay);
             const int colgas1_idx = icol + ilay*ncol + gas1*nlay*ncol;
             const int colgas2_idx = icol + ilay*ncol + gas2*nlay*ncol;
-            const TF ratio_eta_half = vmr_ref[vmr_base_idx + 2 * gas1] /
-                                      vmr_ref[vmr_base_idx + 2 * gas2];
+            const TF ratio_eta_half = vmr_ref[vmr_base_idx + 2*gas1] /
+                                      vmr_ref[vmr_base_idx + 2*gas2];
             col_mix[colmix_idx] = col_gas[colgas1_idx] + ratio_eta_half * col_gas[colgas2_idx];
 
             TF eta;
@@ -286,7 +289,7 @@ void interpolation_kernel(
 }
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void compute_tau_major_absorption_kernel(
         const int ncol, const int nlay, const int nband, const int ngpt,
         const int nflav, const int neta, const int npres, const int ntemp,
@@ -303,22 +306,24 @@ void compute_tau_major_absorption_kernel(
     const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
     const int icol = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-    if ( (icol < ncol) && (ilay < nlay) && (ibnd < nband) ) {
+    if ( (icol < ncol) && (ilay < nlay) && (ibnd < nband) )
+    {
         const int idx_collay = icol + ilay * ncol;
         const int itropo = !tropo[idx_collay];
-        const int gpt_start = band_lims_gpt[2 * ibnd] - 1;
-        const int gpt_end = band_lims_gpt[2 * ibnd + 1];
-        const int iflav = gpoint_flavor[itropo + 2 * gpt_start] - 1;
-        const int idx_fcl3 = 2 * 2 * 2* (iflav + icol * nflav + ilay * ncol * nflav);
-        const int idx_fcl1 = 2 * (iflav + icol * nflav + ilay * ncol * nflav);
-        const int idx_tau = gpt_start + ilay * ngpt + icol * nlay * ngpt;
+        const int gpt_start = band_lims_gpt[2*ibnd] - 1;
+        const int gpt_end = band_lims_gpt[2*ibnd + 1];
+        const int iflav = gpoint_flavor[itropo + 2*gpt_start] - 1;
+        const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav);
+        const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav);
+        const int idx_tau = gpt_start + ilay*ngpt + icol*nlay*ngpt;
 
         //major gases//
-        interpolate3D_byflav_kernel(&col_mix[idx_fcl1], &fmajor[idx_fcl3],
-                                    &kmajor[gpt_start], gpt_start, gpt_end,
-                                    &jeta[idx_fcl1], jtemp[idx_collay],
-                                    jpress[idx_collay]+itropo, ngpt, neta, npres+1,
-                                    &tau_major[idx_tau]);
+        interpolate3D_byflav_kernel(
+                &col_mix[idx_fcl1], &fmajor[idx_fcl3],
+                &kmajor[gpt_start], gpt_start, gpt_end,
+                &jeta[idx_fcl1], jtemp[idx_collay],
+                jpress[idx_collay]+itropo, ngpt, neta, npres+1,
+                &tau_major[idx_tau]);
 
         #pragma unroll
         for (int igpt=gpt_start; igpt<gpt_end; ++igpt)
@@ -330,7 +335,7 @@ void compute_tau_major_absorption_kernel(
 }
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void compute_tau_minor_absorption_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
@@ -365,8 +370,8 @@ void compute_tau_minor_absorption_kernel(
 
     if ((icol < ncol) && (ilay < nlay))
     {
-        const int idx_collay = icol + ilay * ncol;
-        const int idx_collaywv = icol + ilay * ncol + idx_h2o * ncl;
+        const int idx_collay = icol + ilay*ncol;
+        const int idx_collaywv = icol + ilay*ncol + idx_h2o*ncl;
 
         if (tropo[idx_collay] == idx_tropo)
         {
@@ -394,8 +399,8 @@ void compute_tau_minor_absorption_kernel(
                 const int gpt_end = minor_limits_gpt[2*imnr+1];
                 const int gpt_offs = 1-idx_tropo;
                 const int iflav = gpoint_flavor[2*gpt_start + gpt_offs]-1;
-                const int idx_fcl2 = 2 * 2 * (iflav + icol * nflav + ilay * ncol * nflav);
-                const int idx_fcl1 = 2 * (iflav + icol * nflav + ilay * ncol * nflav);
+                const int idx_fcl2 = 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav);
+                const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav);
                 const int idx_tau = gpt_start + ilay*ngpt + icol*nlay*ngpt;
 
                 interpolate2D_byflav_kernel(
@@ -411,7 +416,7 @@ void compute_tau_minor_absorption_kernel(
                 #pragma unroll
                 for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
                 {
-                    const int idx_out = igpt + ilay * ngpt + icol * nlay * ngpt;
+                    const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
                     tau[idx_out] += tau_minor[idx_out] * scaling;
                 }
             }
@@ -420,7 +425,7 @@ void compute_tau_minor_absorption_kernel(
 }
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void compute_tau_rayleigh_kernel(
         const int ncol, const int nlay, const int nbnd, const int ngpt,
         const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
@@ -466,7 +471,7 @@ void compute_tau_rayleigh_kernel(
 }
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void combine_and_reorder_2str_kernel(
         const int ncol, const int nlay, const int ngpt, const TF tmin,
         const TF* __restrict__ tau_abs, const TF* __restrict__ tau_rayleigh,
