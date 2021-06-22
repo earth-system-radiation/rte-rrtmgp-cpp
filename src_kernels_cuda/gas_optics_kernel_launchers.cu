@@ -288,10 +288,12 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<int,2>& jpress,
             Array_gpu<TF,3>& tau)
     {
-        Array_gpu<TF,3> tau_tmp(tau.get_dims());
+        Array_gpu<TF,3> tau_major(tau.get_dims());
+        Array_gpu<TF,3> tau_minor(tau.get_dims());
 
-        dim3 grid_gpu_maj, block_gpu_maj;
+        dim3 grid_gpu_maj{ncol, nlay, nband}, block_gpu_maj;
 
+        /*
         static bool needs_tuning = true;
         if (needs_tuning)
         {
@@ -307,6 +309,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
             needs_tuning = false;
         }
+        */
 
         compute_tau_major_absorption_kernel<<<grid_gpu_maj, block_gpu_maj>>>(
                 ncol, nlay, nband, ngpt,
@@ -314,7 +317,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 gpoint_flavor.ptr(), band_lims_gpt.ptr(),
                 kmajor.ptr(), col_mix.ptr(), fmajor.ptr(), jeta.ptr(),
                 tropo.ptr(), jtemp.ptr(), jpress.ptr(),
-                tau.ptr(), tau_tmp.ptr());
+                tau.ptr(), tau_major.ptr());
 
         const int nscale_lower = scale_by_complement_lower.dim(1);
         const int nscale_upper = scale_by_complement_upper.dim(1);
@@ -348,7 +351,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 kminor_start_lower.ptr(),
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
-                tropo.ptr(), tau.ptr(), tau_tmp.ptr());
+                tropo.ptr(), tau.ptr(), tau_minor.ptr());
 
         // Upper
         idx_tropo = 0;
@@ -379,7 +382,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 kminor_start_upper.ptr(),
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
-                tropo.ptr(), tau.ptr(), tau_tmp.ptr());
+                tropo.ptr(), tau.ptr(), tau_minor.ptr());
     }
 
     template<typename TF>
