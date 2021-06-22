@@ -182,29 +182,77 @@ namespace rrtmgp_kernel_launcher_cuda
 
 
     template<class Func, class... Args>
-    void tune(Func&& f, dim3 grid, dim3 block, Args&&... args)
+    std::tuple<dim3, dim3> tune(
+            dim3 problem_size,
+            const std::vector<int>& ib, const std::vector<int>& jb, const std::vector<int>& kb, 
+            Func&& f, Args&&... args)
     {
         std::cout << "TUNING" << std::endl;
 
-        cudaEvent_t start;
-        cudaEvent_t stop;
-        cudaEventCreate(&start);
-        cudaEventCreate(&stop);
+        float fastest = std::numeric_limits<float>::max();
+        dim3 fastest_block{1, 1, 1};
+        dim3 fastest_grid{problem_size};
 
-        const int n_samples = 1;
+        for (const int k : kb)
+            for (const int j : jb)
+                for (const int i : ib)
+                {
+                    dim3 block{i, j, k};
+                    dim3 grid{
+                        problem_size.x/block.x + (problem_size.x%block.x > 0),
+                        problem_size.y/block.y + (problem_size.y%block.y > 0),
+                        problem_size.z/block.z + (problem_size.z%block.z > 0)};
 
-        cudaEventRecord(start, 0);
+                    // Warmup...
+                    f<<<grid, block>>>(args...);
 
-        for (int i=0; i<n_samples; ++i)
-            f<<<grid, block>>>(args...);
+                    cudaEvent_t start;
+                    cudaEvent_t stop;
+                    cudaEventCreate(&start);
+                    cudaEventCreate(&stop);
 
-        cudaEventRecord(stop, 0);
-        cudaEventSynchronize(stop);
-        float duration = 0.f;
-        cudaEventElapsedTime(&duration, start, stop);
+                    constexpr int n_samples = 10;
 
-        std::cout << std::setprecision(10) << duration << " (ns)" << std::endl;
-        std::cout << "DONE TUNING" << std::endl;
+                    cudaEventRecord(start, 0);
+                    for (int i=0; i<n_samples; ++i)
+                        f<<<grid, block>>>(args...);
+                    cudaEventRecord(stop, 0);
+
+                    cudaEventSynchronize(stop);
+                    float duration = 0.f;
+                    cudaEventElapsedTime(&duration, start, stop);
+
+                    // Check whether kernel has succeeded.
+                    cudaError err = cudaGetLastError();
+                    if (err != cudaSuccess)
+                    {
+                        std::cout << "("
+                            << std::setw(3) << i << ", " << std::setw(3) << j << ", " << std::setw(3) << k << ") "
+                            << "FAILED! " << std::endl;
+                    }
+                    else
+                    {
+                        if (duration < fastest)
+                        {
+                            fastest = duration;
+                            fastest_grid = grid;
+                            fastest_block = block;
+                        }
+
+                        std::cout << "("
+                            << std::setw(3) << i << ", " << std::setw(3) << j << ", " << std::setw(3) << k << ") "
+                            << std::setprecision(5) << duration/n_samples << " (ns)" << std::endl;
+                    }
+                }
+
+         std::cout << "Fastest block size: (" 
+             << fastest_block.x << ", "
+             << fastest_block.y << ", "
+             << fastest_block.z << ")" << std::endl;
+
+         std::cout << "DONE TUNING" << std::endl;
+
+         return {fastest_grid, fastest_block};
     }
 
 
@@ -240,29 +288,33 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<int,2>& jpress,
             Array_gpu<TF,3>& tau)
     {
-        TF* tau_major = Tools_gpu::allocate_gpu<TF>(tau.size());
-        TF* tau_minor = Tools_gpu::allocate_gpu<TF>(tau.size());
+        Array_gpu<TF,3> tau_tmp(tau.get_dims());
 
-        const int block_bnd_maj = 2;
-        const int block_lay_maj = 1;
-        const int block_col_maj = 2;
+        dim3 grid_gpu_maj, block_gpu_maj;
 
-        const int grid_bnd_maj = nband/block_bnd_maj + (nband%block_bnd_maj > 0);
-        const int grid_lay_maj = nlay/block_lay_maj + (nlay%block_lay_maj > 0);
-        const int grid_col_maj = ncol/block_col_maj + (ncol%block_col_maj > 0);
+        static bool needs_tuning = true;
+        if (needs_tuning)
+        {
+            std::tie(grid_gpu_maj, grid_gpu_maj) = tune(
+                    {ncol, nlay, nband}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16},
+                    compute_tau_major_absorption_kernel<TF>,
+                    ncol, nlay, nband, ngpt,
+                    nflav, neta, npres, ntemp,
+                    gpoint_flavor.ptr(), band_lims_gpt.ptr(),
+                    kmajor.ptr(), col_mix.ptr(), fmajor.ptr(), jeta.ptr(),
+                    tropo.ptr(), jtemp.ptr(), jpress.ptr(),
+                    Array_gpu<TF,3>(tau).ptr(), tau_tmp.ptr());
 
-        dim3 grid_gpu_maj(grid_col_maj, grid_lay_maj, grid_bnd_maj);
-        dim3 block_gpu_maj(block_col_maj, block_lay_maj, block_bnd_maj);
+            needs_tuning = false;
+        }
 
-        auto_tune(
-                compute_tau_major_absorption_kernel<TF>,
-                grid_gpu_maj, block_gpu_maj,
+        compute_tau_major_absorption_kernel<<<grid_gpu_maj, block_gpu_maj>>>(
                 ncol, nlay, nband, ngpt,
                 nflav, neta, npres, ntemp,
                 gpoint_flavor.ptr(), band_lims_gpt.ptr(),
                 kmajor.ptr(), col_mix.ptr(), fmajor.ptr(), jeta.ptr(),
                 tropo.ptr(), jtemp.ptr(), jpress.ptr(),
-                tau.ptr(), tau_major);
+                tau.ptr(), tau_tmp.ptr());
 
         const int nscale_lower = scale_by_complement_lower.dim(1);
         const int nscale_upper = scale_by_complement_upper.dim(1);
@@ -296,7 +348,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 kminor_start_lower.ptr(),
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
-                tropo.ptr(), tau.ptr(), tau_minor);
+                tropo.ptr(), tau.ptr(), tau_tmp.ptr());
 
         // Upper
         idx_tropo = 0;
@@ -304,8 +356,8 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_col_min_2 = 1;
         const int block_lay_min_2 = 4;
 
-        const int grid_col_min_2  = ncol/block_col_min_2 + (ncol%block_col_min_2 > 0);
-        const int grid_lay_min_2  = nlay/block_lay_min_2 + (nlay%block_lay_min_2 > 0);
+        const int grid_col_min_2 = ncol/block_col_min_2 + (ncol%block_col_min_2 > 0);
+        const int grid_lay_min_2 = nlay/block_lay_min_2 + (nlay%block_lay_min_2 > 0);
 
         dim3 grid_gpu_min_2(grid_col_min_2, grid_lay_min_2);
         dim3 block_gpu_min_2(block_col_min_2, block_lay_min_2);
@@ -327,10 +379,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 kminor_start_upper.ptr(),
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
-                tropo.ptr(), tau.ptr(), tau_minor);
-
-        Tools_gpu::free_gpu(tau_major);
-        Tools_gpu::free_gpu(tau_minor);
+                tropo.ptr(), tau.ptr(), tau_tmp.ptr());
     }
 
     template<typename TF>
