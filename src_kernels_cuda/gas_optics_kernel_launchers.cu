@@ -293,11 +293,12 @@ namespace rrtmgp_kernel_launcher_cuda
 
         dim3 grid_gpu_maj{ncol, nlay, nband}, block_gpu_maj;
 
-        /*
         static bool needs_tuning = true;
         if (needs_tuning)
         {
-            std::tie(grid_gpu_maj, grid_gpu_maj) = tune(
+            needs_tuning = false;
+
+            std::tie(grid_gpu_maj, block_gpu_maj) = tune(
                     {ncol, nlay, nband}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16},
                     compute_tau_major_absorption_kernel<TF>,
                     ncol, nlay, nband, ngpt,
@@ -305,11 +306,8 @@ namespace rrtmgp_kernel_launcher_cuda
                     gpoint_flavor.ptr(), band_lims_gpt.ptr(),
                     kmajor.ptr(), col_mix.ptr(), fmajor.ptr(), jeta.ptr(),
                     tropo.ptr(), jtemp.ptr(), jpress.ptr(),
-                    Array_gpu<TF,3>(tau).ptr(), tau_tmp.ptr());
-
-            needs_tuning = false;
+                    Array_gpu<TF,3>(tau).ptr(), Array_gpu<TF,3>(tau_major).ptr());
         }
-        */
 
         compute_tau_major_absorption_kernel<<<grid_gpu_maj, block_gpu_maj>>>(
                 ncol, nlay, nband, ngpt,
