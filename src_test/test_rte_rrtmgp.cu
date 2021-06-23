@@ -303,41 +303,45 @@ void solve_radiation(int argc, char** argv)
 
 
         // Solve the radiation.
-        Status::print_message("Solving the longwave radiation.");
-        Array_gpu<TF,2> p_lay_gpu(p_lay);
-        Array_gpu<TF,2> p_lev_gpu(p_lev);
-        Array_gpu<TF,2> t_lay_gpu(t_lay);
-        Array_gpu<TF,2> t_lev_gpu(t_lev);
-        Array_gpu<TF,2> col_dry_gpu(col_dry);
-        Array_gpu<TF,1> t_sfc_gpu(t_sfc);
-        Array_gpu<TF,2> emis_sfc_gpu(emis_sfc);
-        Array_gpu<TF,2> lwp_gpu(lwp);
-        Array_gpu<TF,2> iwp_gpu(iwp);
-        Array_gpu<TF,2> rel_gpu(rel);
-        Array_gpu<TF,2> rei_gpu(rei);
+        for (int i=0; i<2; ++i)
+        {
+            Status::print_message("Solving the longwave radiation.");
 
-        auto time_start = std::chrono::high_resolution_clock::now();
+            Array_gpu<TF,2> p_lay_gpu(p_lay);
+            Array_gpu<TF,2> p_lev_gpu(p_lev);
+            Array_gpu<TF,2> t_lay_gpu(t_lay);
+            Array_gpu<TF,2> t_lev_gpu(t_lev);
+            Array_gpu<TF,2> col_dry_gpu(col_dry);
+            Array_gpu<TF,1> t_sfc_gpu(t_sfc);
+            Array_gpu<TF,2> emis_sfc_gpu(emis_sfc);
+            Array_gpu<TF,2> lwp_gpu(lwp);
+            Array_gpu<TF,2> iwp_gpu(iwp);
+            Array_gpu<TF,2> rel_gpu(rel);
+            Array_gpu<TF,2> rei_gpu(rei);
 
-        rad_lw.solve_gpu(
-                switch_fluxes,
-                switch_cloud_optics,
-                switch_output_optical,
-                switch_output_bnd_fluxes,
-                gas_concs_gpu,
-                p_lay_gpu, p_lev_gpu,
-                t_lay_gpu, t_lev_gpu,
-                col_dry_gpu,
-                t_sfc_gpu, emis_sfc_gpu,
-                lwp_gpu, iwp_gpu,
-                rel_gpu, rei_gpu,
-                lw_tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
-                lw_flux_up, lw_flux_dn, lw_flux_net,
-                lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
+            auto time_start = std::chrono::high_resolution_clock::now();
 
-        auto time_end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+            rad_lw.solve_gpu(
+                    switch_fluxes,
+                    switch_cloud_optics,
+                    switch_output_optical,
+                    switch_output_bnd_fluxes,
+                    gas_concs_gpu,
+                    p_lay_gpu, p_lev_gpu,
+                    t_lay_gpu, t_lev_gpu,
+                    col_dry_gpu,
+                    t_sfc_gpu, emis_sfc_gpu,
+                    lwp_gpu, iwp_gpu,
+                    rel_gpu, rei_gpu,
+                    lw_tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
+                    lw_flux_up, lw_flux_dn, lw_flux_net,
+                    lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
 
-        Status::print_message("Duration longwave solver: " + std::to_string(duration) + " (ms)");
+            auto time_end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+
+            Status::print_message("Duration longwave solver: " + std::to_string(duration) + " (ms)");
+        }
 
 
         //// Store the output.
@@ -478,48 +482,51 @@ void solve_radiation(int argc, char** argv)
         }
 
         // Solve the radiation.
-        Status::print_message("Solving the shortwave radiation.");
+        for (int i=0; i<2; ++i)
+        {
+            Status::print_message("Solving the shortwave radiation.");
 
-        Array_gpu<TF,2> p_lay_gpu(p_lay);
-        Array_gpu<TF,2> p_lev_gpu(p_lev);
-        Array_gpu<TF,2> t_lay_gpu(t_lay);
-        Array_gpu<TF,2> t_lev_gpu(t_lev);
-        Array_gpu<TF,2> col_dry_gpu(col_dry);
-        Array_gpu<TF,2> sfc_alb_dir_gpu(sfc_alb_dir);
-        Array_gpu<TF,2> sfc_alb_dif_gpu(sfc_alb_dif);
-        Array_gpu<TF,1> tsi_scaling_gpu(tsi_scaling);
-        Array_gpu<TF,1> mu0_gpu(mu0);
-        Array_gpu<TF,2> lwp_gpu(lwp);
-        Array_gpu<TF,2> iwp_gpu(iwp);
-        Array_gpu<TF,2> rel_gpu(rel);
-        Array_gpu<TF,2> rei_gpu(rei);
+            Array_gpu<TF,2> p_lay_gpu(p_lay);
+            Array_gpu<TF,2> p_lev_gpu(p_lev);
+            Array_gpu<TF,2> t_lay_gpu(t_lay);
+            Array_gpu<TF,2> t_lev_gpu(t_lev);
+            Array_gpu<TF,2> col_dry_gpu(col_dry);
+            Array_gpu<TF,2> sfc_alb_dir_gpu(sfc_alb_dir);
+            Array_gpu<TF,2> sfc_alb_dif_gpu(sfc_alb_dif);
+            Array_gpu<TF,1> tsi_scaling_gpu(tsi_scaling);
+            Array_gpu<TF,1> mu0_gpu(mu0);
+            Array_gpu<TF,2> lwp_gpu(lwp);
+            Array_gpu<TF,2> iwp_gpu(iwp);
+            Array_gpu<TF,2> rel_gpu(rel);
+            Array_gpu<TF,2> rei_gpu(rei);
 
-        auto time_start = std::chrono::high_resolution_clock::now();
+            auto time_start = std::chrono::high_resolution_clock::now();
 
-        rad_sw.solve_gpu(
-                switch_fluxes,
-                switch_cloud_optics,
-                switch_output_optical,
-                switch_output_bnd_fluxes,
-                gas_concs_gpu,
-                p_lay_gpu, p_lev_gpu,
-                t_lay_gpu, t_lev_gpu,
-                col_dry_gpu,
-                sfc_alb_dir_gpu, sfc_alb_dif_gpu,
-                tsi_scaling_gpu, mu0_gpu,
-                lwp_gpu, iwp_gpu,
-                rel_gpu, rei_gpu,
-                sw_tau, ssa, g,
-                toa_source,
-                sw_flux_up, sw_flux_dn,
-                sw_flux_dn_dir, sw_flux_net,
-                sw_bnd_flux_up, sw_bnd_flux_dn,
-                sw_bnd_flux_dn_dir, sw_bnd_flux_net);
+            rad_sw.solve_gpu(
+                    switch_fluxes,
+                    switch_cloud_optics,
+                    switch_output_optical,
+                    switch_output_bnd_fluxes,
+                    gas_concs_gpu,
+                    p_lay_gpu, p_lev_gpu,
+                    t_lay_gpu, t_lev_gpu,
+                    col_dry_gpu,
+                    sfc_alb_dir_gpu, sfc_alb_dif_gpu,
+                    tsi_scaling_gpu, mu0_gpu,
+                    lwp_gpu, iwp_gpu,
+                    rel_gpu, rei_gpu,
+                    sw_tau, ssa, g,
+                    toa_source,
+                    sw_flux_up, sw_flux_dn,
+                    sw_flux_dn_dir, sw_flux_net,
+                    sw_bnd_flux_up, sw_bnd_flux_dn,
+                    sw_bnd_flux_dn_dir, sw_bnd_flux_net);
 
-        auto time_end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+            auto time_end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
 
-        Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
+            Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
+        }
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");
