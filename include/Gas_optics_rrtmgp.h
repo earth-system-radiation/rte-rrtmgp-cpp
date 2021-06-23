@@ -290,7 +290,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
 
 };
 
-#ifdef USECUDA
+#ifdef __CUDACC__
 template<typename TF>
 class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
 {
@@ -401,18 +401,17 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
                 Source_func_lw_gpu<TF>& sources,
                 const Array_gpu<TF,2>& col_dry,
-                const Array_gpu<TF,2>& tlev) const;
+                const Array_gpu<TF,2>& tlev);
 
-        //shortwave variant
-           void gas_optics(
+        // shortwave variant
+        void gas_optics(
                 const Array_gpu<TF,2>& play,
                 const Array_gpu<TF,2>& plev,
                 const Array_gpu<TF,2>& tlay,
                 const Gas_concs_gpu<TF>& gas_desc,
                 std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
                 Array_gpu<TF,2>& toa_src,
-                const Array_gpu<TF,2>& col_dry) const;
-
+                const Array_gpu<TF,2>& col_dry);
 
     private:
         Array<TF,2> totplnk;
@@ -489,12 +488,9 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
         Array_gpu<int,1> idx_minor_upper_gpu;
         Array_gpu<int,1> idx_minor_scaling_lower_gpu;
         Array_gpu<int,1> idx_minor_scaling_upper_gpu;
-//        Array_gpu<int,1> is_key_gpu;
         Array_gpu<TF,1> solar_source_gpu;
         Array_gpu<TF,4> krayl_gpu;
         #endif
-
-
 
         int get_ngas() const { return this->gas_names.dim(1); }
 
@@ -544,7 +540,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 Array_gpu<int,4>& jeta,
                 Array_gpu<BOOL_TYPE,2>& tropo,
                 Array_gpu<TF,6>& fmajor,
-                const Array_gpu<TF,2>& col_dry) const;
+                const Array_gpu<TF,2>& col_dry);
 
         void combine_and_reorder(
                 const Array_gpu<TF,3>& tau,
@@ -562,6 +558,8 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 Source_func_lw_gpu<TF>& sources,
                 const Array_gpu<TF,2>& tlev) const;
 
+    private:
+        Tuner_map compute_gas_taus_map;
 };
 #endif
 

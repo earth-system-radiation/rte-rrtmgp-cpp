@@ -114,7 +114,7 @@ class Gas_optics_gpu : public Optical_props_gpu<TF>
                 std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
                 Source_func_lw_gpu<TF>& sources,
                 const Array_gpu<TF,2>& col_dry,
-                const Array_gpu<TF,2>& tlev) const = 0;
+                const Array_gpu<TF,2>& tlev) = 0;
 
         // Shortwave variant.
         virtual void gas_optics(
@@ -124,11 +124,10 @@ class Gas_optics_gpu : public Optical_props_gpu<TF>
                 const Gas_concs_gpu<TF>& gas_desc,
                 std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
                 Array_gpu<TF,2>& toa_src,
-                const Array_gpu<TF,2>& col_dry) const = 0;
+                const Array_gpu<TF,2>& col_dry) = 0;
 
        virtual TF get_tsi() const = 0;
 };
 #endif
-
 
 #endif

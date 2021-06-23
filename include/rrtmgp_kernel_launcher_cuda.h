@@ -116,7 +116,8 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<TF,5>& fminor, const Array_gpu<TF,2>& play,
             const Array_gpu<TF,2>& tlay, const Array_gpu<TF,3>& col_gas,
             const Array_gpu<int,4>& jeta, const Array_gpu<int,2>& jtemp,
-            const Array_gpu<int,2>& jpress, Array_gpu<TF,3>& tau);
+            const Array_gpu<int,2>& jpress, Array_gpu<TF,3>& tau,
+            Tuner_map& tunings);
 
     template<typename TF>
     void Planck_source(

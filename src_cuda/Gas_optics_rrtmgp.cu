@@ -899,7 +899,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
         std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
         Source_func_lw_gpu<TF>& sources,
         const Array_gpu<TF,2>& col_dry,
-        const Array_gpu<TF,2>& tlev) const
+        const Array_gpu<TF,2>& tlev)
 {
     const int ncol = play.dim(1);
     const int nlay = play.dim(2);
@@ -937,7 +937,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
         const Gas_concs_gpu<TF>& gas_desc,
         std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
         Array_gpu<TF,2>& toa_src,
-        const Array_gpu<TF,2>& col_dry) const
+        const Array_gpu<TF,2>& col_dry)
 {
     const int ncol = play.dim(1);
     const int nlay = play.dim(2);
@@ -975,7 +975,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
         Array_gpu<int,4>& jeta,
         Array_gpu<BOOL_TYPE,2>& tropo,
         Array_gpu<TF,6>& fmajor,
-        const Array_gpu<TF,2>& col_dry) const
+        const Array_gpu<TF,2>& col_dry)
 {
     Array_gpu<TF,3> tau({ngpt, nlay, ncol});
     Array_gpu<TF,3> tau_rayleigh({ngpt, nlay, ncol});
@@ -1075,7 +1075,8 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
             col_mix, fmajor, fminor,
             play, tlay, col_gas,
             jeta, jtemp, jpress,
-            tau);
+            tau,
+            compute_gas_taus_map);
 
     bool has_rayleigh = (this->krayl.size() > 0);
 
