@@ -3,6 +3,8 @@
 #include "rte_kernel_launcher_cuda.h"
 #include "tools_gpu.h"
 #include "Array.h"
+#include "tuner.h"
+
 #include <iomanip>
 
 
@@ -177,7 +179,29 @@ namespace rte_kernel_launcher_cuda
 
         const int top_level = top_at_1 ? 0 : nlay;
 
-        lw_solver_noscat_step1_kernel<<<grid_gpu3d, block_gpu3d>>>(
+        // Step 1.
+        dim3 grid_1, block_1;
+
+        if (tunings.count("lw_step1") == 0)
+        {
+            std::tie(grid_1, block_1) = tune_kernel(
+                    "lw_step1",
+                    {ncol, nlay, ngpt}, {1, 2, 4, 8, 16, 32, 64, 96, 128}, {1, 2, 4, 8}, {1, 2, 4},
+                    lw_solver_noscat_step1_kernel<TF>,
+                    ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+                    lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
+                    flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+
+            tunings["lw_step1"].first = grid_1;
+            tunings["lw_step1"].second = block_1;
+        }
+        else
+        {
+            grid_1 = tunings["lw_step1"].first;
+            block_1 = tunings["lw_step1"].second;
+        }
+
+        lw_solver_noscat_step1_kernel<<<grid_1, block_1>>>(
                 ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
                 lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
                 flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());

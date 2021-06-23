@@ -24,6 +24,8 @@
 #include "Gas_concs.h"
 #include "Gas_optics_rrtmgp.h"
 #include "Cloud_optics.h"
+#include "Rte_lw.h"
+
 
 template<typename TF>
 class Radiation_solver_longwave
@@ -100,6 +102,7 @@ class Radiation_solver_longwave
         #ifdef __CUDACC__
         std::unique_ptr<Gas_optics_rrtmgp_gpu<TF>> kdist_gpu;
         std::unique_ptr<Cloud_optics_gpu<TF>> cloud_optics_gpu;
+        Rte_lw_gpu<TF> rte_lw;
         #endif
 };
 

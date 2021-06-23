@@ -29,9 +29,8 @@
 #include "Fluxes.h"
 
 #include "rrtmgp_kernels.h"
-// CUDA TEST
 #include "rte_kernel_launcher_cuda.h"
-// END CUDA TEST
+
 
 namespace
 {
