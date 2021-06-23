@@ -187,7 +187,7 @@ namespace rte_kernel_launcher_cuda
         {
             std::tie(grid_1, block_1) = tune_kernel(
                     "lw_step_1",
-                    {ncol, nlay, ngpt}, {1, 4, 16, 32, 64, 96, 128, 192, 256}, {1, 2, 4, 8}, {1},
+                    {ncol, nlay, ngpt}, {16, 32, 64, 96, 128, 256, 512}, {1, 2, 4, 8}, {1, 2, 4},
                     lw_solver_noscat_step_1_kernel<TF>,
                     ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
                     lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
@@ -215,7 +215,7 @@ namespace rte_kernel_launcher_cuda
         {
             std::tie(grid_2, block_2) = tune_kernel(
                     "lw_step_2",
-                    {ncol, ngpt}, {1, 4, 16, 32, 64, 128}, {1, 2, 4}, {1},
+                    {ncol, ngpt}, {16, 32, 64, 128, 256, 512}, {1, 2, 4}, {1},
                     lw_solver_noscat_step_2_kernel<TF>,
                     ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
                     lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
@@ -243,7 +243,7 @@ namespace rte_kernel_launcher_cuda
         {
             std::tie(grid_3, block_3) = tune_kernel(
                     "lw_step_3",
-                    {ncol, nlay+1, ngpt}, {1, 4, 16, 32, 64, 96, 128}, {1, 2, 4, 8}, {1, 2, 4},
+                    {ncol, nlay+1, ngpt}, {16, 32, 64, 96, 128, 512}, {1, 2, 4, 8}, {1, 2, 4},
                     lw_solver_noscat_step_3_kernel<TF>,
                     ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
                     lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
