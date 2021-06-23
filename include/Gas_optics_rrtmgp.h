@@ -30,6 +30,7 @@
 #include "Array.h"
 #include "Gas_optics.h"
 #include "Types.h"
+
 #ifdef __CUDACC__
 #include "tools_gpu.h"
 #endif
@@ -562,7 +563,6 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 const Array_gpu<TF,2>& tlev) const;
 
 };
-
-
 #endif
+
 #endif

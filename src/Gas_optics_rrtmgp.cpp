@@ -35,9 +35,6 @@
 #include "Source_functions.h"
 
 #include "rrtmgp_kernels.h"
-// CUDA TEST
-#include "rrtmgp_kernel_launcher_cuda.h"
-// END CUDA TEST
 
 #define restrict __restrict__
 
