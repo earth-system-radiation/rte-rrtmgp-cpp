@@ -139,7 +139,8 @@ void Rte_lw_gpu<TF>::rte_lw(
             sources.get_lev_source_inc(), sources.get_lev_source_dec(),
             sfc_emis_gpt, sources.get_sfc_source(),
             gpt_flux_up, gpt_flux_dn,
-            sfc_src_jac, gpt_flux_up_jac);
+            sfc_src_jac, gpt_flux_up_jac,
+            rte_lw_map);
 
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);

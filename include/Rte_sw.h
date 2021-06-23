@@ -79,6 +79,6 @@ class Rte_sw_gpu
                 const Array_gpu<TF,2> arr_in,
                 Array_gpu<TF,2>& arr_out);
 };
-
 #endif
+
 #endif

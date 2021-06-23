@@ -432,6 +432,8 @@ void Radiation_solver_longwave<TF>::solve_gpu(
             cloud_optical_props_residual = std::make_unique<Optical_props_1scl_gpu<TF>>(n_col_block_residual, n_lay, *cloud_optics_gpu);
     }
 
+    Rte_lw_gpu<TF> rte_lw;
+
     // Lambda function for solving optical properties subset.
     auto call_kernels = [&](
             const int col_s_in, const int col_e_in,
@@ -501,7 +503,7 @@ void Radiation_solver_longwave<TF>::solve_gpu(
 
         constexpr int n_ang = 1;
 
-        Rte_lw_gpu<TF>::rte_lw(
+        rte_lw.rte_lw(
                 optical_props_subset_in,
                 top_at_1,
                 sources_subset_in,
@@ -706,6 +708,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         Array_gpu<TF,3> gpt_flux_up    ({n_col_in, n_lev, n_gpt});
         Array_gpu<TF,3> gpt_flux_dn    ({n_col_in, n_lev, n_gpt});
         Array_gpu<TF,3> gpt_flux_dn_dir({n_col_in, n_lev, n_gpt});
+
         Rte_sw_gpu<TF>::rte_sw(
                 optical_props_subset_in,
                 top_at_1,

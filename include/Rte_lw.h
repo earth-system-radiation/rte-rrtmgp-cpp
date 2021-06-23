@@ -26,6 +26,7 @@
 #define RTE_LW_H
 
 #include <memory>
+
 #include "Types.h"
 
 // Forward declarations.
@@ -57,12 +58,12 @@ class Rte_lw
                 Array<TF,2>& arr_out);
 };
 
-#ifdef USECUDA
+#ifdef __CUDACC__
 template<typename TF>
 class Rte_lw_gpu
 {
     public:
-        static void rte_lw(
+        void rte_lw(
                 const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
                 const BOOL_TYPE top_at_1,
                 const Source_func_lw_gpu<TF>& sources,
@@ -72,11 +73,14 @@ class Rte_lw_gpu
                 Array_gpu<TF,3>& gpt_flux_dn,
                 const int n_gauss_angles);
 
-        static void expand_and_transpose(
+        void expand_and_transpose(
                 const std::unique_ptr<Optical_props_arry_gpu<TF>>& ops,
                 const Array_gpu<TF,2> arr_in,
                 Array_gpu<TF,2>& arr_out);
-};
 
+    private:
+        Tuner_map rte_lw_map;
+};
 #endif
+
 #endif

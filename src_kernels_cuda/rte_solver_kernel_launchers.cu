@@ -67,7 +67,8 @@ namespace rte_kernel_launcher_cuda
             const Array_gpu<TF,2>& ds, const Array_gpu<TF,2>& weights, const Array_gpu<TF,3>& tau, const Array_gpu<TF,3> lay_source,
             const Array_gpu<TF,3>& lev_source_inc, const Array_gpu<TF,3>& lev_source_dec, const Array_gpu<TF,2>& sfc_emis,
             const Array_gpu<TF,2>& sfc_src, Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn,
-            const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac)
+            const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac,
+            Tuner_map& tunings)
     {
         TF eps = std::numeric_limits<TF>::epsilon();
 
@@ -306,7 +307,7 @@ template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<float>(
             const Array_gpu<float,2>& ds, const Array_gpu<float,2>& weights, const Array_gpu<float,3>& tau, const Array_gpu<float,3> lay_source,
             const Array_gpu<float,3>& lev_source_inc, const Array_gpu<float,3>& lev_source_dec, const Array_gpu<float,2>& sfc_emis,
             const Array_gpu<float,2>& sfc_src, Array_gpu<float,3>& flux_dn, Array_gpu<float,3>& flux_up,
-            const Array_gpu<float,2>& sfc_src_jac, Array_gpu<float,3>& flux_up_jac);
+            const Array_gpu<float,2>& sfc_src_jac, Array_gpu<float,3>& flux_up_jac, Tuner_map& tunings);
 #else
 template void rte_kernel_launcher_cuda::apply_BC(const int, const int, const int, const BOOL_TYPE,
                   const Array_gpu<double,2>&, const Array_gpu<double,1>&, Array_gpu<double,3>&);
@@ -325,5 +326,5 @@ template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<double>(
             const Array_gpu<double,2>& ds, const Array_gpu<double,2>& weights, const Array_gpu<double,3>& tau, const Array_gpu<double,3> lay_source,
             const Array_gpu<double,3>& lev_source_inc, const Array_gpu<double,3>& lev_source_dec, const Array_gpu<double,2>& sfc_emis,
             const Array_gpu<double,2>& sfc_src, Array_gpu<double,3>& flux_up, Array_gpu<double,3>& flux_dn,
-            const Array_gpu<double,2>& sfc_src_jac,Array_gpu<double,3>& flux_up_jac);
+            const Array_gpu<double,2>& sfc_src_jac,Array_gpu<double,3>& flux_up_jac, Tuner_map& tunings);
 #endif
