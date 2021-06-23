@@ -77,7 +77,7 @@ void lw_transport_noscat_kernel(
 
 
 template<typename TF> __global__
-void lw_solver_noscat_step1_kernel(
+void lw_solver_noscat_step_1_kernel(
         const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
         const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
         const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
@@ -131,7 +131,7 @@ void lw_solver_noscat_step1_kernel(
 
 
 template<typename TF> __global__
-void lw_solver_noscat_step2_kernel(
+void lw_solver_noscat_step_2_kernel(
         const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
         const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
         const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
@@ -153,7 +153,7 @@ void lw_solver_noscat_step2_kernel(
 
 
 template<typename TF> __global__
-void lw_solver_noscat_step3_kernel(
+void lw_solver_noscat_step_3_kernel(
         const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
         const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
         const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
