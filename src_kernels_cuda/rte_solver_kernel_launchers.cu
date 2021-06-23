@@ -179,6 +179,7 @@ namespace rte_kernel_launcher_cuda
 
         const int top_level = top_at_1 ? 0 : nlay;
 
+
         // Step 1.
         dim3 grid_1, block_1;
 
@@ -205,6 +206,33 @@ namespace rte_kernel_launcher_cuda
                 ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
                 lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
                 flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+
+
+        // Step 2.
+        dim3 grid_2, block_2;
+
+        if (tunings.count("lw_step2") == 0)
+        {
+            std::tie(grid_2, block_2) = tune_kernel(
+                    "lw_step2",
+                    {ncol, nlay, ngpt}, {32, 64, 96, 128}, {1, 2, 4, 8}, {1},
+                    lw_solver_noscat_step2_kernel<TF>,
+                    ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+                    lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
+                    flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+
+            tunings["lw_step2"].first = grid_2;
+            tunings["lw_step2"].second = block_2;
+        }
+        else
+        {
+            grid_2 = tunings["lw_step2"].first;
+            block_2 = tunings["lw_step2"].second;
+        }
+
+
+        // Step 3.
+        dim3 grid_3, block_3;
 
         lw_solver_noscat_step2_kernel<<<grid_gpu2d, block_gpu2d>>>(
                 ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
