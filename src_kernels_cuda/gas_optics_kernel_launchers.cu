@@ -182,7 +182,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
 
     template<class Func, class... Args>
-    std::tuple<dim3, dim3> tune(
+    std::tuple<dim3, dim3> tune_kernel(
             const std::string& kernel_name,
             dim3 problem_size,
             const std::vector<int>& ib, const std::vector<int>& jb, const std::vector<int>& kb, 
@@ -212,7 +212,7 @@ namespace rrtmgp_kernel_launcher_cuda
                     cudaEventCreate(&start);
                     cudaEventCreate(&stop);
 
-                    constexpr int n_samples = 20;
+                    constexpr int n_samples = 8;
 
                     cudaEventRecord(start, 0);
                     for (int i=0; i<n_samples; ++i)
@@ -297,7 +297,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
         if (tunings.count("compute_tau_major_absorption_kernel") == 0)
         {
-            std::tie(grid_gpu_maj, block_gpu_maj) = tune(
+            std::tie(grid_gpu_maj, block_gpu_maj) = tune_kernel(
                     "compute_tau_major_absorption_kernel",
                     {ncol, nlay, nband}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16},
                     compute_tau_major_absorption_kernel<TF>,
@@ -335,7 +335,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
         if (tunings.count("compute_tau_minor_absorption_kernel_lower") == 0)
         {
-            std::tie(grid_gpu_min_1, block_gpu_min_1) = tune(
+            std::tie(grid_gpu_min_1, block_gpu_min_1) = tune_kernel(
                     "compute_tau_minor_absorption_kernel_lower",
                     {ncol, nlay}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16}, {1},
                     compute_tau_minor_absorption_kernel<TF>,
@@ -392,7 +392,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
         if (tunings.count("compute_tau_minor_absorption_kernel_upper") == 0)
         {
-            std::tie(grid_gpu_min_2, block_gpu_min_2) = tune(
+            std::tie(grid_gpu_min_2, block_gpu_min_2) = tune_kernel(
                     "compute_tau_minor_absorption_kernel_upper",
                     {ncol, nlay}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16}, {1},
                     compute_tau_minor_absorption_kernel<TF>,
@@ -467,7 +467,8 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& lay_src,
             Array_gpu<TF,3>& lev_src_inc,
             Array_gpu<TF,3>& lev_src_dec,
-            Array_gpu<TF,2>& sfc_src_jac)
+            Array_gpu<TF,2>& sfc_src_jac,
+            Tuner_map& tunings)
     {
         TF ones_cpu[2] = {TF(1.), TF(1.)};
         const TF delta_Tsurf = TF(1.);
@@ -479,16 +480,33 @@ namespace rrtmgp_kernel_launcher_cuda
         cuda_safe_call(cudaMemcpy(ones, ones_cpu, 2*sizeof(TF), cudaMemcpyHostToDevice));
 
         // Call the kernel.
-        const int block_bnd = 1; // 14;
-        const int block_lay = 3; // 1;
-        const int block_col = 2; // 32;
+        dim3 grid_gpu{nbnd, nlay, ncol}, block_gpu;
 
-        const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
-        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        if (tunings.count("Planck_source_kernel") == 0)
+        {
+            std::tie(grid_gpu, block_gpu) = tune_kernel(
+                    "Planck_source_kernel",
+                    {nbnd, nlay, ncol}, {1, 2, 3, 4, 8}, {1, 2, 3, 4, 8}, {1, 2, 3, 4, 8},
+                    Planck_source_kernel<TF>,
+                    ncol, nlay, nbnd, ngpt,
+                    nflav, neta, npres, ntemp, nPlanckTemp,
+                    tlay.ptr(), tlev.ptr(), tsfc.ptr(), sfc_lay,
+                    fmajor.ptr(), jeta.ptr(), tropo.ptr(), jtemp.ptr(),
+                    jpress.ptr(), gpoint_bands.ptr(), band_lims_gpt.ptr(),
+                    pfracin.ptr(), temp_ref_min, totplnk_delta,
+                    totplnk.ptr(), gpoint_flavor.ptr(), ones,
+                    delta_Tsurf, sfc_src.ptr(), lay_src.ptr(),
+                    lev_src_inc.ptr(), lev_src_dec.ptr(),
+                    sfc_src_jac.ptr(), pfrac);
 
-        dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
-        dim3 block_gpu(block_bnd, block_lay, block_col);
+            tunings["Planck_source_kernel"].first = grid_gpu;
+            tunings["Planck_source_kernel"].second = block_gpu;
+        }
+        else
+        {
+            grid_gpu = tunings["Planck_source_kernel"].first;
+            block_gpu = tunings["Planck_source_kernel"].second;
+        }
 
         Planck_source_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, nbnd, ngpt,
@@ -548,7 +566,7 @@ template void rrtmgp_kernel_launcher_cuda::Planck_source<float>(const int ncol, 
         const Array_gpu<float,4>& pfracin, const float temp_ref_min, const float totplnk_delta,
         const Array_gpu<float,2>& totplnk, const Array_gpu<int,2>& gpoint_flavor,
         Array_gpu<float,2>& sfc_src,  Array_gpu<float,3>& lay_src, Array_gpu<float,3>& lev_src_inc,
-        Array_gpu<float,3>& lev_src_dec, Array_gpu<float,2>& sfc_src_jac);
+        Array_gpu<float,3>& lev_src_dec, Array_gpu<float,2>& sfc_src_jac, Tuner_map& tunings);
 
 #else
 template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array_gpu<double,3>&, Array_gpu<double,3>&);
@@ -591,5 +609,5 @@ template void rrtmgp_kernel_launcher_cuda::Planck_source<double>(const int ncol,
         const Array_gpu<double,4>& pfracin, const double temp_ref_min, const double totplnk_delta,
         const Array_gpu<double,2>& totplnk, const Array_gpu<int,2>& gpoint_flavor,
         Array_gpu<double,2>& sfc_src,  Array_gpu<double,3>& lay_src, Array_gpu<double,3>& lev_src_inc,
-        Array_gpu<double,3>& lev_src_dec, Array_gpu<double,2>& sfc_src_jac);
+        Array_gpu<double,3>& lev_src_dec, Array_gpu<double,2>& sfc_src_jac, Tuner_map& tunings);
 #endif

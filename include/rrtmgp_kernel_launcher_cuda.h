@@ -143,7 +143,7 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& lay_src,
             Array_gpu<TF,3>& lev_src_inc,
             Array_gpu<TF,3>& lev_src_dec,
-            Array_gpu<TF,2>& sfc_src_jac);
-
+            Array_gpu<TF,2>& sfc_src_jac,
+            Tuner_map& tunings);
 }
 #endif

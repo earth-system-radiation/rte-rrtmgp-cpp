@@ -1133,7 +1133,7 @@ void Gas_optics_rrtmgp_gpu<TF>::source(
         const Array_gpu<int,4>& jeta, const Array_gpu<BOOL_TYPE,2>& tropo,
         const Array_gpu<TF,6>& fmajor,
         Source_func_lw_gpu<TF>& sources,
-        const Array_gpu<TF,2>& tlev) const
+        const Array_gpu<TF,2>& tlev)
 {
     const int nflav = this->get_nflav();
     const int neta = this->get_neta();
@@ -1158,7 +1158,7 @@ void Gas_optics_rrtmgp_gpu<TF>::source(
             gpoint_bands, band_lims_gpoint, this->planck_frac_gpu, this->temp_ref_min,
             this->totplnk_delta, this->totplnk_gpu, this->gpoint_flavor_gpu,
             sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t,
-            sfc_source_jac);
+            sfc_source_jac, source_map);
 
     rrtmgp_kernel_launcher_cuda::reorder12x21(
             ncol, ngpt, sfc_source_t, sources.get_sfc_source());

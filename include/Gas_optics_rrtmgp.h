@@ -556,10 +556,11 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 const Array_gpu<int,4>& jeta, const Array_gpu<BOOL_TYPE,2>& tropo,
                 const Array_gpu<TF,6>& fmajor,
                 Source_func_lw_gpu<TF>& sources,
-                const Array_gpu<TF,2>& tlev) const;
+                const Array_gpu<TF,2>& tlev);
 
     private:
         Tuner_map compute_gas_taus_map;
+        Tuner_map source_map;
 };
 #endif
 
