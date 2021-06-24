@@ -76,7 +76,13 @@ def run_and_test(params: dict):
 
     result = kt.run_kernel(
         kernel_name_minor, kernel_string, problem_size_minor,
-        args_minor, params_minor, compiler_options=cp)
+        args_minor_lower, params_minor, compiler_options=cp)
+
+    tau[:] = result[-2]
+
+    result = kt.run_kernel(
+        kernel_name_minor, kernel_string, problem_size_minor,
+        args_minor_upper, params_minor, compiler_options=cp)
 
     compare_fields(result[-2], tau_after_minor, 'minor')
 
@@ -84,9 +90,9 @@ def run_and_test(params: dict):
 # Tuning
 def tune():
     params_major = dict()
-    params_major["block_size_x"] = [i for i in range(1, 32 + 1)]
-    params_major["block_size_y"] = [i for i in range(1, 32 + 1)]
-    params_major["block_size_z"] = [i for i in range(1, 32 + 1)]
+    params_major["block_size_x"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
+    params_major["block_size_y"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
+    params_major["block_size_z"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
 
     params_minor = dict()
     params_minor["block_size_x"] = [i for i in range(1, 32 + 1)]
@@ -109,11 +115,11 @@ def tune():
     #    args_major, params_major, compiler_options=cp,
     #    answer=answer_major, atol=1e-14)
 
+    # This gives an error: `TypeError: Object of type int64 is not JSON serializable`
     #with open("timings_compute_tau_major.json", 'w') as fp:
     #    json.dump(result, fp)
 
     tau[:] = tau_after_major
-
 
     metrics = OrderedDict()
     metrics["registers"] = lambda p: p["num_regs"]
