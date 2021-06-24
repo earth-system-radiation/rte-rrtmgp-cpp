@@ -19,6 +19,7 @@
 #include <boost/algorithm/string.hpp>
 #include <chrono>
 #include <iomanip>
+#include <cuda_profiler_api.h>
 
 #include "Status.h"
 #include "Netcdf_interface.h"
@@ -303,7 +304,7 @@ void solve_radiation(int argc, char** argv)
 
 
         // Solve the radiation.
-        for (int i=0; i<2; ++i)
+        auto run_solver = [&]()
         {
             Status::print_message("Solving the longwave radiation.");
 
@@ -341,7 +342,15 @@ void solve_radiation(int argc, char** argv)
             auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
 
             Status::print_message("Duration longwave solver: " + std::to_string(duration) + " (ms)");
-        }
+        };
+
+        // Tuning step;
+        run_solver();
+
+        // Profiling step;
+        cudaProfilerStart();
+        run_solver();
+        cudaProfilerStop();
 
 
         //// Store the output.
@@ -482,7 +491,7 @@ void solve_radiation(int argc, char** argv)
         }
 
         // Solve the radiation.
-        for (int i=0; i<2; ++i)
+        auto run_solver = [&]()
         {
             Status::print_message("Solving the shortwave radiation.");
 
@@ -526,7 +535,16 @@ void solve_radiation(int argc, char** argv)
             auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
 
             Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
-        }
+        };
+
+        // Tuning step;
+        run_solver();
+
+        // Profiling step;
+        cudaProfilerStart();
+        run_solver();
+        cudaProfilerStop();
+
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");

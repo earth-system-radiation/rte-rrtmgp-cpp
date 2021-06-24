@@ -187,7 +187,7 @@ namespace rte_kernel_launcher_cuda
         {
             std::tie(grid_1, block_1) = tune_kernel(
                     "lw_step_1",
-                    {ncol, nlay, ngpt}, {16, 32, 64, 96, 128, 256, 512}, {1, 2, 4, 8}, {1, 2, 4},
+                    {ncol, nlay, ngpt}, {8, 16, 32, 64, 96, 128, 256}, {1, 2, 4, 8}, {1, 2, 4},
                     lw_solver_noscat_step_1_kernel<TF>,
                     ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
                     lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
