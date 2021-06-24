@@ -297,7 +297,8 @@ namespace rte_kernel_launcher_cuda
     void sw_solver_2stream(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
                            const Array_gpu<TF,3>& tau, const Array_gpu<TF,3>& ssa, const Array_gpu<TF,3>& g,
                            const Array_gpu<TF,1>& mu0, const Array_gpu<TF,2>& sfc_alb_dir, const Array_gpu<TF,2>& sfc_alb_dif,
-                           Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn, Array_gpu<TF,3>& flux_dir)
+                           Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn, Array_gpu<TF,3>& flux_dir,
+                           Tuner_map& tunings)
     {
         const int opt_size = tau.size();
         const int alb_size = sfc_alb_dir.size();
@@ -327,7 +328,30 @@ namespace rte_kernel_launcher_cuda
         dim3 block_gpu3d(block_col3d, block_lay3d, block_gpt3d);
 
         TF tmin = std::numeric_limits<TF>::epsilon();
-        sw_2stream_kernel<<<grid_gpu3d, block_gpu3d>>>(
+
+        // Step 1.
+        dim3 grid_2stream, block_2stream;
+
+        if (tunings.count("sw_2stream") == 0)
+        {
+            std::tie(grid_2stream, block_2stream) = tune_kernel(
+                    "sw_2stream",
+                    {ncol, nlay, ngpt}, {8, 16, 32, 64, 96, 128, 256}, {1, 2, 4, 8}, {1, 2, 4},
+                    sw_2stream_kernel<TF>,
+                    ncol, nlay, ngpt, tmin,
+                    tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(),
+                    r_dif, t_dif, r_dir, t_dir, t_noscat);
+
+            tunings["sw_2stream"].first = grid_2stream;
+            tunings["sw_2stream"].second = block_2stream;
+        }
+        else
+        {
+            grid_2stream = tunings["sw_2stream"].first;
+            block_2stream = tunings["sw_2stream"].second;
+        }
+
+        sw_2stream_kernel<<<grid_2stream, block_2stream>>>(
                 ncol, nlay, ngpt, tmin,
                 tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(),
                 r_dif, t_dif, r_dir, t_dir, t_noscat);
@@ -371,7 +395,7 @@ template void rte_kernel_launcher_cuda::sw_solver_2stream<float>(
             const int, const int, const int, const BOOL_TYPE,
             const Array_gpu<float,3>&, const Array_gpu<float,3>&, const Array_gpu<float,3>&,
             const Array_gpu<float,1>&, const Array_gpu<float,2>&, const Array_gpu<float,2>&,
-            Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&);
+            Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, Tuner_map& tunings);
 
 template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<float>(
             const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,
@@ -390,7 +414,7 @@ template void rte_kernel_launcher_cuda::sw_solver_2stream<double>(
             const int, const int, const int, const BOOL_TYPE,
             const Array_gpu<double,3>&, const Array_gpu<double,3>&, const Array_gpu<double,3>&,
             const Array_gpu<double,1>&, const Array_gpu<double,2>&, const Array_gpu<double,2>&,
-            Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&);
+            Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, Tuner_map& tunings);
 
 template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<double>(
             const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,

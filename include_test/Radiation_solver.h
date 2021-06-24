@@ -25,6 +25,7 @@
 #include "Gas_optics_rrtmgp.h"
 #include "Cloud_optics.h"
 #include "Rte_lw.h"
+#include "Rte_sw.h"
 
 
 template<typename TF>
@@ -190,6 +191,7 @@ class Radiation_solver_shortwave
         #ifdef __CUDACC__
         std::unique_ptr<Gas_optics_gpu<TF>> kdist_gpu;
         std::unique_ptr<Cloud_optics_gpu<TF>> cloud_optics_gpu;
+        Rte_sw_gpu<TF> rte_sw;
         #endif
 };
 #endif

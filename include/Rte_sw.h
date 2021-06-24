@@ -57,12 +57,12 @@ class Rte_sw
                 Array<TF,2>& arr_out);
 };
 
-#ifdef USECUDA
+#ifdef __CUDACC__
 template<typename TF>
 class Rte_sw_gpu
 {
     public:
-        static void rte_sw(
+        void rte_sw(
                 const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
                 const BOOL_TYPE top_at_1,
                 const Array_gpu<TF,1>& mu0,
@@ -74,10 +74,13 @@ class Rte_sw_gpu
                 Array_gpu<TF,3>& gpt_flux_dn,
                 Array_gpu<TF,3>& gpt_flux_dir);
 
-        static void expand_and_transpose(
+        void expand_and_transpose(
                 const std::unique_ptr<Optical_props_arry_gpu<TF>>& ops,
                 const Array_gpu<TF,2> arr_in,
                 Array_gpu<TF,2>& arr_out);
+
+    private:
+        Tuner_map sw_solver_2stream_map;
 };
 #endif
 

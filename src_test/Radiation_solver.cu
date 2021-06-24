@@ -707,7 +707,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         Array_gpu<TF,3> gpt_flux_dn    ({n_col_in, n_lev, n_gpt});
         Array_gpu<TF,3> gpt_flux_dn_dir({n_col_in, n_lev, n_gpt});
 
-        Rte_sw_gpu<TF>::rte_sw(
+        rte_sw.rte_sw(
                 optical_props_subset_in,
                 top_at_1,
                 mu0.subset({{ {col_s_in, col_e_in} }}),
