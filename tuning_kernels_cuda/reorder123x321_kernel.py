@@ -75,7 +75,7 @@ if __name__ == '__main__':
     include = os.path.abspath('../include')
     cp = ['-I{}'.format(include)]
 
-    ni = type_int(144)
+    ni = type_int(512)
     nj = type_int(140)
     nk = type_int(256)
     n = ni*nj*nk

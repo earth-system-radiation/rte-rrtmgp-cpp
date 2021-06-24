@@ -56,7 +56,7 @@ if __name__ == '__main__':
     include = os.path.abspath('../include')
     cp = ['-I{}'.format(include)]
 
-    ncol = type_int(128)
+    ncol = type_int(512)
     nlay = type_int(140)
     ngpt = type_int(224)
 
