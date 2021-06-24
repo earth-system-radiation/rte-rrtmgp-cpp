@@ -316,18 +316,8 @@ namespace rte_kernel_launcher_cuda
         TF* src = Tools_gpu::allocate_gpu<TF>(flx_size);
         TF* denom = Tools_gpu::allocate_gpu<TF>(opt_size);
 
-        const int block_col3d = 16;
-        const int block_lay3d = 16;
-        const int block_gpt3d = 1;
-
-        const int grid_col3d = ncol/block_col3d + (ncol%block_col3d > 0);
-        const int grid_lay3d = nlay/block_lay3d + (nlay%block_lay3d > 0);
-        const int grid_gpt3d = ngpt/block_gpt3d + (ngpt%block_gpt3d > 0);
-
-        dim3 grid_gpu3d(grid_col3d, grid_lay3d, grid_gpt3d);
-        dim3 block_gpu3d(block_col3d, block_lay3d, block_gpt3d);
-
         TF tmin = std::numeric_limits<TF>::epsilon();
+
 
         // Step 1.
         dim3 grid_2stream, block_2stream;
@@ -356,40 +346,62 @@ namespace rte_kernel_launcher_cuda
                 tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(),
                 r_dif, t_dif, r_dir, t_dir, t_noscat);
 
-        const int block_col2d = 32;
-        const int block_gpt2d = 4;
-
-        const int grid_col2d = ncol/block_col2d + (ncol%block_col2d > 0);
-        const int grid_gpt2d = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
-
-        dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
-        dim3 block_gpu2d(block_col2d, block_gpt2d);
-
 
         // Step 2.
-        dim3 grid_source_adding, block_source_adding;
+        dim3 grid_source, block_source;
 
-        if (tunings.count("sw_source_adding") == 0)
+        if (tunings.count("sw_source") == 0)
         {
-            std::tie(grid_source_adding, block_source_adding) = tune_kernel(
-                    "sw_source_adding",
-                    {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4}, {1},
-                    sw_source_adding_kernel<TF>,
-                    ncol, nlay, ngpt, top_at_1, sfc_alb_dir.ptr(), sfc_alb_dif.ptr(), r_dif, t_dif, r_dir, t_dir, t_noscat,
-                    flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), source_up, source_dn, source_sfc, albedo, src, denom);
+            std::tie(grid_source, block_source) = tune_kernel(
+                    "sw_source",
+                    {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4, 8, 16}, {1},
+                    sw_source_kernel<TF>,
+                    ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
+                    t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
 
-            tunings["sw_source_adding"].first = grid_source_adding;
-            tunings["sw_source_adding"].second = block_source_adding;
+            tunings["sw_source"].first = grid_source;
+            tunings["sw_source"].second = block_source;
         }
         else
         {
-            grid_source_adding = tunings["sw_source_adding"].first;
-            block_source_adding = tunings["sw_source_adding"].second;
+            grid_source = tunings["sw_source"].first;
+            block_source = tunings["sw_source"].second;
         }
 
-        sw_source_adding_kernel<<<grid_gpu2d, block_gpu2d>>>(
-                ncol, nlay, ngpt, top_at_1, sfc_alb_dir.ptr(), sfc_alb_dif.ptr(), r_dif, t_dif, r_dir, t_dir, t_noscat,
-                flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), source_up, source_dn, source_sfc, albedo, src, denom);
+        sw_source_kernel<<<grid_source, block_source>>>(
+                    ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
+                    t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
+
+
+        // Step 3.
+        dim3 grid_adding, block_adding;
+
+        if (tunings.count("sw_adding") == 0)
+        {
+            std::tie(grid_adding, block_adding) = tune_kernel(
+                    "sw_adding",
+                    {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4, 8, 16}, {1},
+                    sw_adding_kernel<TF>,
+                    ncol, nlay, ngpt, top_at_1,
+                    sfc_alb_dif.ptr(), r_dif, t_dif,
+                    source_dn, source_up, source_sfc,
+                    flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
+
+            tunings["sw_adding"].first = grid_adding;
+            tunings["sw_adding"].second = block_adding;
+        }
+        else
+        {
+            grid_adding = tunings["sw_adding"].first;
+            block_adding = tunings["sw_adding"].second;
+        }
+
+        sw_adding_kernel<<<grid_adding, block_adding>>>(
+                ncol, nlay, ngpt, top_at_1,
+                sfc_alb_dif.ptr(), r_dif, t_dif,
+                source_dn, source_up, source_sfc,
+                flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
+
 
         Tools_gpu::free_gpu(r_dif);
         Tools_gpu::free_gpu(t_dif);
