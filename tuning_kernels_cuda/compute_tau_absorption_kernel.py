@@ -71,7 +71,13 @@ def run_and_test(params: dict):
 
     result = kt.run_kernel(
         kernel_name_minor, kernel_string, problem_size_minor,
-        args_minor, params_minor, compiler_options=cp)
+        args_minor_lower, params_minor, compiler_options=cp)
+
+    tau[:] = result[-2]
+
+    result = kt.run_kernel(
+        kernel_name_minor, kernel_string, problem_size_minor,
+        args_minor_upper, params_minor, compiler_options=cp)
 
     compare_fields(result[-2], tau_after_minor, 'minor')
 
@@ -79,9 +85,9 @@ def run_and_test(params: dict):
 # Tuning
 def tune():
     params_major = dict()
-    params_major["block_size_x"] = [i for i in range(1, 32 + 1)]
-    params_major["block_size_y"] = [i for i in range(1, 32 + 1)]
-    params_major["block_size_z"] = [i for i in range(1, 32 + 1)]
+    params_major["block_size_x"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
+    params_major["block_size_y"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
+    params_major["block_size_z"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
 
     params_minor = dict()
     params_minor["block_size_x"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
@@ -90,17 +96,18 @@ def tune():
     answer_major = len(args_major) * [None]
     answer_major[-2] = tau_after_major
 
-    answer_minor = len(args_minor) * [None]
+    answer_minor = len(args_minor_lower) * [None]
     answer_minor[-2] = tau_after_minor
 
     # Reset input tau
     tau[:] = 0.
 
-    #result, env = kt.tune_kernel(
-    #    kernel_name_major, kernel_string, problem_size_major,
-    #    args_major, params_major, compiler_options=cp,
-    #    answer=answer_major, atol=1e-14)
+    result, env = kt.tune_kernel(
+        kernel_name_major, kernel_string, problem_size_major,
+        args_major, params_major, compiler_options=cp,
+        answer=answer_major, atol=1e-14)
 
+    # This gives an error: `TypeError: Object of type int64 is not JSON serializable`
     #with open("timings_compute_tau_major.json", 'w') as fp:
     #    json.dump(result, fp)
 
@@ -108,11 +115,20 @@ def tune():
 
     result, env = kt.tune_kernel(
         kernel_name_minor, kernel_string, problem_size_minor,
-        args_minor, params_minor, compiler_options=cp,
-        answer=answer_minor, atol=1e-14)
+        args_minor_lower, params_minor, compiler_options=cp)
 
-    with open("timings_compute_tau_minor.json", 'w') as fp:
-        json.dump(result, fp)
+    #with open("timings_compute_tau_minor_lower.json", 'w') as fp:
+    #    json.dump(result, fp)
+
+    # For the correctness check, the second call (upper) should start with the results from lower:
+    #tau[:] = result[-2]
+
+    result, env = kt.tune_kernel(
+        kernel_name_minor, kernel_string, problem_size_minor,
+        args_minor_upper, params_minor, compiler_options=cp)
+
+    #with open("timings_compute_tau_minor_upper.json", 'w') as fp:
+    #    json.dump(result, fp)
 
 
 if __name__ == "__main__":
@@ -202,30 +218,45 @@ if __name__ == "__main__":
         jtemp, jpress,
         tau, tau_major]
 
-    args_minor = [
+    args_minor_lower = [
         ncol, nlay, ngpt,
         ngas, nflav, ntemp, neta,
         nscale_lower,
-        nscale_upper,
         nminor_lower,
-        nminor_upper,
         nminork_lower,
-        nminork_upper,
-        idx_h2o,
+        idx_h2o, type_int(1),
         gpoint_flavor,
         kminor_lower,
-        kminor_upper,
         minor_limits_gpt_lower,
-        minor_limits_gpt_upper,
         minor_scales_with_density_lower,
-        minor_scales_with_density_upper,
         scale_by_complement_lower,
-        scale_by_complement_upper,
         idx_minor_lower,
-        idx_minor_upper,
         idx_minor_scaling_lower,
-        idx_minor_scaling_upper,
         kminor_start_lower,
+        play,
+        tlay,
+        col_gas,
+        fminor,
+        jeta,
+        jtemp,
+        tropo,
+        tau,
+        tau_minor]
+
+    args_minor_upper = [
+        ncol, nlay, ngpt,
+        ngas, nflav, ntemp, neta,
+        nscale_upper,
+        nminor_upper,
+        nminork_upper,
+        idx_h2o, type_int(0),
+        gpoint_flavor,
+        kminor_upper,
+        minor_limits_gpt_upper,
+        minor_scales_with_density_upper,
+        scale_by_complement_upper,
+        idx_minor_upper,
+        idx_minor_scaling_upper,
         kminor_start_upper,
         play,
         tlay,
