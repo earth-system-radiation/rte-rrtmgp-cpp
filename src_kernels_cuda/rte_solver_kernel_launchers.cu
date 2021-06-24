@@ -336,7 +336,7 @@ namespace rte_kernel_launcher_cuda
         {
             std::tie(grid_2stream, block_2stream) = tune_kernel(
                     "sw_2stream",
-                    {ncol, nlay, ngpt}, {8, 16, 32, 64, 96, 128, 256}, {1, 2, 4, 8}, {1, 2, 4},
+                    {ncol, nlay, ngpt}, {32, 64, 96, 128, 256, 384, 512}, {1, 2, 4}, {1, 2, 4},
                     sw_2stream_kernel<TF>,
                     ncol, nlay, ngpt, tmin,
                     tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(),
@@ -364,6 +364,28 @@ namespace rte_kernel_launcher_cuda
 
         dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
         dim3 block_gpu2d(block_col2d, block_gpt2d);
+
+
+        // Step 2.
+        dim3 grid_source_adding, block_source_adding;
+
+        if (tunings.count("sw_source_adding") == 0)
+        {
+            std::tie(grid_source_adding, block_source_adding) = tune_kernel(
+                    "sw_source_adding",
+                    {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4}, {1},
+                    sw_source_adding_kernel<TF>,
+                    ncol, nlay, ngpt, top_at_1, sfc_alb_dir.ptr(), sfc_alb_dif.ptr(), r_dif, t_dif, r_dir, t_dir, t_noscat,
+                    flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), source_up, source_dn, source_sfc, albedo, src, denom);
+
+            tunings["sw_source_adding"].first = grid_source_adding;
+            tunings["sw_source_adding"].second = block_source_adding;
+        }
+        else
+        {
+            grid_source_adding = tunings["sw_source_adding"].first;
+            block_source_adding = tunings["sw_source_adding"].second;
+        }
 
         sw_source_adding_kernel<<<grid_gpu2d, block_gpu2d>>>(
                 ncol, nlay, ngpt, top_at_1, sfc_alb_dir.ptr(), sfc_alb_dif.ptr(), r_dif, t_dif, r_dir, t_dir, t_noscat,
