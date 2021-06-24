@@ -1,8 +1,13 @@
+#!/usr/bin/env python
+from collections import OrderedDict
 import kernel_tuner as kt
 import numpy as np
 import argparse
 import json
 import os
+
+from kernel_tuner.integration import store_results
+from common import reg_observer
 
 import matplotlib.pyplot as pl
 pl.close('all')
@@ -84,18 +89,21 @@ def tune():
     params_major["block_size_z"] = [i for i in range(1, 32 + 1)]
 
     params_minor = dict()
-    params_minor["block_size_x"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
-    params_minor["block_size_y"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
+    params_minor["block_size_x"] = [i for i in range(1, 32 + 1)]
+    params_minor["block_size_y"] = [i for i in range(1, 32 + 1)]
+    #params_minor["block_size_x"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
+    #params_minor["block_size_y"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
 
     answer_major = len(args_major) * [None]
     answer_major[-2] = tau_after_major
 
-    answer_minor = len(args_minor) * [None]
+    answer_minor = len(args_minor_lower) * [None]
     answer_minor[-2] = tau_after_minor
 
     # Reset input tau
     tau[:] = 0.
 
+    #print(f"Tuning {kernel_name_major}")
     #result, env = kt.tune_kernel(
     #    kernel_name_major, kernel_string, problem_size_major,
     #    args_major, params_major, compiler_options=cp,
@@ -106,13 +114,28 @@ def tune():
 
     tau[:] = tau_after_major
 
-    result, env = kt.tune_kernel(
-        kernel_name_minor, kernel_string, problem_size_minor,
-        args_minor, params_minor, compiler_options=cp,
-        answer=answer_minor, atol=1e-14)
 
-    with open("timings_compute_tau_minor.json", 'w') as fp:
-        json.dump(result, fp)
+    metrics = OrderedDict()
+    metrics["registers"] = lambda p: p["num_regs"]
+
+    args = {0: args_minor_upper, 1: args_minor_lower}
+
+    for idx_tropo in [type_int(0), type_int(1)]:
+
+        tau_minor_tropo_one = kt.run_kernel(
+            kernel_name_minor, kernel_string, problem_size_minor,
+            args[idx_tropo], {"block_size_x": 4, "block_size_y": 4}, compiler_options=cp)
+        answer_minor[-2] = tau_minor_tropo_one[-2]
+
+        print(f"Tuning {kernel_name_minor} tropo={idx_tropo}")
+        result, env = kt.tune_kernel(
+            kernel_name_minor, kernel_string, problem_size_minor,
+            args[idx_tropo], params_minor, compiler_options=cp,
+            answer=answer_minor, atol=1e-14,
+            verbose=True, observers=[reg_observer], metrics=metrics)
+
+        with open(f"timings_compute_tau_minor_{idx_tropo}.json", 'w') as fp:
+            json.dump(result, fp)
 
 
 if __name__ == "__main__":
@@ -129,10 +152,9 @@ if __name__ == "__main__":
 
     str_float = 'float' if type_float is np.float32 else 'double'
     include = os.path.abspath('../include')
-    cp = ['-I{}'.format(include)]
+    cp = ['-I{}'.format(include), "-Xptxas=-v"]
 
     ncol = type_int(512)
-    #ncol = type_int(144)
     nlay = type_int(140)
     nband = type_int(16)
     ngpt = type_int(256)
@@ -203,30 +225,49 @@ if __name__ == "__main__":
         jtemp, jpress,
         tau, tau_major]
 
-    args_minor = [
+    idx_tropo = type_int(1)
+
+    args_minor_lower = [
         ncol, nlay, ngpt,
         ngas, nflav, ntemp, neta,
         nscale_lower,
-        nscale_upper,
         nminor_lower,
-        nminor_upper,
         nminork_lower,
-        nminork_upper,
-        idx_h2o,
+        idx_h2o, idx_tropo,
         gpoint_flavor,
         kminor_lower,
-        kminor_upper,
         minor_limits_gpt_lower,
-        minor_limits_gpt_upper,
         minor_scales_with_density_lower,
-        minor_scales_with_density_upper,
         scale_by_complement_lower,
-        scale_by_complement_upper,
         idx_minor_lower,
-        idx_minor_upper,
         idx_minor_scaling_lower,
-        idx_minor_scaling_upper,
         kminor_start_lower,
+        play,
+        tlay,
+        col_gas,
+        fminor,
+        jeta,
+        jtemp,
+        tropo,
+        tau,
+        tau_minor]
+
+    idx_tropo = type_int(0)
+
+    args_minor_upper = [
+        ncol, nlay, ngpt,
+        ngas, nflav, ntemp, neta,
+        nscale_upper,
+        nminor_upper,
+        nminork_upper,
+        idx_h2o, type_int(0),
+        gpoint_flavor,
+        kminor_upper,
+        minor_limits_gpt_upper,
+        minor_scales_with_density_upper,
+        scale_by_complement_upper,
+        idx_minor_upper,
+        idx_minor_scaling_upper,
         kminor_start_upper,
         play,
         tlay,
