@@ -109,11 +109,11 @@ def tune():
     # Reset input tau
     tau[:] = 0.
 
-    #print(f"Tuning {kernel_name_major}")
-    #result, env = kt.tune_kernel(
-    #    kernel_name_major, kernel_string, problem_size_major,
-    #    args_major, params_major, compiler_options=cp,
-    #    answer=answer_major, atol=1e-14)
+    print(f"Tuning {kernel_name_major}")
+    result, env = kt.tune_kernel(
+        kernel_name_major, kernel_string, problem_size_major,
+        args_major, params_major, compiler_options=cp,
+        answer=answer_major, atol=1e-14, verbose=True)
 
     # This gives an error: `TypeError: Object of type int64 is not JSON serializable`
     #with open("timings_compute_tau_major.json", 'w') as fp:
@@ -124,21 +124,26 @@ def tune():
     metrics = OrderedDict()
     metrics["registers"] = lambda p: p["num_regs"]
 
-    args = {0: args_minor_upper, 1: args_minor_lower}
+    args = dict()
+    args[0] = args_minor_upper
+    args[1] = args_minor_lower
 
-    for idx_tropo in [type_int(0), type_int(1)]:
+    for idx_tropo in [type_int(1), type_int(0)]:
 
-        tau_minor_tropo_one = kt.run_kernel(
-            kernel_name_minor, kernel_string, problem_size_minor,
-            args[idx_tropo], {"block_size_x": 4, "block_size_y": 4}, compiler_options=cp)
-        answer_minor[-2] = tau_minor_tropo_one[-2]
+        #tau_minor_tropo_one = kt.run_kernel(
+        #    kernel_name_minor, kernel_string, problem_size_minor,
+        #    args[idx_tropo], {"block_size_x": 4, "block_size_y": 4}, compiler_options=cp)
+        if idx_tropo == 1:
+            answer_minor[-2] = tau_after_minor_tropo_one
+        else:
+            answer_minor[-2] = tau_after_minor
 
         print(f"Tuning {kernel_name_minor} tropo={idx_tropo}")
         result, env = kt.tune_kernel(
             kernel_name_minor, kernel_string, problem_size_minor,
             args[idx_tropo], params_minor, compiler_options=cp,
             answer=answer_minor, atol=1e-14,
-            verbose=True, observers=[reg_observer], metrics=metrics)
+            verbose=True, observers=[reg_observer], metrics=metrics, lang="cupy")
 
         with open(f"timings_compute_tau_minor_{idx_tropo}.json", 'w') as fp:
             json.dump(result, fp)
@@ -158,7 +163,7 @@ if __name__ == "__main__":
 
     str_float = 'float' if type_float is np.float32 else 'double'
     include = os.path.abspath('../include')
-    cp = ['-I{}'.format(include), "-Xptxas=-v"]
+    cp = ['-I{}'.format(include)]
 
     ncol = type_int(512)
     nlay = type_int(140)
@@ -218,7 +223,11 @@ if __name__ == "__main__":
 
     # Reference kernel output
     tau_after_minor = np.fromfile('{}/tau_after_minor.bin'.format(bin_path), dtype=type_float)
+    tau_after_minor_tropo_one = np.fromfile('{}/tau_after_minor_tropo_one.bin'.format(bin_path), dtype=type_float)
     tau_after_major = np.fromfile('{}/tau_after_major.bin'.format(bin_path), dtype=type_float)
+
+    print(f"{tau_after_minor_tropo_one.shape=}")
+    print(f"{tau.shape=}")
 
     args_major = [
         ncol, nlay, nband, ngpt,
@@ -231,7 +240,7 @@ if __name__ == "__main__":
         jtemp, jpress,
         tau, tau_major]
 
-    idx_tropo = type_int(1)
+    idx_tropo = type_int(1) # tropo = 1 is 'lower' 
 
     args_minor_lower = [
         ncol, nlay, ngpt,
@@ -266,7 +275,7 @@ if __name__ == "__main__":
         nscale_upper,
         nminor_upper,
         nminork_upper,
-        idx_h2o, type_int(0),
+        idx_h2o, idx_tropo,
         gpoint_flavor,
         kminor_upper,
         minor_limits_gpt_upper,
@@ -282,7 +291,7 @@ if __name__ == "__main__":
         jeta,
         jtemp,
         tropo,
-        tau,
+        tau_after_minor_tropo_one,
         tau_minor]
 
     problem_size_major = (ncol, nlay, nband)
