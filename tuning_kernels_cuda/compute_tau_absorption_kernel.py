@@ -56,7 +56,9 @@ def run_and_test(params: dict):
 
     params_major = {'block_size_x': params["major_block_size_x"],
                     'block_size_y': params["major_block_size_y"],
-                    'block_size_z': params["major_block_size_z"]}
+                    'block_size_z': params["major_block_size_z"],
+                    "RTE_RRTMGP_USE_CBOOL": 1
+                    }
 
     result = kt.run_kernel(
         kernel_name_major, kernel_string, problem_size_major,
@@ -69,7 +71,8 @@ def run_and_test(params: dict):
             kernel_name_minor, params["minor_block_size_x"], params["minor_block_size_y"]))
 
     params_minor = {'block_size_x': params["minor_block_size_x"],
-                    'block_size_y': params["minor_block_size_y"]}
+                    'block_size_y': params["minor_block_size_y"],
+                    "RTE_RRTMGP_USE_CBOOL": 1}
 
     # Use output from major as input for minor
     tau[:] = tau_after_major
@@ -90,11 +93,13 @@ def run_and_test(params: dict):
 # Tuning
 def tune():
     params_major = dict()
+    params_major["RTE_RRTMGP_USE_CBOOL"] = [1]
     params_major["block_size_x"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
     params_major["block_size_y"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
     params_major["block_size_z"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
 
     params_minor = dict()
+    params_minor["RTE_RRTMGP_USE_CBOOL"] = [1]
     params_minor["block_size_x"] = [i for i in range(1, 32 + 1)]
     params_minor["block_size_y"] = [i for i in range(1, 32 + 1)]
     #params_minor["block_size_x"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
@@ -109,11 +114,11 @@ def tune():
     # Reset input tau
     tau[:] = 0.
 
-    print(f"Tuning {kernel_name_major}")
-    result, env = kt.tune_kernel(
-        kernel_name_major, kernel_string, problem_size_major,
-        args_major, params_major, compiler_options=cp,
-        answer=answer_major, atol=1e-14, verbose=True)
+    #print(f"Tuning {kernel_name_major}")
+    #result, env = kt.tune_kernel(
+    #    kernel_name_major, kernel_string, problem_size_major,
+    #    args_major, params_major, compiler_options=cp,
+    #    answer=answer_major, atol=1e-14, verbose=True)
 
     # This gives an error: `TypeError: Object of type int64 is not JSON serializable`
     #with open("timings_compute_tau_major.json", 'w') as fp:
@@ -143,7 +148,7 @@ def tune():
             kernel_name_minor, kernel_string, problem_size_minor,
             args[idx_tropo], params_minor, compiler_options=cp,
             answer=answer_minor, atol=1e-14,
-            verbose=True, observers=[reg_observer], metrics=metrics, lang="cupy")
+            verbose=True, observers=[reg_observer], metrics=metrics)
 
         with open(f"timings_compute_tau_minor_{idx_tropo}.json", 'w') as fp:
             json.dump(result, fp)
@@ -159,11 +164,11 @@ if __name__ == "__main__":
     # Settings
     type_int = np.int32
     type_float = np.float64
-    type_bool = np.int32  # = default without `RTE_RRTMGP_USE_CBOOL`
+    type_bool = np.int8  # = default without `RTE_RRTMGP_USE_CBOOL`
 
     str_float = 'float' if type_float is np.float32 else 'double'
     include = os.path.abspath('../include')
-    cp = ['-I{}'.format(include)]
+    cp = ['-I{}'.format(include), "-O3", "-std=c++14", "--expt-relaxed-constexpr"]
 
     ncol = type_int(512)
     nlay = type_int(140)
@@ -225,6 +230,11 @@ if __name__ == "__main__":
     tau_after_minor = np.fromfile('{}/tau_after_minor.bin'.format(bin_path), dtype=type_float)
     tau_after_minor_tropo_one = np.fromfile('{}/tau_after_minor_tropo_one.bin'.format(bin_path), dtype=type_float)
     tau_after_major = np.fromfile('{}/tau_after_major.bin'.format(bin_path), dtype=type_float)
+
+
+    print(f"{ncol*nlay=}")
+    print(f"{tropo.shape=}")
+
 
     print(f"{tau_after_minor_tropo_one.shape=}")
     print(f"{tau.shape=}")
