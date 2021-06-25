@@ -1,8 +1,13 @@
+#!/usr/bin/env python
+from collections import OrderedDict
 import kernel_tuner as kt
 import numpy as np
 import argparse
 import json
 import os
+
+from kernel_tuner.integration import store_results
+from common import reg_observer
 
 import matplotlib.pyplot as pl
 pl.close('all')
@@ -51,7 +56,9 @@ def run_and_test(params: dict):
 
     params_major = {'block_size_x': params["major_block_size_x"],
                     'block_size_y': params["major_block_size_y"],
-                    'block_size_z': params["major_block_size_z"]}
+                    'block_size_z': params["major_block_size_z"],
+                    "RTE_RRTMGP_USE_CBOOL": 1
+                    }
 
     result = kt.run_kernel(
         kernel_name_major, kernel_string, problem_size_major,
@@ -64,14 +71,21 @@ def run_and_test(params: dict):
             kernel_name_minor, params["minor_block_size_x"], params["minor_block_size_y"]))
 
     params_minor = {'block_size_x': params["minor_block_size_x"],
-                    'block_size_y': params["minor_block_size_y"]}
+                    'block_size_y': params["minor_block_size_y"],
+                    "RTE_RRTMGP_USE_CBOOL": 1}
 
     # Use output from major as input for minor
     tau[:] = tau_after_major
 
     result = kt.run_kernel(
         kernel_name_minor, kernel_string, problem_size_minor,
-        args_minor, params_minor, compiler_options=cp)
+        args_minor_lower, params_minor, compiler_options=cp)
+
+    tau[:] = result[-2]
+
+    result = kt.run_kernel(
+        kernel_name_minor, kernel_string, problem_size_minor,
+        args_minor_upper, params_minor, compiler_options=cp)
 
     compare_fields(result[-2], tau_after_minor, 'minor')
 
@@ -79,40 +93,62 @@ def run_and_test(params: dict):
 # Tuning
 def tune():
     params_major = dict()
-    params_major["block_size_x"] = [i for i in range(1, 32 + 1)]
-    params_major["block_size_y"] = [i for i in range(1, 32 + 1)]
-    params_major["block_size_z"] = [i for i in range(1, 32 + 1)]
+    params_major["RTE_RRTMGP_USE_CBOOL"] = [1]
+    params_major["block_size_x"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
+    params_major["block_size_y"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
+    params_major["block_size_z"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
 
     params_minor = dict()
-    params_minor["block_size_x"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
-    params_minor["block_size_y"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
+    params_minor["RTE_RRTMGP_USE_CBOOL"] = [1]
+    params_minor["max_gpt"] = [16]
+    params_minor["block_size_x"] = [i for i in range(1, 32 + 1)]
+    params_minor["block_size_y"] = [i for i in range(1, 32 + 1)]
+    params_minor["use_shared_tau"] = [0, 1]
 
     answer_major = len(args_major) * [None]
     answer_major[-2] = tau_after_major
 
-    answer_minor = len(args_minor) * [None]
+    answer_minor = len(args_minor_lower) * [None]
     answer_minor[-2] = tau_after_minor
 
     # Reset input tau
     tau[:] = 0.
 
+    #print(f"Tuning {kernel_name_major}")
     #result, env = kt.tune_kernel(
     #    kernel_name_major, kernel_string, problem_size_major,
     #    args_major, params_major, compiler_options=cp,
-    #    answer=answer_major, atol=1e-14)
+    #    answer=answer_major, atol=1e-14, verbose=True)
 
+    # This gives an error: `TypeError: Object of type int64 is not JSON serializable`
     #with open("timings_compute_tau_major.json", 'w') as fp:
     #    json.dump(result, fp)
 
     tau[:] = tau_after_major
 
-    result, env = kt.tune_kernel(
-        kernel_name_minor, kernel_string, problem_size_minor,
-        args_minor, params_minor, compiler_options=cp,
-        answer=answer_minor, atol=1e-14)
+    metrics = OrderedDict()
+    metrics["registers"] = lambda p: p["num_regs"]
 
-    with open("timings_compute_tau_minor.json", 'w') as fp:
-        json.dump(result, fp)
+    args = dict()
+    args[0] = args_minor_upper
+    args[1] = args_minor_lower
+
+    for idx_tropo in [type_int(1), type_int(0)]:
+
+        if idx_tropo == 1:
+            answer_minor[-2] = tau_after_minor_tropo_one
+        else:
+            answer_minor[-2] = tau_after_minor
+
+        print(f"Tuning {kernel_name_minor} tropo={idx_tropo}")
+        result, env = kt.tune_kernel(
+            kernel_name_minor, kernel_string, problem_size_minor,
+            args[idx_tropo], params_minor, compiler_options=cp,
+            answer=answer_minor, atol=1e-14,
+            verbose=True, observers=[reg_observer], metrics=metrics)
+
+        with open(f"timings_compute_tau_minor_{idx_tropo}.json", 'w') as fp:
+            json.dump(result, fp)
 
 
 if __name__ == "__main__":
@@ -125,10 +161,11 @@ if __name__ == "__main__":
     # Settings
     type_int = np.int32
     type_float = np.float64
-    type_bool = np.int32  # = default without `RTE_RRTMGP_USE_CBOOL`
+    type_bool = np.int8  # = default without `RTE_RRTMGP_USE_CBOOL`
 
     str_float = 'float' if type_float is np.float32 else 'double'
     include = os.path.abspath('../include')
+    #cp = ['-I{}'.format(include), "-O3", "-std=c++14", "--expt-relaxed-constexpr", "-maxrregcount=64"]
     cp = ['-I{}'.format(include)]
 
     ncol = type_int(512)
@@ -189,6 +226,7 @@ if __name__ == "__main__":
 
     # Reference kernel output
     tau_after_minor = np.fromfile('{}/tau_after_minor.bin'.format(bin_path), dtype=type_float)
+    tau_after_minor_tropo_one = np.fromfile('{}/tau_after_minor_tropo_one.bin'.format(bin_path), dtype=type_float)
     tau_after_major = np.fromfile('{}/tau_after_major.bin'.format(bin_path), dtype=type_float)
 
     args_major = [
@@ -202,31 +240,23 @@ if __name__ == "__main__":
         jtemp, jpress,
         tau, tau_major]
 
-    args_minor = [
+    idx_tropo = type_int(1) # tropo = 1 is 'lower'
+
+    args_minor_lower = [
         ncol, nlay, ngpt,
         ngas, nflav, ntemp, neta,
         nscale_lower,
-        nscale_upper,
         nminor_lower,
-        nminor_upper,
         nminork_lower,
-        nminork_upper,
-        idx_h2o,
+        idx_h2o, idx_tropo,
         gpoint_flavor,
         kminor_lower,
-        kminor_upper,
         minor_limits_gpt_lower,
-        minor_limits_gpt_upper,
         minor_scales_with_density_lower,
-        minor_scales_with_density_upper,
         scale_by_complement_lower,
-        scale_by_complement_upper,
         idx_minor_lower,
-        idx_minor_upper,
         idx_minor_scaling_lower,
-        idx_minor_scaling_upper,
         kminor_start_lower,
-        kminor_start_upper,
         play,
         tlay,
         col_gas,
@@ -237,9 +267,37 @@ if __name__ == "__main__":
         tau,
         tau_minor]
 
+    idx_tropo = type_int(0)
+
+    args_minor_upper = [
+        ncol, nlay, ngpt,
+        ngas, nflav, ntemp, neta,
+        nscale_upper,
+        nminor_upper,
+        nminork_upper,
+        idx_h2o, idx_tropo,
+        gpoint_flavor,
+        kminor_upper,
+        minor_limits_gpt_upper,
+        minor_scales_with_density_upper,
+        scale_by_complement_upper,
+        idx_minor_upper,
+        idx_minor_scaling_upper,
+        kminor_start_upper,
+        play,
+        tlay,
+        col_gas,
+        fminor,
+        jeta,
+        jtemp,
+        tropo,
+        tau_after_minor_tropo_one,
+        tau_minor]
+
     problem_size_major = (ncol, nlay, nband)
     kernel_name_major = 'compute_tau_major_absorption_kernel<{}>'.format(str_float)
-    problem_size_minor = (ncol, nlay)
+    problem_size_minor = (ncol, nlay) #original
+    #problem_size_minor = (nlay, ncol) #swapped
     kernel_name_minor = 'compute_tau_minor_absorption_kernel<{}>'.format(str_float)
 
     if command_line.tune:
