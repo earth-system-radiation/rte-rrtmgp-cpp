@@ -100,10 +100,10 @@ def tune():
 
     params_minor = dict()
     params_minor["RTE_RRTMGP_USE_CBOOL"] = [1]
+    params_minor["max_gpt"] = [16]
     params_minor["block_size_x"] = [i for i in range(1, 32 + 1)]
     params_minor["block_size_y"] = [i for i in range(1, 32 + 1)]
-    #params_minor["block_size_x"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
-    #params_minor["block_size_y"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
+    params_minor["use_shared_tau"] = [0, 1]
 
     answer_major = len(args_major) * [None]
     answer_major[-2] = tau_after_major
@@ -135,9 +135,6 @@ def tune():
 
     for idx_tropo in [type_int(1), type_int(0)]:
 
-        #tau_minor_tropo_one = kt.run_kernel(
-        #    kernel_name_minor, kernel_string, problem_size_minor,
-        #    args[idx_tropo], {"block_size_x": 4, "block_size_y": 4}, compiler_options=cp)
         if idx_tropo == 1:
             answer_minor[-2] = tau_after_minor_tropo_one
         else:
@@ -168,7 +165,8 @@ if __name__ == "__main__":
 
     str_float = 'float' if type_float is np.float32 else 'double'
     include = os.path.abspath('../include')
-    cp = ['-I{}'.format(include), "-O3", "-std=c++14", "--expt-relaxed-constexpr"]
+    #cp = ['-I{}'.format(include), "-O3", "-std=c++14", "--expt-relaxed-constexpr", "-maxrregcount=64"]
+    cp = ['-I{}'.format(include)]
 
     ncol = type_int(512)
     nlay = type_int(140)
@@ -231,14 +229,6 @@ if __name__ == "__main__":
     tau_after_minor_tropo_one = np.fromfile('{}/tau_after_minor_tropo_one.bin'.format(bin_path), dtype=type_float)
     tau_after_major = np.fromfile('{}/tau_after_major.bin'.format(bin_path), dtype=type_float)
 
-
-    print(f"{ncol*nlay=}")
-    print(f"{tropo.shape=}")
-
-
-    print(f"{tau_after_minor_tropo_one.shape=}")
-    print(f"{tau.shape=}")
-
     args_major = [
         ncol, nlay, nband, ngpt,
         nflav, neta, npres, ntemp,
@@ -250,7 +240,7 @@ if __name__ == "__main__":
         jtemp, jpress,
         tau, tau_major]
 
-    idx_tropo = type_int(1) # tropo = 1 is 'lower' 
+    idx_tropo = type_int(1) # tropo = 1 is 'lower'
 
     args_minor_lower = [
         ncol, nlay, ngpt,
@@ -306,7 +296,8 @@ if __name__ == "__main__":
 
     problem_size_major = (ncol, nlay, nband)
     kernel_name_major = 'compute_tau_major_absorption_kernel<{}>'.format(str_float)
-    problem_size_minor = (ncol, nlay)
+    problem_size_minor = (ncol, nlay) #original
+    #problem_size_minor = (nlay, ncol) #swapped
     kernel_name_minor = 'compute_tau_minor_absorption_kernel<{}>'.format(str_float)
 
     if command_line.tune:

@@ -236,8 +236,8 @@ namespace rrtmgp_kernel_launcher_cuda
         // Lower
         int idx_tropo = 1;
 
-        const int block_col_min_1 = 8;
-        const int block_lay_min_1 = 2;
+        const int block_col_min_1 = 4;
+        const int block_lay_min_1 = 4;
 
         const int grid_col_min_1  = ncol/block_col_min_1 + (ncol%block_col_min_1 > 0);
         const int grid_lay_min_1  = nlay/block_lay_min_1 + (nlay%block_lay_min_1 > 0);
@@ -267,7 +267,7 @@ namespace rrtmgp_kernel_launcher_cuda
         // Upper
         idx_tropo = 0;
 
-        const int block_col_min_2 = 1;
+        const int block_col_min_2 = 4;
         const int block_lay_min_2 = 4;
 
         const int grid_col_min_2  = ncol/block_col_min_2 + (ncol%block_col_min_2 > 0);
