@@ -336,7 +336,7 @@ void compute_tau_major_absorption_kernel(
 
 
 #ifndef kernel_tuner
- #define use_shared_tau 1
+ #define use_shared_tau 0
  #define block_size_x 4
  #define block_size_y 4
  #define max_gpt 16
