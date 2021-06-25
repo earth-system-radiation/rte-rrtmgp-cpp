@@ -55,10 +55,10 @@ def run_and_test(params: dict):
 # Tuning the kernel
 def tune():
     tune_params = dict()
-    tune_params['RTE_RRTMGP_USE_CBOOL'] = 1
-    tune_params['block_size_x'] = [1, 2, 3, 4, 5, 6, 7, 8, 14]
+    tune_params['RTE_RRTMGP_USE_CBOOL'] = [1]
+    tune_params['block_size_x'] = [1, 2, 3, 4]
     tune_params['block_size_y'] = [1, 2, 3, 4]
-    tune_params['block_size_z'] = [1, 2, 3, 4, 32]
+    tune_params['block_size_z'] = [1, 2, 3, 4]
 
     answer = len(args)*[None]
     answer[-6] = sfc_src_ref
@@ -156,7 +156,8 @@ if __name__ == '__main__':
         lev_src_inc, lev_src_dec,
         sfc_src_jac, pfrac]
 
-    problem_size = (nband, nlay, ncol)
+    #problem_size = (nband, nlay, ncol)
+    problem_size = (nlay, nband, ncol)
     kernel_name = 'Planck_source_kernel<{}>'.format(str_float)
 
     if command_line.tune:
