@@ -78,8 +78,9 @@ std::tuple<dim3, dim3> tune_kernel(
 }
 
 
-template<int I, class Func, class... Args>
-void run(dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
+template<class Func, int I, int J, class... Args>
+void run_inner(
+        dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
 {
     dim3 block{I, 1, 1};
     dim3 grid{
@@ -88,7 +89,7 @@ void run(dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fast
         problem_size.z/block.z + (problem_size.z%block.z > 0)};
     
     // Warmup...
-    Func::template launch<I>(grid, block, args...);
+    Func::template launch<I, J>(grid, block, args...);
     
     cudaEvent_t start;
     cudaEvent_t stop;
@@ -99,7 +100,7 @@ void run(dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fast
     
     cudaEventRecord(start, 0);
     for (int i=0; i<n_samples; ++i)
-        Func::template launch<I>(grid, block, args...);
+        Func::template launch<I, J>(grid, block, args...);
     cudaEventRecord(stop, 0);
     
     cudaEventSynchronize(stop);
@@ -129,12 +130,20 @@ void run(dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fast
     }
 }
 
+template<class Func, int I, int... Js, class... Args>
+void run_outer(
+        std::integer_sequence<int, Js...> js,
+        dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
+{
+    (run_inner<Func, I, Js>(problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+}
 
-template<class Func, class... Args, int... Is>
+template<class Func, class... Args, int... Is, int... Js>
 std::tuple<dim3, dim3> tune_kernel_compile_time(
         const std::string& kernel_name,
         dim3 problem_size,
-        std::integer_sequence<int, Is...>,
+        std::integer_sequence<int, Is...> is,
+        std::integer_sequence<int, Js...> js,
         Args&&... args)
 {
     std::cout << "Tuning " << kernel_name << ": ";
@@ -143,7 +152,7 @@ std::tuple<dim3, dim3> tune_kernel_compile_time(
     dim3 fastest_block{1, 1, 1};
     dim3 fastest_grid{problem_size};
 
-    (run<Is, Func, Args...>(problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+    (run_outer<Func, Is>(js, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
 
     std::cout << "(" 
         << fastest_block.x << ", "

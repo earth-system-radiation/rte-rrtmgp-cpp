@@ -184,10 +184,10 @@ namespace rrtmgp_kernel_launcher_cuda
     template<typename TF>
     struct Compute_tau_minor_absorption_kernel
     {
-        template<int I, class... Args>
+        template<int I, int J, class... Args>
         static void launch(dim3 grid, dim3 block, Args... args)
         {
-            compute_tau_minor_absorption_kernel<TF, I><<<grid, block>>>(args...);
+            compute_tau_minor_absorption_kernel<TF, I, J><<<grid, block>>>(args...);
         }
     };
 
@@ -275,6 +275,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 tune_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
                         "compute_tau_minor_absorption_kernel_lower",
                         {ncol, nlay},
+                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                         std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                         ncol, nlay, ngpt,
                         ngas, nflav, ntemp, neta,
