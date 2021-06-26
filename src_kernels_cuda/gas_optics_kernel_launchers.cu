@@ -181,6 +181,15 @@ namespace rrtmgp_kernel_launcher_cuda
         Tools_gpu::free_gpu(k);
     }
 
+    template<typename TF>
+    struct Compute_tau_minor_absorption_kernel
+    {
+        template<int I, class... Args>
+        static void launch(dim3 grid, dim3 block, Args... args)
+        {
+            compute_tau_minor_absorption_kernel<TF, I><<<grid, block>>>(args...);
+        }
+    };
 
     template<typename TF>
     void compute_tau_absorption(
@@ -254,6 +263,7 @@ namespace rrtmgp_kernel_launcher_cuda
         const int nscale_lower = scale_by_complement_lower.dim(1);
         const int nscale_upper = scale_by_complement_upper.dim(1);
 
+
         // Lower
         int idx_tropo = 1;
 
@@ -261,27 +271,28 @@ namespace rrtmgp_kernel_launcher_cuda
 
         if (tunings.count("compute_tau_minor_absorption_kernel_lower") == 0)
         {
-            std::tie(grid_gpu_min_1, block_gpu_min_1) = tune_kernel(
-                    "compute_tau_minor_absorption_kernel_lower",
-                    {ncol, nlay}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16}, {1},
-                    compute_tau_minor_absorption_kernel<TF>,
-                    ncol, nlay, ngpt,
-                    ngas, nflav, ntemp, neta,
-                    nscale_lower,
-                    nminorlower,
-                    nminorklower,
-                    idx_h2o, idx_tropo,
-                    gpoint_flavor.ptr(),
-                    kminor_lower.ptr(),
-                    minor_limits_gpt_lower.ptr(),
-                    minor_scales_with_density_lower.ptr(),
-                    scale_by_complement_lower.ptr(),
-                    idx_minor_lower.ptr(),
-                    idx_minor_scaling_lower.ptr(),
-                    kminor_start_lower.ptr(),
-                    play.ptr(), tlay.ptr(), col_gas.ptr(),
-                    fminor.ptr(), jeta.ptr(), jtemp.ptr(),
-                    tropo.ptr(), tau.ptr(), tau_minor.ptr());
+            std::tie(grid_gpu_min_1, block_gpu_min_1) =
+                tune_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
+                        "compute_tau_minor_absorption_kernel_lower",
+                        {ncol, nlay},
+                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
+                        ncol, nlay, ngpt,
+                        ngas, nflav, ntemp, neta,
+                        nscale_lower,
+                        nminorlower,
+                        nminorklower,
+                        idx_h2o, idx_tropo,
+                        gpoint_flavor.ptr(),
+                        kminor_lower.ptr(),
+                        minor_limits_gpt_lower.ptr(),
+                        minor_scales_with_density_lower.ptr(),
+                        scale_by_complement_lower.ptr(),
+                        idx_minor_lower.ptr(),
+                        idx_minor_scaling_lower.ptr(),
+                        kminor_start_lower.ptr(),
+                        play.ptr(), tlay.ptr(), col_gas.ptr(),
+                        fminor.ptr(), jeta.ptr(), jtemp.ptr(),
+                        tropo.ptr(), tau.ptr(), tau_minor.ptr());
 
             tunings["compute_tau_minor_absorption_kernel_lower"].first = grid_gpu_min_1;
             tunings["compute_tau_minor_absorption_kernel_lower"].second = block_gpu_min_1;
@@ -292,7 +303,7 @@ namespace rrtmgp_kernel_launcher_cuda
             block_gpu_min_1 = tunings["compute_tau_minor_absorption_kernel_lower"].second;
         }
 
-        compute_tau_minor_absorption_kernel<<<grid_gpu_min_1, block_gpu_min_1>>>(
+        compute_tau_minor_absorption_kernel<TF, 4, 4><<<grid_gpu_min_1, block_gpu_min_1>>>(
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
                 nscale_lower,
@@ -311,18 +322,18 @@ namespace rrtmgp_kernel_launcher_cuda
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                 tropo.ptr(), tau.ptr(), tau_minor.ptr());
 
+
         // Upper
         idx_tropo = 0;
 
         dim3 grid_gpu_min_2{ncol, nlay, ngpt}, block_gpu_min_2;
 
-
         if (tunings.count("compute_tau_minor_absorption_kernel_upper") == 0)
         {
             std::tie(grid_gpu_min_2, block_gpu_min_2) = tune_kernel(
                     "compute_tau_minor_absorption_kernel_upper",
-                    {ncol, nlay}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16}, {1},
-                    compute_tau_minor_absorption_kernel<TF>,
+                    {ncol, nlay}, {4}, {4}, {1},
+                    compute_tau_minor_absorption_kernel<TF, 4, 4>,
                     ncol, nlay, ngpt,
                     ngas, nflav, ntemp, neta,
                     nscale_upper,
@@ -350,7 +361,7 @@ namespace rrtmgp_kernel_launcher_cuda
             block_gpu_min_2 = tunings["compute_tau_minor_absorption_kernel_upper"].second;
         }
 
-        compute_tau_minor_absorption_kernel<<<grid_gpu_min_2, block_gpu_min_2>>>(
+        compute_tau_minor_absorption_kernel<TF, 4, 4><<<grid_gpu_min_2, block_gpu_min_2>>>(
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
                 nscale_upper,

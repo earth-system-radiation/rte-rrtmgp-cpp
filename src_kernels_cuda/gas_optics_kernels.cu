@@ -335,16 +335,17 @@ void compute_tau_major_absorption_kernel(
 }
 
 
-#ifndef kernel_tuner
- #define use_shared_tau 0
- #define block_size_x 4
- #define block_size_y 4
- #define max_gpt 16
-#endif
+// #ifndef kernel_tuner
+//  #define use_shared_tau 0
+//  #define block_size_x 4
+//  #define block_size_y 4
+//  #define max_gpt 16
+// #endif
 
+#define use_shared_tau 1
 
 #if use_shared_tau
-template<typename TF> __global__
+template<typename TF, int block_size_x, int block_size_y=4, int max_gpt=16> __global__
 void compute_tau_minor_absorption_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
