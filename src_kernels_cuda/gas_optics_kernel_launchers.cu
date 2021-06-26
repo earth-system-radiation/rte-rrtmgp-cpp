@@ -236,14 +236,16 @@ namespace rrtmgp_kernel_launcher_cuda
         // Lower
         int idx_tropo = 1;
 
-        const int block_col_min_1 = 4;
-        const int block_lay_min_1 = 4;
+        const int block_gpt_1 = 16;
+        const int block_col_min_1 = 1;
+        const int block_lay_min_1 = 8;
 
+        const int grid_gpt_min_1  = 1;
         const int grid_col_min_1  = ncol/block_col_min_1 + (ncol%block_col_min_1 > 0);
         const int grid_lay_min_1  = nlay/block_lay_min_1 + (nlay%block_lay_min_1 > 0);
 
-        dim3 grid_gpu_min_1(grid_col_min_1, grid_lay_min_1);
-        dim3 block_gpu_min_1(block_col_min_1, block_lay_min_1);
+        dim3 grid_gpu_min_1(grid_gpt_min_1, grid_col_min_1, grid_lay_min_1);
+        dim3 block_gpu_min_1(block_gpt_1, block_col_min_1, block_lay_min_1);
 
         compute_tau_minor_absorption_kernel<<<grid_gpu_min_1, block_gpu_min_1>>>(
                 ncol, nlay, ngpt,
@@ -267,14 +269,16 @@ namespace rrtmgp_kernel_launcher_cuda
         // Upper
         idx_tropo = 0;
 
-        const int block_col_min_2 = 4;
-        const int block_lay_min_2 = 4;
+        const int block_gpt_2 = 16;
+        const int block_col_min_2 = 1;
+        const int block_lay_min_2 = 8;
 
+        const int grid_gpt_min_2  = 1;
         const int grid_col_min_2  = ncol/block_col_min_2 + (ncol%block_col_min_2 > 0);
         const int grid_lay_min_2  = nlay/block_lay_min_2 + (nlay%block_lay_min_2 > 0);
 
-        dim3 grid_gpu_min_2(grid_col_min_2, grid_lay_min_2);
-        dim3 block_gpu_min_2(block_col_min_2, block_lay_min_2);
+        dim3 grid_gpu_min_2(grid_gpt_min_2, grid_col_min_2, grid_lay_min_2);
+        dim3 block_gpu_min_2(block_gpt_2, block_col_min_2, block_lay_min_2);
 
         compute_tau_minor_absorption_kernel<<<grid_gpu_min_2, block_gpu_min_2>>>(
                 ncol, nlay, ngpt,

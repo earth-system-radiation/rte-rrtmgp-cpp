@@ -101,9 +101,10 @@ def tune():
     params_minor = dict()
     params_minor["RTE_RRTMGP_USE_CBOOL"] = [1]
     params_minor["max_gpt"] = [16]
-    params_minor["block_size_x"] = [i for i in range(1, 32 + 1)]
+    params_minor["block_size_x"] = [16, 8]
     params_minor["block_size_y"] = [i for i in range(1, 32 + 1)]
-    params_minor["use_shared_tau"] = [0, 1]
+    params_minor["block_size_z"] = [i for i in range(1, 32 + 1)]
+    params_minor["use_shared_tau"] = [0]
 
     answer_major = len(args_major) * [None]
     answer_major[-2] = tau_after_major
@@ -145,7 +146,7 @@ def tune():
             kernel_name_minor, kernel_string, problem_size_minor,
             args[idx_tropo], params_minor, compiler_options=cp,
             answer=answer_minor, atol=1e-14,
-            verbose=True, observers=[reg_observer], metrics=metrics)
+            verbose=True, observers=[reg_observer], metrics=metrics, iterations=32)
 
         with open(f"timings_compute_tau_minor_{idx_tropo}.json", 'w') as fp:
             json.dump(result, fp)
@@ -296,8 +297,8 @@ if __name__ == "__main__":
 
     problem_size_major = (ncol, nlay, nband)
     kernel_name_major = 'compute_tau_major_absorption_kernel<{}>'.format(str_float)
-    problem_size_minor = (ncol, nlay) #original
-    #problem_size_minor = (nlay, ncol) #swapped
+    problem_size_minor = (1, nlay, ncol) #original
+    #problem_size_minor = (ncol, nlay) #swapped
     kernel_name_minor = 'compute_tau_minor_absorption_kernel<{}>'.format(str_float)
 
     if command_line.tune:
