@@ -229,9 +229,6 @@ namespace rrtmgp_kernel_launcher_cuda
 
         dim3 grid_gpu_maj{ncol, nlay, nband}, block_gpu_maj;
 
-
-
-
         if (tunings.count("compute_tau_major_absorption_kernel") == 0)
         {
             std::tie(grid_gpu_maj, block_gpu_maj) = tune_kernel(
@@ -271,15 +268,14 @@ namespace rrtmgp_kernel_launcher_cuda
 
         dim3 grid_gpu_min_1{ncol, nlay, ngpt}, block_gpu_min_1;
 
-
         if (tunings.count("compute_tau_minor_absorption_kernel_lower") == 0)
         {
             std::tie(grid_gpu_min_1, block_gpu_min_1) =
                 tune_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
                         "compute_tau_minor_absorption_kernel_lower",
                         {ncol, nlay},
-                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
-                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
+                        std::integer_sequence<int, 1, 2, 4, 8, 12, 16>{},
+                        std::integer_sequence<int, 1, 2, 4, 8, 12, 16>{},
                         ncol, nlay, ngpt,
                         ngas, nflav, ntemp, neta,
                         nscale_lower,

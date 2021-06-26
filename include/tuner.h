@@ -82,7 +82,7 @@ template<class Func, int I, int J, class... Args>
 void run_inner(
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
 {
-    dim3 block{I, 1, 1};
+    dim3 block{I, J, 1};
     dim3 grid{
         problem_size.x/block.x + (problem_size.x%block.x > 0),
         problem_size.y/block.y + (problem_size.y%block.y > 0),
@@ -112,7 +112,7 @@ void run_inner(
     if (err != cudaSuccess)
     {
         std::cout << "("
-            << std::setw(3) << I << ", " << std::setw(3) << 4 << ", " << std::setw(3) << 1 << ") "
+            << std::setw(3) << I << ", " << std::setw(3) << J << ", " << std::setw(3) << 1 << ") "
             << "FAILED! " << std::endl;
     }
     else
@@ -125,7 +125,7 @@ void run_inner(
         }
 
         std::cout << "("
-            << std::setw(3) << I << ", " << std::setw(3) << 4 << ", " << std::setw(3) << 1 << ") "
+            << std::setw(3) << I << ", " << std::setw(3) << J << ", " << std::setw(3) << 1 << ") "
             << std::setprecision(5) << duration/n_samples << " (ns)" << std::endl;
     }
 }
