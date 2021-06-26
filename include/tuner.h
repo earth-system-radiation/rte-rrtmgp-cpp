@@ -78,18 +78,18 @@ std::tuple<dim3, dim3> tune_kernel(
 }
 
 
-template<class Func, int I, int J, class... Args>
-void run_inner(
+template<class Func, int I, int J, int K, class... Args>
+void run_ijk(
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
 {
-    dim3 block{I, J, 1};
+    dim3 block{I, J, K};
     dim3 grid{
         problem_size.x/block.x + (problem_size.x%block.x > 0),
         problem_size.y/block.y + (problem_size.y%block.y > 0),
         problem_size.z/block.z + (problem_size.z%block.z > 0)};
     
     // Warmup...
-    Func::template launch<I, J>(grid, block, args...);
+    Func::template launch<I, J, K>(grid, block, args...);
     
     cudaEvent_t start;
     cudaEvent_t stop;
@@ -100,7 +100,7 @@ void run_inner(
     
     cudaEventRecord(start, 0);
     for (int i=0; i<n_samples; ++i)
-        Func::template launch<I, J>(grid, block, args...);
+        Func::template launch<I, J, K>(grid, block, args...);
     cudaEventRecord(stop, 0);
     
     cudaEventSynchronize(stop);
@@ -111,9 +111,9 @@ void run_inner(
     cudaError err = cudaGetLastError();
     if (err != cudaSuccess)
     {
-        std::cout << "("
-            << std::setw(3) << I << ", " << std::setw(3) << J << ", " << std::setw(3) << 1 << ") "
-            << "FAILED! " << std::endl;
+        // std::cout << "("
+        //     << std::setw(3) << I << ", " << std::setw(3) << J << ", " << std::setw(3) << K << ") "
+        //     << "FAILED! " << std::endl;
     }
     else
     {
@@ -124,26 +124,36 @@ void run_inner(
             fastest_block = block;
         }
 
-        std::cout << "("
-            << std::setw(3) << I << ", " << std::setw(3) << J << ", " << std::setw(3) << 1 << ") "
-            << std::setprecision(5) << duration/n_samples << " (ns)" << std::endl;
+        // std::cout << "("
+        //     << std::setw(3) << I << ", " << std::setw(3) << J << ", " << std::setw(3) << K << ") "
+        //     << std::setprecision(5) << duration/n_samples << " (ns)" << std::endl;
     }
 }
 
-template<class Func, int I, int... Js, class... Args>
-void run_outer(
-        std::integer_sequence<int, Js...> js,
+template<class Func, int I, int J, int... Ks, class... Args>
+void run_ij(
+        std::integer_sequence<int, Ks...> ks,
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
 {
-    (run_inner<Func, I, Js>(problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+    (run_ijk<Func, I, J, Ks>(problem_size, fastest_grid, fastest_block, fastest, args...), ...);
 }
 
-template<class Func, class... Args, int... Is, int... Js>
+template<class Func, int I, int... Js, int... Ks, class... Args>
+void run_i(
+        std::integer_sequence<int, Js...> js,
+        std::integer_sequence<int, Ks...> ks,
+        dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
+{
+    (run_ij<Func, I, Js>(ks, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+}
+
+template<class Func, class... Args, int... Is, int... Js, int... Ks>
 std::tuple<dim3, dim3> tune_kernel_compile_time(
         const std::string& kernel_name,
         dim3 problem_size,
         std::integer_sequence<int, Is...> is,
         std::integer_sequence<int, Js...> js,
+        std::integer_sequence<int, Ks...> ks,
         Args&&... args)
 {
     std::cout << "Tuning " << kernel_name << ": ";
@@ -152,7 +162,7 @@ std::tuple<dim3, dim3> tune_kernel_compile_time(
     dim3 fastest_block{1, 1, 1};
     dim3 fastest_grid{problem_size};
 
-    (run_outer<Func, Is>(js, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+    (run_i<Func, Is>(js, ks, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
 
     std::cout << "(" 
         << fastest_block.x << ", "
