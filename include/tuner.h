@@ -4,6 +4,8 @@
 #include <iostream>
 #include <iomanip>
 
+
+////  RUNTIME TUNER ////
 template<class Func, class... Args>
 std::tuple<dim3, dim3> tune_kernel(
         const std::string& kernel_name,
@@ -78,8 +80,10 @@ std::tuple<dim3, dim3> tune_kernel(
 }
 
 
+////  COMPILE TIME TUNER ////
+// Tuning functions.
 template<class Func, int I, int J, int K, class... Args>
-void run_ijk(
+void tune_ijk(
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
 {
     dim3 block{I, J, K};
@@ -130,22 +134,25 @@ void run_ijk(
     }
 }
 
+
 template<class Func, int I, int J, int... Ks, class... Args>
-void run_ij(
+void tune_ij(
         std::integer_sequence<int, Ks...> ks,
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
 {
     (run_ijk<Func, I, J, Ks>(problem_size, fastest_grid, fastest_block, fastest, args...), ...);
 }
 
+
 template<class Func, int I, int... Js, int... Ks, class... Args>
-void run_i(
+void tune_i(
         std::integer_sequence<int, Js...> js,
         std::integer_sequence<int, Ks...> ks,
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
 {
     (run_ij<Func, I, Js>(ks, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
 }
+
 
 template<class Func, class... Args, int... Is, int... Js, int... Ks>
 std::tuple<dim3, dim3> tune_kernel_compile_time(
@@ -170,5 +177,49 @@ std::tuple<dim3, dim3> tune_kernel_compile_time(
         << fastest_block.z << ")" << std::endl;
 
     return {fastest_grid, fastest_block};
+}
+
+
+// Running functions.
+template<class Func, int I, int J, int K, class... Args>
+void run_ijk(
+        dim3 grid, dim3 block,
+        Args... args)
+{
+    if ( (block.x == I) && (block.y == J) && (block.z == K) )
+        Func::template launch<I, J, K>(grid, block, args...);
+}
+
+
+template<class Func, int I, int J, int... Ks, class... Args>
+void run_ij(
+        std::integer_sequence<int, Ks...> ks,
+        dim3 grid, dim3 block,
+        Args... args)
+{
+    (run_ijk<Func, I, J, Ks>(grid, block, args...), ...);
+}
+
+
+template<class Func, int I, int... Js, int... Ks, class... Args>
+void run_i(
+        std::integer_sequence<int, Js...> js,
+        std::integer_sequence<int, Ks...> ks,
+        dim3 grid, dim3 block,
+        Args... args)
+{
+    (run_ij<Func, I, Js>(ks, grid, block, args...), ...);
+}
+
+
+template<class Func, class... Args, int... Is, int... Js, int... Ks>
+void run_kernel_compile_time(
+        std::integer_sequence<int, Is...> is,
+        std::integer_sequence<int, Js...> js,
+        std::integer_sequence<int, Ks...> ks,
+        dim3 grid, dim3 block,
+        Args&&... args)
+{
+    (run_i<Func, Is>(js, ks, grid, block, args...), ...);
 }
 #endif
