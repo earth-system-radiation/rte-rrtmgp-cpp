@@ -274,8 +274,8 @@ namespace rrtmgp_kernel_launcher_cuda
                 tune_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
                         "compute_tau_minor_absorption_kernel_lower",
                         {ncol, nlay},
-                        std::integer_sequence<int, 4>{},
-                        std::integer_sequence<int, 4>{},
+                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
+                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                         std::integer_sequence<int, 1>{},
                         ncol, nlay, ngpt,
                         ngas, nflav, ntemp, neta,
@@ -304,7 +304,11 @@ namespace rrtmgp_kernel_launcher_cuda
             block_gpu_min_1 = tunings["compute_tau_minor_absorption_kernel_lower"].second;
         }
 
-        compute_tau_minor_absorption_kernel<TF, 4, 4, 1><<<grid_gpu_min_1, block_gpu_min_1>>>(
+        run_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
+                std::integer_sequence<int, 1, 2, 4, 8, 16>{},
+                std::integer_sequence<int, 1, 2, 4, 8, 16>{},
+                std::integer_sequence<int, 1>{},
+                grid_gpu_min_1, block_gpu_min_1,
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
                 nscale_lower,
