@@ -140,7 +140,7 @@ void tune_ij(
         std::integer_sequence<int, Ks...> ks,
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
 {
-    (run_ijk<Func, I, J, Ks>(problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+    (tune_ijk<Func, I, J, Ks>(problem_size, fastest_grid, fastest_block, fastest, args...), ...);
 }
 
 
@@ -150,7 +150,7 @@ void tune_i(
         std::integer_sequence<int, Ks...> ks,
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
 {
-    (run_ij<Func, I, Js>(ks, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+    (tune_ij<Func, I, Js>(ks, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
 }
 
 
@@ -169,7 +169,7 @@ std::tuple<dim3, dim3> tune_kernel_compile_time(
     dim3 fastest_block{1, 1, 1};
     dim3 fastest_grid{problem_size};
 
-    (run_i<Func, Is>(js, ks, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+    (tune_i<Func, Is>(js, ks, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
 
     std::cout << "(" 
         << fastest_block.x << ", "

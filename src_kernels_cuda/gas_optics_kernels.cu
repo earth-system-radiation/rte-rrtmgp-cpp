@@ -336,11 +336,13 @@ void compute_tau_major_absorption_kernel(
 
 
 #ifndef kernel_tuner
-// #define use_shared_tau 1
-#define use_shared_tau 0
+ #define use_shared_tau 1
+ // #define block_size_x 4
+ // #define block_size_y 4
+ // #define max_gpt 16
 #endif
 
-#if use_shared_tau == 1
+#if use_shared_tau
 template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
 void compute_tau_minor_absorption_kernel(
         const int ncol, const int nlay, const int ngpt,
@@ -496,13 +498,17 @@ void compute_tau_minor_absorption_kernel(
                 }
 
                 __syncthreads();
+
+
         } // end of imnr loop over nscales
+
     }
 }
 #endif
 
 #if use_shared_tau == 0
-template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
+
+template<typename TF> __global__
 void compute_tau_minor_absorption_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
@@ -529,13 +535,8 @@ void compute_tau_minor_absorption_kernel(
         TF* __restrict__ tau_minor)
 {
     // Fetch the three coordinates.
-    const int ilay = blockIdx.y * block_size_y + threadIdx.y;
-    const int icol = blockIdx.z * block_size_z + threadIdx.z;
-
-    //const int ilay = blockIdx.z * blockDim.z + threadIdx.z;
-    //const int icol = blockIdx.y * blockDim.y + threadIdx.y;
-
-    __shared__ TF scalings[block_size_z][block_size_y];
+    const int icol = blockIdx.x * blockDim.x + threadIdx.x;
+    const int ilay = blockIdx.y * blockDim.y + threadIdx.y;
 
     if ((icol < ncol) && (ilay < nlay))
     {
@@ -545,11 +546,8 @@ void compute_tau_minor_absorption_kernel(
         {
             for (int imnr = 0; imnr < nscale; ++imnr)
             {
-                TF scaling = TF(0.);
-
-                if (threadIdx.x == 0) {
                 const int ncl = ncol * nlay;
-                scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
+                TF scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
 
                 if (minor_scales_with_density[imnr])
                 {
@@ -569,11 +567,6 @@ void compute_tau_minor_absorption_kernel(
                     }
                 }
 
-                scalings[threadIdx.z][threadIdx.y] = scaling;
-                }
-                __syncthreads();
-                scaling = scalings[threadIdx.z][threadIdx.y];
-
                 const int gpt_start = minor_limits_gpt[2*imnr]-1;
                 const int gpt_end = minor_limits_gpt[2*imnr+1];
                 const int gpt_offs = 1-idx_tropo;
@@ -588,13 +581,7 @@ void compute_tau_minor_absorption_kernel(
                 const int kjtemp = jtemp[idx_collay];
                 const int band_gpt = gpt_end-gpt_start;
 
-                #if block_size_x == max_gpt
-                if (threadIdx.x < band_gpt) {
-                    const int igpt = threadIdx.x;
-                #else
-                for (int igpt=threadIdx.x; igpt<band_gpt; igpt+=block_size_x) {
-                #endif
-                //for (int igpt=0; igpt<band_gpt; ++igpt) {
+                for (int igpt=0; igpt<band_gpt; ++igpt) {
                     TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
                                     kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
                                     kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
@@ -603,10 +590,12 @@ void compute_tau_minor_absorption_kernel(
                     const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
                     tau[idx_out] += ltau_minor * scaling;
                 }
+
             }
         }
     }
 }
+
 #endif
 
 
