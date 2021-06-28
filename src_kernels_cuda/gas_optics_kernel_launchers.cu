@@ -208,19 +208,21 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<int,4>& jeta, const Array_gpu<int,2>& jtemp,
             const Array_gpu<int,2>& jpress, Array_gpu<TF,3>& tau)
     {
-        TF* tau_major = Tools_gpu::allocate_gpu<TF>(tau.size());
-        TF* tau_minor = Tools_gpu::allocate_gpu<TF>(tau.size());
+        //TF* tau_major = Tools_gpu::allocate_gpu<TF>(tau.size());
+        //TF* tau_minor = Tools_gpu::allocate_gpu<TF>(tau.size());
+        TF* tau_major = (TF*)0;
+        TF* tau_minor = (TF*)0;
 
-        const int block_bnd_maj = 2;  // 14
+        const int block_bnd_maj = 16;  // 14
         const int block_lay_maj = 1;   // 1
-        const int block_col_maj = 2;   // 32
+        const int block_col_maj = 8;   // 32
 
-        const int grid_bnd_maj = nband/block_bnd_maj + (nband%block_bnd_maj > 0);
+        const int grid_bnd_maj = 1;
         const int grid_lay_maj = nlay/block_lay_maj + (nlay%block_lay_maj > 0);
         const int grid_col_maj = ncol/block_col_maj + (ncol%block_col_maj > 0);
 
-        dim3 grid_gpu_maj(grid_col_maj, grid_lay_maj, grid_bnd_maj);
-        dim3 block_gpu_maj(block_col_maj, block_lay_maj, block_bnd_maj);
+        dim3 grid_gpu_maj(grid_bnd_maj, grid_lay_maj, grid_col_maj);
+        dim3 block_gpu_maj(block_bnd_maj, block_lay_maj, block_col_maj);
 
         compute_tau_major_absorption_kernel<<<grid_gpu_maj, block_gpu_maj>>>(
                 ncol, nlay, nband, ngpt,
@@ -299,8 +301,8 @@ namespace rrtmgp_kernel_launcher_cuda
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                 tropo.ptr(), tau.ptr(), tau_minor);
 
-        Tools_gpu::free_gpu(tau_major);
-        Tools_gpu::free_gpu(tau_minor);
+        //Tools_gpu::free_gpu(tau_major);
+        //Tools_gpu::free_gpu(tau_minor);
     }
 
     template<typename TF>
