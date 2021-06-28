@@ -12,6 +12,9 @@ from common import reg_observer
 import matplotlib.pyplot as pl
 pl.close('all')
 
+metrics = OrderedDict()
+metrics["registers"] = lambda p: p["num_regs"]
+
 
 # Path to the RCEMIP bins
 bin_path = '../rcemip'
@@ -94,16 +97,18 @@ def run_and_test(params: dict):
 def tune():
     params_major = dict()
     params_major["RTE_RRTMGP_USE_CBOOL"] = [1]
-    params_major["block_size_x"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
-    params_major["block_size_y"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
-    params_major["block_size_z"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
+    params_major["block_size_x"] = [16] # list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
+    params_major["block_size_y"] = [i for i in range(1, 16 + 1)]
+    params_major["block_size_z"] = [i for i in range(1, 16 + 1)]
+    params_major["loop_unroll_factor_x"] = [0, 1]
 
     params_minor = dict()
     params_minor["RTE_RRTMGP_USE_CBOOL"] = [1]
-    params_minor["block_size_x"] = [i for i in range(1, 32 + 1)]
+    params_minor["max_gpt"] = [16]
+    params_minor["block_size_x"] = [16, 8]
     params_minor["block_size_y"] = [i for i in range(1, 32 + 1)]
-    #params_minor["block_size_x"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
-    #params_minor["block_size_y"] = list(np.arange(1,5)) #[i for i in range(1, 32 + 1)]
+    params_minor["block_size_z"] = [i for i in range(1, 32 + 1)]
+    params_minor["use_shared_tau"] = [0]
 
     answer_major = len(args_major) * [None]
     answer_major[-2] = tau_after_major
@@ -114,20 +119,18 @@ def tune():
     # Reset input tau
     tau[:] = 0.
 
-    #print(f"Tuning {kernel_name_major}")
-    #result, env = kt.tune_kernel(
-    #    kernel_name_major, kernel_string, problem_size_major,
-    #    args_major, params_major, compiler_options=cp,
-    #    answer=answer_major, atol=1e-14, verbose=True)
+    print(f"Tuning {kernel_name_major}")
+    result, env = kt.tune_kernel(
+        kernel_name_major, kernel_string, problem_size_major,
+        args_major, params_major, compiler_options=cp,
+        answer=answer_major, atol=1e-14,
+        verbose=True, observers=[reg_observer], metrics=metrics, iterations=32)
 
     # This gives an error: `TypeError: Object of type int64 is not JSON serializable`
-    #with open("timings_compute_tau_major.json", 'w') as fp:
-    #    json.dump(result, fp)
+    with open("timings_compute_tau_major.json", 'w') as fp:
+        json.dump(result, fp)
 
     tau[:] = tau_after_major
-
-    metrics = OrderedDict()
-    metrics["registers"] = lambda p: p["num_regs"]
 
     args = dict()
     args[0] = args_minor_upper
@@ -135,9 +138,6 @@ def tune():
 
     for idx_tropo in [type_int(1), type_int(0)]:
 
-        #tau_minor_tropo_one = kt.run_kernel(
-        #    kernel_name_minor, kernel_string, problem_size_minor,
-        #    args[idx_tropo], {"block_size_x": 4, "block_size_y": 4}, compiler_options=cp)
         if idx_tropo == 1:
             answer_minor[-2] = tau_after_minor_tropo_one
         else:
@@ -148,7 +148,7 @@ def tune():
             kernel_name_minor, kernel_string, problem_size_minor,
             args[idx_tropo], params_minor, compiler_options=cp,
             answer=answer_minor, atol=1e-14,
-            verbose=True, observers=[reg_observer], metrics=metrics)
+            verbose=True, observers=[reg_observer], metrics=metrics, iterations=32)
 
         with open(f"timings_compute_tau_minor_{idx_tropo}.json", 'w') as fp:
             json.dump(result, fp)
@@ -168,7 +168,8 @@ if __name__ == "__main__":
 
     str_float = 'float' if type_float is np.float32 else 'double'
     include = os.path.abspath('../include')
-    cp = ['-I{}'.format(include), "-O3", "-std=c++14", "--expt-relaxed-constexpr"]
+    #cp = ['-I{}'.format(include), "-O3", "-std=c++14", "--expt-relaxed-constexpr", "-maxrregcount=64"]
+    cp = ['-I{}'.format(include)]
 
     ncol = type_int(512)
     nlay = type_int(140)
@@ -231,14 +232,6 @@ if __name__ == "__main__":
     tau_after_minor_tropo_one = np.fromfile('{}/tau_after_minor_tropo_one.bin'.format(bin_path), dtype=type_float)
     tau_after_major = np.fromfile('{}/tau_after_major.bin'.format(bin_path), dtype=type_float)
 
-
-    print(f"{ncol*nlay=}")
-    print(f"{tropo.shape=}")
-
-
-    print(f"{tau_after_minor_tropo_one.shape=}")
-    print(f"{tau.shape=}")
-
     args_major = [
         ncol, nlay, nband, ngpt,
         nflav, neta, npres, ntemp,
@@ -250,7 +243,7 @@ if __name__ == "__main__":
         jtemp, jpress,
         tau, tau_major]
 
-    idx_tropo = type_int(1) # tropo = 1 is 'lower' 
+    idx_tropo = type_int(1) # tropo = 1 is 'lower'
 
     args_minor_lower = [
         ncol, nlay, ngpt,
@@ -304,9 +297,11 @@ if __name__ == "__main__":
         tau_after_minor_tropo_one,
         tau_minor]
 
-    problem_size_major = (ncol, nlay, nband)
+    #problem_size_major = (ncol, nlay, nband)
+    problem_size_major = (1, nlay, ncol)
     kernel_name_major = 'compute_tau_major_absorption_kernel<{}>'.format(str_float)
-    problem_size_minor = (ncol, nlay)
+    problem_size_minor = (1, nlay, ncol) #original
+    #problem_size_minor = (ncol, nlay) #swapped
     kernel_name_minor = 'compute_tau_minor_absorption_kernel<{}>'.format(str_float)
 
     if command_line.tune:
