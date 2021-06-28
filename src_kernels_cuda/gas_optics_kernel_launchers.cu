@@ -242,9 +242,9 @@ namespace rrtmgp_kernel_launcher_cuda
                 tune_kernel_compile_time<Compute_tau_major_absorption_kernel<TF>>(
                     "compute_tau_major_absorption_kernel",
                     {1, nlay, ncol},
-                    std::integer_sequence<int, 8, 16>{},
-                    std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16, 32>{},
-                    std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16, 32>{},
+                    std::integer_sequence<int, 16>{},
+                    std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
+                    std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
                     ncol, nlay, nband, ngpt,
                     nflav, neta, npres, ntemp,
                     gpoint_flavor.ptr(), band_lims_gpt.ptr(),
@@ -262,9 +262,9 @@ namespace rrtmgp_kernel_launcher_cuda
         }
 
         run_kernel_compile_time<Compute_tau_major_absorption_kernel<TF>>(
-                std::integer_sequence<int, 8, 16>{},
-                std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16, 32>{},
-                std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16, 32>{},
+                std::integer_sequence<int, 16>{},
+                std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
+                std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
                 grid_gpu_maj, block_gpu_maj,
                 ncol, nlay, nband, ngpt,
                 nflav, neta, npres, ntemp,
