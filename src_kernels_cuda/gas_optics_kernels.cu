@@ -329,8 +329,8 @@ void compute_tau_major_absorption_kernel(
             const int iflav = gpoint_flavor[itropo + 2*gpt_start] - 1;
             const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav);
             const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav);
-            const int j0 = jeta[idx_fcl1];
-            const int j1 = jeta[idx_fcl1+1];
+            //const int j0 = jeta[idx_fcl1];
+            //const int j1 = jeta[idx_fcl1+1];
 
             const TF* __restrict__ ifmajor = &fmajor[idx_fcl3];
             const TF* __restrict__ k = &kmajor[gpt_start];
@@ -344,6 +344,7 @@ void compute_tau_major_absorption_kernel(
 
                 const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
 
+/*
                 tau[idx_out] += col_mix[idx_fcl1]*
                                   (ifmajor[0] * k[igpt + (j0-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
                                    ifmajor[1] * k[igpt +  j0   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
@@ -354,6 +355,20 @@ void compute_tau_major_absorption_kernel(
                                    ifmajor[5] * k[igpt +  j1   *ngpt + (jpressi-1)*neta*ngpt + ljtemp*neta*ngpt*npress] +
                                    ifmajor[6] * k[igpt + (j1-1)*ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress] +
                                    ifmajor[7] * k[igpt +  j1   *ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress]);
+*/
+             TF ltau_major = tau[idx_out];
+             #pragma unroll 1
+             for (int i=0; i<2; i++) { //un-unrolling this loops saves registers and improves parallelism/utilization
+                 ltau_major += col_mix[idx_fcl1+i]*
+                                   (ifmajor[i*4+0] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
+                                    ifmajor[i*4+1] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
+                                    ifmajor[i*4+2] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress] +
+                                    ifmajor[i*4+3] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress]);
+             }
+             tau[idx_out] = ltau_major;
+
+
+
             }
         }
 
