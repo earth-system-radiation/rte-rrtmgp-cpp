@@ -214,8 +214,8 @@ namespace rrtmgp_kernel_launcher_cuda
         TF* tau_minor = (TF*)0;
 
         const int block_bnd_maj = 16;  // 14
-        const int block_lay_maj = 1;   // 1
-        const int block_col_maj = 8;   // 32
+        const int block_lay_maj = 4;   // 1
+        const int block_col_maj = 10;   // 32
 
         const int grid_bnd_maj = 1;
         const int grid_lay_maj = nlay/block_lay_maj + (nlay%block_lay_maj > 0);
