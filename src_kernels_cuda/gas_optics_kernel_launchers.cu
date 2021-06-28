@@ -234,8 +234,6 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& tau,
             Tuner_map& tunings)
     {
-        Array<TF,3> tau_major, tau_minor;
-
         dim3 grid_gpu_maj{1, nlay, ncol}, block_gpu_maj;
 
         if (tunings.count("compute_tau_major_absorption_kernel") == 0)
@@ -252,7 +250,7 @@ namespace rrtmgp_kernel_launcher_cuda
                     gpoint_flavor.ptr(), band_lims_gpt.ptr(),
                     kmajor.ptr(), col_mix.ptr(), fmajor.ptr(), jeta.ptr(),
                     tropo.ptr(), jtemp.ptr(), jpress.ptr(),
-                    Array_gpu<TF,3>(tau).ptr(), Array_gpu<TF,3>(tau_major).ptr());
+                    Array_gpu<TF,3>(tau).ptr(), nullptr);
 
             tunings["compute_tau_major_absorption_kernel"].first = grid_gpu_maj;
             tunings["compute_tau_major_absorption_kernel"].second = block_gpu_maj;
@@ -273,7 +271,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 gpoint_flavor.ptr(), band_lims_gpt.ptr(),
                 kmajor.ptr(), col_mix.ptr(), fmajor.ptr(), jeta.ptr(),
                 tropo.ptr(), jtemp.ptr(), jpress.ptr(),
-                tau.ptr(), tau_major.ptr());
+                tau.ptr(), nullptr);
 
         const int nscale_lower = scale_by_complement_lower.dim(1);
         const int nscale_upper = scale_by_complement_upper.dim(1);
@@ -309,7 +307,7 @@ namespace rrtmgp_kernel_launcher_cuda
                         kminor_start_lower.ptr(),
                         play.ptr(), tlay.ptr(), col_gas.ptr(),
                         fminor.ptr(), jeta.ptr(), jtemp.ptr(),
-                        tropo.ptr(), tau.ptr(), tau_minor.ptr());
+                        tropo.ptr(), tau.ptr(), nullptr);
 
             tunings["compute_tau_minor_absorption_kernel_lower"].first = grid_gpu_min_1;
             tunings["compute_tau_minor_absorption_kernel_lower"].second = block_gpu_min_1;
@@ -341,14 +339,13 @@ namespace rrtmgp_kernel_launcher_cuda
                 kminor_start_lower.ptr(),
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
-                tropo.ptr(), tau.ptr(), tau_minor.ptr());
+                tropo.ptr(), tau.ptr(), nullptr);
 
 
         // Upper
         idx_tropo = 0;
 
         dim3 grid_gpu_min_2{ngpt, nlay, ncol}, block_gpu_min_2;
-
 
         if (tunings.count("compute_tau_minor_absorption_kernel_upper") == 0)
         {
@@ -375,7 +372,7 @@ namespace rrtmgp_kernel_launcher_cuda
                         kminor_start_upper.ptr(),
                         play.ptr(), tlay.ptr(), col_gas.ptr(),
                         fminor.ptr(), jeta.ptr(), jtemp.ptr(),
-                        tropo.ptr(), tau.ptr(), tau_minor.ptr());
+                        tropo.ptr(), tau.ptr(), nullptr);
 
             tunings["compute_tau_minor_absorption_kernel_upper"].first = grid_gpu_min_2;
             tunings["compute_tau_minor_absorption_kernel_upper"].second = block_gpu_min_2;
@@ -407,10 +404,9 @@ namespace rrtmgp_kernel_launcher_cuda
                 kminor_start_upper.ptr(),
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
-                tropo.ptr(), tau.ptr(), tau_minor.ptr());
-
-
+                tropo.ptr(), tau.ptr(), nullptr);
     }
+
 
     template<typename TF>
     void Planck_source(
