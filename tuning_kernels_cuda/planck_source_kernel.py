@@ -10,13 +10,13 @@ bin_path = '../rcemip'
 
 # Parse command line arguments
 def parse_command_line():
-    parser = argparse.ArgumentParser(description="Tuning script for Planck_source_kernel()")
-    parser.add_argument("--tune", default=False, action="store_true")
-    parser.add_argument("--run", default=False, action="store_true")
-    parser.add_argument("--best_configuration", default=False, action="store_true")
-    parser.add_argument("--block_size_x", type=int, default=14)
-    parser.add_argument("--block_size_y", type=int, default=1)
-    parser.add_argument("--block_size_z", type=int, default=32)
+    parser = argparse.ArgumentParser(description='Tuning script for Planck_source_kernel()')
+    parser.add_argument('--tune', default=False, action='store_true')
+    parser.add_argument('--run', default=False, action='store_true')
+    parser.add_argument('--best_configuration', default=False, action='store_true')
+    parser.add_argument('--block_size_x', type=int, default=14)
+    parser.add_argument('--block_size_y', type=int, default=1)
+    parser.add_argument('--block_size_z', type=int, default=32)
     return parser.parse_args()
 
 
@@ -32,45 +32,51 @@ def compare_fields(arr1, arr2, name):
 
 # Run one instance of the kernel and test output
 def run_and_test(params: dict):
-    print("Running {} [block_size_x: {}, block_size_y: {}, block_size_z: {}]".format(kernel_name,
-                                                                                     params["block_size_x"],
-                                                                                     params["block_size_y"],
-                                                                                     params["block_size_z"]))
+
+    print('Running {} [block_size_x: {}, block_size_y: {}, block_size_z: {}]'.format(
+            kernel_name,
+            params['block_size_x'],
+            params['block_size_y'],
+            params['block_size_z']))
+
+    params['RTE_RRTMGP_USE_CBOOL'] = 1
+
     result = kt.run_kernel(
             kernel_name, kernel_string, problem_size,
             args, params, compiler_options=cp)
 
-    compare_fields(result[-6], sfc_src_ref, 'sfc_src')
-    compare_fields(result[-5], lay_src_ref, 'lay_src')
-    compare_fields(result[-4], lev_src_inc_ref, 'lev_src_inc')
-    compare_fields(result[-3], lev_src_dec_ref, 'lev_srd_dec')
-    compare_fields(result[-2], sfc_src_jac_ref, 'sfc_src_jac')
+    compare_fields(result[-5], sfc_src_ref, 'sfc_src')
+    compare_fields(result[-4], lay_src_ref, 'lay_src')
+    compare_fields(result[-3], lev_src_inc_ref, 'lev_src_inc')
+    compare_fields(result[-2], lev_src_dec_ref, 'lev_srd_dec')
+    compare_fields(result[-1], sfc_src_jac_ref, 'sfc_src_jac')
 
 
 # Tuning the kernel
 def tune():
     tune_params = dict()
-    tune_params["block_size_x"] = [1, 2, 3, 4, 5, 6, 7, 8, 14]
-    tune_params["block_size_y"] = [1, 2, 3, 4]
-    tune_params["block_size_z"] = [1, 2, 3, 4, 32]
+    tune_params['RTE_RRTMGP_USE_CBOOL'] = [1]
+    tune_params['block_size_x'] = [8, 14, 16]
+    tune_params['block_size_y'] = [1, 2, 4, 6, 8]
+    tune_params['block_size_z'] = [1, 2, 4, 6, 8]
 
     answer = len(args)*[None]
-    answer[-6] = sfc_src_ref
-    answer[-5] = lay_src_ref
-    answer[-4] = lev_src_inc_ref
-    answer[-3] = lev_src_dec_ref
-    answer[-2] = sfc_src_jac_ref
+    answer[-5] = sfc_src_ref
+    answer[-4] = lay_src_ref
+    answer[-3] = lev_src_inc_ref
+    answer[-2] = lev_src_dec_ref
+    answer[-1] = sfc_src_jac_ref
 
     result, env = kt.tune_kernel(
             kernel_name, kernel_string, problem_size,
             args, tune_params, compiler_options=cp,
             answer=answer, atol=1e-14)
 
-    with open("timings_planck_source_kernel.json", 'w') as fp:
+    with open('timings_planck_source_kernel.json', 'w') as fp:
         json.dump(result, fp)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     command_line = parse_command_line()
 
     # CUDA source code
@@ -80,7 +86,7 @@ if __name__ == "__main__":
     # Settings
     type_int = np.int32
     type_float = np.float64
-    type_bool = np.int32  # = default without `RTE_RRTMGP_USE_CBOOL`
+    type_bool = np.ubyte  # = default without `RTE_RRTMGP_USE_CBOOL`
 
     str_float = 'float' if type_float is np.float32 else 'double'
     include = os.path.abspath('../include')
@@ -145,12 +151,12 @@ if __name__ == "__main__":
         fmajor, jeta, tropo, jtemp,
         jpress, gpoint_bands, band_lims_gpt,
         pfracin, temp_ref_min, totplnk_delta,
-        totplnk, gpoint_flavor, ones,
+        totplnk, gpoint_flavor,
         delta_Tsurf, sfc_src, lay_src,
         lev_src_inc, lev_src_dec,
-        sfc_src_jac, pfrac]
+        sfc_src_jac]
 
-    problem_size = (nband, nlay, ncol)
+    problem_size = (ngpt, nlay, ncol)
     kernel_name = 'Planck_source_kernel<{}>'.format(str_float)
 
     if command_line.tune:
@@ -158,12 +164,12 @@ if __name__ == "__main__":
     elif command_line.run:
         parameters = dict()
         if command_line.best_configuration:
-            with open("timings_planck_source_kernel.json", "r") as file:
+            with open('timings_planck_source_kernel.json', 'r') as file:
                 configurations = json.load(file)
-            best_configuration = min(configurations, key=lambda x: x["time"])
-            parameters['block_size_x'] = best_configuration["block_size_x"]
-            parameters['block_size_y'] = best_configuration["block_size_y"]
-            parameters['block_size_z'] = best_configuration["block_size_z"]
+            best_configuration = min(configurations, key=lambda x: x['time'])
+            parameters['block_size_x'] = best_configuration['block_size_x']
+            parameters['block_size_y'] = best_configuration['block_size_y']
+            parameters['block_size_z'] = best_configuration['block_size_z']
         else:
             parameters['block_size_x'] = command_line.block_size_x
             parameters['block_size_y'] = command_line.block_size_y
