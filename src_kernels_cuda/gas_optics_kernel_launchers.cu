@@ -267,18 +267,17 @@ namespace rrtmgp_kernel_launcher_cuda
         // Lower
         int idx_tropo = 1;
 
-        dim3 grid_gpu_min_1{ncol, nlay, ngpt}, block_gpu_min_1;
-
+        dim3 grid_gpu_min_1{ngpt, nlay, ncol}, block_gpu_min_1;
 
         if (tunings.count("compute_tau_minor_absorption_kernel_lower") == 0)
         {
             std::tie(grid_gpu_min_1, block_gpu_min_1) =
                 tune_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
                         "compute_tau_minor_absorption_kernel_lower",
-                        {ncol, nlay},
+                        {ngpt, nlay, ncol},
                         std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                         std::integer_sequence<int, 1, 2, 4, 8, 16>{},
-                        std::integer_sequence<int, 1>{},
+                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                         ncol, nlay, ngpt,
                         ngas, nflav, ntemp, neta,
                         nscale_lower,
@@ -309,7 +308,7 @@ namespace rrtmgp_kernel_launcher_cuda
         run_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
                 std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16>{},
-                std::integer_sequence<int, 1>{},
+                std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                 grid_gpu_min_1, block_gpu_min_1,
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
@@ -333,18 +332,17 @@ namespace rrtmgp_kernel_launcher_cuda
         // Upper
         idx_tropo = 0;
 
-        dim3 grid_gpu_min_2{ncol, nlay, ngpt}, block_gpu_min_2;
-
+        dim3 grid_gpu_min_2{ngpt, nlay, ncol}, block_gpu_min_2;
 
         if (tunings.count("compute_tau_minor_absorption_kernel_upper") == 0)
         {
             std::tie(grid_gpu_min_2, block_gpu_min_2) =
                 tune_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
                         "compute_tau_minor_absorption_kernel_upper",
-                        {ncol, nlay},
+                        {ngpt, nlay, ncol},
                         std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                         std::integer_sequence<int, 1, 2, 4, 8, 16>{},
-                        std::integer_sequence<int, 1>{},
+                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                         ncol, nlay, ngpt,
                         ngas, nflav, ntemp, neta,
                         nscale_upper,
@@ -375,7 +373,7 @@ namespace rrtmgp_kernel_launcher_cuda
         run_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
                 std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16>{},
-                std::integer_sequence<int, 1>{},
+                std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                 grid_gpu_min_2, block_gpu_min_2,
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
@@ -394,7 +392,6 @@ namespace rrtmgp_kernel_launcher_cuda
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                 tropo.ptr(), tau.ptr(), tau_minor.ptr());
-
     }
 
     template<typename TF>
