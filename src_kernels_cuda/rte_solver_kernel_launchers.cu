@@ -255,23 +255,39 @@ namespace rte_kernel_launcher_cuda
         dim3 block_gpu3d(block_col3d, block_lay3d, block_gpt3d);
 
         TF tmin = std::numeric_limits<TF>::epsilon();
+
         sw_2stream_kernel<<<grid_gpu3d, block_gpu3d>>>(
                 ncol, nlay, ngpt, tmin,
                 tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(),
                 r_dif, t_dif, r_dir, t_dir, t_noscat);
 
-        const int block_col2d = 32;
-        const int block_gpt2d = 4;
+        const int block_col_source = 512;
+        const int block_gpt_source = 1;
 
-        const int grid_col2d = ncol/block_col2d + (ncol%block_col2d > 0);
-        const int grid_gpt2d = ngpt/block_gpt2d + (ngpt%block_gpt2d > 0);
+        const int grid_col_source = ncol/block_col_source + (ncol%block_col_source > 0);
+        const int grid_gpt_source = ngpt/block_gpt_source + (ngpt%block_gpt_source > 0);
 
-        dim3 grid_gpu2d(grid_col2d, grid_gpt2d);
-        dim3 block_gpu2d(block_col2d, block_gpt2d);
+        dim3 grid_source(grid_col_source, grid_gpt_source);
+        dim3 block_source(block_col_source, block_gpt_source);
 
-        sw_source_adding_kernel<<<grid_gpu2d, block_gpu2d>>>(
-                ncol, nlay, ngpt, top_at_1, sfc_alb_dir.ptr(), sfc_alb_dif.ptr(), r_dif, t_dif, r_dir, t_dir, t_noscat,
-                flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), source_up, source_dn, source_sfc, albedo, src, denom);
+        sw_source_kernel<<<grid_source, block_source>>>(
+                    ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
+                    t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
+
+        const int block_col_adding = 512;
+        const int block_gpt_adding = 1;
+
+        const int grid_col_adding = ncol/block_col_adding + (ncol%block_col_adding > 0);
+        const int grid_gpt_adding = ngpt/block_gpt_adding + (ngpt%block_gpt_adding > 0);
+
+        dim3 grid_adding(grid_col_adding, grid_gpt_adding);
+        dim3 block_adding(block_col_adding, block_gpt_adding);
+
+        sw_adding_kernel<<<grid_adding, block_adding>>>(
+                        ncol, nlay, ngpt, top_at_1,
+                        sfc_alb_dif.ptr(), r_dif, t_dif,
+                        source_dn, source_up, source_sfc,
+                        flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
 
         Tools_gpu::free_gpu(r_dif);
         Tools_gpu::free_gpu(t_dif);
