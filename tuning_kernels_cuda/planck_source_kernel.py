@@ -56,7 +56,11 @@ def run_and_test(params: dict):
 def tune():
     tune_params = dict()
     tune_params['RTE_RRTMGP_USE_CBOOL'] = [1]
-    tune_params['block_size_x'] = [1, 2, 3, 4]
+    #tune_params['block_size_x'] = [1, 2, 3, 4]
+    #tune_params['block_size_y'] = [1, 2, 3, 4]
+    #tune_params['block_size_z'] = [1, 2, 3, 4]
+
+    tune_params['block_size_x'] = [2, 4, 8, 12, 16, 20, 24]
     tune_params['block_size_y'] = [1, 2, 3, 4]
     tune_params['block_size_z'] = [1, 2, 3, 4]
 
@@ -156,8 +160,8 @@ if __name__ == '__main__':
         lev_src_inc, lev_src_dec,
         sfc_src_jac, pfrac]
 
-    #problem_size = (nband, nlay, ncol)
-    problem_size = (nlay, nband, ncol)
+    #problem_size = (nlay, nband, ncol)
+    problem_size = (ngpt, nlay, ncol)
     kernel_name = 'Planck_source_kernel<{}>'.format(str_float)
 
     if command_line.tune:
