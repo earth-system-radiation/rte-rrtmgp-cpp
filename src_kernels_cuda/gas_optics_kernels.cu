@@ -466,16 +466,16 @@ void compute_tau_major_absorption_kernel(
                                        ifmajor[6] * k[igpt + (j1-1)*ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress] +
                                        ifmajor[7] * k[igpt +  j1   *ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress]);
 */
-            TF ltau_major = tau[idx_out];
-            #pragma unroll loop_unroll_factor_x
-            for (int i=0; i<2; i++) { //un-unrolling this loops saves registers and improves parallelism/utilization
-                ltau_major += col_mix[idx_fcl1+i]*
-                                  (ifmajor[i*4+0] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
-                                   ifmajor[i*4+1] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
-                                   ifmajor[i*4+2] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress] +
-                                   ifmajor[i*4+3] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress]);
-            }
-            tau[idx_out] = ltau_major;
+             TF ltau_major = tau[idx_out];
+             #pragma unroll 1
+             for (int i=0; i<2; i++) { //un-unrolling this loops saves registers and improves parallelism/utilization
+                 ltau_major += col_mix[idx_fcl1+i]*
+                                   (ifmajor[i*4+0] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
+                                    ifmajor[i*4+1] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
+                                    ifmajor[i*4+2] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress] +
+                                    ifmajor[i*4+3] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress]);
+             }
+             tau[idx_out] = ltau_major;
 
                 }
             }
