@@ -456,9 +456,9 @@ namespace rrtmgp_kernel_launcher_cuda
             std::tie(grid_gpu, block_gpu) = tune_kernel(
                     "Planck_source_kernel",
                     {ngpt, nlay, ncol},
-                    {1, 2, 3, 4, 8},
-                    {1, 2, 3, 4, 8},
-                    {1, 2, 3, 4, 8},
+                    {1, 2, 3, 4, 8, 12, 16, 24},
+                    {1, 2, 3, 4, 8, 12, 16, 24},
+                    {1, 2, 3, 4, 8, 12, 16, 24},
                     Planck_source_kernel<TF>,
                     ncol, nlay, nbnd, ngpt,
                     nflav, neta, npres, ntemp, nPlanckTemp,
