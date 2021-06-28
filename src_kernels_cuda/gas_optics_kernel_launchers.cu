@@ -236,6 +236,8 @@ namespace rrtmgp_kernel_launcher_cuda
     {
         dim3 grid_gpu_maj{1, nlay, ncol}, block_gpu_maj;
 
+
+
         if (tunings.count("compute_tau_major_absorption_kernel") == 0)
         {
             std::tie(grid_gpu_maj, block_gpu_maj) =
@@ -281,6 +283,7 @@ namespace rrtmgp_kernel_launcher_cuda
         int idx_tropo = 1;
 
         dim3 grid_gpu_min_1{1, nlay, ncol}, block_gpu_min_1;
+
 
         if (tunings.count("compute_tau_minor_absorption_kernel_lower") == 0)
         {
@@ -347,6 +350,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
         dim3 grid_gpu_min_2{ngpt, nlay, ncol}, block_gpu_min_2;
 
+
         if (tunings.count("compute_tau_minor_absorption_kernel_upper") == 0)
         {
             std::tie(grid_gpu_min_2, block_gpu_min_2) =
@@ -405,6 +409,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                 tropo.ptr(), tau.ptr(), nullptr);
+
     }
 
 
@@ -438,18 +443,20 @@ namespace rrtmgp_kernel_launcher_cuda
         TF ones_cpu[2] = {TF(1.), TF(1.)};
         const TF delta_Tsurf = TF(1.);
 
-        TF* pfrac = Tools_gpu::allocate_gpu<TF>(lay_src.size());
-        TF* ones = Tools_gpu::allocate_gpu<TF>(2);
-
-        // Copy the data to the GPU.
-        cuda_safe_call(cudaMemcpy(ones, ones_cpu, 2*sizeof(TF), cudaMemcpyHostToDevice));
-
-        // Call the kernel.
-        dim3 grid_gpu{nbnd, nlay, ncol}, block_gpu;
+        const int block_gpt = 16;
+        const int block_lay = 4;
+        const int block_col = 2;
 
 
 
 
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+
+        dim3 grid_gpu(grid_gpt, grid_lay, grid_col);
+        dim3 block_gpu(block_gpt, block_lay, block_col);
+        
         if (tunings.count("Planck_source_kernel") == 0)
         {
             std::tie(grid_gpu, block_gpu) = tune_kernel(
@@ -483,13 +490,11 @@ namespace rrtmgp_kernel_launcher_cuda
                 fmajor.ptr(), jeta.ptr(), tropo.ptr(), jtemp.ptr(),
                 jpress.ptr(), gpoint_bands.ptr(), band_lims_gpt.ptr(),
                 pfracin.ptr(), temp_ref_min, totplnk_delta,
-                totplnk.ptr(), gpoint_flavor.ptr(), ones,
+                totplnk.ptr(), gpoint_flavor.ptr(),
                 delta_Tsurf, sfc_src.ptr(), lay_src.ptr(),
                 lev_src_inc.ptr(), lev_src_dec.ptr(),
-                sfc_src_jac.ptr(), pfrac);
+                sfc_src_jac.ptr());
 
-        Tools_gpu::free_gpu(pfrac);
-        Tools_gpu::free_gpu(ones);
     }
 }
 

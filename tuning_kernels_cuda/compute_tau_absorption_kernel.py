@@ -100,6 +100,7 @@ def tune():
     params_major["block_size_x"] = [16] # list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
     params_major["block_size_y"] = [i for i in range(1, 16 + 1)]
     params_major["block_size_z"] = [i for i in range(1, 16 + 1)]
+    params_major["loop_unroll_factor_x"] = [0, 1]
 
     params_minor = dict()
     params_minor["RTE_RRTMGP_USE_CBOOL"] = [1]
