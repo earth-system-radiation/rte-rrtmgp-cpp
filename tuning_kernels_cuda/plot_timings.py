@@ -86,5 +86,6 @@ def plot_xy(json_file):
 if __name__ == '__main__':
     #plot_timings('timings_interpolation_kernel.json')
     #plot_timings('timings_sw_2stream_kernel.json')
-    plot_timings('timings_compute_tau_minor.json')
-    plot_xy('timings_compute_tau_minor.json')
+    #plot_timings('timings_compute_tau_minor.json')
+    #plot_xy('timings_compute_tau_minor.json')
+    plot_timings('timings_planck_source_kernel.json')
