@@ -564,28 +564,26 @@ void compute_tau_minor_absorption_kernel(
                 TF scaling = TF(0.);
 
                 if (threadIdx.x == 0) {
-                const int ncl = ncol * nlay;
-                scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
+                    const int ncl = ncol * nlay;
+                    scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
 
-                if (minor_scales_with_density[imnr])
-                {
-                    const TF PaTohPa = 0.01;
-                    scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
+                    if (minor_scales_with_density[imnr]) {
+                        const TF PaTohPa = 0.01;
+                        scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
 
-                    if (idx_minor_scaling[imnr] > 0)
-                    {
-                        const int idx_collaywv = icol + ilay*ncol + idx_h2o*ncl;
-                        TF vmr_fact = TF(1.) / col_gas[idx_collay];
-                        TF dry_fact = TF(1.) / (TF(1.) + col_gas[idx_collaywv] * vmr_fact);
+                        if (idx_minor_scaling[imnr] > 0) {
+                            const int idx_collaywv = icol + ilay*ncol + idx_h2o*ncl;
+                            TF vmr_fact = TF(1.) / col_gas[idx_collay];
+                            TF dry_fact = TF(1.) / (TF(1.) + col_gas[idx_collaywv] * vmr_fact);
 
-                        if (scale_by_complement[imnr])
-                            scaling *= (TF(1.) - col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact);
-                        else
-                            scaling *= col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact;
+                            if (scale_by_complement[imnr])
+                                scaling *= (TF(1.) - col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact);
+                            else
+                                scaling *= col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact;
+                        }
                     }
-                }
 
-                scalings[threadIdx.z][threadIdx.y] = scaling;
+                    scalings[threadIdx.z][threadIdx.y] = scaling;
                 }
                 __syncthreads();
                 scaling = scalings[threadIdx.z][threadIdx.y];
