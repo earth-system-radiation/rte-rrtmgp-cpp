@@ -289,6 +289,11 @@ void interpolation_kernel(
 }
 
 
+#ifndef kernel_tuner
+ #define max_gpt 16
+ #define block_size_x 16
+#endif
+
 template<typename TF> __global__
 void compute_tau_major_absorption_kernel(
         const int ncol, const int nlay, const int nband, const int ngpt,
@@ -302,37 +307,68 @@ void compute_tau_major_absorption_kernel(
         TF* __restrict__ tau, TF* __restrict__ tau_major)
 {
     // Fetch the three coordinates.
-    const int ibnd = (blockIdx.z * blockDim.z) + threadIdx.z;
+
     const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
-    const int icol = (blockIdx.x * blockDim.x) + threadIdx.x;
+    const int icol = (blockIdx.z * blockDim.z) + threadIdx.z;
 
-    if ( (icol < ncol) && (ilay < nlay) && (ibnd < nband) )
-    {
+    if ((icol < ncol) && (ilay < nlay)) {
+
+
         const int idx_collay = icol + ilay * ncol;
+        const int ljtemp = jtemp[idx_collay];
         const int itropo = !tropo[idx_collay];
-        const int gpt_start = band_lims_gpt[2*ibnd] - 1;
-        const int gpt_end = band_lims_gpt[2*ibnd + 1];
-        const int iflav = gpoint_flavor[itropo + 2*gpt_start] - 1;
-        const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav);
-        const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav);
-        const int idx_tau = gpt_start + ilay*ngpt + icol*nlay*ngpt;
+        const int jpressi = jpress[idx_collay]+itropo;
+        const int npress = npres+1;
 
-        //major gases//
-        interpolate3D_byflav_kernel(
-                &col_mix[idx_fcl1], &fmajor[idx_fcl3],
-                &kmajor[gpt_start], gpt_start, gpt_end,
-                &jeta[idx_fcl1], jtemp[idx_collay],
-                jpress[idx_collay]+itropo, ngpt, neta, npres+1,
-                &tau_major[idx_tau]);
+        for (int ibnd = 0; ibnd < nband; ibnd++) {
 
-        #pragma unroll
-        for (int igpt=gpt_start; igpt<gpt_end; ++igpt)
-        {
-            const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
-            tau[idx_out] += tau_major[idx_out];
+            const int gpt_start = band_lims_gpt[2*ibnd] - 1;
+            const int gpt_end = band_lims_gpt[2*ibnd + 1];
+            const int band_gpt = gpt_end-gpt_start;
+
+            //major gases//
+
+            const int iflav = gpoint_flavor[itropo + 2*gpt_start] - 1;
+            const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav);
+            const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav);
+            const int j0 = jeta[idx_fcl1];
+            const int j1 = jeta[idx_fcl1+1];
+
+            const TF* __restrict__ ifmajor = &fmajor[idx_fcl3];
+            const TF* __restrict__ k = &kmajor[gpt_start];
+
+
+            #if block_size_x == max_gpt
+            if (threadIdx.x < band_gpt) {
+                const int igpt = threadIdx.x;
+            #else
+            for (int igpt=threadIdx.x; igpt<band_gpt; igpt+=block_size_x) {
+            #endif
+
+                const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
+
+                tau[idx_out] += col_mix[idx_fcl1]*
+                                  (ifmajor[0] * k[igpt + (j0-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
+                                   ifmajor[1] * k[igpt +  j0   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
+                                   ifmajor[2] * k[igpt + (j0-1)*ngpt + jpressi*neta*ngpt     + (ljtemp-1)*neta*ngpt*npress] +
+                                   ifmajor[3] * k[igpt +  j0   *ngpt + jpressi*neta*ngpt     + (ljtemp-1)*neta*ngpt*npress])
+                                + col_mix[idx_fcl1+1]*
+                                  (ifmajor[4] * k[igpt + (j1-1)*ngpt + (jpressi-1)*neta*ngpt + ljtemp*neta*ngpt*npress] +
+                                   ifmajor[5] * k[igpt +  j1   *ngpt + (jpressi-1)*neta*ngpt + ljtemp*neta*ngpt*npress] +
+                                   ifmajor[6] * k[igpt + (j1-1)*ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress] +
+                                   ifmajor[7] * k[igpt +  j1   *ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress]);
+            }
         }
+
     }
 }
+
+
+#ifndef kernel_tuner
+ #undef block_size_x
+#endif
+
+
 
 
 #ifndef kernel_tuner
@@ -341,6 +377,7 @@ void compute_tau_major_absorption_kernel(
 
 #if use_shared_tau
 template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
+
 void compute_tau_minor_absorption_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
@@ -505,6 +542,7 @@ void compute_tau_minor_absorption_kernel(
 
 #if use_shared_tau == 0
 template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
+
 void compute_tau_minor_absorption_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
@@ -593,6 +631,7 @@ void compute_tau_minor_absorption_kernel(
                     {
                         const int igpt = threadIdx.x;
 
+
                         TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
                                         kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
                                         kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
@@ -619,6 +658,7 @@ void compute_tau_minor_absorption_kernel(
         }
     }
 }
+
 #endif
 
 

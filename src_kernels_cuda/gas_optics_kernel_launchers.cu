@@ -224,10 +224,16 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& tau,
             Tuner_map& tunings)
     {
-        Array_gpu<TF,3> tau_major(tau.get_dims());
-        Array_gpu<TF,3> tau_minor(tau.get_dims());
+        //TF* tau_major = Tools_gpu::allocate_gpu<TF>(tau.size());
+        //TF* tau_minor = Tools_gpu::allocate_gpu<TF>(tau.size());
+        TF* tau_major = (TF*)0;
+        TF* tau_minor = (TF*)0;
 
         dim3 grid_gpu_maj{ncol, nlay, nband}, block_gpu_maj;
+
+
+
+
 
 
         if (tunings.count("compute_tau_major_absorption_kernel") == 0)
@@ -268,6 +274,7 @@ namespace rrtmgp_kernel_launcher_cuda
         int idx_tropo = 1;
 
         dim3 grid_gpu_min_1{1, nlay, ncol}, block_gpu_min_1;
+
 
         if (tunings.count("compute_tau_minor_absorption_kernel_lower") == 0)
         {
@@ -334,6 +341,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
         dim3 grid_gpu_min_2{ngpt, nlay, ncol}, block_gpu_min_2;
 
+
         if (tunings.count("compute_tau_minor_absorption_kernel_upper") == 0)
         {
             std::tie(grid_gpu_min_2, block_gpu_min_2) =
@@ -392,6 +400,8 @@ namespace rrtmgp_kernel_launcher_cuda
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                 tropo.ptr(), tau.ptr(), tau_minor.ptr());
+
+
     }
 
     template<typename TF>
@@ -432,6 +442,8 @@ namespace rrtmgp_kernel_launcher_cuda
 
         // Call the kernel.
         dim3 grid_gpu{nbnd, nlay, ncol}, block_gpu;
+
+
 
 
         if (tunings.count("Planck_source_kernel") == 0)

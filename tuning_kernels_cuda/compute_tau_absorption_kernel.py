@@ -12,6 +12,9 @@ from common import reg_observer
 import matplotlib.pyplot as pl
 pl.close('all')
 
+metrics = OrderedDict()
+metrics["registers"] = lambda p: p["num_regs"]
+
 
 # Path to the RCEMIP bins
 bin_path = '../rcemip'
@@ -94,9 +97,9 @@ def run_and_test(params: dict):
 def tune():
     params_major = dict()
     params_major["RTE_RRTMGP_USE_CBOOL"] = [1]
-    params_major["block_size_x"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
-    params_major["block_size_y"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
-    params_major["block_size_z"] = list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
+    params_major["block_size_x"] = [16] # list(np.arange(1,4)) #[i for i in range(1, 32 + 1)]
+    params_major["block_size_y"] = [i for i in range(1, 16 + 1)]
+    params_major["block_size_z"] = [i for i in range(1, 16 + 1)]
 
     params_minor = dict()
     params_minor["RTE_RRTMGP_USE_CBOOL"] = [1]
@@ -115,20 +118,18 @@ def tune():
     # Reset input tau
     tau[:] = 0.
 
-    #print(f"Tuning {kernel_name_major}")
-    #result, env = kt.tune_kernel(
-    #    kernel_name_major, kernel_string, problem_size_major,
-    #    args_major, params_major, compiler_options=cp,
-    #    answer=answer_major, atol=1e-14, verbose=True)
+    print(f"Tuning {kernel_name_major}")
+    result, env = kt.tune_kernel(
+        kernel_name_major, kernel_string, problem_size_major,
+        args_major, params_major, compiler_options=cp,
+        answer=answer_major, atol=1e-14,
+        verbose=True, observers=[reg_observer], metrics=metrics, iterations=32)
 
     # This gives an error: `TypeError: Object of type int64 is not JSON serializable`
-    #with open("timings_compute_tau_major.json", 'w') as fp:
-    #    json.dump(result, fp)
+    with open("timings_compute_tau_major.json", 'w') as fp:
+        json.dump(result, fp)
 
     tau[:] = tau_after_major
-
-    metrics = OrderedDict()
-    metrics["registers"] = lambda p: p["num_regs"]
 
     args = dict()
     args[0] = args_minor_upper
@@ -295,7 +296,8 @@ if __name__ == "__main__":
         tau_after_minor_tropo_one,
         tau_minor]
 
-    problem_size_major = (ncol, nlay, nband)
+    #problem_size_major = (ncol, nlay, nband)
+    problem_size_major = (1, nlay, ncol)
     kernel_name_major = 'compute_tau_major_absorption_kernel<{}>'.format(str_float)
     problem_size_minor = (1, nlay, ncol) #original
     #problem_size_minor = (ncol, nlay) #swapped
