@@ -290,11 +290,11 @@ void interpolation_kernel(
 
 
 #ifndef kernel_tuner
- #define max_gpt 16
- #define block_size_x 16
+ // #define max_gpt 16
+ // #define block_size_x 16
 #endif
 
-template<typename TF> __global__
+template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
 void compute_tau_major_absorption_kernel(
         const int ncol, const int nlay, const int nband, const int ngpt,
         const int nflav, const int neta, const int npres, const int ntemp,
@@ -337,29 +337,44 @@ void compute_tau_major_absorption_kernel(
             const TF* __restrict__ ifmajor = &fmajor[idx_fcl3];
             const TF* __restrict__ k = &kmajor[gpt_start];
 
+            if constexpr (block_size_x == max_gpt)
+            {
+                if (threadIdx.x < band_gpt)
+                {
+                    const int igpt = threadIdx.x;
+                    const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
 
-            #if block_size_x == max_gpt
-            if (threadIdx.x < band_gpt) {
-                const int igpt = threadIdx.x;
-            #else
-            for (int igpt=threadIdx.x; igpt<band_gpt; igpt+=block_size_x) {
-            #endif
+                    tau[idx_out] += col_mix[idx_fcl1]*
+                                      (ifmajor[0] * k[igpt + (j0-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
+                                       ifmajor[1] * k[igpt +  j0   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
+                                       ifmajor[2] * k[igpt + (j0-1)*ngpt + jpressi*neta*ngpt     + (ljtemp-1)*neta*ngpt*npress] +
+                                       ifmajor[3] * k[igpt +  j0   *ngpt + jpressi*neta*ngpt     + (ljtemp-1)*neta*ngpt*npress])
+                                    + col_mix[idx_fcl1+1]*
+                                      (ifmajor[4] * k[igpt + (j1-1)*ngpt + (jpressi-1)*neta*ngpt + ljtemp*neta*ngpt*npress] +
+                                       ifmajor[5] * k[igpt +  j1   *ngpt + (jpressi-1)*neta*ngpt + ljtemp*neta*ngpt*npress] +
+                                       ifmajor[6] * k[igpt + (j1-1)*ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress] +
+                                       ifmajor[7] * k[igpt +  j1   *ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress]);
+                }
+            }
+            else
+            {
+                for (int igpt=threadIdx.x; igpt<band_gpt; igpt+=block_size_x)
+                {
+                    const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
 
-                const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
-
-                tau[idx_out] += col_mix[idx_fcl1]*
-                                  (ifmajor[0] * k[igpt + (j0-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
-                                   ifmajor[1] * k[igpt +  j0   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
-                                   ifmajor[2] * k[igpt + (j0-1)*ngpt + jpressi*neta*ngpt     + (ljtemp-1)*neta*ngpt*npress] +
-                                   ifmajor[3] * k[igpt +  j0   *ngpt + jpressi*neta*ngpt     + (ljtemp-1)*neta*ngpt*npress])
-                                + col_mix[idx_fcl1+1]*
-                                  (ifmajor[4] * k[igpt + (j1-1)*ngpt + (jpressi-1)*neta*ngpt + ljtemp*neta*ngpt*npress] +
-                                   ifmajor[5] * k[igpt +  j1   *ngpt + (jpressi-1)*neta*ngpt + ljtemp*neta*ngpt*npress] +
-                                   ifmajor[6] * k[igpt + (j1-1)*ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress] +
-                                   ifmajor[7] * k[igpt +  j1   *ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress]);
+                    tau[idx_out] += col_mix[idx_fcl1]*
+                                      (ifmajor[0] * k[igpt + (j0-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
+                                       ifmajor[1] * k[igpt +  j0   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
+                                       ifmajor[2] * k[igpt + (j0-1)*ngpt + jpressi*neta*ngpt     + (ljtemp-1)*neta*ngpt*npress] +
+                                       ifmajor[3] * k[igpt +  j0   *ngpt + jpressi*neta*ngpt     + (ljtemp-1)*neta*ngpt*npress])
+                                    + col_mix[idx_fcl1+1]*
+                                      (ifmajor[4] * k[igpt + (j1-1)*ngpt + (jpressi-1)*neta*ngpt + ljtemp*neta*ngpt*npress] +
+                                       ifmajor[5] * k[igpt +  j1   *ngpt + (jpressi-1)*neta*ngpt + ljtemp*neta*ngpt*npress] +
+                                       ifmajor[6] * k[igpt + (j1-1)*ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress] +
+                                       ifmajor[7] * k[igpt +  j1   *ngpt + jpressi*neta*ngpt     + ljtemp*neta*ngpt*npress]);
+                }
             }
         }
-
     }
 }
 
@@ -367,8 +382,6 @@ void compute_tau_major_absorption_kernel(
 #ifndef kernel_tuner
  #undef block_size_x
 #endif
-
-
 
 
 #ifndef kernel_tuner

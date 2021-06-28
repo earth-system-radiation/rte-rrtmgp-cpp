@@ -182,6 +182,16 @@ namespace rrtmgp_kernel_launcher_cuda
     }
 
     template<typename TF>
+    struct Compute_tau_major_absorption_kernel
+    {
+        template<int I, int J, int K, class... Args>
+        static void launch(dim3 grid, dim3 block, Args... args)
+        {
+            compute_tau_major_absorption_kernel<TF, I, J, K><<<grid, block>>>(args...);
+        }
+    };
+
+    template<typename TF>
     struct Compute_tau_minor_absorption_kernel
     {
         template<int I, int J, int K, class... Args>
@@ -224,24 +234,19 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& tau,
             Tuner_map& tunings)
     {
-        //TF* tau_major = Tools_gpu::allocate_gpu<TF>(tau.size());
-        //TF* tau_minor = Tools_gpu::allocate_gpu<TF>(tau.size());
-        TF* tau_major = (TF*)0;
-        TF* tau_minor = (TF*)0;
+        Array<TF,3> tau_major, tau_minor;
 
-        dim3 grid_gpu_maj{ncol, nlay, nband}, block_gpu_maj;
-
-
-
-
-
+        dim3 grid_gpu_maj{1, nlay, ncol}, block_gpu_maj;
 
         if (tunings.count("compute_tau_major_absorption_kernel") == 0)
         {
-            std::tie(grid_gpu_maj, block_gpu_maj) = tune_kernel(
+            std::tie(grid_gpu_maj, block_gpu_maj) =
+                tune_kernel_compile_time<Compute_tau_major_absorption_kernel<TF>>(
                     "compute_tau_major_absorption_kernel",
-                    {ncol, nlay, nband}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16}, {1, 2, 4, 8, 16},
-                    compute_tau_major_absorption_kernel<TF>,
+                    {1, nlay, ncol},
+                    std::integer_sequence<int, 8, 16>{},
+                    std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16, 32>{},
+                    std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16, 32>{},
                     ncol, nlay, nband, ngpt,
                     nflav, neta, npres, ntemp,
                     gpoint_flavor.ptr(), band_lims_gpt.ptr(),
@@ -258,7 +263,11 @@ namespace rrtmgp_kernel_launcher_cuda
             block_gpu_maj = tunings["compute_tau_major_absorption_kernel"].second;
         }
 
-        compute_tau_major_absorption_kernel<<<grid_gpu_maj, block_gpu_maj>>>(
+        run_kernel_compile_time<Compute_tau_major_absorption_kernel<TF>>(
+                std::integer_sequence<int, 8, 16>{},
+                std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16, 32>{},
+                std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16, 32>{},
+                grid_gpu_maj, block_gpu_maj,
                 ncol, nlay, nband, ngpt,
                 nflav, neta, npres, ntemp,
                 gpoint_flavor.ptr(), band_lims_gpt.ptr(),
@@ -274,7 +283,6 @@ namespace rrtmgp_kernel_launcher_cuda
         int idx_tropo = 1;
 
         dim3 grid_gpu_min_1{1, nlay, ncol}, block_gpu_min_1;
-
 
         if (tunings.count("compute_tau_minor_absorption_kernel_lower") == 0)
         {
