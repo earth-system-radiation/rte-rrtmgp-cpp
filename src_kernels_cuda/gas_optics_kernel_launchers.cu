@@ -305,9 +305,6 @@ namespace rrtmgp_kernel_launcher_cuda
             block_gpu_min_1 = tunings["compute_tau_minor_absorption_kernel_lower"].second;
         }
 
-        std::cout << "G1: " << grid_gpu_min_1.x << ", " << grid_gpu_min_1.y << ", " << grid_gpu_min_1.z << std::endl;
-        std::cout << "B1: " << block_gpu_min_1.x << ", " << block_gpu_min_1.y << ", " << block_gpu_min_1.z << std::endl;
-
         run_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
                 std::integer_sequence<int, 8, 16>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
@@ -372,9 +369,6 @@ namespace rrtmgp_kernel_launcher_cuda
             grid_gpu_min_2 = tunings["compute_tau_minor_absorption_kernel_upper"].first;
             block_gpu_min_2 = tunings["compute_tau_minor_absorption_kernel_upper"].second;
         }
-
-        std::cout << "G2: " << grid_gpu_min_2.x << ", " << grid_gpu_min_2.y << ", " << grid_gpu_min_2.z << std::endl;
-        std::cout << "B2: " << block_gpu_min_2.x << ", " << block_gpu_min_2.y << ", " << block_gpu_min_2.z << std::endl;
 
         run_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
                 std::integer_sequence<int, 8, 16>{},

@@ -587,20 +587,33 @@ void compute_tau_minor_absorption_kernel(
                 const int kjtemp = jtemp[idx_collay];
                 const int band_gpt = gpt_end-gpt_start;
 
-                #if block_size_x == max_gpt
-                if (threadIdx.x < band_gpt) {
-                    const int igpt = threadIdx.x;
-                #else
-                for (int igpt=threadIdx.x; igpt<band_gpt; igpt+=block_size_x) {
-                #endif
-                //for (int igpt=0; igpt<band_gpt; ++igpt) {
-                    TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
-                                    kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
-                                    kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
-                                    kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
+                if constexpr (block_size_x == max_gpt)
+                {
+                    if (threadIdx.x < band_gpt)
+                    {
+                        const int igpt = threadIdx.x;
 
-                    const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
-                    tau[idx_out] += ltau_minor * scaling;
+                        TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
+                                        kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
+                                        kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
+                                        kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
+
+                        const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
+                        tau[idx_out] += ltau_minor * scaling;
+                    }
+                }
+                else
+                {
+                    for (int igpt=threadIdx.x; igpt<band_gpt; igpt+=block_size_x)
+                    {
+                        TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
+                                        kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
+                                        kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
+                                        kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
+
+                        const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
+                        tau[idx_out] += ltau_minor * scaling;
+                    }
                 }
             }
         }
