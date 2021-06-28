@@ -447,9 +447,6 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay = 4;
         const int block_col = 2;
 
-
-
-
         const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
         const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
         const int grid_col = ncol/block_col + (ncol%block_col > 0);
@@ -461,7 +458,7 @@ namespace rrtmgp_kernel_launcher_cuda
         {
             std::tie(grid_gpu, block_gpu) = tune_kernel(
                     "Planck_source_kernel",
-                    {nbnd, nlay, ncol}, {1, 2, 3, 4, 8}, {1, 2, 3, 4, 8}, {1, 2, 3, 4, 8},
+                    {ngpt, nlay, ncol}, {1, 2, 3, 4, 8}, {1, 2, 3, 4, 8}, {1, 2, 3, 4, 8},
                     Planck_source_kernel<TF>,
                     ncol, nlay, nbnd, ngpt,
                     nflav, neta, npres, ntemp, nPlanckTemp,
