@@ -263,8 +263,6 @@ void Planck_source_kernel(
 
         const int j0 = jeta[idx_fcl1+0];
         const int j1 = jeta[idx_fcl1+1];
-        const int npress1 = npres+1;
-
         const int jtemp_idx = jtemp[idx_collay];
         const int jpress_idx = jpress[idx_collay]+itropo;
 
@@ -278,20 +276,19 @@ void Planck_source_kernel(
         const TF planck_function_lev1 = interpolate1D(tlev[idx_tmp1], temp_ref_min, totplnk_delta, nPlanckTemp, &totplnk[ibnd * nPlanckTemp]);
         const TF planck_function_lev2 = interpolate1D(tlev[idx_tmp2], temp_ref_min, totplnk_delta, nPlanckTemp, &totplnk[ibnd * nPlanckTemp]);
 
-        const int iigpt = igpt-gpt_start;
         const int idx = igpt + ilay*ngpt + icol*nlay*ngpt;
         const int idx_sfc = igpt + icol*ngpt;
 
         const TF pfrac_loc =
-              (fmajor[idx_fcl3+0] * pfracin[gpt_start + iigpt + (j0-1)*ngpt + (jpress_idx-1)*neta*ngpt + (jtemp_idx-1)*neta*ngpt*npress1] +
-               fmajor[idx_fcl3+1] * pfracin[gpt_start + iigpt +  j0   *ngpt + (jpress_idx-1)*neta*ngpt + (jtemp_idx-1)*neta*ngpt*npress1] +
-               fmajor[idx_fcl3+2] * pfracin[gpt_start + iigpt + (j0-1)*ngpt + jpress_idx*neta*ngpt     + (jtemp_idx-1)*neta*ngpt*npress1] +
-               fmajor[idx_fcl3+3] * pfracin[gpt_start + iigpt +  j0   *ngpt + jpress_idx*neta*ngpt     + (jtemp_idx-1)*neta*ngpt*npress1])
+              (fmajor[idx_fcl3+0] * pfracin[igpt + (j0-1)*ngpt + (jpress_idx-1)*neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
+               fmajor[idx_fcl3+1] * pfracin[igpt +  j0   *ngpt + (jpress_idx-1)*neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
+               fmajor[idx_fcl3+2] * pfracin[igpt + (j0-1)*ngpt + jpress_idx*neta*ngpt     + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
+               fmajor[idx_fcl3+3] * pfracin[igpt +  j0   *ngpt + jpress_idx*neta*ngpt     + (jtemp_idx-1)*neta*ngpt*(npres+1)])
             + 
-              (fmajor[idx_fcl3+4] * pfracin[gpt_start + iigpt + (j1-1)*ngpt + (jpress_idx-1)*neta*ngpt + jtemp_idx*neta*ngpt*npress1] +
-               fmajor[idx_fcl3+5] * pfracin[gpt_start + iigpt +  j1   *ngpt + (jpress_idx-1)*neta*ngpt + jtemp_idx*neta*ngpt*npress1] +
-               fmajor[idx_fcl3+6] * pfracin[gpt_start + iigpt + (j1-1)*ngpt + jpress_idx*neta*ngpt     + jtemp_idx*neta*ngpt*npress1] +
-               fmajor[idx_fcl3+7] * pfracin[gpt_start + iigpt +  j1   *ngpt + jpress_idx*neta*ngpt     + jtemp_idx*neta*ngpt*npress1]);
+              (fmajor[idx_fcl3+4] * pfracin[igpt + (j1-1)*ngpt + (jpress_idx-1)*neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
+               fmajor[idx_fcl3+5] * pfracin[igpt +  j1   *ngpt + (jpress_idx-1)*neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
+               fmajor[idx_fcl3+6] * pfracin[igpt + (j1-1)*ngpt + jpress_idx*neta*ngpt     + jtemp_idx*neta*ngpt*(npres+1)] +
+               fmajor[idx_fcl3+7] * pfracin[igpt +  j1   *ngpt + jpress_idx*neta*ngpt     + jtemp_idx*neta*ngpt*(npres+1)]);
 
         // Layer source
         lay_src[idx] = pfrac_loc * planck_function_lay;

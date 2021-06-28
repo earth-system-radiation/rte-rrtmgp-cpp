@@ -328,24 +328,9 @@ namespace rrtmgp_kernel_launcher_cuda
         TF ones_cpu[2] = {TF(1.), TF(1.)};
         const TF delta_Tsurf = TF(1.);
 
-        // Copy the data to the GPU.
-        cuda_safe_call(cudaMemcpy(ones, ones_cpu, 2*sizeof(TF), cudaMemcpyHostToDevice));
-
-        // Call the kernel.
-        //const int block_bnd = 1; // 14;
-        //const int block_lay = 3; // 1;
-        //const int block_col = 2; // 32;
-
-        //const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
-        //const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
-        //const int grid_col = ncol/block_col + (ncol%block_col > 0);
-
-        //dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
-        //dim3 block_gpu(block_bnd, block_lay, block_col);
-
         const int block_gpt = 16;
         const int block_lay = 4;
-        const int block_col = 3;
+        const int block_col = 2;
 
         const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
         const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
