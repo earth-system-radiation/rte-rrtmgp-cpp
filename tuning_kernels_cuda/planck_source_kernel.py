@@ -45,11 +45,11 @@ def run_and_test(params: dict):
             kernel_name, kernel_string, problem_size,
             args, params, compiler_options=cp)
 
-    compare_fields(result[-6], sfc_src_ref, 'sfc_src')
-    compare_fields(result[-5], lay_src_ref, 'lay_src')
-    compare_fields(result[-4], lev_src_inc_ref, 'lev_src_inc')
-    compare_fields(result[-3], lev_src_dec_ref, 'lev_srd_dec')
-    compare_fields(result[-2], sfc_src_jac_ref, 'sfc_src_jac')
+    compare_fields(result[-5], sfc_src_ref, 'sfc_src')
+    compare_fields(result[-4], lay_src_ref, 'lay_src')
+    compare_fields(result[-3], lev_src_inc_ref, 'lev_src_inc')
+    compare_fields(result[-2], lev_src_dec_ref, 'lev_srd_dec')
+    compare_fields(result[-1], sfc_src_jac_ref, 'sfc_src_jac')
 
 
 # Tuning the kernel
@@ -65,11 +65,11 @@ def tune():
     tune_params['block_size_z'] = [1, 2, 3, 4]
 
     answer = len(args)*[None]
-    answer[-6] = sfc_src_ref
-    answer[-5] = lay_src_ref
-    answer[-4] = lev_src_inc_ref
-    answer[-3] = lev_src_dec_ref
-    answer[-2] = sfc_src_jac_ref
+    answer[-5] = sfc_src_ref
+    answer[-4] = lay_src_ref
+    answer[-3] = lev_src_inc_ref
+    answer[-2] = lev_src_dec_ref
+    answer[-1] = sfc_src_jac_ref
 
     result, env = kt.tune_kernel(
             kernel_name, kernel_string, problem_size,
@@ -155,10 +155,10 @@ if __name__ == '__main__':
         fmajor, jeta, tropo, jtemp,
         jpress, gpoint_bands, band_lims_gpt,
         pfracin, temp_ref_min, totplnk_delta,
-        totplnk, gpoint_flavor, ones,
+        totplnk, gpoint_flavor,
         delta_Tsurf, sfc_src, lay_src,
         lev_src_inc, lev_src_dec,
-        sfc_src_jac, pfrac]
+        sfc_src_jac]
 
     #problem_size = (nlay, nband, ncol)
     problem_size = (ngpt, nlay, ncol)

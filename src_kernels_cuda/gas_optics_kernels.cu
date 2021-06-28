@@ -231,10 +231,10 @@ void Planck_source_kernel(
         const int* __restrict__ band_lims_gpt, const TF* __restrict__ pfracin,
         const TF temp_ref_min, const TF totplnk_delta,
         const TF* __restrict__ totplnk, const int* __restrict__ gpoint_flavor,
-        const TF* __restrict__ ones, const TF delta_Tsurf,
+        const TF delta_Tsurf,
         TF* __restrict__ sfc_src, TF* __restrict__ lay_src,
         TF* __restrict__ lev_src_inc, TF* __restrict__ lev_src_dec,
-        TF* __restrict__ sfc_src_jac, TF* __restrict__ pfrac)
+        TF* __restrict__ sfc_src_jac)
 {
     const int igpt = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;

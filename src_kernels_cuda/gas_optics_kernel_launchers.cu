@@ -328,9 +328,6 @@ namespace rrtmgp_kernel_launcher_cuda
         TF ones_cpu[2] = {TF(1.), TF(1.)};
         const TF delta_Tsurf = TF(1.);
 
-        TF* pfrac = Tools_gpu::allocate_gpu<TF>(lay_src.size());
-        TF* ones = Tools_gpu::allocate_gpu<TF>(2);
-
         // Copy the data to the GPU.
         cuda_safe_call(cudaMemcpy(ones, ones_cpu, 2*sizeof(TF), cudaMemcpyHostToDevice));
 
@@ -364,13 +361,10 @@ namespace rrtmgp_kernel_launcher_cuda
                 fmajor.ptr(), jeta.ptr(), tropo.ptr(), jtemp.ptr(),
                 jpress.ptr(), gpoint_bands.ptr(), band_lims_gpt.ptr(),
                 pfracin.ptr(), temp_ref_min, totplnk_delta,
-                totplnk.ptr(), gpoint_flavor.ptr(), ones,
+                totplnk.ptr(), gpoint_flavor.ptr(),
                 delta_Tsurf, sfc_src.ptr(), lay_src.ptr(),
                 lev_src_inc.ptr(), lev_src_dec.ptr(),
-                sfc_src_jac.ptr(), pfrac);
-
-        Tools_gpu::free_gpu(pfrac);
-        Tools_gpu::free_gpu(ones);
+                sfc_src_jac.ptr());
     }
 }
 
