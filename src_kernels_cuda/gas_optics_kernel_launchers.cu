@@ -236,8 +236,6 @@ namespace rrtmgp_kernel_launcher_cuda
     {
         dim3 grid_gpu_maj{1, nlay, ncol}, block_gpu_maj;
 
-
-
         if (tunings.count("compute_tau_major_absorption_kernel") == 0)
         {
             std::tie(grid_gpu_maj, block_gpu_maj) =
@@ -409,7 +407,6 @@ namespace rrtmgp_kernel_launcher_cuda
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                 tropo.ptr(), tau.ptr(), nullptr);
-
     }
 
 
@@ -458,7 +455,10 @@ namespace rrtmgp_kernel_launcher_cuda
         {
             std::tie(grid_gpu, block_gpu) = tune_kernel(
                     "Planck_source_kernel",
-                    {ngpt, nlay, ncol}, {1, 2, 3, 4, 8}, {1, 2, 3, 4, 8}, {1, 2, 3, 4, 8},
+                    {ngpt, nlay, ncol},
+                    {1, 2, 3, 4, 8},
+                    {1, 2, 3, 4, 8},
+                    {1, 2, 3, 4, 8},
                     Planck_source_kernel<TF>,
                     ncol, nlay, nbnd, ngpt,
                     nflav, neta, npres, ntemp, nPlanckTemp,
@@ -466,10 +466,10 @@ namespace rrtmgp_kernel_launcher_cuda
                     fmajor.ptr(), jeta.ptr(), tropo.ptr(), jtemp.ptr(),
                     jpress.ptr(), gpoint_bands.ptr(), band_lims_gpt.ptr(),
                     pfracin.ptr(), temp_ref_min, totplnk_delta,
-                    totplnk.ptr(), gpoint_flavor.ptr(), ones,
+                    totplnk.ptr(), gpoint_flavor.ptr(),
                     delta_Tsurf, sfc_src.ptr(), lay_src.ptr(),
                     lev_src_inc.ptr(), lev_src_dec.ptr(),
-                    sfc_src_jac.ptr(), pfrac);
+                    sfc_src_jac.ptr());
 
             tunings["Planck_source_kernel"].first = grid_gpu;
             tunings["Planck_source_kernel"].second = block_gpu;
@@ -491,7 +491,6 @@ namespace rrtmgp_kernel_launcher_cuda
                 delta_Tsurf, sfc_src.ptr(), lay_src.ptr(),
                 lev_src_inc.ptr(), lev_src_dec.ptr(),
                 sfc_src_jac.ptr());
-
     }
 }
 
