@@ -344,6 +344,7 @@ void compute_tau_major_absorption_kernel(
 
 #if use_shared_tau
 template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
+
 void compute_tau_minor_absorption_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
@@ -508,6 +509,7 @@ void compute_tau_minor_absorption_kernel(
 
 #if use_shared_tau == 0
 
+
 template<typename TF> __global__
 void compute_tau_minor_absorption_kernel(
         const int ncol, const int nlay, const int ngpt,
@@ -538,6 +540,7 @@ void compute_tau_minor_absorption_kernel(
     const int icol = blockIdx.x * blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y * blockDim.y + threadIdx.y;
 
+
     if ((icol < ncol) && (ilay < nlay))
     {
         const int idx_collay = icol + ilay*ncol;
@@ -546,26 +549,29 @@ void compute_tau_minor_absorption_kernel(
         {
             for (int imnr = 0; imnr < nscale; ++imnr)
             {
-                const int ncl = ncol * nlay;
-                TF scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
 
-                if (minor_scales_with_density[imnr])
-                {
-                    const TF PaTohPa = 0.01;
-                    scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
+                    const int ncl = ncol * nlay;
+                    scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
 
-                    if (idx_minor_scaling[imnr] > 0)
-                    {
-                        const int idx_collaywv = icol + ilay*ncol + idx_h2o*ncl;
-                        TF vmr_fact = TF(1.) / col_gas[idx_collay];
-                        TF dry_fact = TF(1.) / (TF(1.) + col_gas[idx_collaywv] * vmr_fact);
+                    if (minor_scales_with_density[imnr]) {
 
-                        if (scale_by_complement[imnr])
-                            scaling *= (TF(1.) - col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact);
-                        else
-                            scaling *= col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact;
+                        const TF PaTohPa = 0.01;
+                        scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
+
+                        if (idx_minor_scaling[imnr] > 0) {
+
+                            const int idx_collaywv = icol + ilay*ncol + idx_h2o*ncl;
+                            TF vmr_fact = TF(1.) / col_gas[idx_collay];
+                            TF dry_fact = TF(1.) / (TF(1.) + col_gas[idx_collaywv] * vmr_fact);
+
+                            if (scale_by_complement[imnr])
+                                scaling *= (TF(1.) - col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact);
+                            else
+                                scaling *= col_gas[idx_collay + idx_minor_scaling[imnr] * ncl] * vmr_fact * dry_fact;
+                        }
                     }
-                }
+
+                    scalings[threadIdx.z][threadIdx.y] = scaling;
 
                 const int gpt_start = minor_limits_gpt[2*imnr]-1;
                 const int gpt_end = minor_limits_gpt[2*imnr+1];
@@ -582,6 +588,7 @@ void compute_tau_minor_absorption_kernel(
                 const int band_gpt = gpt_end-gpt_start;
 
                 for (int igpt=0; igpt<band_gpt; ++igpt) {
+
                     TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
                                     kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
                                     kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
