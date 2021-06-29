@@ -319,6 +319,8 @@ namespace rte_kernel_launcher_cuda
         TF tmin = std::numeric_limits<TF>::epsilon();
 
 
+
+
         // Step 1.
         dim3 grid_2stream, block_2stream;
 
@@ -345,6 +347,7 @@ namespace rte_kernel_launcher_cuda
                 ncol, nlay, ngpt, tmin,
                 tau.ptr(), ssa.ptr(), g.ptr(), mu0.ptr(),
                 r_dif, t_dif, r_dir, t_dir, t_noscat);
+
 
 
         // Step 2.

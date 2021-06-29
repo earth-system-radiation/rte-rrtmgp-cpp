@@ -437,7 +437,6 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,2>& sfc_src_jac,
             Tuner_map& tunings)
     {
-        TF ones_cpu[2] = {TF(1.), TF(1.)};
         const TF delta_Tsurf = TF(1.);
 
         const int block_gpt = 16;
@@ -488,7 +487,8 @@ namespace rrtmgp_kernel_launcher_cuda
                 jpress.ptr(), gpoint_bands.ptr(), band_lims_gpt.ptr(),
                 pfracin.ptr(), temp_ref_min, totplnk_delta,
                 totplnk.ptr(), gpoint_flavor.ptr(),
-                delta_Tsurf, sfc_src.ptr(), lay_src.ptr(),
+                delta_Tsurf,
+                sfc_src.ptr(), lay_src.ptr(),
                 lev_src_inc.ptr(), lev_src_dec.ptr(),
                 sfc_src_jac.ptr());
     }
