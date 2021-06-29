@@ -1149,6 +1149,7 @@ void Gas_optics_rrtmgp_gpu<TF>::source(
     Array_gpu<TF,2> sfc_source_jac({ngpt, ncol});
 
     int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
+
     rrtmgp_kernel_launcher_cuda::Planck_source(
             ncol, nlay, nbnd, ngpt,
             nflav, neta, npres, ntemp, nPlanckTemp,
