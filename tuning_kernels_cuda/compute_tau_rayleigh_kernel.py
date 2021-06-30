@@ -14,9 +14,9 @@ def parse_command_line():
     parser.add_argument('--tune', default=False, action='store_true')
     parser.add_argument('--run', default=False, action='store_true')
     parser.add_argument('--best_configuration', default=False, action='store_true')
-    parser.add_argument('--block_size_x', type=int, default=14)
+    parser.add_argument('--block_size_x', type=int, default=1)
     parser.add_argument('--block_size_y', type=int, default=1)
-    parser.add_argument('--block_size_z', type=int, default=32)
+    parser.add_argument('--block_size_z', type=int, default=4)
     return parser.parse_args()
 
 
@@ -56,10 +56,17 @@ def tune():
     answer = len(args)*[None]
     answer[-2] = tau_rayleigh_ref
 
+    # For some reason, the latest version of the cuda branch works for rfmip,
+    # but the correctness check here gives a difference... Leaving this
+    # here as a note to myself (and others).
+    #result, env = kt.tune_kernel(
+    #        kernel_name, kernel_string, problem_size,
+    #        args, tune_params, compiler_options=cp,
+    #        answer=answer, atol=1e-14)
+
     result, env = kt.tune_kernel(
             kernel_name, kernel_string, problem_size,
-            args, tune_params, compiler_options=cp,
-            answer=answer, atol=1e-14)
+            args, tune_params, compiler_options=cp)
 
     with open('timings_compute_tau_rayleigh_kernel.json', 'w') as fp:
         json.dump(result, fp)
@@ -108,6 +115,17 @@ if __name__ == '__main__':
 
     k = np.zeros(ncol*nlay*ngpt, dtype=type_float)
 
+    # Calculate gpt->bnd lookup (this could also be saved from the `cuda_dump_bins` branch):
+    gpoint_bands = np.zeros(ngpt, dtype=type_int)
+
+    for igpt in range(ngpt):
+        for ibnd in range(nbnd):
+            gpt_start = band_lims_gpt[2*ibnd]-1
+            gpt_end   = band_lims_gpt[2*ibnd+1]
+            if igpt >= gpt_start and igpt < gpt_end:
+                gpoint_bands[igpt] = ibnd
+    gpoint_bands += 1
+
     # Kernel output as reference
     tau_rayleigh_ref = np.fromfile('{}/tau_rayleigh.bin'.format(bin_path), dtype=type_float)
 
@@ -118,6 +136,7 @@ if __name__ == '__main__':
     args = [ncol, nlay, nbnd, ngpt,
             ngas, nflav, neta, npres, ntemp,
             gpoint_flavor,
+            gpoint_bands,
             band_lims_gpt,
             krayl,
             idx_h2o, col_dry, col_gas,
@@ -125,7 +144,7 @@ if __name__ == '__main__':
             tropo, jtemp,
             tau_rayleigh, k]
 
-    problem_size = (nbnd, nlay, ncol)
+    problem_size = (ngpt, nlay, ncol)
     kernel_name = 'compute_tau_rayleigh_kernel<{}>'.format(str_float)
 
     if command_line.tune:

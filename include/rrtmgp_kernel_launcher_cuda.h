@@ -80,6 +80,7 @@ namespace rrtmgp_kernel_launcher_cuda
             const int ncol, const int nlay, const int nband, const int ngpt,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
             const Array_gpu<int, 2>& gpoint_flavor,
+            const Array_gpu<int, 1>& gpoint_bands,
             const Array_gpu<int, 2>& band_lims_gpt,
             const Array_gpu<TF,4>& krayl,
             int idx_h2o, const Array_gpu<TF,2>& col_dry, const Array_gpu<TF,3>& col_gas,
