@@ -14,7 +14,7 @@ def parse_command_line():
     parser.add_argument('--tune', default=False, action='store_true')
     parser.add_argument('--run', default=False, action='store_true')
     parser.add_argument('--best_configuration', default=False, action='store_true')
-    parser.add_argument('--block_size_x', type=int, default=1)
+    parser.add_argument('--block_size_x', type=int, default=32)
     parser.add_argument('--block_size_y', type=int, default=1)
     parser.add_argument('--block_size_z', type=int, default=4)
     return parser.parse_args()
@@ -43,7 +43,7 @@ def run_and_test(params: dict):
             kernel_name, kernel_string, problem_size,
             args, params, compiler_options=cp)
 
-    compare_fields(result[-2], tau_rayleigh_ref, 'tau_rayleigh')
+    compare_fields(result[-1], tau_rayleigh_ref, 'tau_rayleigh')
 
 
 # Tuning the kernel
@@ -113,8 +113,6 @@ if __name__ == '__main__':
 
     tropo = np.fromfile('{}/tropo_sw.bin'.format(bin_path), dtype=type_int)
 
-    k = np.zeros(ncol*nlay*ngpt, dtype=type_float)
-
     # Calculate gpt->bnd lookup (this could also be saved from the `cuda_dump_bins` branch):
     gpoint_bands = np.zeros(ngpt, dtype=type_int)
 
@@ -142,7 +140,7 @@ if __name__ == '__main__':
             idx_h2o, col_dry, col_gas,
             fminor, jeta,
             tropo, jtemp,
-            tau_rayleigh, k]
+            tau_rayleigh]
 
     problem_size = (ngpt, nlay, ncol)
     kernel_name = 'compute_tau_rayleigh_kernel<{}>'.format(str_float)
