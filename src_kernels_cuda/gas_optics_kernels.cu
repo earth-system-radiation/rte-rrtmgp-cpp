@@ -776,7 +776,7 @@ void compute_tau_rayleigh_kernel(
         int idx_h2o, const TF* __restrict__ col_dry, const TF* __restrict__ col_gas,
         const TF* __restrict__ fminor, const int* __restrict__ jeta,
         const BOOL_TYPE* __restrict__ tropo, const int* __restrict__ jtemp,
-        TF* __restrict__ tau_rayleigh, TF* __restrict__ k)
+        TF* __restrict__ tau_rayleigh)
 {
     // Fetch the three coordinates.
     const int igpt = blockIdx.x*blockDim.x + threadIdx.x;

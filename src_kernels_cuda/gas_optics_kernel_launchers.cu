@@ -150,8 +150,6 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
             Array_gpu<TF,3>& tau_rayleigh)
     {
-        TF* k = Tools_gpu::allocate_gpu<TF>(ncol*nlay*ngpt);
-
         // Call the kernel.
         const int block_gpt = 32;
         const int block_lay = 1;
@@ -174,9 +172,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 idx_h2o, col_dry.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(),
                 tropo.ptr(), jtemp.ptr(),
-                tau_rayleigh.ptr(), k);
-
-        Tools_gpu::free_gpu(k);
+                tau_rayleigh.ptr());
     }
 
     template<typename TF>
