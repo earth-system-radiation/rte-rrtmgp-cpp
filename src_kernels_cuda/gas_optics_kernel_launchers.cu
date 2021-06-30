@@ -146,6 +146,7 @@ namespace rrtmgp_kernel_launcher_cuda
             const int ncol, const int nlay, const int nbnd, const int ngpt,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
             const Array_gpu<int,2>& gpoint_flavor,
+            const Array_gpu<int,1>& gpoint_bands,
             const Array_gpu<int,2>& band_lims_gpt,
             const Array_gpu<TF,4>& krayl,
             int idx_h2o, const Array_gpu<TF,2>& col_dry, const Array_gpu<TF,3>& col_gas,
@@ -153,32 +154,29 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
             Array_gpu<TF,3>& tau_rayleigh)
     {
-        TF* k = Tools_gpu::allocate_gpu<TF>(ncol*nlay*ngpt);
-
         // Call the kernel.
-        const int block_bnd = 1;
+        const int block_gpt = 32;
         const int block_lay = 1;
-        const int block_col = 8;
+        const int block_col = 4;
 
-        const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
         const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
         const int grid_col = ncol/block_col + (ncol%block_col > 0);
 
-        dim3 grid_gpu(grid_bnd, grid_lay, grid_col);
-        dim3 block_gpu(block_bnd, block_lay, block_col);
+        dim3 grid_gpu(grid_gpt, grid_lay, grid_col);
+        dim3 block_gpu(block_gpt, block_lay, block_col);
 
         compute_tau_rayleigh_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, nbnd, ngpt,
                 ngas, nflav, neta, npres, ntemp,
                 gpoint_flavor.ptr(),
+                gpoint_bands.ptr(),
                 band_lims_gpt.ptr(),
                 krayl.ptr(),
                 idx_h2o, col_dry.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(),
                 tropo.ptr(), jtemp.ptr(),
-                tau_rayleigh.ptr(), k);
-
-        Tools_gpu::free_gpu(k);
+                tau_rayleigh.ptr());
     }
 
     template<typename TF>
@@ -513,7 +511,7 @@ template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<float>(
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
-        const Array_gpu<int,2>&, const Array_gpu<int,2>&, const Array_gpu<float,4>&, int, const Array_gpu<float,2>&,
+        const Array_gpu<int,2>&, const Array_gpu<int,1>&, const Array_gpu<int,2>&, const Array_gpu<float,4>&, int, const Array_gpu<float,2>&,
         const Array_gpu<float,3>&, const Array_gpu<float,5>&, const Array_gpu<int,4>&, const Array_gpu<BOOL_TYPE,2>&,
         const Array_gpu<int,2>&, Array_gpu<float,3>&);
 
@@ -556,7 +554,7 @@ template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<double>(
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
-        const Array_gpu<int,2>&, const Array_gpu<int,2>&, const Array_gpu<double,4>&, int, const Array_gpu<double,2>&,
+        const Array_gpu<int,2>&, const Array_gpu<int,1>&, const Array_gpu<int,2>&, const Array_gpu<double,4>&, int, const Array_gpu<double,2>&,
         const Array_gpu<double,3>&, const Array_gpu<double,5>&, const Array_gpu<int,4>&, const Array_gpu<BOOL_TYPE,2>&,
         const Array_gpu<int,2>&, Array_gpu<double,3>&);
 

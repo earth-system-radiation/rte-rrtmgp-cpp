@@ -778,50 +778,49 @@ void compute_tau_minor_absorption_reference_kernel(
 }
 
 
-
-
 template<typename TF> __global__
 void compute_tau_rayleigh_kernel(
         const int ncol, const int nlay, const int nbnd, const int ngpt,
         const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
         const int* __restrict__ gpoint_flavor,
+        const int* __restrict__ gpoint_bands,
         const int* __restrict__ band_lims_gpt,
         const TF* __restrict__ krayl,
         int idx_h2o, const TF* __restrict__ col_dry, const TF* __restrict__ col_gas,
         const TF* __restrict__ fminor, const int* __restrict__ jeta,
         const BOOL_TYPE* __restrict__ tropo, const int* __restrict__ jtemp,
-        TF* __restrict__ tau_rayleigh, TF* __restrict__ k)
+        TF* __restrict__ tau_rayleigh)
 {
     // Fetch the three coordinates.
-    const int ibnd = blockIdx.x*blockDim.x + threadIdx.x;
+    const int igpt = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
     const int icol = blockIdx.z*blockDim.z + threadIdx.z;
 
-    if ( (icol < ncol) && (ilay < nlay) && (ibnd < nbnd) )
+    if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
-        //kernel implementation
+        const int ibnd = gpoint_bands[igpt]-1;
+
         const int idx_collay = icol + ilay*ncol;
         const int idx_collaywv = icol + ilay*ncol + idx_h2o*nlay*ncol;
         const int itropo = !tropo[idx_collay];
+
         const int gpt_start = band_lims_gpt[2*ibnd]-1;
-        const int gpt_end = band_lims_gpt[2*ibnd+1];
         const int iflav = gpoint_flavor[itropo+2*gpt_start]-1;
         const int idx_fcl2 = 2*2*(iflav + icol*nflav + ilay*ncol*nflav);
         const int idx_fcl1   = 2*(iflav + icol*nflav + ilay*ncol*nflav);
         const int idx_krayl  = gpt_start + ngpt*neta*ntemp*itropo;
-        const int idx_k = gpt_start + ilay*ngpt + icol*nlay*ngpt;
-        interpolate2D_byflav_kernel(&fminor[idx_fcl2],
-                                    &krayl[idx_krayl],
-                                    gpt_start, gpt_end, &k[idx_k],
-                                    &jeta[idx_fcl1],
-                                    jtemp[idx_collay],
-                                    ngpt, neta);
 
-        for (int igpt=gpt_start; igpt<gpt_end; ++igpt)
-        {
-            const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
-            tau_rayleigh[idx_out] = k[idx_k+igpt-gpt_start]*(col_gas[idx_collaywv]+col_dry[idx_collay]);
-        }
+        const int j0 = jeta[idx_fcl1];
+        const int j1 = jeta[idx_fcl1+1];
+        const int jtempl = jtemp[idx_collay];
+
+        const TF kloc = fminor[idx_fcl2+0] * krayl[idx_krayl + (igpt-gpt_start) + (j0-1)*ngpt + (jtempl-1)*neta*ngpt] +
+                        fminor[idx_fcl2+1] * krayl[idx_krayl + (igpt-gpt_start) +  j0   *ngpt + (jtempl-1)*neta*ngpt] +
+                        fminor[idx_fcl2+2] * krayl[idx_krayl + (igpt-gpt_start) + (j1-1)*ngpt + jtempl    *neta*ngpt] +
+                        fminor[idx_fcl2+3] * krayl[idx_krayl + (igpt-gpt_start) +  j1   *ngpt + jtempl    *neta*ngpt];
+
+        const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
+        tau_rayleigh[idx_out] = kloc * (col_gas[idx_collaywv] + col_dry[idx_collay]);
     }
 }
 
