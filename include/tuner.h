@@ -15,6 +15,14 @@ std::tuple<dim3, dim3> tune_kernel(
 {
     std::cout << "Tuning " << kernel_name << ": ";
 
+    std::ofstream tuner_output;
+    tuner_output.open(kernel_name + ".txt", std::ios::out | std::ios::app);
+    tuner_output
+        << std::setw(10) << "block_x"
+        << std::setw(10) << "block_y"
+        << std::setw(10) << "block_z"
+        << std::setw(16) << "time (ms)" << "\n";
+
     float fastest = std::numeric_limits<float>::max();
     dim3 fastest_block{1, 1, 1};
     dim3 fastest_grid{problem_size};
@@ -52,9 +60,11 @@ std::tuple<dim3, dim3> tune_kernel(
                 cudaError err = cudaGetLastError();
                 if (err != cudaSuccess)
                 {
-                    // std::cout << "("
-                    //     << std::setw(3) << i << ", " << std::setw(3) << j << ", " << std::setw(3) << k << ") "
-                    //     << "FAILED! " << std::endl;
+                    tuner_output
+                        << std::setw(10) << i
+                        << std::setw(10) << j
+                        << std::setw(10) << k
+                        << std::setw(16) << "NaN\n";
                 }
                 else
                 {
@@ -65,18 +75,22 @@ std::tuple<dim3, dim3> tune_kernel(
                         fastest_block = block;
                     }
 
-                    // std::cout << "("
-                    //     << std::setw(3) << i << ", " << std::setw(3) << j << ", " << std::setw(3) << k << ") "
-                    //     << std::setprecision(5) << duration/n_samples << " (ns)" << std::endl;
+                    tuner_output
+                        << std::setw(10) << i
+                        << std::setw(10) << j
+                        << std::setw(10) << k
+                        << std::setw(16) << duration/n_samples << "\n";
                 }
             }
 
-     std::cout << "(" 
-         << fastest_block.x << ", "
-         << fastest_block.y << ", "
-         << fastest_block.z << ")" << std::endl;
+    tuner_output.close();
 
-     return {fastest_grid, fastest_block};
+    std::cout << "(" 
+        << fastest_block.x << ", "
+        << fastest_block.y << ", "
+        << fastest_block.z << ")" << std::endl;
+
+    return {fastest_grid, fastest_block};
 }
 
 
