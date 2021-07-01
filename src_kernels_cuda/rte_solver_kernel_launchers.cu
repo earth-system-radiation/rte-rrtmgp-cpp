@@ -270,12 +270,17 @@ namespace rte_kernel_launcher_cuda
         dim3 grid_source(grid_col_source, grid_gpt_source);
         dim3 block_source(block_col_source, block_gpt_source);
 
-        sw_source_kernel<top_at_1><<<grid_source, block_source>>>(
+        if (top_at_1) {
+            sw_source_kernel<TF, 1><<<grid_source, block_source>>>(
                     ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
                     t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
-
+        } else {
+            sw_source_kernel<TF, 0><<<grid_source, block_source>>>(
+                    ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
+                    t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
+        }
         const int block_col_adding = 32;
-        const int block_gpt_adding = 4;
+        const int block_gpt_adding = 7;
 
         const int grid_col_adding = ncol/block_col_adding + (ncol%block_col_adding > 0);
         const int grid_gpt_adding = ngpt/block_gpt_adding + (ngpt%block_gpt_adding > 0);
@@ -283,11 +288,19 @@ namespace rte_kernel_launcher_cuda
         dim3 grid_adding(grid_col_adding, grid_gpt_adding);
         dim3 block_adding(block_col_adding, block_gpt_adding);
 
-        sw_adding_kernel<top_at_1><<<grid_adding, block_adding>>>(
+        if (top_at_1) {
+            sw_adding_kernel<TF, 1><<<grid_adding, block_adding>>>(
                         ncol, nlay, ngpt, top_at_1,
                         sfc_alb_dif.ptr(), r_dif, t_dif,
                         source_dn, source_up, source_sfc,
                         flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
+        } else {
+            sw_adding_kernel<TF, 0><<<grid_adding, block_adding>>>(
+                        ncol, nlay, ngpt, top_at_1,
+                        sfc_alb_dif.ptr(), r_dif, t_dif,
+                        source_dn, source_up, source_sfc,
+                        flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
+        }
 
         Tools_gpu::free_gpu(r_dif);
         Tools_gpu::free_gpu(t_dif);
