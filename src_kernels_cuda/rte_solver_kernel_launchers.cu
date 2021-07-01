@@ -392,14 +392,28 @@ namespace rte_kernel_launcher_cuda
 
         if (tunings.count("sw_adding") == 0)
         {
-            std::tie(grid_adding, block_adding) = tune_kernel(
-                    "sw_adding",
-                    {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4, 8, 16}, {1},
-                    sw_adding_kernel<TF>,
-                    ncol, nlay, ngpt, top_at_1,
-                    sfc_alb_dif.ptr(), r_dif, t_dif,
-                    source_dn, source_up, source_sfc,
-                    flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
+            if (top_at_1)
+            {
+                std::tie(grid_adding, block_adding) = tune_kernel(
+                        "sw_adding",
+                        {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4, 8, 16}, {1},
+                        sw_adding_kernel<TF, 1>,
+                        ncol, nlay, ngpt, top_at_1,
+                        sfc_alb_dif.ptr(), r_dif, t_dif,
+                        source_dn, source_up, source_sfc,
+                        flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
+            }
+            else
+            {
+                std::tie(grid_adding, block_adding) = tune_kernel(
+                        "sw_adding",
+                        {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4, 8, 16}, {1},
+                        sw_adding_kernel<TF, 0>,
+                        ncol, nlay, ngpt, top_at_1,
+                        sfc_alb_dif.ptr(), r_dif, t_dif,
+                        source_dn, source_up, source_sfc,
+                        flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
+            }
 
             tunings["sw_adding"].first = grid_adding;
             tunings["sw_adding"].second = block_adding;
@@ -410,20 +424,22 @@ namespace rte_kernel_launcher_cuda
             block_adding = tunings["sw_adding"].second;
         }
 
-        if (top_at_1) {
+        if (top_at_1)
+        {
             sw_adding_kernel<TF, 1><<<grid_adding, block_adding>>>(
                 ncol, nlay, ngpt, top_at_1,
                 sfc_alb_dif.ptr(), r_dif, t_dif,
                 source_dn, source_up, source_sfc,
                 flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
-        } else {
+        }
+        else
+        {
             sw_adding_kernel<TF, 0><<<grid_adding, block_adding>>>(
                         ncol, nlay, ngpt, top_at_1,
                         sfc_alb_dif.ptr(), r_dif, t_dif,
                         source_dn, source_up, source_sfc,
                         flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
         }
-
 
         Tools_gpu::free_gpu(r_dif);
         Tools_gpu::free_gpu(t_dif);
