@@ -98,7 +98,9 @@ std::tuple<dim3, dim3> tune_kernel(
 // Tuning functions.
 template<class Func, int I, int J, int K, class... Args>
 void tune_ijk(
-        dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
+        dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest,
+        std::ofstream& tuner_output,
+        Args... args)
 {
     dim3 block{I, J, K};
     dim3 grid{
@@ -129,9 +131,11 @@ void tune_ijk(
     cudaError err = cudaGetLastError();
     if (err != cudaSuccess)
     {
-        // std::cout << "("
-        //     << std::setw(3) << I << ", " << std::setw(3) << J << ", " << std::setw(3) << K << ") "
-        //     << "FAILED! " << std::endl;
+        tuner_output
+            << std::setw(10) << i
+            << std::setw(10) << j
+            << std::setw(10) << k
+            << std::setw(16) << "NaN\n";
     }
     else
     {
@@ -142,9 +146,11 @@ void tune_ijk(
             fastest_block = block;
         }
 
-        // std::cout << "("
-        //     << std::setw(3) << I << ", " << std::setw(3) << J << ", " << std::setw(3) << K << ") "
-        //     << std::setprecision(5) << duration/n_samples << " (ns)" << std::endl;
+        tuner_output
+            << std::setw(10) << i
+            << std::setw(10) << j
+            << std::setw(10) << k
+            << std::setw(16) << duration/n_samples << "\n";
     }
 }
 
@@ -152,9 +158,11 @@ void tune_ijk(
 template<class Func, int I, int J, int... Ks, class... Args>
 void tune_ij(
         std::integer_sequence<int, Ks...> ks,
-        dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
+        dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest,
+        std::ofstream& tuner_output,
+        Args... args)
 {
-    (tune_ijk<Func, I, J, Ks>(problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+    (tune_ijk<Func, I, J, Ks>(problem_size, fastest_grid, fastest_block, fastest, tuner_output, args...), ...);
 }
 
 
@@ -162,9 +170,11 @@ template<class Func, int I, int... Js, int... Ks, class... Args>
 void tune_i(
         std::integer_sequence<int, Js...> js,
         std::integer_sequence<int, Ks...> ks,
-        dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest, Args... args)
+        dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest,
+        std::ofstream& tuner_output,
+        Args... args)
 {
-    (tune_ij<Func, I, Js>(ks, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+    (tune_ij<Func, I, Js>(ks, problem_size, fastest_grid, fastest_block, fastest, tuner_output, args...), ...);
 }
 
 
@@ -179,11 +189,19 @@ std::tuple<dim3, dim3> tune_kernel_compile_time(
 {
     std::cout << "Tuning " << kernel_name << ": ";
 
+    std::ofstream tuner_output;
+    tuner_output.open(kernel_name + ".txt", std::ios::out | std::ios::app);
+    tuner_output
+        << std::setw(10) << "block_x"
+        << std::setw(10) << "block_y"
+        << std::setw(10) << "block_z"
+        << std::setw(16) << "time (ms)" << "\n";
+
     float fastest = std::numeric_limits<float>::max();
     dim3 fastest_block{1, 1, 1};
     dim3 fastest_grid{problem_size};
 
-    (tune_i<Func, Is>(js, ks, problem_size, fastest_grid, fastest_block, fastest, args...), ...);
+    (tune_i<Func, Is>(js, ks, problem_size, fastest_grid, fastest_block, fastest, tuner_output, args...), ...);
 
     std::cout << "(" 
         << fastest_block.x << ", "
