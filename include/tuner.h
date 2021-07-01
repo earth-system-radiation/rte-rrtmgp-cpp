@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <filesystem>
 
 
 ////  RUNTIME TUNER ////
@@ -132,9 +133,9 @@ void tune_ijk(
     if (err != cudaSuccess)
     {
         tuner_output
-            << std::setw(10) << i
-            << std::setw(10) << j
-            << std::setw(10) << k
+            << std::setw(10) << I
+            << std::setw(10) << J
+            << std::setw(10) << K
             << std::setw(16) << "NaN\n";
     }
     else
@@ -147,9 +148,9 @@ void tune_ijk(
         }
 
         tuner_output
-            << std::setw(10) << i
-            << std::setw(10) << j
-            << std::setw(10) << k
+            << std::setw(10) << I
+            << std::setw(10) << J
+            << std::setw(10) << K
             << std::setw(16) << duration/n_samples << "\n";
     }
 }
@@ -190,7 +191,20 @@ std::tuple<dim3, dim3> tune_kernel_compile_time(
     std::cout << "Tuning " << kernel_name << ": ";
 
     std::ofstream tuner_output;
-    tuner_output.open(kernel_name + ".txt", std::ios::out | std::ios::app);
+
+    std::string file_name = kernel_name;
+
+    if (std::filesystem::exists(file_name + ".txt"))
+    {
+        for (int i=2;; ++i)
+            if (!std::filesystem::exists(file_name + "_" + std::to_string(i) + ".txt"))
+            {
+                file_name += "_" + std::to_string(i);
+                break;
+            }
+    }
+
+    tuner_output.open(file_name + ".txt", std::ios::out);
     tuner_output
         << std::setw(10) << "block_x"
         << std::setw(10) << "block_y"
