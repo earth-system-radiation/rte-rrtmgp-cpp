@@ -314,9 +314,13 @@ namespace rte_kernel_launcher_cuda
         TF* source_sfc = Tools_gpu::allocate_gpu<TF>(alb_size);
         TF* albedo = Tools_gpu::allocate_gpu<TF>(flx_size);
         TF* src = Tools_gpu::allocate_gpu<TF>(flx_size);
-        TF* denom = Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* denom = (TF*)0; //Tools_gpu::allocate_gpu<TF>(opt_size);
 
         TF tmin = std::numeric_limits<TF>::epsilon();
+
+
+
+
 
 
 
@@ -371,10 +375,17 @@ namespace rte_kernel_launcher_cuda
             block_source = tunings["sw_source"].second;
         }
 
-        sw_source_kernel<<<grid_source, block_source>>>(
+        if (top_at_1) {
+            sw_source_kernel<TF, 1><<<grid_source, block_source>>>(
                     ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
                     t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
-
+        } else {
+            sw_source_kernel<TF, 0><<<grid_source, block_source>>>(
+                    ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
+                    t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
+        }
+        const int block_col_adding = 32;
+        const int block_gpt_adding = 7;
 
         // Step 3.
         dim3 grid_adding, block_adding;
@@ -399,11 +410,19 @@ namespace rte_kernel_launcher_cuda
             block_adding = tunings["sw_adding"].second;
         }
 
-        sw_adding_kernel<<<grid_adding, block_adding>>>(
+        if (top_at_1) {
+            sw_adding_kernel<TF, 1><<<grid_adding, block_adding>>>(
                 ncol, nlay, ngpt, top_at_1,
                 sfc_alb_dif.ptr(), r_dif, t_dif,
                 source_dn, source_up, source_sfc,
                 flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
+        } else {
+            sw_adding_kernel<TF, 0><<<grid_adding, block_adding>>>(
+                        ncol, nlay, ngpt, top_at_1,
+                        sfc_alb_dif.ptr(), r_dif, t_dif,
+                        source_dn, source_up, source_sfc,
+                        flux_up.ptr(), flux_dn.ptr(), flux_dir.ptr(), albedo, src, denom);
+        }
 
 
         Tools_gpu::free_gpu(r_dif);
@@ -416,7 +435,7 @@ namespace rte_kernel_launcher_cuda
         Tools_gpu::free_gpu(source_sfc);
         Tools_gpu::free_gpu(albedo);
         Tools_gpu::free_gpu(src);
-        Tools_gpu::free_gpu(denom);
+        //Tools_gpu::free_gpu(denom);
     }
 }
 

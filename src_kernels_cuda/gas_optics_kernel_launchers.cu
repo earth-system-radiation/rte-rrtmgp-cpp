@@ -124,15 +124,15 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g)
     {
         const int block_col = 32;
-        const int block_gpt = 32;
         const int block_lay = 1;
+        const int block_gpt = 32;
 
         const int grid_col = ncol/block_col + (ncol%block_col > 0);
-        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
         const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
 
-        dim3 grid_gpu(grid_col, grid_gpt, grid_lay);
-        dim3 block_gpu(block_col, block_gpt, block_lay);
+        dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
+        dim3 block_gpu(block_col, block_lay, block_gpt);
 
         TF tmin = std::numeric_limits<TF>::min();
         combine_and_reorder_2str_kernel<<<grid_gpu, block_gpu>>>(
