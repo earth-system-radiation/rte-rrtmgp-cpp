@@ -178,7 +178,7 @@ void lw_solver_noscat_step3_kernel(
 }
 
 #ifndef kernel_tuner
-const int loop_unroll_factor_nlay 140
+const int loop_unroll_factor_nlay = 5;
 #endif
 
 
