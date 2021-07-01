@@ -359,12 +359,24 @@ namespace rte_kernel_launcher_cuda
 
         if (tunings.count("sw_source") == 0)
         {
-            std::tie(grid_source, block_source) = tune_kernel(
-                    "sw_source",
-                    {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4, 8, 16}, {1},
-                    sw_source_kernel<TF>,
-                    ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
-                    t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
+            if (top_at_1)
+            {
+                std::tie(grid_source, block_source) = tune_kernel(
+                        "sw_source",
+                        {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4, 8, 16}, {1},
+                        sw_source_kernel<TF, 1>,
+                        ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
+                        t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
+            }
+            else
+            {
+                std::tie(grid_source, block_source) = tune_kernel(
+                        "sw_source",
+                        {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4, 8, 16}, {1},
+                        sw_source_kernel<TF, 0>,
+                        ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
+                        t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
+            }
 
             tunings["sw_source"].first = grid_source;
             tunings["sw_source"].second = block_source;
