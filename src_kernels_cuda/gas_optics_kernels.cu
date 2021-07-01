@@ -820,8 +820,8 @@ void combine_and_reorder_2str_kernel(
 {
     // Fetch the three coordinates.
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-    const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
-    const int ilay = blockIdx.z*blockDim.z + threadIdx.z;
+    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
 
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
@@ -829,8 +829,10 @@ void combine_and_reorder_2str_kernel(
         const int idx_out = icol + ilay*ncol + igpt*(ncol*nlay);
 
         const TF tau_tot = tau_abs[idx_in] + tau_rayleigh[idx_in];
+
         tau[idx_out] = tau_tot;
         g  [idx_out] = TF(0.);
+
         if (tau_tot>(TF(2.)*tmin))
             ssa[idx_out] = tau_rayleigh[idx_in]/tau_tot;
         else
