@@ -353,7 +353,6 @@ namespace rte_kernel_launcher_cuda
                 r_dif, t_dif, r_dir, t_dir, t_noscat);
 
 
-
         // Step 2.
         dim3 grid_source, block_source;
 
@@ -387,17 +386,19 @@ namespace rte_kernel_launcher_cuda
             block_source = tunings["sw_source"].second;
         }
 
-        if (top_at_1) {
+        if (top_at_1)
+        {
             sw_source_kernel<TF, 1><<<grid_source, block_source>>>(
                     ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
                     t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
-        } else {
+        }
+        else
+        {
             sw_source_kernel<TF, 0><<<grid_source, block_source>>>(
                     ncol, nlay, ngpt, top_at_1, r_dir, t_dir,
                     t_noscat, sfc_alb_dir.ptr(), source_up, source_dn, source_sfc, flux_dir.ptr());
         }
-        const int block_col_adding = 32;
-        const int block_gpt_adding = 7;
+
 
         // Step 3.
         dim3 grid_adding, block_adding;
