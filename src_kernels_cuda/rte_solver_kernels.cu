@@ -1,22 +1,12 @@
 #include "Types.h"
 
+#ifndef kernel_tuner
+const int loop_unroll_factor_nlay = 5;
+#endif
+
 template<typename TF> __device__ constexpr TF k_min();
 template<> __device__ constexpr double k_min() { return 1.e-12; }
 template<> __device__ constexpr float k_min() { return 1.e-4f; }
-
-template<typename TF> __device__
-void lw_source_noscat_kernel(
-        const int icol, const int ilay, const int igpt, const int ncol, const int nlay, const int ngpt, const TF eps,
-        const TF* __restrict__ lay_source, const TF* __restrict__ lev_source_up, const TF* __restrict__ lev_source_dn,
-        const TF* __restrict__ tau, const TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up)
-{
-    const TF tau_thres = sqrt(eps);
-
-    const int idx = icol + ilay*ncol + igpt*ncol*nlay;
-    const TF fact = (tau[idx]>tau_thres) ? (TF(1.) - trans[idx]) / tau[idx] - trans[idx] : tau[idx] * (TF(.5) - TF(1.)/TF(3.)*tau[idx]);
-    source_dn[idx] = (TF(1.) - trans[idx]) * lev_source_dn[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_dn[idx]);
-    source_up[idx] = (TF(1.) - trans[idx]) * lev_source_up[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_up[idx]);
-}
 
 template<typename TF>__device__
 void lw_transport_noscat_kernel(
@@ -27,6 +17,7 @@ void lw_transport_noscat_kernel(
 {
     if (top_at_1)
     {
+        #pragma unroll loop_unroll_factor_nlay
         for (int ilev=1; ilev<(nlay+1); ++ilev)
         {
             const int idx1 = icol + ilev*ncol + igpt*ncol*(nlay+1);
@@ -40,6 +31,7 @@ void lw_transport_noscat_kernel(
         radn_up[idx_bot] = radn_dn[idx_bot] * sfc_albedo[idx2d] + source_sfc[idx2d];
         radn_up_jac[idx_bot] = source_sfc_jac[idx2d];
 
+        #pragma unroll loop_unroll_factor_nlay
         for (int ilev=nlay-1; ilev>=0; --ilev)
         {
             const int idx1 = icol + ilev*ncol + igpt*ncol*(nlay+1);
@@ -51,6 +43,7 @@ void lw_transport_noscat_kernel(
     }
     else
     {
+        #pragma unroll loop_unroll_factor_nlay
         for (int ilev=(nlay-1); ilev>=0; --ilev)
         {
             const int idx1 = icol + ilev*ncol + igpt*ncol*(nlay+1);
@@ -64,6 +57,7 @@ void lw_transport_noscat_kernel(
         radn_up[idx_bot] = radn_dn[idx_bot] * sfc_albedo[idx2d] + source_sfc[idx2d];
         radn_up_jac[idx_bot] = source_sfc_jac[idx2d];
 
+        #pragma unroll loop_unroll_factor_nlay
         for (int ilev=1; ilev<(nlay+1); ++ilev)
         {
             const int idx1 = icol + ilev*ncol + igpt*ncol*(nlay+1);
@@ -92,40 +86,17 @@ void lw_solver_noscat_step1_kernel(
 
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
-        const TF pi = acos(TF(-1.));
-        const TF* lev_source_up;
-        const TF* lev_source_dn;
-        int top_level;
+        const int idx = icol + ilay*ncol + igpt*ncol*nlay;
+        tau_loc[idx] = tau[idx] * D[0];
+        trans[idx] = exp(-tau_loc[idx]);
 
-        if (top_at_1)
-        {
-            top_level = 0;
-            lev_source_up = lev_source_dec;
-            lev_source_dn = lev_source_inc;
-        }
-        else
-        {
-            top_level = nlay;
-            lev_source_up = lev_source_inc;
-            lev_source_dn = lev_source_dec;
-        }
+        const TF fact = (tau_loc[idx]>0. && (tau_loc[idx]*tau_loc[idx])>eps) ? (TF(1.) - trans[idx]) / tau_loc[idx] - trans[idx] : tau_loc[idx] * (TF(.5) - TF(1.)/TF(3.)*tau_loc[idx]);
 
-        const int idx_top = icol + top_level*ncol + igpt*ncol*(nlay+1);
-        radn_dn[idx_top] = radn_dn[idx_top] / (TF(2.) * pi * weight[0]);
+        TF src_inc = (TF(1.) - trans[idx]) * lev_source_inc[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_inc[idx]);
+        TF src_dec = (TF(1.) - trans[idx]) * lev_source_dec[idx] + TF(2.) * fact * (lay_source[idx]-lev_source_dec[idx]);
 
-        const int idx2d = icol + igpt*ncol;
-
-        const int idx3d = icol + ilay*ncol + igpt*ncol*nlay;
-        tau_loc[idx3d] = tau[idx3d] * D[0];
-        trans[idx3d] = exp(-tau_loc[idx3d]);
-
-        lw_source_noscat_kernel(
-                icol, ilay, igpt, ncol, nlay, ngpt, eps, lay_source, lev_source_up, lev_source_dn,
-                tau_loc, trans, source_dn, source_up);
-
-        sfc_albedo[idx2d] = TF(1.) - sfc_emis[idx2d];
-        source_sfc[idx2d] = sfc_emis[idx2d] * sfc_src[idx2d];
-        source_sfc_jac[idx2d] = sfc_emis[idx2d] * sfc_src_jac[idx2d];
+        source_dn[idx] = top_at_1 ? src_inc : src_dec;
+        source_up[idx] = top_at_1 ? src_dec : src_inc;
     }
 }
 
@@ -145,6 +116,16 @@ void lw_solver_noscat_step2_kernel(
 
     if ( (icol < ncol) && (igpt < ngpt) )
     {
+        const int idx2d = icol + igpt*ncol;
+        sfc_albedo[idx2d] = TF(1.) - sfc_emis[idx2d];
+        source_sfc[idx2d] = sfc_emis[idx2d] * sfc_src[idx2d];
+        source_sfc_jac[idx2d] = sfc_emis[idx2d] * sfc_src_jac[idx2d];
+
+        const TF pi = acos(TF(-1.));
+        const int idx_top = icol + (top_at_1 ? 0 : nlay)*ncol + igpt*ncol*(nlay+1);
+        radn_dn[idx_top] = radn_dn[idx_top] / pow(TF(2.) * pi * weight[0], nlay);
+
+
         lw_transport_noscat_kernel(
                 icol, igpt, ncol, nlay, ngpt, top_at_1, tau, trans, sfc_albedo, source_dn,
                 source_up, source_sfc, radn_up, radn_dn, source_sfc_jac, radn_up_jac);
@@ -176,10 +157,6 @@ void lw_solver_noscat_step3_kernel(
         radn_up_jac[idx] *= TF(2.) * pi * weight[0];
     }
 }
-
-#ifndef kernel_tuner
-const int loop_unroll_factor_nlay = 5;
-#endif
 
 
 template<typename TF, BOOL_TYPE top_at_1> __global__
