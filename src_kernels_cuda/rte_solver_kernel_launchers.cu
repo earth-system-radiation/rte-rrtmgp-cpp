@@ -314,7 +314,7 @@ namespace rte_kernel_launcher_cuda
         TF* source_sfc = Tools_gpu::allocate_gpu<TF>(alb_size);
         TF* albedo = Tools_gpu::allocate_gpu<TF>(flx_size);
         TF* src = Tools_gpu::allocate_gpu<TF>(flx_size);
-        TF* denom = (TF*)0; //Tools_gpu::allocate_gpu<TF>(opt_size);
+        TF* denom = Tools_gpu::allocate_gpu<TF>(opt_size);
 
         TF tmin = std::numeric_limits<TF>::epsilon();
 
@@ -464,7 +464,7 @@ namespace rte_kernel_launcher_cuda
         Tools_gpu::free_gpu(source_sfc);
         Tools_gpu::free_gpu(albedo);
         Tools_gpu::free_gpu(src);
-        //Tools_gpu::free_gpu(denom);
+        Tools_gpu::free_gpu(denom);
     }
 }
 

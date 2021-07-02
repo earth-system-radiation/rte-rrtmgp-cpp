@@ -77,7 +77,7 @@ void lw_transport_noscat_kernel(
 
 
 template<typename TF> __global__
-void lw_solver_noscat_step_1_kernel(
+void lw_solver_noscat_step1_kernel(
         const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
         const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
         const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
@@ -131,7 +131,7 @@ void lw_solver_noscat_step_1_kernel(
 
 
 template<typename TF> __global__
-void lw_solver_noscat_step_2_kernel(
+void lw_solver_noscat_step2_kernel(
         const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
         const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
         const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
@@ -153,7 +153,7 @@ void lw_solver_noscat_step_2_kernel(
 
 
 template<typename TF> __global__
-void lw_solver_noscat_step_3_kernel(
+void lw_solver_noscat_step3_kernel(
         const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1,
         const TF* __restrict__ D, const TF* __restrict__ weight, const TF* __restrict__ tau, const TF* __restrict__ lay_source,
         const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
@@ -177,14 +177,10 @@ void lw_solver_noscat_step_3_kernel(
     }
 }
 
-#ifndef kernel_tuner
-constexpr int loop_unroll_factor_nlay = 5;
-#endif
 
-
-template<typename TF, BOOL_TYPE top_at_1> __global__
+template<typename TF> __global__
 void sw_adding_kernel(
-        const int ncol, const int nlay, const int ngpt, const BOOL_TYPE _top_at_1,
+        const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
         const TF* __restrict__ sfc_alb_dif, const TF* __restrict__ r_dif, const TF* __restrict__ t_dif,
         const TF* __restrict__ source_dn, const TF* __restrict__ source_up, const TF* __restrict__ source_sfc,
         TF* __restrict__ flux_up, TF* __restrict__ flux_dn, const TF* __restrict__ flux_dir,
@@ -202,7 +198,6 @@ void sw_adding_kernel(
             albedo[sfc_idx_3d] = sfc_alb_dif[sfc_idx_2d];
             src[sfc_idx_3d] = source_sfc[sfc_idx_2d];
 
-            #pragma unroll loop_unroll_factor_nlay
             for (int ilay=nlay-1; ilay >= 0; --ilay)
             {
                 const int lay_idx  = icol + ilay*ncol + igpt*ncol*nlay;
@@ -217,18 +212,21 @@ void sw_adding_kernel(
             const int top_idx = icol + igpt*(nlay+1)*ncol;
             flux_up[top_idx] = flux_dn[top_idx]*albedo[top_idx] + src[top_idx];
 
-            for (int ilay=1; ilay < (nlay+2); ++ilay)
+            for (int ilay=1; ilay < (nlay+1); ++ilay)
             {
                 const int lev_idx1 = icol + ilay*ncol + igpt*(nlay+1)*ncol;
                 const int lev_idx2 = icol + (ilay-1)*ncol + igpt*(nlay+1)*ncol;
                 const int lay_idx = icol + (ilay-1)*ncol + igpt*(nlay)*ncol;
-                if (ilay < (nlay+1)) {
-                    flux_dn[lev_idx1] = (t_dif[lay_idx]*flux_dn[lev_idx2] +
-                                         r_dif[lay_idx]*src[lev_idx1] +
-                                         source_dn[lay_idx]) * denom[lay_idx];
-                    flux_up[lev_idx1] = flux_dn[lev_idx1] * albedo[lev_idx1] + src[lev_idx1];
-                }
-                flux_dn[lev_idx2] += flux_dir[lev_idx2];
+                flux_dn[lev_idx1] = (t_dif[lay_idx]*flux_dn[lev_idx2] +
+                                     r_dif[lay_idx]*src[lev_idx1] +
+                                     source_dn[lay_idx]) * denom[lay_idx];
+                flux_up[lev_idx1] = flux_dn[lev_idx1] * albedo[lev_idx1] + src[lev_idx1];
+            }
+
+            for (int ilay=0; ilay < (nlay+1); ++ilay)
+            {
+                const int idx = icol + ilay*ncol + igpt*(nlay+1)*ncol;
+                flux_dn[idx] += flux_dir[idx];
             }
         }
         else
@@ -238,7 +236,6 @@ void sw_adding_kernel(
             albedo[sfc_idx_3d] = sfc_alb_dif[sfc_idx_2d];
             src[sfc_idx_3d] = source_sfc[sfc_idx_2d];
 
-            #pragma unroll loop_unroll_factor_nlay
             for (int ilay=0; ilay<nlay; ++ilay)
             {
                 const int lay_idx  = icol + ilay*ncol + igpt*ncol*nlay;
@@ -250,35 +247,31 @@ void sw_adding_kernel(
                 src[lev_idx2] = source_up[lay_idx] + t_dif[lay_idx]*denom[lay_idx]*
                                                      (src[lev_idx1]+albedo[lev_idx1]*source_dn[lay_idx]);
             }
+            const int top_idx = icol + nlay*ncol + igpt*(nlay+1)*ncol;
+            flux_up[top_idx] = flux_dn[top_idx] *albedo[top_idx] + src[top_idx];
 
-            for (int ilay=nlay; ilay >= -1; --ilay)
+            for (int ilay=nlay-1; ilay >= 0; --ilay)
             {
-                const int lay_idx  = icol + ilay*ncol + igpt*nlay*ncol;
-                const int lev_idx1 = icol + ilay*ncol + igpt*(nlay+1)*ncol;
-                const int lev_idx2 = icol + (ilay+1)*ncol + igpt*(nlay+1)*ncol;
-
-                if (ilay == nlay) {
-                    flux_up[lay_idx] = flux_dn[lay_idx] * albedo[lay_idx] + src[lay_idx];
-                } else {
-                    if (ilay >= 0) {
-                        flux_dn[lev_idx1] = (t_dif[lay_idx]*flux_dn[lev_idx2] +
-                                             r_dif[lay_idx]*src[lev_idx1] +
-                                             source_dn[lay_idx]) * denom[lay_idx];
-                        flux_up[lev_idx1] = flux_dn[lev_idx1] * albedo[lev_idx1] + src[lev_idx1];
-                    }
-
-                    flux_dn[lev_idx2] += flux_dir[lev_idx2];
-
-                }
-
+                    const int lev_idx1 = icol + ilay*ncol + igpt*(nlay+1)*ncol;
+                    const int lev_idx2 = icol + (ilay+1)*ncol + igpt*(nlay+1)*ncol;
+                    const int lay_idx = icol + ilay*ncol + igpt*nlay*ncol;
+                    flux_dn[lev_idx1] = (t_dif[lay_idx]*flux_dn[lev_idx2] +
+                                         r_dif[lay_idx]*src[lev_idx1] +
+                                         source_dn[lay_idx]) * denom[lay_idx];
+                    flux_up[lev_idx1] = flux_dn[lev_idx1] * albedo[lev_idx1] + src[lev_idx1];
+            }
+            for (int ilay=nlay; ilay >= 0; --ilay)
+            {
+                const int idx = icol + ilay*ncol + igpt*(nlay+1)*ncol;
+                flux_dn[idx] += flux_dir[idx];
             }
         }
     }
 }
 
-template<typename TF, BOOL_TYPE top_at_1> __global__
+template<typename TF> __global__
 void sw_source_kernel(
-        const int ncol, const int nlay, const int ngpt, const BOOL_TYPE _top_at_1,
+        const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
         TF* __restrict__ r_dir, TF* __restrict__ t_dir, TF* __restrict__ t_noscat,
         const TF* __restrict__ sfc_alb_dir, TF* __restrict__ source_up, TF* __restrict__ source_dn,
         TF* __restrict__ source_sfc, TF* __restrict__ flux_dir)
@@ -311,9 +304,9 @@ void sw_source_kernel(
                 const int idx_lay  = icol + ilay*ncol + igpt*nlay*ncol;
                 const int idx_lev1 = icol + (ilay)*ncol + igpt*(nlay+1)*ncol;
                 const int idx_lev2 = icol + (ilay+1)*ncol + igpt*(nlay+1)*ncol;
-                source_up[idx_lay] = r_dir[idx_lay] * flux_dir[idx_lev2];   //uses updated flux_dir from previous iteration
-                source_dn[idx_lay] = t_dir[idx_lay] * flux_dir[idx_lev2];   //uses updated flux_dir from previous
-                flux_dir[idx_lev1] = t_noscat[idx_lay] * flux_dir[idx_lev2];//updates flux_dir for 0 to nlay-1
+                source_up[idx_lay] = r_dir[idx_lay] * flux_dir[idx_lev2];
+                source_dn[idx_lay] = t_dir[idx_lay] * flux_dir[idx_lev2];
+                flux_dir[idx_lev1] = t_noscat[idx_lay] * flux_dir[idx_lev2];
 
             }
             const int sfc_idx = icol + igpt*ncol;
