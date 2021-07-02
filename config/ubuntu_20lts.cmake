@@ -7,7 +7,7 @@ else()
   set(ENV{CXX} g++) # C++ compiler for serial build
 endif()
 
-set(USER_CXX_FLAGS "-std=c++14")
+set(USER_CXX_FLAGS "-std=c++17")
 set(USER_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
 set(USER_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wno-unknown-pragmas")
 set(USER_FC_FLAGS "-fdefault-real-8 -fdefault-double-8 -fPIC -ffixed-line-length-none -fno-range-check")
@@ -30,7 +30,7 @@ if(USECUDA)
   set(CUFFT_LIB "/usr/local/cuda/lib64/libcufft.so")
   set(LIBS ${LIBS} ${CUFFT_LIB} -rdynamic )
   set(USER_CUDA_NVCC_FLAGS "-arch=sm_70")
-  list(APPEND CUDA_NVCC_FLAGS " -std=c++14")
+  list(APPEND CUDA_NVCC_FLAGS " -std=c++17")
   set(USER_CUDA_NVCC_FLAGS_RELEASE "-Xptxas -O3")
 endif()
 
