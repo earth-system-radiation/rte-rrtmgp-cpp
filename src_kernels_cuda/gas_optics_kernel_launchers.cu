@@ -124,20 +124,31 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g,
             Tuner_map& tunings)
     {
-        const int block_col = 32;
-        const int block_lay = 1;
-        const int block_gpt = 32;
-
-        const int grid_col = ncol/block_col + (ncol%block_col > 0);
-        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
-
-        dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
-        dim3 block_gpu(block_col, block_lay, block_gpt);
-
         TF tmin = std::numeric_limits<TF>::min();
 
-        combine_and_reorder_2str_kernel<<<grid_gpu, block_gpu>>>(
+        dim3 grid{ncol, nlay, ngpt}, block;
+
+        if (tunings.count("combine_and_reorder_2str_kernel") == 0)
+        {
+            std::tie(grid, block) = tune_kernel(
+                "combine_and_reorder_2str_kernel",
+                {ncol, nlay, ngpt},
+                {1, 2, 4, 8, 16, 24, 32, 48, 64, 96}, {1, 2, 4}, {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
+                combine_and_reorder_2str_kernel<TF>,
+                ncol, nlay, ngpt, tmin,
+                tau_abs.ptr(), tau_rayleigh.ptr(),
+                tau.ptr(), ssa.ptr(), g.ptr());
+
+            tunings["combine_and_reorder_2str_kernel"].first = grid;
+            tunings["combine_and_reorder_2str_kernel"].second = block;
+        }
+        else
+        {
+            grid = tunings["combine_and_reorder_2str_kernel"].first;
+            block = tunings["combine_and_reorder_2str_kernel"].second;
+        }
+
+        combine_and_reorder_2str_kernel<<<grid, block>>>(
                 ncol, nlay, ngpt, tmin,
                 tau_abs.ptr(), tau_rayleigh.ptr(),
                 tau.ptr(), ssa.ptr(), g.ptr());
