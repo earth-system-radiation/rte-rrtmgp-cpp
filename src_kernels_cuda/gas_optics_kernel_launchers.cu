@@ -162,7 +162,7 @@ namespace rrtmgp_kernel_launcher_cuda
             std::tie(grid, block) = tune_kernel(
                 "compute_tau_rayleigh_kernel",
                 {ngpt, nlay, ncol},
-                {1, 2, 4, 8, 16, 24, 32, 64}, {1, 2, 4, 8, 16, 24, 32, 64}, {1, 2, 4, 8, 16, 24, 32, 64},
+                {16, 24, 32, 48, 64, 96}, {1, 2, 4}, {1, 2, 4, 8, 16},
                 compute_tau_rayleigh_kernel<TF>,
                 ncol, nlay, nbnd, ngpt,
                 ngas, nflav, neta, npres, ntemp,
