@@ -1104,7 +1104,7 @@ void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
         const Array_gpu<TF,3>& tau,
         const Array_gpu<TF,3>& tau_rayleigh,
         const bool has_rayleigh,
-        std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props) const
+        std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props)
 {
     int ncol = tau.dim(3);
     int nlay = tau.dim(2);
@@ -1121,7 +1121,8 @@ void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
         rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str(
                 ncol, nlay, ngpt,
                 tau, tau_rayleigh,
-                optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
+                optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g(),
+                combine_and_reorder_map);
     }
 }
 

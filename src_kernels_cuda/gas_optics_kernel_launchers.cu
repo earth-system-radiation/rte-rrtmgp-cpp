@@ -121,7 +121,8 @@ namespace rrtmgp_kernel_launcher_cuda
     void combine_and_reorder_2str(
             const int ncol, const int nlay, const int ngpt,
             const Array_gpu<TF,3>& tau_abs, const Array_gpu<TF,3>& tau_rayleigh,
-            Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g)
+            Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g,
+            Tuner_map& tunings)
     {
         const int block_col = 32;
         const int block_lay = 1;
@@ -135,6 +136,7 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 block_gpu(block_col, block_lay, block_gpt);
 
         TF tmin = std::numeric_limits<TF>::min();
+
         combine_and_reorder_2str_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, tmin,
                 tau_abs.ptr(), tau_rayleigh.ptr(),
@@ -524,7 +526,7 @@ template void rrtmgp_kernel_launcher_cuda::interpolation<float>(
         Array_gpu<float,4>&, Array_gpu<BOOL_TYPE,2>&, Array_gpu<int,4>&, Array_gpu<int,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<float>(
-        const int, const int, const int, const Array_gpu<float,3>&, const Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&);
+        const int, const int, const int, const Array_gpu<float,3>&, const Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, Tuner_map&);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
@@ -567,7 +569,7 @@ template void rrtmgp_kernel_launcher_cuda::interpolation<double>(
         Array_gpu<double,4>&, Array_gpu<BOOL_TYPE,2>&, Array_gpu<int,4>&, Array_gpu<int,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<double>(
-        const int, const int, const int, const Array_gpu<double,3>&, const Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&);
+        const int, const int, const int, const Array_gpu<double,3>&, const Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, Tuner_map&);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
