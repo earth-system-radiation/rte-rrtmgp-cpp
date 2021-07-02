@@ -178,7 +178,7 @@ void lw_solver_noscat_step3_kernel(
 }
 
 #ifndef kernel_tuner
-const int loop_unroll_factor_nlay = 5;
+constexpr int loop_unroll_factor_nlay = 5;
 #endif
 
 
@@ -208,10 +208,10 @@ void sw_adding_kernel(
                 const int lay_idx  = icol + ilay*ncol + igpt*ncol*nlay;
                 const int lev_idx1 = icol + ilay*ncol + igpt*ncol*(nlay+1);
                 const int lev_idx2 = icol + (ilay+1)*ncol + igpt*ncol*(nlay+1);
-                TF denom = TF(1.)/(TF(1.) - r_dif[lay_idx] * albedo[lev_idx2]);
+                denom[lay_idx] = TF(1.)/(TF(1.) - r_dif[lay_idx] * albedo[lev_idx2]);
                 albedo[lev_idx1] = r_dif[lay_idx] + t_dif[lay_idx] * t_dif[lay_idx]
-                                                  * albedo[lev_idx2] * denom;
-                src[lev_idx1] = source_up[lay_idx] + t_dif[lay_idx] * denom *
+                                                  * albedo[lev_idx2] * denom[lay_idx];
+                src[lev_idx1] = source_up[lay_idx] + t_dif[lay_idx] * denom[lay_idx] *
                                 (src[lev_idx2] + albedo[lev_idx2] * source_dn[lay_idx]);
             }
             const int top_idx = icol + igpt*(nlay+1)*ncol;
@@ -223,10 +223,9 @@ void sw_adding_kernel(
                 const int lev_idx2 = icol + (ilay-1)*ncol + igpt*(nlay+1)*ncol;
                 const int lay_idx = icol + (ilay-1)*ncol + igpt*(nlay)*ncol;
                 if (ilay < (nlay+1)) {
-                    TF denom = TF(1.)/(TF(1.) - r_dif[lay_idx] * albedo[icol + (ilay+1)*ncol + igpt*ncol*(nlay+1)]);
                     flux_dn[lev_idx1] = (t_dif[lay_idx]*flux_dn[lev_idx2] +
                                          r_dif[lay_idx]*src[lev_idx1] +
-                                         source_dn[lay_idx]) * denom;
+                                         source_dn[lay_idx]) * denom[lay_idx];
                     flux_up[lev_idx1] = flux_dn[lev_idx1] * albedo[lev_idx1] + src[lev_idx1];
                 }
                 flux_dn[lev_idx2] += flux_dir[lev_idx2];
@@ -245,10 +244,10 @@ void sw_adding_kernel(
                 const int lay_idx  = icol + ilay*ncol + igpt*ncol*nlay;
                 const int lev_idx1 = icol + ilay*ncol + igpt*ncol*(nlay+1);
                 const int lev_idx2 = icol + (ilay+1)*ncol + igpt*ncol*(nlay+1);
-                TF ldenom = TF(1.)/(TF(1.) - r_dif[lay_idx] * albedo[lev_idx1]);
+                denom[lay_idx] = TF(1.)/(TF(1.) - r_dif[lay_idx] * albedo[lev_idx1]);
                 albedo[lev_idx2] = r_dif[lay_idx] + (t_dif[lay_idx] * t_dif[lay_idx] *
-                                                     albedo[lev_idx1] * ldenom);
-                src[lev_idx2] = source_up[lay_idx] + t_dif[lay_idx]*ldenom*
+                                                     albedo[lev_idx1] * denom[lay_idx]);
+                src[lev_idx2] = source_up[lay_idx] + t_dif[lay_idx]*denom[lay_idx]*
                                                      (src[lev_idx1]+albedo[lev_idx1]*source_dn[lay_idx]);
             }
 
@@ -262,10 +261,9 @@ void sw_adding_kernel(
                     flux_up[lay_idx] = flux_dn[lay_idx] * albedo[lay_idx] + src[lay_idx];
                 } else {
                     if (ilay >= 0) {
-                        TF ldenom = TF(1.)/(TF(1.) - r_dif[lay_idx] * albedo[lev_idx1]);
                         flux_dn[lev_idx1] = (t_dif[lay_idx]*flux_dn[lev_idx2] +
                                              r_dif[lay_idx]*src[lev_idx1] +
-                                             source_dn[lay_idx]) * ldenom;
+                                             source_dn[lay_idx]) * denom[lay_idx];
                         flux_up[lev_idx1] = flux_dn[lev_idx1] * albedo[lev_idx1] + src[lev_idx1];
                     }
 
