@@ -560,6 +560,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
 
     private:
         Tuner_map compute_gas_taus_map;
+        Tuner_map compute_tau_rayleigh_map;
         Tuner_map source_map;
 };
 #endif

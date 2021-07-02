@@ -152,21 +152,39 @@ namespace rrtmgp_kernel_launcher_cuda
             int idx_h2o, const Array_gpu<TF,2>& col_dry, const Array_gpu<TF,3>& col_gas,
             const Array_gpu<TF,5>& fminor, const Array_gpu<int,4>& jeta,
             const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
-            Array_gpu<TF,3>& tau_rayleigh)
+            Array_gpu<TF,3>& tau_rayleigh,
+            Tuner_map& tunings)
     {
-        // Call the kernel.
-        const int block_gpt = 32;
-        const int block_lay = 1;
-        const int block_col = 4;
+        dim3 grid{ngpt, nlay, ncol}, block;
 
-        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
-        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        if (tunings.count("compute_tau_rayleigh_kernel") == 0)
+        {
+            std::tie(grid, block) = tune_kernel(
+                "compute_tau_rayleigh_kernel",
+                {ngpt, nlay, ncol},
+                {1, 2, 4, 8, 16, 24, 32, 64}, {1, 2, 4, 8, 16, 24, 32, 64}, {1, 2, 4, 8, 16, 24, 32, 64},
+                compute_tau_rayleigh_kernel<TF>,
+                ncol, nlay, nbnd, ngpt,
+                ngas, nflav, neta, npres, ntemp,
+                gpoint_flavor.ptr(),
+                gpoint_bands.ptr(),
+                band_lims_gpt.ptr(),
+                krayl.ptr(),
+                idx_h2o, col_dry.ptr(), col_gas.ptr(),
+                fminor.ptr(), jeta.ptr(),
+                tropo.ptr(), jtemp.ptr(),
+                tau_rayleigh.ptr());
 
-        dim3 grid_gpu(grid_gpt, grid_lay, grid_col);
-        dim3 block_gpu(block_gpt, block_lay, block_col);
+            tunings["compute_tau_rayleigh_kernel"].first = grid;
+            tunings["compute_tau_rayleigh_kernel"].second = block;
+        }
+        else
+        {
+            grid = tunings["compute_tau_rayleigh_kernel"].first;
+            block = tunings["compute_tau_rayleigh_kernel"].second;
+        }
 
-        compute_tau_rayleigh_kernel<<<grid_gpu, block_gpu>>>(
+        compute_tau_rayleigh_kernel<<<grid, block>>>(
                 ncol, nlay, nbnd, ngpt,
                 ngas, nflav, neta, npres, ntemp,
                 gpoint_flavor.ptr(),
@@ -279,7 +297,6 @@ namespace rrtmgp_kernel_launcher_cuda
         int idx_tropo = 1;
 
         dim3 grid_gpu_min_1{1, nlay, ncol}, block_gpu_min_1;
-
 
         if (tunings.count("compute_tau_minor_absorption_kernel_lower") == 0)
         {
@@ -513,7 +530,7 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
         const Array_gpu<int,2>&, const Array_gpu<int,1>&, const Array_gpu<int,2>&, const Array_gpu<float,4>&, int, const Array_gpu<float,2>&,
         const Array_gpu<float,3>&, const Array_gpu<float,5>&, const Array_gpu<int,4>&, const Array_gpu<BOOL_TYPE,2>&,
-        const Array_gpu<int,2>&, Array_gpu<float,3>&);
+        const Array_gpu<int,2>&, Array_gpu<float,3>&, Tuner_map& tunings);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const int, const int, const int, const int, const int, const int,
         const int, const int, const int, const int, const int, const int, const int, const int,
@@ -556,7 +573,7 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
         const Array_gpu<int,2>&, const Array_gpu<int,1>&, const Array_gpu<int,2>&, const Array_gpu<double,4>&, int, const Array_gpu<double,2>&,
         const Array_gpu<double,3>&, const Array_gpu<double,5>&, const Array_gpu<int,4>&, const Array_gpu<BOOL_TYPE,2>&,
-        const Array_gpu<int,2>&, Array_gpu<double,3>&);
+        const Array_gpu<int,2>&, Array_gpu<double,3>&, Tuner_map& tunings);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<double>(const int, const int, const int, const int, const int, const int,
         const int, const int, const int, const int, const int, const int, const int, const int,

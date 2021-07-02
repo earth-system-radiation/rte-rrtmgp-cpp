@@ -86,7 +86,8 @@ namespace rrtmgp_kernel_launcher_cuda
             int idx_h2o, const Array_gpu<TF,2>& col_dry, const Array_gpu<TF,3>& col_gas,
             const Array_gpu<TF,5>& fminor, const Array_gpu<int,4>& jeta,
             const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
-            Array_gpu<TF,3>& tau_rayleigh);
+            Array_gpu<TF,3>& tau_rayleigh,
+            Tuner_map& tunings);
 
     template<typename TF>
     void compute_tau_absorption(

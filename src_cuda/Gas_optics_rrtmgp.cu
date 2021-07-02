@@ -1091,7 +1091,8 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 krayl_gpu,
                 idx_h2o, col_dry, col_gas,
                 fminor, jeta, tropo, jtemp,
-                tau_rayleigh);
+                tau_rayleigh,
+                compute_tau_rayleigh_map);
     }
 
     combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
