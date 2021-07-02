@@ -1114,7 +1114,8 @@ void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
     {
         // CvH for 2 stream and n-stream zero the g and ssa.
         rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-                ncol, nlay, ngpt, tau, optical_props->get_tau());
+                ncol, nlay, ngpt, tau, optical_props->get_tau(),
+                combine_and_reorder_map);
     }
     else
     {
@@ -1171,13 +1172,13 @@ void Gas_optics_rrtmgp_gpu<TF>::source(
             ncol, ngpt, sfc_source_jac, sources.get_sfc_source_jac());
 
     rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-            ncol, nlay, ngpt, lay_source_t, sources.get_lay_source());
+            ncol, nlay, ngpt, lay_source_t, sources.get_lay_source(), source_map);
 
     rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-            ncol, nlay, ngpt, lev_source_inc_t, sources.get_lev_source_inc());
+            ncol, nlay, ngpt, lev_source_inc_t, sources.get_lev_source_inc(), source_map);
 
     rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-            ncol, nlay, ngpt, lev_source_dec_t, sources.get_lev_source_dec());
+            ncol, nlay, ngpt, lev_source_dec_t, sources.get_lev_source_dec(), source_map);
 }
 
 

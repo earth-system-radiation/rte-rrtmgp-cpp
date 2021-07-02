@@ -18,21 +18,34 @@ namespace
 namespace rrtmgp_kernel_launcher_cuda
 {
     template<typename TF>
-    void reorder123x321(const int ni, const int nj, const int nk,
-                        const Array_gpu<TF,3>& arr_in, Array_gpu<TF,3>& arr_out)
+    void reorder123x321(
+            const int ni, const int nj, const int nk,
+            const Array_gpu<TF,3>& arr_in, Array_gpu<TF,3>& arr_out,
+            Tuner_map& tunings)
     {
-        const int block_i = 8;
-        const int block_j = 4;
-        const int block_k = 16;
+        dim3 grid{ni, nj, nk}, block;
 
-        const int grid_i = ni/block_i + (ni%block_i > 0);
-        const int grid_j = nj/block_j + (nj%block_j > 0);
-        const int grid_k = nk/block_k + (nk%block_k > 0);
+        if (tunings.count("reorder123x321_kernel") == 0)
+        {
+            std::tie(grid, block) = tune_kernel(
+                "reorder123x321_kernel",
+                {ni, nj, nk},
+                {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
+                {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
+                {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
+                reorder123x321_kernel<TF>,
+                ni, nj, nk, arr_in.ptr(), arr_out.ptr());
 
-        dim3 grid_gpu(grid_i, grid_j, grid_k);
-        dim3 block_gpu(block_i, block_j, block_k);
+            tunings["reorder123x321_kernel"].first = grid;
+            tunings["reorder123x321_kernel"].second = block;
+        }
+        else
+        {
+            grid = tunings["reorder123x321_kernel"].first;
+            block = tunings["reorder123x321_kernel"].second;
+        }
 
-        reorder123x321_kernel<<<grid_gpu, block_gpu>>>(
+        reorder123x321_kernel<<<grid, block>>>(
                 ni, nj, nk, arr_in.ptr(), arr_out.ptr());
     }
 
@@ -524,7 +537,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
 
 #ifdef RTE_RRTMGP_SINGLE_PRECISION
-template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, const Array_gpu<float,3>&, Array_gpu<float,3>&);
+template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, const Array_gpu<float,3>&, Array_gpu<float,3>&, Tuner_map&);
 template void rrtmgp_kernel_launcher_cuda::reorder12x21<float>(const int, const int, const Array_gpu<float,2>&, Array_gpu<float,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::zero_array<float>(const int, const int, const int, Array_gpu<float,3>&);
@@ -566,7 +579,7 @@ template void rrtmgp_kernel_launcher_cuda::Planck_source<float>(const int ncol, 
         Array_gpu<float,3>& lev_src_dec, Array_gpu<float,2>& sfc_src_jac, Tuner_map& tunings);
 
 #else
-template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array_gpu<double,3>&, Array_gpu<double,3>&);
+template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array_gpu<double,3>&, Array_gpu<double,3>&, Tuner_map&);
 
 template void rrtmgp_kernel_launcher_cuda::reorder12x21<double>(const int, const int, const Array_gpu<double,2>&, Array_gpu<double,2>&);
 
