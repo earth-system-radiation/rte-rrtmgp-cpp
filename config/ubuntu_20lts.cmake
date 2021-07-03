@@ -29,7 +29,10 @@ if(USECUDA)
   set(USER_CUDA_FLAGS "-arch=sm_70 -std=c++17")
   set(USER_CUDA_FLAGS_RELEASE "-Xptxas -O3")
   set(USER_CUDA_FLAGS_DEBUG "-Xptxas -O3 -DCUDACHECKS")
+
+
+
+
 endif()
 
-add_definitions(-DRESTRICTKEYWORD=__restrict__)
 add_definitions(-DRTE_RRTMGP_USE_CBOOL)
