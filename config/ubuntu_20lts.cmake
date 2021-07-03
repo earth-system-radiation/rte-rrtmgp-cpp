@@ -27,7 +27,6 @@ set(INCLUDE_DIRS ${FFTW_INCLUDE_DIR} ${NETCDF_INCLUDE_DIR})
 
 if(USECUDA)
   set(USER_CUDA_FLAGS "-arch=sm_70 -std=c++17")
-  list(APPEND CUDA_NVCC_FLAGS " -std=c++17")
   set(USER_CUDA_FLAGS_RELEASE "-Xptxas -O3")
   set(USER_CUDA_FLAGS_DEBUG "-Xptxas -O3 -DCUDACHECKS")
 endif()
