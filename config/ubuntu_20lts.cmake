@@ -31,6 +31,7 @@ if(USECUDA)
   set(USER_CUDA_FLAGS_DEBUG "-Xptxas -O3 -DCUDACHECKS")
 
 
+
 endif()
 
 

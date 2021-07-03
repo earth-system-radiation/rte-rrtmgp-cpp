@@ -5,4 +5,4 @@ FILE(GLOB sourcefiles
 
 include_directories("../include" SYSTEM ${INCLUDE_DIRS})
 
-cuda_add_library(rte_rrtmgp_kernels_cuda STATIC ${sourcefiles})
+add_library(rte_rrtmgp_kernels_cuda STATIC ${sourcefiles})
