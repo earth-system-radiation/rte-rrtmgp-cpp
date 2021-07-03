@@ -26,12 +26,10 @@ set(LIBS ${FFTW_LIB} ${FFTWF_LIB} ${NETCDF_LIB_C} ${HDF5_LIB_2} ${HDF5_LIB_1} ${
 set(INCLUDE_DIRS ${FFTW_INCLUDE_DIR} ${NETCDF_INCLUDE_DIR})
 
 if(USECUDA)
-  set(CUDA_PROPAGATE_HOST_FLAGS OFF)
-  set(CUFFT_LIB "/usr/local/cuda/lib64/libcufft.so")
-  set(LIBS ${LIBS} ${CUFFT_LIB} -rdynamic )
-  set(USER_CUDA_NVCC_FLAGS "-arch=sm_70")
+  set(USER_CUDA_FLAGS "-arch=sm_70 -std=c++17")
   list(APPEND CUDA_NVCC_FLAGS " -std=c++17")
-  set(USER_CUDA_NVCC_FLAGS_RELEASE "-Xptxas -O3")
+  set(USER_CUDA_FLAGS_RELEASE "-Xptxas -O3")
+  set(USER_CUDA_FLAGS_DEBUG "-Xptxas -O3 -DCUDACHECKS")
 endif()
 
 add_definitions(-DRESTRICTKEYWORD=__restrict__)

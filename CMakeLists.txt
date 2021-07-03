@@ -35,27 +35,16 @@ else()
 endif()
 
 # Start the project only after the system specific settings are loaded.
-project(rte-rrtmgp-cpp C CXX Fortran)
-
-# Display status messages for MPI set precompiler flags.
-if(USEMPI)
-  message(STATUS "MPI: Enabled.")
-  # add the necessary precompiler flag
-  add_definitions("-DUSEMPI")
+if(USECUDA)
+  project(rte-rrtmgp-cpp C CXX Fortran CUDA)
 else()
-  message(STATUS "MPI: Disabled.")
+  project(rte-rrtmgp-cpp C CXX Fortran)
 endif()
 
 # Load the CUDA module in case CUDA is enabled and display status message.
 if(USECUDA)
   message(STATUS "CUDA: Enabled.")
-  find_package(CUDA)
   add_definitions("-DUSECUDA")
-
-  # Add CUDA debug definition, to enforce CUDA API and kernel checks.
-  if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
-    add_definitions("-DCUDACHECKS")
-  endif()
 else()
   message(STATUS "CUDA: Disabled.")
 endif()
@@ -85,16 +74,17 @@ if(NOT HASCACHE)
     "Flags used by the Fortran-compiler during release builds." FORCE)
 
   if(USECUDA)
-    set(CUDA_NVCC_FLAGS ${USER_CUDA_NVCC_FLAGS} CACHE STRING
+    set(CMAKE_CUDA_FLAGS ${USER_CUDA_FLAGS} CACHE STRING
       "Flags used by the CXX-compiler during all build types." FORCE)
-    set(CUDA_NVCC_FLAGS_DEBUG ${USER_CUDA_NVCC_FLAGS_DEBUG} CACHE STRING
+    set(CMAKE_CUDA_FLAGS_DEBUG ${USER_CUDA_FLAGS_DEBUG} CACHE STRING
       "Flags used by the CXX-compiler during debug builds." FORCE)
-    set(CUDA_NVCC_FLAGS_RELEASE ${USER_CUDA_NVCC_FLAGS_RELEASE} CACHE STRING
+    set(CMAKE_CUDA_FLAGS_RELEASE ${USER_CUDA_FLAGS_RELEASE} CACHE STRING
       "Flags used by the CXX-compiler during release builds." FORCE)
   endif()
 
   message(STATUS "Build Type: " ${CMAKE_BUILD_TYPE})
   set(HASCACHE TRUE CACHE BOOL "CMakeCache.txt created." FORCE)
+
   # Make sure that ccmake only contains build type.
   mark_as_advanced(HASCACHE)
   mark_as_advanced(CMAKE_INSTALL_PREFIX)
@@ -110,9 +100,9 @@ else()
 endif()
 if(USECUDA)
   if(CMAKE_BUILD_TYPE STREQUAL "RELEASE")
-    message(STATUS "NVCC-compiler flags: " ${CUDA_NVCC_FLAGS} " " ${CUDA_NVCC_FLAGS_RELEASE})
+    message(STATUS "NVCC-compiler flags: " ${CMAKE_CUDA_FLAGS} " " ${CMAKE_CUDA_FLAGS_RELEASE})
   else()
-    message(STATUS "NVCC-compiler flags: " ${CUDA_NVCC_FLAGS} " " ${CUDA_NVCC_FLAGS_DEBUG})
+    message(STATUS "NVCC-compiler flags: " ${CMAKE_CUDA_FLAGS} " " ${CMAKE_CUDA_FLAGS_DEBUG})
   endif()
 endif()
 
