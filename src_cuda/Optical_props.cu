@@ -26,6 +26,7 @@
 #include "Array.h"
 #include "rrtmgp_kernels.h"
 
+
 namespace
 {
     template<typename TF>__global__
@@ -36,12 +37,14 @@ namespace
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
         const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
         if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
         {
             const int idx = icol + ilay*ncol + igpt*ncol*nlay;
             tau1[idx] = tau2[idx]+tau2[idx];
         }
     }
+
 
     template<typename TF>__global__
     void increment_2stream_by_2stream_kernel(
@@ -52,6 +55,7 @@ namespace
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
         const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
         if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
         {
             const int idx = icol + ilay*ncol + igpt*ncol*nlay;
@@ -62,6 +66,7 @@ namespace
             tau1[idx] = tau12;
         }
     }
+
 
     template<typename TF>__global__
     void inc_1scalar_by_1scalar_bybnd_kernel(
@@ -85,6 +90,7 @@ namespace
         }
     }
 
+
     template<typename TF>__global__
     void inc_2stream_by_2stream_bybnd_kernel(
                 const int ncol, const int nlay, const int ngpt, const TF eps,
@@ -95,16 +101,19 @@ namespace
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
         const int ibnd = blockIdx.z*blockDim.z + threadIdx.z;
+
         if ( (icol < ncol) && (ilay < nlay) && (ibnd < nbnd) )
         {
             const int gpt_start = band_lims_gpt[ibnd*2]-1;
             const int gpt_end = band_lims_gpt[ibnd*2+1];
+
             for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
             {
                 const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
                 const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
                 const TF tau12 = tau1[idx_gpt] + tau2[idx_bnd];
                 const TF tauscat12 = tau1[idx_gpt] * ssa1[idx_gpt] + tau2[idx_bnd] * ssa2[idx_bnd];
+
                 g1[idx_gpt] = (tau1[idx_gpt] * ssa1[idx_gpt] * g1[idx_gpt] +
                                 tau2[idx_bnd] * ssa2[idx_bnd] * g2[idx_bnd]) / max(tauscat12, eps);
                 ssa1[idx_gpt] = tauscat12 / max(eps, tau12);
@@ -112,6 +121,7 @@ namespace
             }
         }
     }
+
 
     template<typename TF>__global__
     void delta_scale_2str_k_kernel(
@@ -121,6 +131,7 @@ namespace
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
         const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
         if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
         {
             const int idx = icol + ilay*ncol + igpt*nlay*ncol;
@@ -196,27 +207,6 @@ Optical_props_1scl_gpu<TF>::Optical_props_1scl_gpu(
     tau({ncol, nlay, this->get_ngpt()})
 {}
 
-//template<typename TF>
-//void Optical_props_1scl_gpu<TF>::set_subset(
-//        const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-//        const int col_s, const int col_e)
-//{
-//    for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-//        for (int ilay=1; ilay<=tau.dim(2); ++ilay)
-//            for (int icol=col_s; icol<=col_e; ++icol)
-//                tau.copy({icol, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol-col_s+1, ilay, igpt});
-//}
-//
-//template<typename TF>
-//void Optical_props_1scl_gpu<TF>::get_subset(
-//        const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-//        const int col_s, const int col_e)
-//{
-//    for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-//        for (int ilay=1; ilay<=tau.dim(2); ++ilay)
-//            for (int icol=col_s; icol<=col_e; ++icol)
-//                tau.copy({icol-col_s+1, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol, ilay, igpt});
-//}
 
 template<typename TF>
 Optical_props_2str_gpu<TF>::Optical_props_2str_gpu(
@@ -229,35 +219,6 @@ Optical_props_2str_gpu<TF>::Optical_props_2str_gpu(
     g  ({ncol, nlay, this->get_ngpt()})
 {}
 
-//template<typename TF>
-//void Optical_props_2str_gpu<TF>::set_subset(
-//        const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-//        const int col_s, const int col_e)
-//{
-//    for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-//        for (int ilay=1; ilay<=tau.dim(2); ++ilay)
-//            for (int icol=col_s; icol<=col_e; ++icol)
-//            {
-//                tau.copy({icol, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol-col_s+1, ilay, igpt});
-//                tau.copy({icol, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol-col_s+1, ilay, igpt});
-//                ssa.copy({icol, ilay, igpt}, optical_props_gpu_sub->get_ssa(), {icol-col_s+1, ilay, igpt});
-//            }
-//}
-//
-//template<typename TF>
-//void Optical_props_2str_gpu<TF>::get_subset(
-//        const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-//        const int col_s, const int col_e)
-//{
-//    for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-//        for (int ilay=1; ilay<=tau.dim(2); ++ilay)
-//            for (int icol=col_s; icol<=col_e; ++icol)
-//            {
-//                tau.copy({icol-col_s+1, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol, ilay, igpt});
-//                ssa.copy({icol-col_s+1, ilay, igpt}, optical_props_gpu_sub->get_ssa(), {icol, ilay, igpt});
-//                g  .copy({icol-col_s+1, ilay, igpt}, optical_props_gpu_sub->get_g  (), {icol, ilay, igpt});
-//            }
-//}
 
 namespace rrtmgp_kernel_launcher_cuda
 {
@@ -270,9 +231,9 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay = 16;
         const int block_col = 1;
 
-        const int grid_gpt  = ngpt/block_gpt + (ngpt%block_gpt > 0);
-        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
 
         dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
         dim3 block_gpu(block_col, block_lay, block_gpt);
@@ -281,6 +242,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 ncol, nlay, ngpt,
                 tau_inout.ptr(), tau_in.ptr());
     }
+
 
     template<typename TF> void increment_2stream_by_2stream(
             int ncol, int nlay, int ngpt,
@@ -305,6 +267,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 tau_in.ptr(), ssa_in.ptr(), g_in.ptr());
     }
 
+
     template<typename TF> void inc_1scalar_by_1scalar_bybnd(
             int ncol, int nlay, int ngpt,
             Array_gpu<TF,3>& tau_inout, const Array_gpu<TF,3>& tau_in,
@@ -327,6 +290,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 nbnd, band_lims_gpoint.ptr());
     }
 
+
     template<typename TF> void inc_2stream_by_2stream_bybnd(
             int ncol, int nlay, int ngpt,
             Array_gpu<TF,3>& tau_inout, Array_gpu<TF,3>& ssa_inout, Array_gpu<TF,3>& g_inout,
@@ -338,19 +302,22 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay = 32;
         const int block_col = 1;
 
-        const int grid_bnd  = nbnd/block_bnd + (nbnd%block_bnd > 0);
-        const int grid_lay  = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col  = ncol/block_col + (ncol%block_col > 0);
+        const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
 
         dim3 grid_gpu(grid_col, grid_lay, grid_bnd);
         dim3 block_gpu(block_col, block_lay, block_bnd);
+
         TF eps = std::numeric_limits<TF>::epsilon();
+
         inc_2stream_by_2stream_bybnd_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, eps,
                 tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr(),
                 tau_in.ptr(), ssa_in.ptr(), g_in.ptr(),
                 nbnd, band_lims_gpoint.ptr());
     }
+
 
     template<typename TF> void delta_scale_2str_k(
             int ncol, int nlay, int ngpt,
@@ -366,12 +333,15 @@ namespace rrtmgp_kernel_launcher_cuda
 
         dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
         dim3 block_gpu(block_col, block_lay, block_gpt);
+
         TF eps = std::numeric_limits<TF>::epsilon();
+
         delta_scale_2str_k_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, eps,
                 tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr());
     }
 }
+
 
 template<typename TF>
 void Optical_props_2str_gpu<TF>::delta_scale(const Array_gpu<TF,3>& forward_frac)
@@ -384,6 +354,7 @@ void Optical_props_2str_gpu<TF>::delta_scale(const Array_gpu<TF,3>& forward_frac
             ncol, nlay, ngpt,
             this->get_tau(), this->get_ssa(), this->get_g());
 }
+
 
 template<typename TF>
 void add_to(Optical_props_1scl_gpu<TF>& op_inout, const Optical_props_1scl_gpu<TF>& op_in)
@@ -409,6 +380,7 @@ void add_to(Optical_props_1scl_gpu<TF>& op_inout, const Optical_props_1scl_gpu<T
                 op_inout.get_nband(), op_inout.get_band_lims_gpoint());
     }
 }
+
 
 template<typename TF>
 void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<TF>& op_in)
