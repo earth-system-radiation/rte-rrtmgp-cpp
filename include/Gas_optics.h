@@ -82,7 +82,7 @@ class Gas_optics : public Optical_props<TF>
         virtual TF get_tsi() const = 0;
 };
 
-#ifdef USECUDA
+#ifdef __CUDACC__
 template<typename TF>
 class Gas_optics_gpu : public Optical_props_gpu<TF>
 {

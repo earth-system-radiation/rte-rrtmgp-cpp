@@ -25,9 +25,11 @@
 #ifndef OPTICAL_PROPS_H
 #define OPTICAL_PROPS_H
 
+
 #include <memory>
 #include "Array.h"
 #include "Types.h"
+
 
 template<typename TF>
 class Optical_props
@@ -164,8 +166,17 @@ class Optical_props_2str : public Optical_props_arry<TF>
 template<typename TF> void add_to(Optical_props_1scl<TF>& op_inout, const Optical_props_1scl<TF>& op_in);
 template<typename TF> void add_to(Optical_props_2str<TF>& op_inout, const Optical_props_2str<TF>& op_in);
 
+
 // GPU version of optical props class
-#ifdef USECUDA
+#ifdef __CUDACC__
+
+// Forward declare the classes in order to define add_to before the classes to enable friend function.
+template<typename TF> class Optical_props_1scl_gpu;
+template<typename TF> class Optical_props_2str_gpu;
+template<typename TF> void add_to(Optical_props_1scl_gpu<TF>& op_inout, const Optical_props_1scl_gpu<TF>& op_in);
+template<typename TF> void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<TF>& op_in);
+
+
 template<typename TF>
 class Optical_props_gpu
 {
@@ -279,10 +290,11 @@ class Optical_props_2str_gpu : public Optical_props_arry_gpu<TF>
         Array_gpu<TF,3> tau;
         Array_gpu<TF,3> ssa;
         Array_gpu<TF,3> g;
-};
 
-template<typename TF> void add_to(Optical_props_1scl_gpu<TF>& op_inout, const Optical_props_1scl_gpu<TF>& op_in);
-template<typename TF> void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<TF>& op_in);
+        Tuner_map add_to_map;
+
+        friend void add_to<TF>(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<TF>& op_in);
+};
 #endif
 
 #endif

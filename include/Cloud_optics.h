@@ -75,7 +75,7 @@ class Cloud_optics : public Optical_props<TF>
         Array<TF,2> lut_asyice;
 };
 
-#ifdef USECUDA
+#ifdef __CUDACC__
 template<typename TF>
 class Cloud_optics_gpu : public Optical_props_gpu<TF>
 {
