@@ -112,7 +112,7 @@ namespace optical_props_kernel_launcher_cuda
             int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
             Tuner_map& tunings)
     {
-        dim3 grid{nbnd, nlay, ncol}, block;
+        dim3 grid{ncol, nlay, nbnd}, block;
 
         TF eps = std::numeric_limits<TF>::epsilon();
 
@@ -120,7 +120,7 @@ namespace optical_props_kernel_launcher_cuda
         {
             std::tie(grid, block) = tune_kernel(
                     "inc_2stream_by_2stream_bybnd_kernel",
-                    {nbnd, nlay, ncol},
+                    {ncol, nlay, nbnd},
                     {1, 2, 3, 4, 8, 12, 16, 24},
                     {1, 2, 3, 4, 8, 12, 16, 24},
                     {1, 2, 3, 4, 8, 12, 16, 24},
