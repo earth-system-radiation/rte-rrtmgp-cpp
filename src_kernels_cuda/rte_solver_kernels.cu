@@ -1,7 +1,7 @@
 #include "Types.h"
 
 #ifndef kernel_tuner
-const int loop_unroll_factor_nlay = 5;
+const int loop_unroll_factor_nlay = 4;
 #endif
 
 template<typename TF> __device__ constexpr TF k_min();
@@ -227,15 +227,15 @@ void sw_adding_kernel(
                                                      (src[lev_idx1]+albedo[lev_idx1]*source_dn[lay_idx]);
             }
 
-            for (int ilay=nlay; ilay >= -1; --ilay)
+            const int top_idx = icol + nlay*ncol + igpt*(nlay+1)*ncol;
+            flux_up[top_idx] = flux_dn[top_idx] *albedo[top_idx] + src[top_idx];
+
+            for (int ilay=nlay-1; ilay >= -1; --ilay)
             {
                 const int lay_idx  = icol + ilay*ncol + igpt*nlay*ncol;
                 const int lev_idx1 = icol + ilay*ncol + igpt*(nlay+1)*ncol;
                 const int lev_idx2 = icol + (ilay+1)*ncol + igpt*(nlay+1)*ncol;
 
-                if (ilay == nlay) {
-                    flux_up[lay_idx] = flux_dn[lay_idx] * albedo[lay_idx] + src[lay_idx];
-                } else {
                     if (ilay >= 0) {
                         flux_dn[lev_idx1] = (t_dif[lay_idx]*flux_dn[lev_idx2] +
                                              r_dif[lay_idx]*src[lev_idx1] +
@@ -245,9 +245,8 @@ void sw_adding_kernel(
 
                     flux_dn[lev_idx2] += flux_dir[lev_idx2];
 
-                }
-
             }
+
         }
     }
 }
