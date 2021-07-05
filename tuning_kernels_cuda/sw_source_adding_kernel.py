@@ -143,8 +143,6 @@ if __name__ == '__main__':
     type_bool = np.int8  # = default without `RTE_RRTMGP_USE_CBOOL`
 
     str_float = 'float' if type_float is np.float32 else 'double'
-    include = os.path.abspath('../include')
-    cp = ['-I{}'.format(include)]
 
     ncol = type_int(512)
     nlay = type_int(140)

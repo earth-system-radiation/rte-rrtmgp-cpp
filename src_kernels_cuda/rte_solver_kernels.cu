@@ -514,3 +514,121 @@ void add_fluxes_kernel(
         flux_up_jac[idx] += radn_up_jac[idx];
     }
 }
+
+
+
+template<typename TF> __device__ constexpr TF tmin();
+template<> __forceinline__ __device__ constexpr double tmin() { return 2.2250738585072014e-308; }
+template<> __forceinline__ __device__ constexpr float tmin() { return 1.175494e-38f; }
+
+
+template<typename TF> __device__
+void sw_2stream_function(
+        const int icol, const int ilay, const int igpt,
+        const int ncol, const int nlay, const int ngpt,
+        const TF* __restrict__ tau, const TF* __restrict__ ssa,
+        const TF* __restrict__ g, const TF* __restrict__ mu0,
+        TF* __restrict__ r_dif, TF* __restrict__ t_dif,
+        TF* __restrict__ r_dir, TF* __restrict__ t_dir,
+        TF* __restrict__ t_noscat)
+{
+
+        const int idx = icol + ilay*ncol + igpt*nlay*ncol;
+        const TF mu0_inv = TF(1.)/mu0[icol];
+        const TF gamma1 = (TF(8.) - ssa[idx] * (TF(5.) + TF(3.) * g[idx])) * TF(.25);
+        const TF gamma2 = TF(3.) * (ssa[idx] * (TF(1.) -          g[idx])) * TF(.25);
+        const TF gamma3 = (TF(2.) - TF(3.) * mu0[icol] *          g[idx])  * TF(.25);
+        const TF gamma4 = TF(1.) - gamma3;
+
+        const TF alpha1 = gamma1 * gamma4 + gamma2 * gamma3;
+        const TF alpha2 = gamma1 * gamma3 + gamma2 * gamma4;
+
+        const TF k = sqrt(max((gamma1 - gamma2) * (gamma1 + gamma2), k_min<TF>()));
+        const TF exp_minusktau = exp(-tau[idx] * k);
+        const TF exp_minus2ktau = exp_minusktau * exp_minusktau;
+
+        const TF rt_term = TF(1.) / (k      * (TF(1.) + exp_minus2ktau) +
+                                     gamma1 * (TF(1.) - exp_minus2ktau));
+        r_dif[idx] = rt_term * gamma2 * (TF(1.) - exp_minus2ktau);
+        t_dif[idx] = rt_term * TF(2.) * k * exp_minusktau;
+        *t_noscat = exp(-tau[idx] * mu0_inv);
+
+        const TF k_mu     = k * mu0[icol];
+        const TF k_gamma3 = k * gamma3;
+        const TF k_gamma4 = k * gamma4;
+
+        const TF fact = (abs(TF(1.) - k_mu*k_mu) > tmin<TF>()) ? TF(1.) - k_mu*k_mu : tmin<TF>();
+        const TF rt_term2 = ssa[idx] * rt_term / fact;
+
+        *r_dir = rt_term2  * ((TF(1.) - k_mu) * (alpha2 + k_gamma3)   -
+                                  (TF(1.) + k_mu) * (alpha2 - k_gamma3) * exp_minus2ktau -
+                                   TF(2.) * (k_gamma3 - alpha2 * k_mu)  * exp_minusktau * t_noscat[0]);
+
+        *t_dir = -rt_term2 * ((TF(1.) + k_mu) * (alpha1 + k_gamma4) * t_noscat[0]   -
+                                  (TF(1.) - k_mu) * (alpha1 - k_gamma4) * exp_minus2ktau * t_noscat[0] -
+                                   TF(2.) * (k_gamma4 + alpha1 * k_mu)  * exp_minusktau);
+}
+
+
+template<typename TF, BOOL_TYPE top_at_1> __global__
+void sw_source_2stream_kernel(
+        const int ncol, const int nlay, const int ngpt,
+        const TF* __restrict__ tau, const TF* __restrict__ ssa,
+        const TF* __restrict__ g, const TF* __restrict__ mu0,
+        TF* __restrict__ r_dif, TF* __restrict__ t_dif,
+        const TF* __restrict__ sfc_alb_dir, TF* __restrict__ source_up, TF* __restrict__ source_dn,
+        TF* __restrict__ source_sfc, TF* __restrict__ flux_dir)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+
+    if ( (icol < ncol) && (igpt < ngpt) )
+    {
+        if (top_at_1)
+        {
+            for (int ilay=0; ilay<nlay; ++ilay)
+            {
+
+                TF r_dir, t_dir, t_noscat;
+                sw_2stream_function(icol, ilay, igpt,
+                        ncol, nlay, ngpt,
+                        tau, ssa, g, mu0,
+                        r_dif, t_dif, &r_dir, &t_dir, &t_noscat);
+
+                const int idx_lay  = icol + ilay*ncol + igpt*nlay*ncol;
+                const int idx_lev1 = icol + ilay*ncol + igpt*(nlay+1)*ncol;
+                const int idx_lev2 = icol + (ilay+1)*ncol + igpt*(nlay+1)*ncol;
+                source_up[idx_lay] = r_dir * flux_dir[idx_lev1];
+                source_dn[idx_lay] = t_dir * flux_dir[idx_lev1];
+                flux_dir[idx_lev2] = t_noscat * flux_dir[idx_lev1];
+
+            }
+            const int sfc_idx = icol + igpt*ncol;
+            const int flx_idx = icol + nlay*ncol + igpt*(nlay+1)*ncol;
+            source_sfc[sfc_idx] = flux_dir[flx_idx] * sfc_alb_dir[icol];
+        }
+        else
+        {
+            for (int ilay=nlay-1; ilay>=0; --ilay)
+            {
+                TF r_dir, t_dir, t_noscat;
+                sw_2stream_function(icol, ilay, igpt,
+                        ncol, nlay, ngpt,
+                        tau, ssa, g, mu0,
+                        r_dif, t_dif, &r_dir, &t_dir, &t_noscat);
+
+                const int idx_lay  = icol + ilay*ncol + igpt*nlay*ncol;
+                const int idx_lev1 = icol + (ilay)*ncol + igpt*(nlay+1)*ncol;
+                const int idx_lev2 = icol + (ilay+1)*ncol + igpt*(nlay+1)*ncol;
+                source_up[idx_lay] = r_dir * flux_dir[idx_lev2];
+                source_dn[idx_lay] = t_dir * flux_dir[idx_lev2];
+                flux_dir[idx_lev1] = t_noscat * flux_dir[idx_lev2];
+
+            }
+            const int sfc_idx = icol + igpt*ncol;
+            const int flx_idx = icol + igpt*(nlay+1)*ncol;
+            source_sfc[sfc_idx] = flux_dir[flx_idx] * sfc_alb_dir[icol];
+        }
+    }
+}
+
