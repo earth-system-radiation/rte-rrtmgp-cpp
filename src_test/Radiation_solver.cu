@@ -406,29 +406,21 @@ void Radiation_solver_longwave<TF>::solve_gpu(
     int n_blocks = n_col / n_col_block;
     int n_col_block_residual = n_col % n_col_block;
 
-    std::unique_ptr<Optical_props_arry_gpu<TF>> optical_props_subset;
-    std::unique_ptr<Optical_props_arry_gpu<TF>> optical_props_residual;
+    if (!optical_props_subset)
+        optical_props_subset = std::make_unique<Optical_props_1scl_gpu<TF>>(n_col_block, n_lay, *kdist_gpu);
+    if (!sources_subset)
+        sources_subset = std::make_unique<Source_func_lw_gpu<TF>>(n_col_block, n_lay, *kdist_gpu);
 
-    optical_props_subset = std::make_unique<Optical_props_1scl_gpu<TF>>(n_col_block, n_lay, *kdist_gpu);
-
-    std::unique_ptr<Source_func_lw_gpu<TF>> sources_subset;
-    std::unique_ptr<Source_func_lw_gpu<TF>> sources_residual;
-
-    sources_subset = std::make_unique<Source_func_lw_gpu<TF>>(n_col_block, n_lay, *kdist_gpu);
-
-    if (n_col_block_residual > 0)
-    {
+    if (n_col_block_residual > 0 && !optical_props_residual)
         optical_props_residual = std::make_unique<Optical_props_1scl_gpu<TF>>(n_col_block_residual, n_lay, *kdist_gpu);
+    if (n_col_block_residual > 0 && !sources_residual)
         sources_residual = std::make_unique<Source_func_lw_gpu<TF>>(n_col_block_residual, n_lay, *kdist_gpu);
-    }
-
-    std::unique_ptr<Optical_props_1scl_gpu<TF>> cloud_optical_props_subset;
-    std::unique_ptr<Optical_props_1scl_gpu<TF>> cloud_optical_props_residual;
 
     if (switch_cloud_optics)
     {
-        cloud_optical_props_subset = std::make_unique<Optical_props_1scl_gpu<TF>>(n_col_block, n_lay, *cloud_optics_gpu);
-        if (n_col_block_residual > 0)
+        if (!cloud_optical_props_subset)
+            cloud_optical_props_subset = std::make_unique<Optical_props_1scl_gpu<TF>>(n_col_block, n_lay, *cloud_optics_gpu);
+        if (n_col_block_residual > 0 && !cloud_optical_props_residual)
             cloud_optical_props_residual = std::make_unique<Optical_props_1scl_gpu<TF>>(n_col_block_residual, n_lay, *cloud_optics_gpu);
     }
 
@@ -622,20 +614,16 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
     int n_blocks = n_col / n_col_block;
     int n_col_block_residual = n_col % n_col_block;
 
-    std::unique_ptr<Optical_props_arry_gpu<TF>> optical_props_subset;
-    std::unique_ptr<Optical_props_arry_gpu<TF>> optical_props_residual;
-
-    optical_props_subset = std::make_unique<Optical_props_2str_gpu<TF>>(n_col_block, n_lay, *kdist_gpu);
-    if (n_col_block_residual > 0)
+    if (!optical_props_subset)
+        optical_props_subset = std::make_unique<Optical_props_2str_gpu<TF>>(n_col_block, n_lay, *kdist_gpu);
+    if (n_col_block_residual > 0 && !optical_props_residual)
         optical_props_residual = std::make_unique<Optical_props_2str_gpu<TF>>(n_col_block_residual, n_lay, *kdist_gpu);
-
-    std::unique_ptr<Optical_props_2str_gpu<TF>> cloud_optical_props_subset;
-    std::unique_ptr<Optical_props_2str_gpu<TF>> cloud_optical_props_residual;
 
     if (switch_cloud_optics)
     {
-        cloud_optical_props_subset = std::make_unique<Optical_props_2str_gpu<TF>>(n_col_block, n_lay, *cloud_optics_gpu);
-        if (n_col_block_residual > 0)
+        if (!cloud_optical_props_subset)
+            cloud_optical_props_subset = std::make_unique<Optical_props_2str_gpu<TF>>(n_col_block, n_lay, *cloud_optics_gpu);
+        if (n_col_block_residual > 0 && !cloud_optical_props_residual)
             cloud_optical_props_residual = std::make_unique<Optical_props_2str_gpu<TF>>(n_col_block_residual, n_lay, *cloud_optics_gpu);
     }
 

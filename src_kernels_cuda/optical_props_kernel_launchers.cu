@@ -25,6 +25,7 @@
 
 #include "Array.h"
 #include "Types.h"
+#include "tuner.h"
 
 
 namespace
@@ -111,20 +112,34 @@ namespace optical_props_kernel_launcher_cuda
             int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
             Tuner_map& tunings)
     {
-        const int block_bnd = 14;
-        const int block_lay = 32;
-        const int block_col = 1;
-
-        const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
-        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_col = ncol/block_col + (ncol%block_col > 0);
-
-        dim3 grid_gpu(grid_col, grid_lay, grid_bnd);
-        dim3 block_gpu(block_col, block_lay, block_bnd);
+        dim3 grid{nbnd, nlay, ncol}, block;
 
         TF eps = std::numeric_limits<TF>::epsilon();
 
-        inc_2stream_by_2stream_bybnd_kernel<<<grid_gpu, block_gpu>>>(
+        if (tunings.count("inc_2stream_by_2stream_bybnd_kernel") == 0)
+        {
+            std::tie(grid, block) = tune_kernel(
+                    "inc_2stream_by_2stream_bybnd_kernel",
+                    {nbnd, nlay, ncol},
+                    {1, 2, 3, 4, 8, 12, 16, 24},
+                    {1, 2, 3, 4, 8, 12, 16, 24},
+                    {1, 2, 3, 4, 8, 12, 16, 24},
+                    inc_2stream_by_2stream_bybnd_kernel<TF>,
+                    ncol, nlay, ngpt, eps,
+                    tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr(),
+                    tau_in.ptr(), ssa_in.ptr(), g_in.ptr(),
+                    nbnd, band_lims_gpoint.ptr());
+
+            tunings["inc_2stream_by_2stream_bybnd_kernel"].first = grid;
+            tunings["inc_2stream_by_2stream_bybnd_kernel"].second = block;
+        }
+        else
+        {
+            grid = tunings["inc_2stream_by_2stream_bybnd_kernel"].first;
+            block = tunings["inc_2stream_by_2stream_bybnd_kernel"].second;
+        }
+
+        inc_2stream_by_2stream_bybnd_kernel<<<grid, block>>>(
                 ncol, nlay, ngpt, eps,
                 tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr(),
                 tau_in.ptr(), ssa_in.ptr(), g_in.ptr(),
