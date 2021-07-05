@@ -30,6 +30,8 @@
 
 
 
+
+
 // Optical properties per gpoint.
 template<typename TF>
 Optical_props_gpu<TF>::Optical_props_gpu(
@@ -91,27 +93,7 @@ Optical_props_1scl_gpu<TF>::Optical_props_1scl_gpu(
     tau({ncol, nlay, this->get_ngpt()})
 {}
 
-//template<typename TF>
-//void Optical_props_1scl_gpu<TF>::set_subset(
-//        const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-//        const int col_s, const int col_e)
-//{
-//    for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-//        for (int ilay=1; ilay<=tau.dim(2); ++ilay)
-//            for (int icol=col_s; icol<=col_e; ++icol)
-//                tau.copy({icol, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol-col_s+1, ilay, igpt});
-//}
-//
-//template<typename TF>
-//void Optical_props_1scl_gpu<TF>::get_subset(
-//        const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-//        const int col_s, const int col_e)
-//{
-//    for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-//        for (int ilay=1; ilay<=tau.dim(2); ++ilay)
-//            for (int icol=col_s; icol<=col_e; ++icol)
-//                tau.copy({icol-col_s+1, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol, ilay, igpt});
-//}
+
 
 template<typename TF>
 Optical_props_2str_gpu<TF>::Optical_props_2str_gpu(
@@ -123,39 +105,6 @@ Optical_props_2str_gpu<TF>::Optical_props_2str_gpu(
     ssa({ncol, nlay, this->get_ngpt()}),
     g  ({ncol, nlay, this->get_ngpt()})
 {}
-
-//template<typename TF>
-//void Optical_props_2str_gpu<TF>::set_subset(
-//        const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-//        const int col_s, const int col_e)
-//{
-//    for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-//        for (int ilay=1; ilay<=tau.dim(2); ++ilay)
-//            for (int icol=col_s; icol<=col_e; ++icol)
-//            {
-//                tau.copy({icol, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol-col_s+1, ilay, igpt});
-//                tau.copy({icol, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol-col_s+1, ilay, igpt});
-//                ssa.copy({icol, ilay, igpt}, optical_props_gpu_sub->get_ssa(), {icol-col_s+1, ilay, igpt});
-//            }
-//}
-//
-//template<typename TF>
-//void Optical_props_2str_gpu<TF>::get_subset(
-//        const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props_gpu_sub,
-//        const int col_s, const int col_e)
-//{
-//    for (int igpt=1; igpt<=tau.dim(3); ++igpt)
-//        for (int ilay=1; ilay<=tau.dim(2); ++ilay)
-//            for (int icol=col_s; icol<=col_e; ++icol)
-//            {
-//                tau.copy({icol-col_s+1, ilay, igpt}, optical_props_gpu_sub->get_tau(), {icol, ilay, igpt});
-//                ssa.copy({icol-col_s+1, ilay, igpt}, optical_props_gpu_sub->get_ssa(), {icol, ilay, igpt});
-//                g  .copy({icol-col_s+1, ilay, igpt}, optical_props_gpu_sub->get_g  (), {icol, ilay, igpt});
-//            }
-//}
-
-
-
 
 
 

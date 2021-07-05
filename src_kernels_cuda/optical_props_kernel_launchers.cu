@@ -85,6 +85,7 @@ namespace optical_props_kernel_launcher_cuda
             int ncol, int nlay, int ngpt,
             Array_gpu<TF,3>& tau_inout, const Array_gpu<TF,3>& tau_in,
             int nbnd, const Array_gpu<int,2>& band_lims_gpoint)
+
     {
         const int block_bnd = 14;
         const int block_lay = 32;

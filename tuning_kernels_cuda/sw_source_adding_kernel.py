@@ -91,10 +91,10 @@ def tune():
 
     tune_params = OrderedDict()
     tune_params['RTE_RRTMGP_USE_CBOOL'] = [1]
-    tune_params['block_size_x'] = [16, 32, 48, 64, 96, 128, 256, 512]
+    tune_params['block_size_x'] = [32, 48, 64, 96, 128, 256, 512]
     tune_params['block_size_y'] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
-    print(f"Tuning {source_kernel_name}")
+    #print(f"Tuning {source_kernel_name}")
     result, env = kt.tune_kernel(
             source_kernel_name, kernels_src, problem_size,
             source_kernel_args, tune_params, compiler_options=cp,
@@ -120,7 +120,7 @@ def tune():
     adding_answer[-4] = adding_result[-4] # flux_dir
     adding_answer[-3] = adding_result[-3] # albedo
     adding_answer[-2] = adding_result[-2] # src
-    #adding_answer[-1] = adding_result[-1] # denom #removed
+    adding_answer[-1] = adding_result[-1] # denom #removed
 
     print(f"Tuning {adding_kernel_name}")
 
@@ -143,39 +143,37 @@ if __name__ == '__main__':
     type_bool = np.int8  # = default without `RTE_RRTMGP_USE_CBOOL`
 
     str_float = 'float' if type_float is np.float32 else 'double'
-    include = os.path.abspath('../include')
-    cp = ['-I{}'.format(include)]
 
     ncol = type_int(512)
     nlay = type_int(140)
     ngpt = type_int(224)
 
-    top_at_1 = type_bool(1)
+    top_at_1 = type_bool(0)
 
     opt_size = ncol * nlay * ngpt
     flx_size = ncol * (nlay+1) * ngpt
     alb_size = ncol * ngpt
 
     # Input arrays; for this kernel, the values don't matter..
-    flux_up  = np.zeros(flx_size, dtype=type_float)
-    flux_dn  = np.zeros(flx_size, dtype=type_float)
-    flux_dir = np.zeros(flx_size, dtype=type_float)
+    t_noscat = np.random.random(opt_size).astype(type_float)
+    flux_up  = np.random.random(flx_size).astype(type_float)
+    flux_dn  = np.random.random(flx_size).astype(type_float)
+    flux_dir = np.random.random(flx_size).astype(type_float)
 
-    sfc_alb_dir = np.zeros(alb_size, dtype=type_float)
-    sfc_alb_dif = np.zeros(alb_size, dtype=type_float)
+    sfc_alb_dir = np.random.random(alb_size).astype(type_float)
+    sfc_alb_dif = np.random.random(alb_size).astype(type_float)
 
     # Output arrays
-    r_dif = np.zeros(opt_size, dtype=type_float);
-    t_dif = np.zeros(opt_size, dtype=type_float);
-    r_dir = np.zeros(opt_size, dtype=type_float);
-    t_dir = np.zeros(opt_size, dtype=type_float);
-    t_noscat = np.zeros(opt_size, dtype=type_float);
-    source_up = np.zeros(opt_size, dtype=type_float);
-    source_dn = np.zeros(opt_size, dtype=type_float);
-    source_sfc = np.zeros(alb_size, dtype=type_float);
-    albedo = np.zeros(flx_size, dtype=type_float);
-    src = np.zeros(flx_size, dtype=type_float);
-    denom = np.zeros(opt_size, dtype=type_float);
+    r_dif = np.random.random(opt_size).astype(type_float)
+    t_dif = np.random.random(opt_size).astype(type_float)
+    r_dir = np.random.random(opt_size).astype(type_float)
+    t_dir = np.random.random(opt_size).astype(type_float)
+    source_up = np.random.random(opt_size).astype(type_float)
+    source_dn = np.random.random(opt_size).astype(type_float)
+    source_sfc = np.random.random(alb_size).astype(type_float)
+    albedo = np.random.random(flx_size).astype(type_float)
+    src = np.random.random(flx_size).astype(type_float)
+    denom = np.random.random(opt_size).astype(type_float)
 
     source_kernel_args = [ncol, nlay, ngpt, top_at_1, r_dir, t_dir, t_noscat,
                           sfc_alb_dir, source_up, source_dn, source_sfc, flux_dir]
