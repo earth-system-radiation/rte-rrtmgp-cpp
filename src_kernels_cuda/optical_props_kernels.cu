@@ -70,16 +70,19 @@ void increment_2stream_by_2stream_kernel(
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-        const int ibnd = blockIdx.z*blockDim.z + threadIdx.z;
-        if ( (icol < ncol) && (ilay < nlay) && (ibnd < nbnd) )
+        const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
+        if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
         {
-            const int gpt_start = band_lims_gpt[ibnd*2]-1;
-            const int gpt_end = band_lims_gpt[ibnd*2+1];
-            for (int igpt = gpt_start; igpt < gpt_end; ++igpt)
+            for (int ibnd=0; ibnd<nbnd; ++ibnd)
             {
-                const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
-                const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
-                tau1[idx_gpt] = tau1[idx_gpt] + tau2[idx_bnd];
+                if ( ((igpt+1) >= band_lims_gpt[ibnd*2]) && ((igpt+1) <= band_lims_gpt[ibnd*2+1]) )
+                {
+                    const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
+                    const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
+
+                    tau1[idx_gpt] = tau1[idx_gpt] + tau2[idx_bnd];
+                }
             }
         }
     }
