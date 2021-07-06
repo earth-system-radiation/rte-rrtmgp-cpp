@@ -20,6 +20,7 @@
 #include <chrono>
 #include <iomanip>
 
+
 #include "Status.h"
 #include "Netcdf_interface.h"
 #include "Array.h"
@@ -303,7 +304,9 @@ void solve_radiation(int argc, char** argv)
 
 
         // Solve the radiation.
+
         Status::print_message("Solving the longwave radiation.");
+
         Array_gpu<TF,2> p_lay_gpu(p_lay);
         Array_gpu<TF,2> p_lev_gpu(p_lev);
         Array_gpu<TF,2> t_lay_gpu(t_lay);
@@ -316,7 +319,12 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<TF,2> rel_gpu(rel);
         Array_gpu<TF,2> rei_gpu(rei);
 
-        auto time_start = std::chrono::high_resolution_clock::now();
+        cudaEvent_t start;
+        cudaEvent_t stop;
+        cudaEventCreate(&start);
+        cudaEventCreate(&stop);
+
+        cudaEventRecord(start, 0);
 
         rad_lw.solve_gpu(
                 switch_fluxes,
@@ -334,10 +342,13 @@ void solve_radiation(int argc, char** argv)
                 lw_flux_up, lw_flux_dn, lw_flux_net,
                 lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
 
-        auto time_end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+        cudaEventRecord(stop, 0);
+        cudaEventSynchronize(stop);
+        float duration = 0.f;
+        cudaEventElapsedTime(&duration, start, stop);
 
         Status::print_message("Duration longwave solver: " + std::to_string(duration) + " (ms)");
+
 
 
         //// Store the output.
@@ -478,6 +489,7 @@ void solve_radiation(int argc, char** argv)
         }
 
         // Solve the radiation.
+
         Status::print_message("Solving the shortwave radiation.");
 
         Array_gpu<TF,2> p_lay_gpu(p_lay);
@@ -494,7 +506,12 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<TF,2> rel_gpu(rel);
         Array_gpu<TF,2> rei_gpu(rei);
 
-        auto time_start = std::chrono::high_resolution_clock::now();
+        cudaEvent_t start;
+        cudaEvent_t stop;
+        cudaEventCreate(&start);
+        cudaEventCreate(&stop);
+
+        cudaEventRecord(start, 0);
 
         rad_sw.solve_gpu(
                 switch_fluxes,
@@ -516,10 +533,13 @@ void solve_radiation(int argc, char** argv)
                 sw_bnd_flux_up, sw_bnd_flux_dn,
                 sw_bnd_flux_dn_dir, sw_bnd_flux_net);
 
-        auto time_end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration<double, std::milli>(time_end-time_start).count();
+        cudaEventRecord(stop, 0);
+        cudaEventSynchronize(stop);
+        float duration = 0.f;
+        cudaEventElapsedTime(&duration, start, stop);
 
         Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
+
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");
