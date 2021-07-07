@@ -114,20 +114,18 @@ namespace optical_props_kernel_launcher_cuda
             int nbnd, const Array_gpu<int,2>& band_lims_gpoint)
 
     {
-        const int block_bnd = 14;
-        const int block_lay = 32;
-        const int block_col = 1;
+        const int block_col = 16;
+        const int block_lay = 4;
+        const int block_gpt = 1;
 
-        const int grid_bnd = nbnd/block_bnd + (nbnd%block_bnd > 0);
-        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
         const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_gpt = nbnd/block_gpt + (nbnd%block_gpt > 0);
 
-        dim3 grid_gpu(grid_col, grid_lay, grid_bnd);
-        dim3 block_gpu(block_col, block_lay, block_bnd);
-
+        dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
+        dim3 block_gpu(block_col, block_lay, block_gpt);
 
         TF eps = std::numeric_limits<TF>::epsilon();
-
 
         inc_2stream_by_2stream_bybnd_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, eps,
