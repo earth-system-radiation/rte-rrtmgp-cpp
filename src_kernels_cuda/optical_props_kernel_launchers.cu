@@ -120,7 +120,7 @@ namespace optical_props_kernel_launcher_cuda
 
         const int grid_col = ncol/block_col + (ncol%block_col > 0);
         const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
-        const int grid_gpt = nbnd/block_gpt + (nbnd%block_gpt > 0);
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
 
         dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
         dim3 block_gpu(block_col, block_lay, block_gpt);
