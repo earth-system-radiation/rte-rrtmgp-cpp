@@ -3,7 +3,13 @@
 
 #include <iostream>
 #include <iomanip>
-#include <filesystem>
+
+
+inline bool file_exists(const std::string& name)
+{
+    std::ifstream f(name.c_str());
+    return f.good();
+}
 
 
 ////  RUNTIME TUNER ////
@@ -11,13 +17,27 @@ template<class Func, class... Args>
 std::tuple<dim3, dim3> tune_kernel(
         const std::string& kernel_name,
         dim3 problem_size,
-        const std::vector<int>& ib, const std::vector<int>& jb, const std::vector<int>& kb, 
+        const std::vector<int>& ib, const std::vector<int>& jb, const std::vector<int>& kb,
         Func&& f, Args&&... args)
 {
     std::cout << "Tuning " << kernel_name << ": ";
 
     std::ofstream tuner_output;
-    tuner_output.open(kernel_name + ".txt", std::ios::out | std::ios::app);
+
+    std::string file_name = kernel_name;
+    if (file_exists(file_name + ".txt"))
+    {
+        for (int i=2;; ++i)
+        {
+            if (!file_exists(file_name + "_" + std::to_string(i) + ".txt"))
+            {
+                file_name += "_" + std::to_string(i);
+                break;
+            }
+        }
+    }
+
+    tuner_output.open(file_name + ".txt", std::ios::out | std::ios::app);
     tuner_output
         << std::setw(10) << "block_x"
         << std::setw(10) << "block_y"
@@ -86,7 +106,7 @@ std::tuple<dim3, dim3> tune_kernel(
 
     tuner_output.close();
 
-    std::cout << "(" 
+    std::cout << "("
         << fastest_block.x << ", "
         << fastest_block.y << ", "
         << fastest_block.z << ")" << std::endl;
@@ -108,26 +128,26 @@ void tune_ijk(
         problem_size.x/block.x + (problem_size.x%block.x > 0),
         problem_size.y/block.y + (problem_size.y%block.y > 0),
         problem_size.z/block.z + (problem_size.z%block.z > 0)};
-    
+
     // Warmup...
     Func::template launch<I, J, K>(grid, block, args...);
-    
+
     cudaEvent_t start;
     cudaEvent_t stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
-    
+
     constexpr int n_samples = 8;
-    
+
     cudaEventRecord(start, 0);
     for (int i=0; i<n_samples; ++i)
         Func::template launch<I, J, K>(grid, block, args...);
     cudaEventRecord(stop, 0);
-    
+
     cudaEventSynchronize(stop);
     float duration = 0.f;
     cudaEventElapsedTime(&duration, start, stop);
-    
+
     // Check whether kernel has succeeded.
     cudaError err = cudaGetLastError();
     if (err != cudaSuccess)
@@ -193,15 +213,16 @@ std::tuple<dim3, dim3> tune_kernel_compile_time(
     std::ofstream tuner_output;
 
     std::string file_name = kernel_name;
-
-    if (std::filesystem::exists(file_name + ".txt"))
+    if (file_exists(file_name + ".txt"))
     {
         for (int i=2;; ++i)
-            if (!std::filesystem::exists(file_name + "_" + std::to_string(i) + ".txt"))
+        {
+            if (!file_exists(file_name + "_" + std::to_string(i) + ".txt"))
             {
                 file_name += "_" + std::to_string(i);
                 break;
             }
+        }
     }
 
     tuner_output.open(file_name + ".txt", std::ios::out);
@@ -217,7 +238,7 @@ std::tuple<dim3, dim3> tune_kernel_compile_time(
 
     (tune_i<Func, Is>(js, ks, problem_size, fastest_grid, fastest_block, fastest, tuner_output, args...), ...);
 
-    std::cout << "(" 
+    std::cout << "("
         << fastest_block.x << ", "
         << fastest_block.y << ", "
         << fastest_block.z << ")" << std::endl;
