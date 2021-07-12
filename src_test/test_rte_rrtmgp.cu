@@ -320,6 +320,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<TF,2> rel_gpu(rel);
             Array_gpu<TF,2> rei_gpu(rei);
 
+            cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
             cudaEventCreate(&start);
@@ -516,6 +517,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<TF,2> rel_gpu(rel);
             Array_gpu<TF,2> rei_gpu(rei);
 
+            cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
             cudaEventCreate(&start);
