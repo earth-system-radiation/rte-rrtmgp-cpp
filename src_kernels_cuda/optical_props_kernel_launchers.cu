@@ -28,6 +28,7 @@
 #include "tuner.h"
 
 
+
 namespace
 {
     #include "optical_props_kernels.cu"
@@ -92,12 +93,16 @@ namespace optical_props_kernel_launcher_cuda
         const int block_lay = 4;
         const int block_gpt = 1;
 
+
+
         const int grid_col = ncol/block_col + (ncol%block_col > 0);
         const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
         const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
 
+
         dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
         dim3 block_gpu(block_col, block_lay, block_gpt);
+
 
         inc_1scalar_by_1scalar_bybnd_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt,
@@ -116,6 +121,9 @@ namespace optical_props_kernel_launcher_cuda
         dim3 grid{ncol, nlay, ngpt}, block;
 
         TF eps = std::numeric_limits<TF>::epsilon();
+
+
+
 
         if (tunings.count("inc_2stream_by_2stream_bybnd_kernel") == 0)
         {
@@ -193,6 +201,7 @@ template void optical_props_kernel_launcher_cuda::inc_2stream_by_2stream_bybnd(
         const Array_gpu<float,3>& tau_in, const Array_gpu<float,3>& ssa_in, const Array_gpu<float,3>& g_in,
         int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
         Tuner_map& tunings);
+
 
 template void optical_props_kernel_launcher_cuda::delta_scale_2str_k(
         int ncol, int nlay, int ngpt,

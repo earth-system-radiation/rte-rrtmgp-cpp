@@ -21,6 +21,7 @@
 #include <iomanip>
 #include <cuda_profiler_api.h>
 
+
 #include "Status.h"
 #include "Netcdf_interface.h"
 #include "Array.h"
@@ -359,6 +360,7 @@ void solve_radiation(int argc, char** argv)
         cudaProfilerStart();
         run_solver();
         cudaProfilerStop();
+
 
 
         //// Store the output.
