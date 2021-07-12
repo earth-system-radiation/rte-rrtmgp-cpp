@@ -58,18 +58,20 @@ std::tuple<dim3, dim3> tune_kernel(
                     problem_size.y/block.y + (problem_size.y%block.y > 0),
                     problem_size.z/block.z + (problem_size.z%block.z > 0)};
 
-                // Warmup...
-                f<<<grid, block>>>(args...);
+                constexpr int n_samples = 8;
 
+                // Warmup...
+                for (int n=0; n<n_samples; ++n)
+                    f<<<grid, block>>>(args...);
+
+                cudaDeviceSynchronize();
                 cudaEvent_t start;
                 cudaEvent_t stop;
                 cudaEventCreate(&start);
                 cudaEventCreate(&stop);
 
-                constexpr int n_samples = 8;
-
                 cudaEventRecord(start, 0);
-                for (int i=0; i<n_samples; ++i)
+                for (int n=0; n<n_samples; ++n)
                     f<<<grid, block>>>(args...);
                 cudaEventRecord(stop, 0);
 
@@ -130,14 +132,16 @@ void tune_ijk(
         problem_size.z/block.z + (problem_size.z%block.z > 0)};
 
     // Warmup...
-    Func::template launch<I, J, K>(grid, block, args...);
+    constexpr int n_samples = 8;
 
+    for (int i=0; i<n_samples; ++i)
+        Func::template launch<I, J, K>(grid, block, args...);
+
+    cudaDeviceSynchronize();
     cudaEvent_t start;
     cudaEvent_t stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
-
-    constexpr int n_samples = 8;
 
     cudaEventRecord(start, 0);
     for (int i=0; i<n_samples; ++i)
