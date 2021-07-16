@@ -79,6 +79,9 @@ std::tuple<dim3, dim3> tune_kernel(
                 float duration = 0.f;
                 cudaEventElapsedTime(&duration, start, stop);
 
+                cudaEventDestroy(start);
+                cudaEventDestroy(stop);
+
                 // Check whether kernel has succeeded.
                 cudaError err = cudaGetLastError();
                 if (err != cudaSuccess)
@@ -151,6 +154,9 @@ void tune_ijk(
     cudaEventSynchronize(stop);
     float duration = 0.f;
     cudaEventElapsedTime(&duration, start, stop);
+
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
 
     // Check whether kernel has succeeded.
     cudaError err = cudaGetLastError();

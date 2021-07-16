@@ -350,6 +350,9 @@ void solve_radiation(int argc, char** argv)
             float duration = 0.f;
             cudaEventElapsedTime(&duration, start, stop);
 
+            cudaEventDestroy(start);
+            cudaEventDestroy(stop);
+
             Status::print_message("Duration longwave solver: " + std::to_string(duration) + " (ms)");
         };
 
@@ -551,6 +554,9 @@ void solve_radiation(int argc, char** argv)
             cudaEventSynchronize(stop);
             float duration = 0.f;
             cudaEventElapsedTime(&duration, start, stop);
+
+            cudaEventDestroy(start);
+            cudaEventDestroy(stop);
 
             Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
         };
