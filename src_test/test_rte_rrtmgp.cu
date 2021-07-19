@@ -405,6 +405,10 @@ void solve_radiation(int argc, char** argv)
         run_solver();
         cudaProfilerStop();
 
+        constexpr int n_measures=10;
+        for (int n=0; n<n_measures; ++n)
+            run_solver();
+
 
 
         //// Store the output.
@@ -609,6 +613,10 @@ void solve_radiation(int argc, char** argv)
         cudaProfilerStart();
         run_solver();
         cudaProfilerStop();
+
+        constexpr int n_measures=10;
+        for (int n=0; n<n_measures; ++n)
+            run_solver();
 
 
         // Store the output.
