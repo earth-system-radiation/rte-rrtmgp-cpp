@@ -28,7 +28,7 @@
 #include "Radiation_solver.h"
 #include "Gas_concs.h"
 #include "Types.h"
-
+#include "Mem_pool_gpu.h"
 
 template<typename TF>
 void read_and_set_vmr(
@@ -69,6 +69,29 @@ void read_and_set_vmr(
     }
 }
 
+template<typename TF>
+void configure_memory_pool(int nlays, int ncols, int nchunks, int ngpts, int nbnds)
+{
+    /* Heuristic way to set up memory pool queues */
+    std::map<std::size_t, std::size_t> pool_queues = {
+        {64, 20},
+        {128, 20},
+        {256, 10},
+        {512, 10},
+        {1024, 5},
+        {2048, 5},
+        {nchunks * ngpts * sizeof(TF), 16},
+        {nchunks * nbnds * sizeof(TF), 16},
+        {(nlays + 1) * ncols * sizeof(TF), 14},
+        {(nlays + 1) * nchunks * sizeof(TF), 10},
+        {(nlays + 1) * nchunks * nbnds * sizeof(TF), 4},
+        {(nlays + 1) * nchunks * ngpts * sizeof(int)/2, 6},
+        {(nlays + 1) * nchunks * ngpts * sizeof(TF), 18}
+    };
+    #ifdef GPU_MEM_POOL
+    Memory_pool_gpu::init_instance(pool_queues);
+    #endif
+}
 
 bool parse_command_line_options(
         std::map<std::string, std::pair<bool, std::string>>& command_line_options,
@@ -249,13 +272,31 @@ void solve_radiation(int argc, char** argv)
     nc_lay.insert(p_lay.v(), {0, 0});
     nc_lev.insert(p_lev.v(), {0, 0});
 
+    int ngpts = 0;
+    int nbnds = 0;
+    if (switch_longwave)
+    {
+        Netcdf_file coef_nc_lw("coefficients_lw.nc", Netcdf_mode::Read);
+        nbnds = std::max(coef_nc_lw.get_dimension_size("bnd"), nbnds);
+        ngpts = std::max(coef_nc_lw.get_dimension_size("gpt"), ngpts);
+    }
+    if (switch_shortwave)
+    {
+        Netcdf_file coef_nc_sw("coefficients_sw.nc", Netcdf_mode::Read);
+        nbnds = std::max(coef_nc_sw.get_dimension_size("bnd"), nbnds);
+        ngpts = std::max(coef_nc_sw.get_dimension_size("gpt"), ngpts);
+    }
+    configure_memory_pool<TF>(n_lay, n_col, 512, ngpts, nbnds);
+
 
     ////// RUN THE LONGWAVE SOLVER //////
     if (switch_longwave)
     {
         // Initialize the solver.
         Status::print_message("Initializing the longwave solver.");
+
         Gas_concs_gpu<TF> gas_concs_gpu(gas_concs);
+        
         Radiation_solver_longwave<TF> rad_lw(gas_concs_gpu, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
 
         // Read the boundary conditions.
