@@ -346,10 +346,10 @@ void solve_radiation(int argc, char** argv)
 
 
         // Solve the radiation.
+        Status::print_message("Solving the longwave radiation.");
+
         auto run_solver = [&]()
         {
-            Status::print_message("Solving the longwave radiation.");
-
             Array_gpu<TF,2> p_lay_gpu(p_lay);
             Array_gpu<TF,2> p_lev_gpu(p_lev);
             Array_gpu<TF,2> t_lay_gpu(t_lay);
@@ -548,11 +548,12 @@ void solve_radiation(int argc, char** argv)
             sw_bnd_flux_net   .set_dims({n_col, n_lev, n_bnd_sw});
         }
 
+
         // Solve the radiation.
+        Status::print_message("Solving the shortwave radiation.");
+
         auto run_solver = [&]()
         {
-            Status::print_message("Solving the shortwave radiation.");
-
             Array_gpu<TF,2> p_lay_gpu(p_lay);
             Array_gpu<TF,2> p_lev_gpu(p_lev);
             Array_gpu<TF,2> t_lay_gpu(t_lay);
