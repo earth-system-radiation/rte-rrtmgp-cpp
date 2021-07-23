@@ -307,48 +307,57 @@ void solve_radiation(int argc, char** argv)
 
         Status::print_message("Solving the longwave radiation.");
 
-        Array_gpu<TF,2> p_lay_gpu(p_lay);
-        Array_gpu<TF,2> p_lev_gpu(p_lev);
-        Array_gpu<TF,2> t_lay_gpu(t_lay);
-        Array_gpu<TF,2> t_lev_gpu(t_lev);
-        Array_gpu<TF,2> col_dry_gpu(col_dry);
-        Array_gpu<TF,1> t_sfc_gpu(t_sfc);
-        Array_gpu<TF,2> emis_sfc_gpu(emis_sfc);
-        Array_gpu<TF,2> lwp_gpu(lwp);
-        Array_gpu<TF,2> iwp_gpu(iwp);
-        Array_gpu<TF,2> rel_gpu(rel);
-        Array_gpu<TF,2> rei_gpu(rei);
+        auto run_solver = [&]()
+        {
+            Array_gpu<TF,2> p_lay_gpu(p_lay);
+            Array_gpu<TF,2> p_lev_gpu(p_lev);
+            Array_gpu<TF,2> t_lay_gpu(t_lay);
+            Array_gpu<TF,2> t_lev_gpu(t_lev);
+            Array_gpu<TF,2> col_dry_gpu(col_dry);
+            Array_gpu<TF,1> t_sfc_gpu(t_sfc);
+            Array_gpu<TF,2> emis_sfc_gpu(emis_sfc);
+            Array_gpu<TF,2> lwp_gpu(lwp);
+            Array_gpu<TF,2> iwp_gpu(iwp);
+            Array_gpu<TF,2> rel_gpu(rel);
+            Array_gpu<TF,2> rei_gpu(rei);
 
-        cudaEvent_t start;
-        cudaEvent_t stop;
-        cudaEventCreate(&start);
-        cudaEventCreate(&stop);
+            cudaEvent_t start;
+            cudaEvent_t stop;
+            cudaEventCreate(&start);
+            cudaEventCreate(&stop);
 
-        cudaEventRecord(start, 0);
+            cudaEventRecord(start, 0);
 
-        rad_lw.solve_gpu(
-                switch_fluxes,
-                switch_cloud_optics,
-                switch_output_optical,
-                switch_output_bnd_fluxes,
-                gas_concs_gpu,
-                p_lay_gpu, p_lev_gpu,
-                t_lay_gpu, t_lev_gpu,
-                col_dry_gpu,
-                t_sfc_gpu, emis_sfc_gpu,
-                lwp_gpu, iwp_gpu,
-                rel_gpu, rei_gpu,
-                lw_tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
-                lw_flux_up, lw_flux_dn, lw_flux_net,
-                lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
+            rad_lw.solve_gpu(
+                    switch_fluxes,
+                    switch_cloud_optics,
+                    switch_output_optical,
+                    switch_output_bnd_fluxes,
+                    gas_concs_gpu,
+                    p_lay_gpu, p_lev_gpu,
+                    t_lay_gpu, t_lev_gpu,
+                    col_dry_gpu,
+                    t_sfc_gpu, emis_sfc_gpu,
+                    lwp_gpu, iwp_gpu,
+                    rel_gpu, rei_gpu,
+                    lw_tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
+                    lw_flux_up, lw_flux_dn, lw_flux_net,
+                    lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
 
-        cudaEventRecord(stop, 0);
-        cudaEventSynchronize(stop);
-        float duration = 0.f;
-        cudaEventElapsedTime(&duration, start, stop);
+            cudaEventRecord(stop, 0);
+            cudaEventSynchronize(stop);
+            float duration = 0.f;
+            cudaEventElapsedTime(&duration, start, stop);
 
-        Status::print_message("Duration longwave solver: " + std::to_string(duration) + " (ms)");
+            cudaEventDestroy(start);
+            cudaEventDestroy(stop);
 
+            Status::print_message("Duration longwave solver: " + std::to_string(duration) + " (ms)");
+        };
+
+        constexpr int n_measures = 10;
+        for (int n=0; n<n_measures; ++n)
+            run_solver();
 
 
         //// Store the output.
@@ -492,53 +501,63 @@ void solve_radiation(int argc, char** argv)
 
         Status::print_message("Solving the shortwave radiation.");
 
-        Array_gpu<TF,2> p_lay_gpu(p_lay);
-        Array_gpu<TF,2> p_lev_gpu(p_lev);
-        Array_gpu<TF,2> t_lay_gpu(t_lay);
-        Array_gpu<TF,2> t_lev_gpu(t_lev);
-        Array_gpu<TF,2> col_dry_gpu(col_dry);
-        Array_gpu<TF,2> sfc_alb_dir_gpu(sfc_alb_dir);
-        Array_gpu<TF,2> sfc_alb_dif_gpu(sfc_alb_dif);
-        Array_gpu<TF,1> tsi_scaling_gpu(tsi_scaling);
-        Array_gpu<TF,1> mu0_gpu(mu0);
-        Array_gpu<TF,2> lwp_gpu(lwp);
-        Array_gpu<TF,2> iwp_gpu(iwp);
-        Array_gpu<TF,2> rel_gpu(rel);
-        Array_gpu<TF,2> rei_gpu(rei);
+        auto run_solver = [&]()
+        {
+            Array_gpu<TF,2> p_lay_gpu(p_lay);
+            Array_gpu<TF,2> p_lev_gpu(p_lev);
+            Array_gpu<TF,2> t_lay_gpu(t_lay);
+            Array_gpu<TF,2> t_lev_gpu(t_lev);
+            Array_gpu<TF,2> col_dry_gpu(col_dry);
+            Array_gpu<TF,2> sfc_alb_dir_gpu(sfc_alb_dir);
+            Array_gpu<TF,2> sfc_alb_dif_gpu(sfc_alb_dif);
+            Array_gpu<TF,1> tsi_scaling_gpu(tsi_scaling);
+            Array_gpu<TF,1> mu0_gpu(mu0);
+            Array_gpu<TF,2> lwp_gpu(lwp);
+            Array_gpu<TF,2> iwp_gpu(iwp);
+            Array_gpu<TF,2> rel_gpu(rel);
+            Array_gpu<TF,2> rei_gpu(rei);
 
-        cudaEvent_t start;
-        cudaEvent_t stop;
-        cudaEventCreate(&start);
-        cudaEventCreate(&stop);
+            cudaEvent_t start;
+            cudaEvent_t stop;
+            cudaEventCreate(&start);
+            cudaEventCreate(&stop);
 
-        cudaEventRecord(start, 0);
+            cudaEventRecord(start, 0);
 
-        rad_sw.solve_gpu(
-                switch_fluxes,
-                switch_cloud_optics,
-                switch_output_optical,
-                switch_output_bnd_fluxes,
-                gas_concs_gpu,
-                p_lay_gpu, p_lev_gpu,
-                t_lay_gpu, t_lev_gpu,
-                col_dry_gpu,
-                sfc_alb_dir_gpu, sfc_alb_dif_gpu,
-                tsi_scaling_gpu, mu0_gpu,
-                lwp_gpu, iwp_gpu,
-                rel_gpu, rei_gpu,
-                sw_tau, ssa, g,
-                toa_source,
-                sw_flux_up, sw_flux_dn,
-                sw_flux_dn_dir, sw_flux_net,
-                sw_bnd_flux_up, sw_bnd_flux_dn,
-                sw_bnd_flux_dn_dir, sw_bnd_flux_net);
+            rad_sw.solve_gpu(
+                    switch_fluxes,
+                    switch_cloud_optics,
+                    switch_output_optical,
+                    switch_output_bnd_fluxes,
+                    gas_concs_gpu,
+                    p_lay_gpu, p_lev_gpu,
+                    t_lay_gpu, t_lev_gpu,
+                    col_dry_gpu,
+                    sfc_alb_dir_gpu, sfc_alb_dif_gpu,
+                    tsi_scaling_gpu, mu0_gpu,
+                    lwp_gpu, iwp_gpu,
+                    rel_gpu, rei_gpu,
+                    sw_tau, ssa, g,
+                    toa_source,
+                    sw_flux_up, sw_flux_dn,
+                    sw_flux_dn_dir, sw_flux_net,
+                    sw_bnd_flux_up, sw_bnd_flux_dn,
+                    sw_bnd_flux_dn_dir, sw_bnd_flux_net);
 
-        cudaEventRecord(stop, 0);
-        cudaEventSynchronize(stop);
-        float duration = 0.f;
-        cudaEventElapsedTime(&duration, start, stop);
+            cudaEventRecord(stop, 0);
+            cudaEventSynchronize(stop);
+            float duration = 0.f;
+            cudaEventElapsedTime(&duration, start, stop);
 
-        Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
+            cudaEventDestroy(start);
+            cudaEventDestroy(stop);
+
+            Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
+        };
+
+        constexpr int n_measures = 10;
+        for (int n=0; n<n_measures; ++n)
+            run_solver();
 
 
         // Store the output.
