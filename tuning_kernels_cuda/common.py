@@ -1,23 +1,20 @@
 from kernel_tuner.observers import BenchmarkObserver
 import numpy as np
 import os
-from collections import OrderedDict
 
 # Settings
 type_int = np.int32
 type_float = np.float64
 type_bool = np.int32  # = default without `RTE_RRTMGP_USE_CBOOL`
 str_float = 'float' if type_float is np.float32 else 'double'
-
+np.set_printoptions(edgeitems=50)
 # CUDA source code
 dir_name = os.path.dirname(os.path.realpath(__file__)) + '/'
-kernels_src = dir_name+'../src_kernels_cuda/rte_solver_kernels.cu'
-ref_kernels_src = dir_name+'reference_kernels/rte_solver_kernels.cu'
-
+kernels_src = dir_name + '../src_kernels_cuda/rte_solver_kernels.cu'
+ref_kernels_src = dir_name + 'reference_kernels/rte_solver_kernels.cu'
+# CUDA compiler parameters
 include = dir_name + '../include'
 cp = ['-I{}'.format(include)]
-
-np.set_printoptions(edgeitems=50)
 
 
 # get number of registers
