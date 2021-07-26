@@ -86,16 +86,16 @@ if __name__ == '__main__':
     ref_source_dn = np.zeros(opt_size, dtype=common.type_float)
     source_up = np.zeros(opt_size, dtype=common.type_float)
     ref_source_up = np.zeros(opt_size, dtype=common.type_float)
-    # Unused but part of signature
+    # Unused but part of signature, or used only in reference
     weight = np.zeros(1, dtype=common.type_float)
     sfc_emis = np.zeros(1, dtype=common.type_float)
     sfc_src = np.zeros(1, dtype=common.type_float)
     radn_up = np.zeros(1, dtype=common.type_float)
-    radn_dn = np.zeros(1, dtype=common.type_float)
+    radn_dn = np.zeros(flx_size, dtype=common.type_float)
     sfc_src_jac = np.zeros(1, dtype=common.type_float)
     radn_up_jac = np.zeros(1, dtype=common.type_float)
     source_sfc = np.zeros(1, dtype=common.type_float)
-    sfc_albedo = np.zeros(1, dtype=common.type_float)
+    sfc_albedo = np.zeros(alb_size, dtype=common.type_float)
     source_sfc_jac = np.zeros(1, dtype=common.type_float)
 
     problem_size = (ncol, nlay, ngpt)
