@@ -11,8 +11,6 @@ str_float = 'float' if type_float is np.float32 else 'double'
 np.set_printoptions(edgeitems=50)
 # CUDA source code
 dir_name = os.path.dirname(os.path.realpath(__file__)) + '/'
-kernels_src = dir_name + '../src_kernels_cuda/rte_solver_kernels.cu'
-ref_kernels_src = dir_name + 'reference_kernels/rte_solver_kernels.cu'
 # CUDA compiler parameters
 include = dir_name + '../include'
 cp = ['-I{}'.format(include)]
@@ -38,5 +36,3 @@ def compare_fields(arr1, arr2, name):
 reg_observer = RegisterObserver()
 metrics = OrderedDict()
 metrics["registers"] = lambda p: p["num_regs"]
-
-
