@@ -1,4 +1,5 @@
 from kernel_tuner.observers import BenchmarkObserver
+from collections import OrderedDict
 import numpy as np
 import os
 
