@@ -114,13 +114,13 @@ if __name__ == '__main__':
         parameters = dict()
         if command_line.best_configuration:
             with open("timings_lw_solver_noscat_step1.json", "r") as file:
-                configurations_major = json.load(file)
-            best_configuration = min(configurations_major, key=lambda x: x["time"])
+                configurations = json.load(file)
+            best_configuration = min(configurations, key=lambda x: x["time"])
             parameters['block_size_x'] = best_configuration["block_size_x"]
             parameters['block_size_y'] = best_configuration["block_size_y"]
             parameters['block_size_z'] = best_configuration["block_size_z"]
         else:
-            parameters['block_size_x'] = command_line.major_block_size_x
-            parameters['block_size_y'] = command_line.major_block_size_y
-            parameters['block_size_z'] = command_line.major_block_size_z
+            parameters['block_size_x'] = command_line.block_size_x
+            parameters['block_size_y'] = command_line.block_size_y
+            parameters['block_size_z'] = command_line.block_size_z
         run_and_test(parameters)
