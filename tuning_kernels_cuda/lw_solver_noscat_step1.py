@@ -45,7 +45,6 @@ def tune():
     params['block_size_y'] = 1
     params['block_size_z'] = 1
     ref_result = kt.run_kernel(kernel_name, ref_kernels_src, problem_size, ref_args, params, compiler_options=common.cp)
-    kt.tune_kernel(kernel_name, kernels_src, problem_size, args, tune_params, compiler_options=common.cp)
     answer = len(args) * [None]
     answer[19] = ref_result[19]
     answer[20] = ref_result[20]
@@ -55,7 +54,7 @@ def tune():
     result, env = kt.tune_kernel(kernel_name, kernels_src, problem_size, args, tune_params, compiler_options=common.cp,
                                  answer=answer, verbose=True)
 
-    with open("timings_lw_solver_noscat_step1.json") as fp:
+    with open("timings_lw_solver_noscat_step1.json", "w") as fp:
         json.dump(result, fp)
 
 
