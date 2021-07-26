@@ -5,9 +5,6 @@ import numpy as np
 import kernel_tuner as kt
 import common
 
-kernels_src = common.dir_name + '../src_kernels_cuda/rte_solver_kernels.cu'
-ref_kernels_src = common.dir_name + 'reference_kernels/rte_solver_kernels.cu'
-
 
 # Parse command line arguments
 def parse_command_line():
@@ -65,7 +62,9 @@ def tune():
 if __name__ == '__main__':
     command_line = parse_command_line()
 
-    kernel_name = "lw_solver_noscat_step1_kernel"
+    kernels_src = common.dir_name + '../src_kernels_cuda/rte_solver_kernels.cu'
+    ref_kernels_src = common.dir_name + 'reference_kernels/rte_solver_kernels.cu'
+    kernel_name = "lw_solver_noscat_step1_kernel<{}>".format(common.str_float)
 
     # Input
     ncol = common.type_int(512)
