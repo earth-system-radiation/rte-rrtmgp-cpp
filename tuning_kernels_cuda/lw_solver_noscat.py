@@ -20,7 +20,6 @@ def parse_command_line():
 
 # Run one instance of the kernel and test output
 def run_and_test_step1(params: dict):
-    kernel_name = "lw_solver_noscat_step1_kernel<{}>".format(common.str_float)
     print('Running {} [block_size_x: {}, block_size_y: {}, block_size_z: {}]'.format(
             kernel_name,
             params['block_size_x'],
@@ -37,7 +36,6 @@ def run_and_test_step1(params: dict):
 
 
 def run_and_test_step2(params: dict):
-    kernel_name = "lw_solver_noscat_step2_kernel<{}>".format(common.str_float)
     print('Running {} [block_size_x: {}, block_size_y: {}]'.format(
         kernel_name,
         params['block_size_x'],
@@ -54,9 +52,23 @@ def run_and_test_step2(params: dict):
     common.compare_fields(ref_result[23], result[23], "source_sfc_jac")
 
 
+def run_and_test_step3(params: dict):
+    print('Running {} [block_size_x: {}, block_size_y: {}, block_size_z: {}]'.format(
+        kernel_name,
+        params['block_size_x'],
+        params['block_size_y'],
+        params['block_size_z']))
+
+    ref_result = kt.run_kernel(kernel_name, ref_kernels_src, problem_size, ref_args, params, compiler_options=common.cp)
+    result = kt.run_kernel(kernel_name, kernels_src, problem_size, args, params, compiler_options=common.cp)
+
+    common.compare_fields(ref_result[13], result[13], "radn_up")
+    common.compare_fields(ref_result[14], result[14], "radn_dn")
+    common.compare_fields(ref_result[16], result[16], "radn_up_jac")
+
+
 # Tuning
 def tune_step1():
-    kernel_name = "lw_solver_noscat_step1_kernel<{}>".format(common.str_float)
     tune_params = OrderedDict()
     tune_params["block_size_x"] = [2**i for i in range(1, 11)]
     tune_params["block_size_y"] = [2 ** i for i in range(1, 11)]
@@ -83,7 +95,6 @@ def tune_step1():
 
 
 def tune_step2():
-    kernel_name = "lw_solver_noscat_step2_kernel<{}>".format(common.str_float)
     tune_params = OrderedDict()
     tune_params["block_size_x"] = [2 ** i for i in range(1, 11)]
     tune_params["block_size_y"] = [2 ** i for i in range(1, 11)]
@@ -106,6 +117,31 @@ def tune_step2():
                                  answer=answer, verbose=True)
 
     with open("timings_lw_solver_noscat_step2.json", "w") as fp:
+        json.dump(result, fp)
+
+
+def tune_step3():
+    tune_params = OrderedDict()
+    tune_params["block_size_x"] = [2 ** i for i in range(1, 11)]
+    tune_params["block_size_y"] = [2 ** i for i in range(1, 11)]
+    tune_params["block_size_z"] = [2 ** i for i in range(1, 7)]
+
+    params = dict()
+    params['block_size_x'] = 32
+    params['block_size_y'] = 1
+    params['block_size_z'] = 1
+    ref_result = kt.run_kernel(kernel_name, ref_kernels_src, problem_size, ref_args, params, compiler_options=common.cp)
+    answer = len(args) * [None]
+    answer[13] = ref_result[13]
+    answer[14] = ref_result[14]
+    answer[16] = ref_result[16]
+
+    print("Tuning {}".format(kernel_name))
+
+    result, env = kt.tune_kernel(kernel_name, kernels_src, problem_size, args, tune_params, compiler_options=common.cp,
+                                 answer=answer, verbose=True)
+
+    with open("timings_lw_solver_noscat_step3.json", "w") as fp:
         json.dump(result, fp)
 
 
@@ -133,6 +169,10 @@ if __name__ == '__main__':
     sfc_src = np.random.random(alb_size).astype(common.type_float)
     sfc_src_jac = np.random.random(alb_size).astype(common.type_float)
     weight = np.random.random(1).astype(common.type_float)
+    sfc_alb_dif = np.random.random(1).astype(common.type_float)
+    r_dif = np.random.random(1).astype(common.type_float)
+    t_dif = np.random.random(1).astype(common.type_float)
+    flux_dir = np.random.random(1).astype(common.type_float)
     # Output
     tau_loc = np.zeros(opt_size, dtype=common.type_float)
     tau_loc_ref = np.zeros(opt_size, dtype=common.type_float)
@@ -156,6 +196,7 @@ if __name__ == '__main__':
     radn_up_jac_ref = np.zeros(flx_size, dtype=common.type_float)
 
     # Step 1
+    kernel_name = "lw_solver_noscat_step1_kernel<{}>".format(common.str_float)
     problem_size = (ncol, nlay, ngpt)
     ref_args = [ncol, nlay, ngpt, eps, top_at_1, d, weight, tau, lay_source, lev_source_inc, lev_source_dec,
                 sfc_emis, sfc_src, radn_up, radn_dn, sfc_src_jac, radn_up_jac, tau_loc_ref, trans_ref,
@@ -180,6 +221,7 @@ if __name__ == '__main__':
             parameters['block_size_z'] = command_line.block_size_z
         run_and_test_step1(parameters)
     # Step 2
+    kernel_name = "lw_solver_noscat_step2_kernel<{}>".format(common.str_float)
     problem_size = (ncol, ngpt)
     ref_args = [ncol, nlay, ngpt, eps, top_at_1, d, weight, tau, lay_source, lev_source_inc, lev_source_dec,
                 sfc_emis, sfc_src, radn_up_ref, radn_dn_ref, sfc_src_jac, radn_up_jac_ref, tau_loc, trans,
@@ -201,3 +243,28 @@ if __name__ == '__main__':
             parameters['block_size_x'] = command_line.block_size_x
             parameters['block_size_y'] = command_line.block_size_y
         run_and_test_step2(parameters)
+    # Step 3
+    kernel_name = "lw_solver_noscat_step3_kernel<{}>".format(common.str_float)
+    problem_size = (ncol, nlay + 1, ngpt)
+    ref_args = [ncol, nlay, ngpt, eps, top_at_1, d, weight, tau, lay_source, lev_source_inc, lev_source_dec,
+                sfc_emis, sfc_src, radn_up_ref, radn_dn_ref, sfc_src_jac, radn_up_jac_ref, tau_loc, trans,
+                source_dn, source_up, source_sfc, sfc_albedo, source_sfc_jac]
+    args = [ncol, nlay, ngpt, eps, top_at_1, d, weight, tau, lay_source, lev_source_inc, lev_source_dec,
+            sfc_emis, sfc_src, radn_up, radn_dn, sfc_src_jac, radn_up_jac, tau_loc, trans, source_dn, source_up,
+            source_sfc, sfc_albedo, source_sfc_jac]
+    if command_line.tune:
+        tune_step3()
+    elif command_line.run:
+        parameters = dict()
+        if command_line.best_configuration:
+            with open("timings_lw_solver_noscat_step3.json", "r") as file:
+                configurations = json.load(file)
+            best_configuration = min(configurations, key=lambda x: x["time"])
+            parameters['block_size_x'] = best_configuration["block_size_x"]
+            parameters['block_size_y'] = best_configuration["block_size_y"]
+            parameters['block_size_z'] = best_configuration["block_size_z"]
+        else:
+            parameters['block_size_x'] = command_line.block_size_x
+            parameters['block_size_y'] = command_line.block_size_y
+            parameters['block_size_z'] = command_line.block_size_z
+        run_and_test_step3(parameters)
