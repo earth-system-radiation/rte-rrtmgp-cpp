@@ -9,7 +9,7 @@ import common
 # Parse command line arguments
 def parse_command_line():
     parser = argparse.ArgumentParser(description='Tuning script for lw_solver_noscat kernels')
-    parser.add_argument('--tune_step1', default=False, action='store_true')
+    parser.add_argument('--tune', default=False, action='store_true')
     parser.add_argument('--run', default=False, action='store_true')
     parser.add_argument('--best_configuration', default=False, action='store_true')
     parser.add_argument('--block_size_x', type=int, default=32)
