@@ -242,7 +242,7 @@ if __name__ == '__main__':
             best_configuration = min(configurations, key=lambda x: x["time"])
             parameters['block_size_x'] = best_configuration["block_size_x"]
             parameters['block_size_y'] = best_configuration["block_size_y"]
-            parameter["loop_unroll_factor_nlay"] = best_configuration["loop_unroll_factor_nlay"]
+            parameters["loop_unroll_factor_nlay"] = best_configuration["loop_unroll_factor_nlay"]
         else:
             parameters['block_size_x'] = command_line.block_size_x
             parameters['block_size_y'] = command_line.block_size_y
