@@ -49,9 +49,6 @@ def run_and_test_step2(params: dict):
     common.compare_fields(ref_result[13], result[13], "radn_up")
     common.compare_fields(ref_result[14], result[14], "radn_dn")
     common.compare_fields(ref_result[16], result[16], "radn_up_jac")
-    common.compare_fields(ref_result[21], result[21], "source_sfc")
-    common.compare_fields(ref_result[22], result[22], "sfc_albedo")
-    common.compare_fields(ref_result[23], result[23], "source_sfc_jac")
 
 
 def run_and_test_step3(params: dict):
@@ -110,9 +107,6 @@ def tune_step2():
     answer[13] = ref_result[13]
     answer[14] = ref_result[14]
     answer[16] = ref_result[16]
-    answer[21] = ref_result[21]
-    answer[22] = ref_result[22]
-    answer[23] = ref_result[23]
 
     print("Tuning {}".format(kernel_name))
 
