@@ -98,6 +98,7 @@ def tune_step2():
     tune_params = OrderedDict()
     tune_params["block_size_x"] = [2 ** i for i in range(1, 11)]
     tune_params["block_size_y"] = [2 ** i for i in range(1, 11)]
+    tune_params["loop_unroll_factor_nlay"] = [0] + [i for i in range(1, nlay + 1) if nlay // i == nlay / i]
 
     params = dict()
     params['block_size_x'] = 32
