@@ -15,6 +15,7 @@ def parse_command_line():
     parser.add_argument('--block_size_x', type=int, default=32)
     parser.add_argument('--block_size_y', type=int, default=1)
     parser.add_argument('--block_size_z', type=int, default=1)
+    parser.add_argument('--loop_unroll', type=int, default=0)
     return parser.parse_args()
 
 
@@ -36,10 +37,11 @@ def run_and_test_step1(params: dict):
 
 
 def run_and_test_step2(params: dict):
-    print('Running {} [block_size_x: {}, block_size_y: {}]'.format(
+    print('Running {} [block_size_x: {}, block_size_y: {}, loop_unroll_factor_nlay: {}]'.format(
         kernel_name,
         params['block_size_x'],
-        params['block_size_y']))
+        params['block_size_y'],
+        params['loop_unroll_factor_nlay']))
 
     ref_result = kt.run_kernel(kernel_name, ref_kernels_src, problem_size, ref_args, params, compiler_options=common.cp)
     result = kt.run_kernel(kernel_name, kernels_src, problem_size, args, params, compiler_options=common.cp)
@@ -240,9 +242,11 @@ if __name__ == '__main__':
             best_configuration = min(configurations, key=lambda x: x["time"])
             parameters['block_size_x'] = best_configuration["block_size_x"]
             parameters['block_size_y'] = best_configuration["block_size_y"]
+            parameter["loop_unroll_factor_nlay"] = best_configuration["loop_unroll_factor_nlay"]
         else:
             parameters['block_size_x'] = command_line.block_size_x
             parameters['block_size_y'] = command_line.block_size_y
+            parameters["loop_unroll_factor_nlay"] = command_line.loop_unroll
         run_and_test_step2(parameters)
     # Step 3
     kernel_name = "lw_solver_noscat_step3_kernel<{}>".format(common.str_float)
