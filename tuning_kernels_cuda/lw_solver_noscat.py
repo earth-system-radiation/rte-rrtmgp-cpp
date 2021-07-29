@@ -38,6 +38,9 @@ def run_and_test(params: dict):
     ref_args[18] = ref_result[18]
     ref_args[19] = ref_result[19]
     ref_args[20] = ref_result[20]
+    ref_args[20] = ref_result[21]
+    ref_args[20] = ref_result[22]
+    ref_args[20] = ref_result[23]
     result = kt.run_kernel(kernel_name["step1"], kernels_src, problem_size["step1"], args, params["step1"],
                            compiler_options=common.cp)
     args[17] = result[17]
