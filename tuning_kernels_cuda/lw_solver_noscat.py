@@ -170,6 +170,8 @@ if __name__ == '__main__':
     elif command_line.run:
         parameters = dict()
         parameters["step1"] = dict()
+        parameters["step2"] = dict()
+        parameters["step3"] = dict()
         if command_line.best_configuration:
             with open("timings_lw_solver_noscat_step1.json", "r") as file:
                 configurations = json.load(file)
