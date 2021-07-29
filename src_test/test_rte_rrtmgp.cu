@@ -410,10 +410,6 @@ void solve_radiation(int argc, char** argv)
         for (int n=0; n<n_measures; ++n)
             run_solver();
 
-        constexpr int n_measures = 10;
-        for (int n=0; n<n_measures; ++n)
-            run_solver();
-
 
         //// Store the output.
         Status::print_message("Storing the longwave output.");
