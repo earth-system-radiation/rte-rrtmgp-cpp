@@ -346,6 +346,7 @@ void solve_radiation(int argc, char** argv)
 
 
         // Solve the radiation.
+
         Status::print_message("Solving the longwave radiation.");
 
         auto run_solver = [&]()
@@ -408,7 +409,6 @@ void solve_radiation(int argc, char** argv)
         constexpr int n_measures=10;
         for (int n=0; n<n_measures; ++n)
             run_solver();
-
 
 
         //// Store the output.
@@ -547,6 +547,7 @@ void solve_radiation(int argc, char** argv)
             sw_bnd_flux_dn_dir.set_dims({n_col, n_lev, n_bnd_sw});
             sw_bnd_flux_net   .set_dims({n_col, n_lev, n_bnd_sw});
         }
+
 
 
         // Solve the radiation.

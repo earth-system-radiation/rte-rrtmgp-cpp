@@ -7,7 +7,6 @@
 #define cuda_check_error()  Tools_gpu::__cuda_check_error(__FILE__, __LINE__)
 #define cuda_check_memory() Tools_gpu::__cuda_check_memory(__FILE__, __LINE__)
 
-#define GPU_MEM_POOL 1
 
 namespace Tools_gpu
 {
@@ -71,16 +70,12 @@ namespace Tools_gpu
     {
         T* data_ptr = nullptr;
 
-        #ifndef CUDART_VERSION
-        #error CUDART_VERSION Undefined!
-        #elif (CUDART_VERSION >= 11020)
+        #if defined(RTE_RRTMGP_GPU_MEMPOOL_CUDA)
         cuda_safe_call(cudaMallocAsync((void **) &data_ptr, length*sizeof(T), 0));
-        #else
-        #ifdef GPU_MEM_POOL
+        #elif defined(RTE_RRTMGP_GPU_MEMPOOL_OWN)
         data_ptr = (T*)(Memory_pool_gpu::get_instance().acquire(length*sizeof(T)));
         #else
         cuda_safe_call(cudaMalloc((void **) &data_ptr, length*sizeof(T)));
-        #endif
         #endif
         return data_ptr;
     }
@@ -88,16 +83,12 @@ namespace Tools_gpu
     template<typename T>
     void free_gpu(T*& data_ptr)
     {
-        #ifndef CUDART_VERSION
-        #error CUDART_VERSION Undefined!
-        #elif (CUDART_VERSION >= 11020)
+        #if defined(RTE_RRTMGP_GPU_MEMPOOL_CUDA)
         cuda_safe_call(cudaFreeAsync(data_ptr, 0));
-        #else
-        #ifdef GPU_MEM_POOL
+        #elif defined(RTE_RRTMGP_GPU_MEMPOOL_OWN)
         Memory_pool_gpu::get_instance().release((void*)data_ptr);
         #else
         cuda_safe_call(cudaFree(data_ptr));
-        #endif
         #endif
         data_ptr = nullptr;
     }
