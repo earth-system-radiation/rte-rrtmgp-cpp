@@ -145,11 +145,8 @@ if __name__ == '__main__':
     source_sfc_jac = np.zeros(alb_size, dtype=common.type_float)
     # Output
     radn_dn = np.random.random(flx_size).astype(common.type_float)
-    radn_dn_ref = radn_dn
     radn_up = np.zeros(flx_size, dtype=common.type_float)
-    radn_up_ref = np.zeros(flx_size, dtype=common.type_float)
     radn_up_jac = np.zeros(flx_size, dtype=common.type_float)
-    radn_up_jac_ref = np.zeros(flx_size, dtype=common.type_float)
 
     kernel_name = dict()
     kernel_name["step1"] = "lw_solver_noscat_step1_kernel<{}>".format(common.str_float)
@@ -160,7 +157,7 @@ if __name__ == '__main__':
     problem_size["step2"] = (ncol, ngpt)
     problem_size["step3"] = (ncol, nlay + 1, ngpt)
     ref_args = [ncol, nlay, ngpt, eps, top_at_1, d, weight, tau, lay_source, lev_source_inc, lev_source_dec,
-                sfc_emis, sfc_src, radn_up_ref, radn_dn_ref, sfc_src_jac, radn_up_jac_ref, tau_loc, trans,
+                sfc_emis, sfc_src, radn_up, radn_dn, sfc_src_jac, radn_up_jac, tau_loc, trans,
                 source_dn, source_up, source_sfc, sfc_albedo, source_sfc_jac]
     args = [ncol, nlay, ngpt, eps, top_at_1, d, weight, tau, lay_source, lev_source_inc, lev_source_dec,
             sfc_emis, sfc_src, radn_up, radn_dn, sfc_src_jac, radn_up_jac, tau_loc, trans, source_dn, source_up,
