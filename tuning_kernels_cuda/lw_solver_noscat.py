@@ -63,7 +63,7 @@ def run_and_test(params: dict):
     args[22] = result[22]
     args[23] = result[23]
     print('Running {} [block_size_x: {}, block_size_y: {}, block_size_z: {}]'.format(
-        kernel_name,
+        kernel_name["step3"],
         params["step3"]['block_size_x'],
         params["step3"]['block_size_y'],
         params["step3"]['block_size_z']))
