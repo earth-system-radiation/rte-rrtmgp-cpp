@@ -7,7 +7,6 @@
 #define cuda_check_error()  Tools_gpu::__cuda_check_error(__FILE__, __LINE__)
 #define cuda_check_memory() Tools_gpu::__cuda_check_memory(__FILE__, __LINE__)
 
-#define GPU_MEM_POOL 1
 
 namespace Tools_gpu
 {

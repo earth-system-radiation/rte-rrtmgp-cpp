@@ -71,7 +71,7 @@ void* Memory_pool_gpu::allocate(std::size_t nbytes_)
     int err = cudaMalloc((void **) &data_ptr, nbytes_);
     if (cudaSuccess != err)
     {
-        printf("cudaMalloc failed attempting to allocate %i bytes\n", nbytes_);
+        printf("cudaMalloc failed attempting to allocate %lu bytes\n", nbytes_);
         throw 1;
     }
     alloc_counter++;
