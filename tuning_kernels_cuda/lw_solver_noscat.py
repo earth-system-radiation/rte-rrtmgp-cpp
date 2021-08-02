@@ -31,7 +31,8 @@ def run_and_test(params: dict):
         params["step1"]['block_size_x'],
         params["step1"]['block_size_y'],
         params["step1"]['block_size_z']))
-    ref_result = kt.run_kernel(kernel_name["step1"], ref_kernels_src, problem_size["step1"], ref_args, params["step1"],
+    ref_result = kt.run_kernel(kernel_name["step1"], ref_kernels_src, problem_size["step1"], ref_args,
+                               dict(block_size_x=32, block_size_y=1, block_size_z=1),
                                compiler_options=common.cp)
     ref_args[14] = ref_result[14]
     ref_args[17] = ref_result[17]
@@ -52,7 +53,8 @@ def run_and_test(params: dict):
         params["step2"]['block_size_x'],
         params["step2"]['block_size_y'],
         params["step2"]['loop_unroll_factor_nlay']))
-    ref_result = kt.run_kernel(kernel_name["step2"], ref_kernels_src, problem_size["step2"], ref_args, params["step2"],
+    ref_result = kt.run_kernel(kernel_name["step2"], ref_kernels_src, problem_size["step2"], ref_args,
+                               dict(block_size_x=32, block_size_y=1),
                                compiler_options=common.cp)
     ref_args[13] = ref_result[13]
     ref_args[14] = ref_result[14]
@@ -70,7 +72,8 @@ def run_and_test(params: dict):
         params["step3"]['block_size_x'],
         params["step3"]['block_size_y'],
         params["step3"]['block_size_z']))
-    ref_result = kt.run_kernel(kernel_name["step3"], ref_kernels_src, problem_size["step3"], ref_args, params["step3"],
+    ref_result = kt.run_kernel(kernel_name["step3"], ref_kernels_src, problem_size["step3"], ref_args,
+                               dict(block_size_x=32, block_size_y=1, block_size_z=1),
                                compiler_options=common.cp)
     result = kt.run_kernel(kernel_name["step3"], kernels_src, problem_size["step3"], args, params["step3"],
                            compiler_options=common.cp)
