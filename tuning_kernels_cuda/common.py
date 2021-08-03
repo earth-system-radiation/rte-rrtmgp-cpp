@@ -2,6 +2,7 @@ from kernel_tuner.observers import BenchmarkObserver
 from collections import OrderedDict
 import numpy as np
 import os
+import json
 
 # Settings
 type_int = np.int32
@@ -31,6 +32,13 @@ def compare_fields(arr1, arr2, name):
         print('results for {}: OKAY!'.format(name))
     else:
         print('results for {}: NOT OKAY, max diff={}'.format(name, max_diff))
+
+
+# Return the configuration with minimum execution time
+def best_configuration(json_file: str):
+    with open(json_file, "r") as file:
+        configurations = json.load(file)
+    return min(configurations, key=lambda x: x["time"])
 
 
 reg_observer = RegisterObserver()
