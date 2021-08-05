@@ -91,9 +91,9 @@ def tune():
     tune_params = OrderedDict()
     # Step 1
     print("Tuning {}".format(kernel_name["step1"]))
-    tune_params["block_size_x"] = [2**i for i in range(1, 11)]
-    tune_params["block_size_y"] = [2**i for i in range(1, 11)]
-    tune_params["block_size_z"] = [2**i for i in range(1, 7)]
+    tune_params["block_size_x"] = [2**i for i in range(0, 11)]
+    tune_params["block_size_y"] = [2**i for i in range(0, 11)]
+    tune_params["block_size_z"] = [2**i for i in range(0, 7)]
     ref_result = kt.run_kernel(kernel_name["step1"], ref_kernels_src, problem_size["step1"], ref_args,
                                dict(block_size_x=32, block_size_y=1, block_size_z=1),
                                compiler_options=common.cp)
@@ -107,27 +107,19 @@ def tune():
                                  compiler_options=common.cp, verbose=True)
     with open("timings_lw_solver_noscat_step1.json", "w") as fp:
         json.dump(result, fp)
-    ref_args[14] = ref_result[14]
-    ref_args[17] = ref_result[17]
-    ref_args[18] = ref_result[18]
-    ref_args[19] = ref_result[19]
-    ref_args[20] = ref_result[20]
-    ref_args[21] = ref_result[21]
-    ref_args[22] = ref_result[22]
-    ref_args[23] = ref_result[23]
+    for item in range(0, len(ref_args)):
+        ref_args[item] = ref_result[item]
     configuration = common.best_configuration("timings_lw_solver_noscat_step1.json")
     result = kt.run_kernel(kernel_name["step1"], kernels_src, problem_size["step1"], args,
                            configuration,
                            compiler_options=common.cp)
-    args[17] = result[17]
-    args[18] = result[18]
-    args[19] = result[19]
-    args[20] = result[20]
+    for item in range(0, len(args)):
+        args[item] = result[item]
     # Step 2
     print("Tuning {}".format(kernel_name["step2"]))
     tune_params = OrderedDict()
-    tune_params["block_size_x"] = [2**i for i in range(1, 11)]
-    tune_params["block_size_y"] = [2**i for i in range(1, 11)]
+    tune_params["block_size_x"] = [2**i for i in range(0, 11)]
+    tune_params["block_size_y"] = [2**i for i in range(0, 11)]
     tune_params["loop_unroll_factor_nlay"] = [0] + [i for i in range(1, nlay + 1) if nlay // i == nlay / i]
     ref_result = kt.run_kernel(kernel_name["step2"], ref_kernels_src, problem_size["step2"], ref_args,
                                dict(block_size_x=32, block_size_y=1),
@@ -141,25 +133,20 @@ def tune():
                                  compiler_options=common.cp, verbose=True)
     with open("timings_lw_solver_noscat_step2.json", "w") as fp:
         json.dump(result, fp)
-    ref_args[13] = ref_result[13]
-    ref_args[14] = ref_result[14]
-    ref_args[16] = ref_result[16]
+    for item in range(0, len(ref_args)):
+        ref_args[item] = ref_result[item]
     configuration = common.best_configuration("timings_lw_solver_noscat_step2.json")
     result = kt.run_kernel(kernel_name["step2"], kernels_src, problem_size["step2"], args,
                            configuration,
                            compiler_options=common.cp)
-    args[13] = result[13]
-    args[14] = result[14]
-    args[16] = result[16]
-    args[21] = result[21]
-    args[22] = result[22]
-    args[23] = result[23]
+    for item in range(0, len(args)):
+        args[item] = result[item]
     # Step 3
     print("Tuning {}".format(kernel_name["step3"]))
     tune_params = OrderedDict()
-    tune_params["block_size_x"] = [2**i for i in range(1, 11)]
-    tune_params["block_size_y"] = [2**i for i in range(1, 11)]
-    tune_params["block_size_z"] = [2**i for i in range(1, 7)]
+    tune_params["block_size_x"] = [2**i for i in range(0, 11)]
+    tune_params["block_size_y"] = [2**i for i in range(0, 11)]
+    tune_params["block_size_z"] = [2**i for i in range(0, 7)]
     ref_result = kt.run_kernel(kernel_name["step3"], ref_kernels_src, problem_size["step3"], ref_args,
                                dict(block_size_x=32, block_size_y=1, block_size_z=1),
                                compiler_options=common.cp)
