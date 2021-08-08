@@ -113,7 +113,7 @@ class Array
         Array(const std::vector<T>& data, const std::array<int, N>& dims) :
             dims(dims),
             ncells(product<N>(dims)),
-            data(data),
+            data(data.begin(), data.begin() + ncells), // Do not copy beyond the end.
             strides(calc_strides<N>(dims)),
             offsets({})
         {} // CvH Do we need to size check data?
