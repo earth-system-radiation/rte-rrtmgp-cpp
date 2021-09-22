@@ -76,12 +76,12 @@ def run_and_test(params: dict):
 
 
 # Tuning
-def tuning_verify(reference, answer, atol=None):
+def tuning_verify(reference, tuned_answer, atol=None):
     retval = True
     if atol is None:
         atol = 1e-6
     for index in range(0, len(reference)):
-        if answer[index] is None:
+        if reference[index] is None:
             continue
         if index == 14:
             # special case for radn_dn
@@ -91,11 +91,11 @@ def tuning_verify(reference, answer, atol=None):
                         item = col + (gpt * ncol * (nlay + 1))
                     else:
                         item = col + (nlay * ncol) + (gpt * ncol * (nlay + 1))
-                    if abs(reference[index][item] - answer[index][item] > atol):
+                    if abs(reference[index][item] - tuned_answer[index][item] > atol):
                         retval = False
                         break
         else:
-            retval = numpy.allclose(reference[index], answer[index], atol=atol)
+            retval = numpy.allclose(reference[index], tuned_answer[index], atol=atol)
         if not retval:
             break
     return retval
