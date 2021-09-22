@@ -1,6 +1,8 @@
 import argparse
 import json
 from collections import OrderedDict
+
+import numpy
 import numpy as np
 import kernel_tuner as kt
 import common
@@ -74,6 +76,31 @@ def run_and_test(params: dict):
 
 
 # Tuning
+def tuning_verify(reference, answer, atol=None):
+    retval = True
+    if atol is None:
+        atol = 1e-6
+    for index in range(0, len(reference)):
+        if answer[index] is None:
+            continue
+        if index == 14:
+            # special case for radn_dn
+            for col in range(0, ncol):
+                for gpt in range(0, ngpt):
+                    if top_at_1:
+                        item = col + (gpt * ncol * (nlay + 1))
+                    else:
+                        item = col + (nlay * ncol) + (gpt * ncol * (nlay + 1))
+                    if abs(reference[index][item] - answer[index][item] > atol):
+                        retval = False
+                        break
+        else:
+            retval = numpy.allclose(reference[index], answer[index], atol=atol)
+        if not retval:
+            break
+    return retval
+
+
 def tune():
     tune_params = OrderedDict()
     # Step 1
@@ -90,7 +117,7 @@ def tune():
     answer[19] = ref_result[19]
     answer[20] = ref_result[20]
     result, env = kt.tune_kernel(kernel_name["step1"], kernels_src, problem_size["step1"], args, tune_params,
-                                 answer=answer, atol=1e-6,
+                                 answer=answer, atol=1e-4, verify=tuning_verify,
                                  compiler_options=common.cp, verbose=True)
     with open("timings_lw_solver_noscat_step1.json", "w") as fp:
         json.dump(result, fp)
@@ -116,7 +143,7 @@ def tune():
     answer[14] = ref_result[14]
     answer[16] = ref_result[16]
     result, env = kt.tune_kernel(kernel_name["step2"], kernels_src, problem_size["step2"], args, tune_params,
-                                 answer=answer, atol=1e-6,
+                                 answer=answer, atol=1e-4, verify=tuning_verify,
                                  compiler_options=common.cp, verbose=True)
     with open("timings_lw_solver_noscat_step2.json", "w") as fp:
         json.dump(result, fp)
@@ -142,7 +169,7 @@ def tune():
     answer[14] = ref_result[14]
     answer[16] = ref_result[16]
     result, env = kt.tune_kernel(kernel_name["step3"], kernels_src, problem_size["step3"], args, tune_params,
-                                 answer=answer, atol=1e-6,
+                                 answer=answer, atol=1e-4, verify=tuning_verify,
                                  compiler_options=common.cp, verbose=True)
     with open("timings_lw_solver_noscat_step3.json", "w") as fp:
         json.dump(result, fp)
