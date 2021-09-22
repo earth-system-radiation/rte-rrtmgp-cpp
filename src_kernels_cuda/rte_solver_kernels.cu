@@ -123,7 +123,7 @@ void lw_solver_noscat_step2_kernel(
 
         const TF pi = acos(TF(-1.));
         const int idx_top = icol + (top_at_1 ? 0 : nlay)*ncol + igpt*ncol*(nlay+1);
-        radn_dn[idx_top] = radn_dn[idx_top] / pow(TF(2.) * pi * weight[0], nlay);
+        radn_dn[idx_top] = radn_dn[idx_top] / (TF(2.) * pi * weight[0]);
 
 
         lw_transport_noscat_kernel(
