@@ -110,8 +110,11 @@ void lw_solver_noscat_step1_kernel(
             lev_source_dn = lev_source_dec;
         }
 
-        const int idx_top = icol + top_level*ncol + igpt*ncol*(nlay+1);
-        radn_dn[idx_top] = radn_dn[idx_top] / (TF(2.) * pi * weight[0]);
+        if ( blockIdx.y == 0 && threadIdx.y == 0 )
+        {
+            const int idx_top = icol + top_level*ncol + igpt*ncol*(nlay+1);
+            radn_dn[idx_top] = radn_dn[idx_top] / (TF(2.) * pi * weight[0]);
+        }
 
         const int idx2d = icol + igpt*ncol;
 
