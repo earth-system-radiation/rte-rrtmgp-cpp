@@ -1,8 +1,6 @@
 import argparse
 import json
 from collections import OrderedDict
-
-import numpy
 import numpy as np
 import kernel_tuner as kt
 import common
@@ -76,31 +74,6 @@ def run_and_test(params: dict):
 
 
 # Tuning
-def tuning_verify(reference, tuned_answer, atol=None):
-    retval = True
-    if atol is None:
-        atol = 1e-6
-    for index in range(0, len(reference)):
-        if reference[index] is None:
-            continue
-        if index == 14:
-            # special case for radn_dn
-            for col in range(0, ncol):
-                for gpt in range(0, ngpt):
-                    if top_at_1:
-                        item = col + (gpt * ncol * (nlay + 1))
-                    else:
-                        item = col + (nlay * ncol) + (gpt * ncol * (nlay + 1))
-                    if abs(reference[index][item] - tuned_answer[index][item] > atol):
-                        retval = False
-                        break
-        else:
-            retval = numpy.allclose(reference[index], tuned_answer[index], atol=atol)
-        if not retval:
-            break
-    return retval
-
-
 def tune():
     # Step 1
     print("Tuning {}".format(kernel_name["step1"]))
@@ -118,7 +91,7 @@ def tune():
     tune_params["block_size_z"] = [2 ** i for i in range(0, 7)]
     restrictions = [f"block_size_x <= {ncol}", f"block_size_y <= {nlay}", f"block_size_z <= {ngpt}"]
     result, env = kt.tune_kernel(kernel_name["step1"], kernels_src, problem_size["step1"], args, tune_params,
-                                 answer=answer, atol=1e-4, verify=tuning_verify,
+                                 answer=answer, atol=1e-4,
                                  compiler_options=common.cp, verbose=True, restrictions=restrictions)
     with open("timings_lw_solver_noscat_step1.json", "w") as fp:
         json.dump(result, fp)
@@ -145,7 +118,7 @@ def tune():
     tune_params["loop_unroll_factor_nlay"] = [0] + [i for i in range(1, nlay + 1) if nlay // i == nlay / i]
     restrictions = [f"block_size_x <= {ncol}", f"block_size_y <= {ngpt}"]
     result, env = kt.tune_kernel(kernel_name["step2"], kernels_src, problem_size["step2"], args, tune_params,
-                                 answer=answer, atol=1e-4, verify=tuning_verify,
+                                 answer=answer, atol=1e-4,
                                  compiler_options=common.cp, verbose=True, restrictions=restrictions)
     with open("timings_lw_solver_noscat_step2.json", "w") as fp:
         json.dump(result, fp)
@@ -172,7 +145,7 @@ def tune():
     tune_params["block_size_z"] = [2 ** i for i in range(0, 7)]
     restrictions = [f"block_size_x <= {ncol}", f"block_size_y <= {nlay + 1}", f"block_size_z <= {ngpt}"]
     result, env = kt.tune_kernel(kernel_name["step3"], kernels_src, problem_size["step3"], args, tune_params,
-                                 answer=answer, atol=1e-4, verify=tuning_verify,
+                                 answer=answer, atol=1e-4,
                                  compiler_options=common.cp, verbose=True, restrictions=restrictions)
     with open("timings_lw_solver_noscat_step3.json", "w") as fp:
         json.dump(result, fp)
