@@ -101,7 +101,7 @@ def apply_bc_kernel_inc(output, inp):
                 item = (igpt * ncol * (nlay + 1)) + icol
             else:
                 item = (igpt * ncol * (nlay + 1)) + (nlay * ncol) + icol
-            output[item] = inp[item]
+            output[item] = inp[(igpt * ncol) + icol]
 
 
 def apply_bc_kernel_fact(output, inp, fact):
@@ -111,7 +111,7 @@ def apply_bc_kernel_fact(output, inp, fact):
                 item = (igpt * ncol * (nlay + 1)) + icol
             else:
                 item = (igpt * ncol * (nlay + 1)) + (nlay * ncol) + icol
-            output[item] = inp[item] * fact[icol]
+            output[item] = inp[(igpt * ncol) + icol] * fact[icol]
 
 
 def apply_bc_kernel_0(output):
