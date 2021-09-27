@@ -65,7 +65,7 @@ def tune():
     answer[5] = flux_dn_ref
     result, env = kt.tune_kernel(kernel_name["inc"], kernel_src, problem_size, args, tune_params, answer=answer,
                                  compiler_options=common.cp, verbose=True, restrictions=restrictions)
-    with open("timings_apply_BC_kernel_inc.json") as fp:
+    with open("timings_apply_BC_kernel_inc.json", "w") as fp:
         json.dump(result, fp)
     # factor case
     print(f"Tuning {kernel_name['fact']}")
@@ -77,7 +77,7 @@ def tune():
     answer[6] = flux_dn_ref
     result, env = kt.tune_kernel(kernel_name["fact"], kernel_src, problem_size, args, tune_params, answer=answer,
                                  compiler_options=common.cp, verbose=True, restrictions=restrictions)
-    with open("timings_apply_BC_kernel_fact.json") as fp:
+    with open("timings_apply_BC_kernel_fact.json", "w") as fp:
         json.dump(result, fp)
     # zero case
     print(f"Tuning {kernel_name['0']}")
@@ -89,7 +89,7 @@ def tune():
     answer[4] = flux_dn_ref
     result, env = kt.tune_kernel(kernel_name["0"], kernel_src, problem_size, args, tune_params, answer=answer,
                                  compiler_options=common.cp, verbose=True, restrictions=restrictions)
-    with open("timings_apply_BC_kernel_0.json") as fp:
+    with open("timings_apply_BC_kernel_0.json", "w") as fp:
         json.dump(result, fp)
 
 
