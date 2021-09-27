@@ -14,7 +14,7 @@ np.set_printoptions(edgeitems=50)
 dir_name = os.path.dirname(os.path.realpath(__file__)) + '/'
 # CUDA compiler parameters
 include = dir_name + '../include'
-cp = ['-I{}'.format(include)]
+cp = [f"-I{include}", "-Wno-deprecated-gpu-targets"]
 
 
 # get number of registers
