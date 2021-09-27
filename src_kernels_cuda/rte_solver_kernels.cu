@@ -319,18 +319,9 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_
     const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
     if ( (icol < ncol) && (igpt < ngpt) )
     {
-        if (top_at_1)
-        {
-            const int idx_out = icol + igpt*ncol*(nlay+1);
-            const int idx_in  = icol + igpt*ncol;
-            flux_dn[idx_out] = inc_flux[idx_in];
-        }
-        else
-        {
-            const int idx_out = icol + nlay*ncol + igpt*ncol*(nlay+1);
-            const int idx_in  = icol + igpt*ncol;
-            flux_dn[idx_out] = inc_flux[idx_in];
-        }
+        const idx_out = icol + ((top_at_1 ? 0 : (nlay * ncol))) + (igpt * ncol * (nlay + 1));
+        cont idx_in = icol + (igpt * ncol);
+        flux_dn[idx_out] = inc_flux[idx_in];
     }
 }
 
