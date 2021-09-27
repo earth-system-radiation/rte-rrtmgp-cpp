@@ -41,6 +41,11 @@ def best_configuration(json_file: str):
     return min(configurations, key=lambda x: x["time"])
 
 
+# return zero filled array
+def zero(size, datatype):
+    return np.zeros(size).astype(datatype)
+
+
 reg_observer = RegisterObserver()
 metrics = OrderedDict()
 metrics["registers"] = lambda p: p["num_regs"]
