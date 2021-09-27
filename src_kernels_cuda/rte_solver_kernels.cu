@@ -312,7 +312,7 @@ void apply_BC_kernel_lw(const int isfc, int ncol, const int nlay, const int ngpt
     }
 }
 
-template<typename TF>__global__ //apply_BC_gpt
+template<typename TF> __global__
 void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const TF* __restrict__ inc_flux, TF* __restrict__ flux_dn)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
@@ -325,7 +325,7 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_
     }
 }
 
-template<typename TF>__global__
+template<typename TF> __global__
 void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const TF* __restrict__ inc_flux, const TF* __restrict__ factor, TF* __restrict__ flux_dn)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
@@ -339,7 +339,7 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_
     }
 }
 
-template<typename TF>__global__
+template<typename TF> __global__
 void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, TF* __restrict__ flux_dn)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
