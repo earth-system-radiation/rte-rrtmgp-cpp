@@ -319,8 +319,8 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_
     const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
     if ( (icol < ncol) && (igpt < ngpt) )
     {
-        const idx_out = icol + ((top_at_1 ? 0 : (nlay * ncol))) + (igpt * ncol * (nlay + 1));
-        const idx_in = icol + (igpt * ncol);
+        const int idx_out = icol + ((top_at_1 ? 0 : (nlay * ncol))) + (igpt * ncol * (nlay + 1));
+        const int idx_in = icol + (igpt * ncol);
         flux_dn[idx_out] = inc_flux[idx_in];
     }
 }
@@ -332,8 +332,8 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_
     const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
     if ( (icol < ncol) && (igpt < ngpt) )
     {
-        const idx_out = icol + ((top_at_1 ? 0 : (nlay * ncol))) + (igpt * ncol * (nlay + 1));
-        const idx_in = icol + (igpt * ncol);
+        const int idx_out = icol + ((top_at_1 ? 0 : (nlay * ncol))) + (igpt * ncol * (nlay + 1));
+        const int idx_in = icol + (igpt * ncol);
 
         flux_dn[idx_out] = inc_flux[idx_in] * factor[icol];
     }
@@ -346,16 +346,8 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_
     const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
     if ( (icol < ncol) && (igpt < ngpt) )
     {
-        if (top_at_1)
-        {
-            const int idx_out = icol + igpt*ncol*(nlay+1);
-            flux_dn[idx_out] = TF(0.);
-        }
-        else
-        {
-            const int idx_out = icol + nlay*ncol + igpt*ncol*(nlay+1);
-            flux_dn[idx_out] = TF(0.);
-        }
+        const int idx_out = icol + ((top_at_1 ? 0 : (nlay * ncol))) + (igpt * ncol * (nlay + 1));
+        flux_dn[idx_out] = TF(0.);
     }
 }
 
