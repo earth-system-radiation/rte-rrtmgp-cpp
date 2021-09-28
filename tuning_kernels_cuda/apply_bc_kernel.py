@@ -183,7 +183,7 @@ if __name__ == '__main__':
         isfc = common.type_int(nlay)
     flux_dn_size = ncol * (nlay + 1) * ngpt
     inc_flux_size = ncol * ngpt
-    inc_flux_lw_size = ncol * nlay * ngpt
+    inc_flux_lw_size = ncol * (nlay + 1) * ngpt
     inc_flux = common.random(inc_flux_size, common.type_float)
     factor = common.random(ncol, common.type_float)
     # Output
