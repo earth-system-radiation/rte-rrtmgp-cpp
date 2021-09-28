@@ -31,7 +31,8 @@ def run_and_test(params: OrderedDict):
     print(f"Running apply_BC_kernel (inc version) [{params['inc']['block_size_x']} {params['inc']['block_size_y']}]")
     args = [ncol, nlay, ngpt, top_at_1, inc_flux, flux_dn]
     apply_bc_kernel_inc(flux_dn_ref, inc_flux)
-    result = kt.run_kernel(kernel_name["inc"], kernel_src, problem_size, args, params["inc"], compiler_options=common.cp)
+    result = kt.run_kernel(kernel_name["inc"], kernel_src, problem_size, args, params["inc"],
+                           compiler_options=common.cp)
     common.compare_fields(result[5], flux_dn_ref, "flux_dn")
     # factor case
     print(f"Running apply_BC_kernel (fact version) [{params['fact']['block_size_x']} {params['fact']['block_size_y']}]")
@@ -39,7 +40,8 @@ def run_and_test(params: OrderedDict):
     flux_dn_ref = flux_dn
     args = [ncol, nlay, ngpt, top_at_1, inc_flux, factor, flux_dn]
     apply_bc_kernel_fact(flux_dn_ref, inc_flux, factor)
-    result = kt.run_kernel(kernel_name["fact"], kernel_src, problem_size, args, params["fact"], compiler_options=common.cp)
+    result = kt.run_kernel(kernel_name["fact"], kernel_src, problem_size, args, params["fact"],
+                           compiler_options=common.cp)
     common.compare_fields(result[6], flux_dn_ref, "flux_dn")
     # zero case
     print(f"Running apply_BC_kernel (zero version) [{params['0']['block_size_x']} {params['0']['block_size_y']}]")
@@ -114,7 +116,7 @@ def tune():
     answer[5] = flux_dn_ref
     result, env = kt.tune_kernel(kernel_name["lw"], kernel_src, problem_size, args, tune_params, answer=answer,
                                  compiler_options=common.cp, verbose=True, restrictions=restrictions)
-    with open("timings_apply_BC_kernel_inc.json", "w") as fp:
+    with open("timings_apply_BC_kernel_lw.json", "w") as fp:
         json.dump(result, fp)
 
 
@@ -192,6 +194,7 @@ if __name__ == '__main__':
     kernel_name["inc"] = f"apply_BC_kernel_inc<{common.str_float}>"
     kernel_name["fact"] = f"apply_BC_kernel_fact<{common.str_float}>"
     kernel_name["0"] = f"apply_BC_kernel_0<{common.str_float}>"
+    kernel_name["lw"] = f"apply_BC_kernel_lw<{common.str_float}>"
     problem_size = (ncol, ngpt)
 
     if command_line.tune:
@@ -201,6 +204,7 @@ if __name__ == '__main__':
         parameters["inc"] = OrderedDict()
         parameters["fact"] = OrderedDict()
         parameters["0"] = OrderedDict()
+        parameters["lw"] = OrderedDict()
         if command_line.best_configuration:
             best_configuration = common.best_configuration("timings_apply_BC_kernel_inc.json")
             parameters["inc"]['block_size_x'] = best_configuration["block_size_x"]
@@ -211,6 +215,9 @@ if __name__ == '__main__':
             best_configuration = common.best_configuration("timings_apply_BC_kernel_0.json")
             parameters["0"]['block_size_x'] = best_configuration["block_size_x"]
             parameters["0"]['block_size_y'] = best_configuration["block_size_y"]
+            best_configuration = common.best_configuration("timings_apply_BC_kernel_lw.json")
+            parameters["lw"]['block_size_x'] = best_configuration["block_size_x"]
+            parameters["lw"]['block_size_y'] = best_configuration["block_size_y"]
         else:
             parameters["inc"]['block_size_x'] = command_line.block_size_x_inc
             parameters["inc"]['block_size_y'] = command_line.block_size_y_inc
@@ -218,4 +225,6 @@ if __name__ == '__main__':
             parameters["fact"]['block_size_y'] = command_line.block_size_y_fact
             parameters["0"]['block_size_x'] = command_line.block_size_x_0
             parameters["0"]['block_size_y'] = command_line.block_size_y_0
+            parameters["lw"]['block_size_x'] = command_line.block_size_x_lw
+            parameters["lw"]['block_size_y'] = command_line.block_size_y_lw
         run_and_test(parameters)
