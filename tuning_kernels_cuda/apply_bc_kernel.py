@@ -161,13 +161,13 @@ if __name__ == '__main__':
         parameters["fact"] = OrderedDict()
         parameters["0"] = OrderedDict()
         if command_line.best_configuration:
-            best_configuration = common.best_configuration("apply_BC_kernel_inc.json")
+            best_configuration = common.best_configuration("timings_apply_BC_kernel_inc.json")
             parameters["inc"]['block_size_x'] = best_configuration["block_size_x"]
             parameters["inc"]['block_size_y'] = best_configuration["block_size_y"]
-            best_configuration = common.best_configuration("apply_BC_kernel_fact.json")
+            best_configuration = common.best_configuration("timings_apply_BC_kernel_fact.json")
             parameters["fact"]['block_size_x'] = best_configuration["block_size_x"]
             parameters["fact"]['block_size_y'] = best_configuration["block_size_y"]
-            best_configuration = common.best_configuration("apply_BC_kernel_0.json")
+            best_configuration = common.best_configuration("timings_apply_BC_kernel_0.json")
             parameters["0"]['block_size_x'] = best_configuration["block_size_x"]
             parameters["0"]['block_size_y'] = best_configuration["block_size_y"]
         else:
