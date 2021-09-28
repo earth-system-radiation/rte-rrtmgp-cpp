@@ -1,7 +1,6 @@
 import argparse
 import json
 from collections import OrderedDict
-import numpy as np
 import kernel_tuner as kt
 import common
 
@@ -33,16 +32,16 @@ def run_and_test(params: OrderedDict):
     common.compare_fields(result[5], flux_dn_ref, "flux_dn")
     # factor case
     print(f"Running apply_BC_kernel (fact version) [{params['fact']['block_size_x']} {params['fact']['block_size_y']}]")
-    flux_dn = common.zero(flux_dn_size, common.type_float)
-    flux_dn_ref = common.zero(flux_dn_size, common.type_float)
+    flux_dn = common.random(flux_dn_size, common.type_float)
+    flux_dn_ref = flux_dn
     args = [ncol, nlay, ngpt, top_at_1, inc_flux, factor, flux_dn]
     apply_bc_kernel_fact(flux_dn_ref, inc_flux, factor)
     result = kt.run_kernel(kernel_name["fact"], kernel_src, problem_size, args, params, compiler_options=common.cp)
     common.compare_fields(result[6], flux_dn_ref, "flux_dn")
     # zero case
     print(f"Running apply_BC_kernel (zero version) [{params['0']['block_size_x']} {params['0']['block_size_y']}]")
-    flux_dn = common.zero(flux_dn_size, common.type_float)
-    flux_dn_ref = common.zero(flux_dn_size, common.type_float)
+    flux_dn = common.random(flux_dn_size, common.type_float)
+    flux_dn_ref = flux_dn
     args = [ncol, nlay, ngpt, top_at_1, flux_dn]
     apply_bc_kernel_0(flux_dn_ref)
     result = kt.run_kernel(kernel_name["0"], kernel_src, problem_size, args, params, compiler_options=common.cp)
@@ -142,11 +141,11 @@ if __name__ == '__main__':
     top_at_1 = common.type_bool(1)
     flux_dn_size = ncol * (nlay + 1) * ngpt
     inc_flux_size = ncol * ngpt
-    inc_flux = np.random.random(inc_flux_size).astype(common.type_float)
-    factor = np.random.random(ncol).astype(common.type_float)
+    inc_flux = common.random(inc_flux_size, common.type_float)
+    factor = common.random(ncol, common.type_float)
     # Output
-    flux_dn = common.zero(flux_dn_size, common.type_float)
-    flux_dn_ref = common.zero(flux_dn_size, common.type_float)
+    flux_dn = common.random(flux_dn_size, common.type_float)
+    flux_dn_ref = flux_dn
 
     kernel_name = OrderedDict()
     kernel_name["inc"] = f"apply_BC_kernel_inc<{common.str_float}>"
