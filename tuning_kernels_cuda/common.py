@@ -46,6 +46,11 @@ def zero(size, datatype):
     return np.zeros(size).astype(datatype)
 
 
+# return random filled array
+def random(size, datatype):
+    return np.random.random(size).astype(datatype)
+
+
 reg_observer = RegisterObserver()
 metrics = OrderedDict()
 metrics["registers"] = lambda p: p["num_regs"]
