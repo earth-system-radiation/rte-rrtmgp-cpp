@@ -113,7 +113,7 @@ def tune():
     args = [isfc, ncol, nlay, ngpt, top_at_1, inc_flux, flux_dn]
     apply_bc_kernel_lw(flux_dn_ref, inc_flux)
     answer = [None for _ in range(0, len(args))]
-    answer[5] = flux_dn_ref
+    answer[6] = flux_dn_ref
     result, env = kt.tune_kernel(kernel_name["lw"], kernel_src, problem_size, args, tune_params, answer=answer,
                                  compiler_options=common.cp, verbose=True, restrictions=restrictions)
     with open("timings_apply_BC_kernel_lw.json", "w") as fp:
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     if top_at_1 == 1:
         isfc = common.type_int(0)
     else:
-        isfc = common.type_int(nlay)
+        isfc = nlay
     flux_dn_size = ncol * (nlay + 1) * ngpt
     inc_flux_size = ncol * ngpt
     inc_flux_lw_size = ncol * (nlay + 1) * ngpt
