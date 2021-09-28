@@ -28,7 +28,7 @@ def run_and_test(params: OrderedDict):
     print(f"Running apply_BC_kernel (inc version) [{params['inc']['block_size_x']} {params['inc']['block_size_y']}]")
     args = [ncol, nlay, ngpt, top_at_1, inc_flux, flux_dn]
     apply_bc_kernel_inc(flux_dn_ref, inc_flux)
-    result = kt.run_kernel(kernel_name["inc"], kernel_src, problem_size, args, params, compiler_options=common.cp)
+    result = kt.run_kernel(kernel_name["inc"], kernel_src, problem_size, args, params["inc"], compiler_options=common.cp)
     common.compare_fields(result[5], flux_dn_ref, "flux_dn")
     # factor case
     print(f"Running apply_BC_kernel (fact version) [{params['fact']['block_size_x']} {params['fact']['block_size_y']}]")
@@ -36,7 +36,7 @@ def run_and_test(params: OrderedDict):
     flux_dn_ref = flux_dn
     args = [ncol, nlay, ngpt, top_at_1, inc_flux, factor, flux_dn]
     apply_bc_kernel_fact(flux_dn_ref, inc_flux, factor)
-    result = kt.run_kernel(kernel_name["fact"], kernel_src, problem_size, args, params, compiler_options=common.cp)
+    result = kt.run_kernel(kernel_name["fact"], kernel_src, problem_size, args, params["fact"], compiler_options=common.cp)
     common.compare_fields(result[6], flux_dn_ref, "flux_dn")
     # zero case
     print(f"Running apply_BC_kernel (zero version) [{params['0']['block_size_x']} {params['0']['block_size_y']}]")
@@ -44,7 +44,7 @@ def run_and_test(params: OrderedDict):
     flux_dn_ref = flux_dn
     args = [ncol, nlay, ngpt, top_at_1, flux_dn]
     apply_bc_kernel_0(flux_dn_ref)
-    result = kt.run_kernel(kernel_name["0"], kernel_src, problem_size, args, params, compiler_options=common.cp)
+    result = kt.run_kernel(kernel_name["0"], kernel_src, problem_size, args, params["0"], compiler_options=common.cp)
     common.compare_fields(result[4], flux_dn_ref, "flux_dn")
 
 
