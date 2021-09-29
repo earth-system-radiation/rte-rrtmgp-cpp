@@ -30,8 +30,8 @@ def run_and_test(params: OrderedDict):
 def tune():
     tune_params = OrderedDict()
     tune_params["block_size_x"] = [2**i for i in range(0, 11)]
-    tune_params["block_size_y"] = [2 ** i for i in range(0, 11)]
-    tune_params["block_size_z"] = [2 ** i for i in range(0, 7)]
+    tune_params["block_size_y"] = [2**i for i in range(0, 11)]
+    tune_params["block_size_z"] = [2**i for i in range(0, 7)]
     restrictions = [f"block_size_x <= {ncol}", f"block_size_y <= {nlev}", f"block_size_z <= {ngpt}"]
     print(f"Tuning {kernel_name}")
     answer = [None for _ in range(0, len(args))]
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     # Input
     ncol = common.type_int(512)
     nlay = common.type_int(140)
-    nlev = nlay + 1
+    nlev = common.type_int(nlay + 1)
     ngpt = common.type_int(224)
     flux_size = ncol * nlev * ngpt
     radn_up = common.random(flux_size, common.type_float)
