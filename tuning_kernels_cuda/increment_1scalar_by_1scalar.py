@@ -65,7 +65,7 @@ def tune():
     answer[3] = tau1_ref
     result, env = kt.tune_kernel(kernel_name["bybnd"], kernels_src, problem_size, args["bybnd"], tune_params,
                                  answer=answer, compiler_options=common.cp, verbose=True, restrictions=restrictions)
-    with open("timings_increment_1scalar_by_1scalar_bybnd_kernel.json", "w") as fp:
+    with open("timings_inc_1scalar_by_1scalar_bybnd_kernel.json", "w") as fp:
         json.dump(result, fp)
 
 
@@ -124,7 +124,7 @@ if __name__ == "__main__":
             parameters["kernel"]["block_size_x"] = best_configuration["block_size_x"]
             parameters["kernel"]["block_size_y"] = best_configuration["block_size_y"]
             parameters["kernel"]["block_size_z"] = best_configuration["block_size_z"]
-            best_configuration = common.best_configuration("timings_increment_1scalar_by_1scalar_bybnd_kernel.json")
+            best_configuration = common.best_configuration("timings_inc_1scalar_by_1scalar_bybnd_kernel.json")
             parameters["bybnd"]["block_size_x"] = best_configuration["block_size_x"]
             parameters["bybnd"]["block_size_y"] = best_configuration["block_size_y"]
             parameters["bybnd"]["block_size_z"] = best_configuration["block_size_z"]
