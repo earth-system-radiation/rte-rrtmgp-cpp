@@ -15,6 +15,8 @@ dir_name = os.path.dirname(os.path.realpath(__file__)) + '/'
 # CUDA compiler parameters
 include = dir_name + '../include'
 cp = [f"-I{include}", "-Wno-deprecated-gpu-targets"]
+# Binary files
+bin_path = "../rcemip"
 
 
 # get number of registers
