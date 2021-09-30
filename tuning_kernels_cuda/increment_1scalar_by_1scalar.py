@@ -107,7 +107,7 @@ if __name__ == "__main__":
 
     kernel_name = OrderedDict()
     kernel_name["kernel"] = f"increment_1scalar_by_1scalar_kernel<{common.str_float}>"
-    kernel_name["bybnd"] = f"increment_1scalar_by_1scalar_bybnd_kernel<{common.str_float}>"
+    kernel_name["bybnd"] = f"inc_1scalar_by_1scalar_bybnd_kernel<{common.str_float}>"
     problem_size = (ncol, nlay, ngpt)
     args = OrderedDict()
     args["kernel"] = [ncol, nlay, ngpt, tau1, tau2]
