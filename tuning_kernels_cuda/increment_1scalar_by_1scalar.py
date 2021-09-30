@@ -103,7 +103,7 @@ if __name__ == "__main__":
     tau1 = common.random(size, common.type_float)
     tau1_ref = tau1
     tau2 = common.random(size, common.type_float)
-    band_lims_gpt = np.fromfile(f"{common.bin_path}/band_lims_gpt_sw.bin", dtype=common.type_int)
+    band_lims_gpt = np.fromfile(f"{common.bin_path}/band_lims_gpt.bin", dtype=common.type_int)
 
     kernel_name = OrderedDict()
     kernel_name["kernel"] = f"increment_1scalar_by_1scalar_kernel<{common.str_float}>"
