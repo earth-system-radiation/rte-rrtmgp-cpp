@@ -23,7 +23,7 @@
  */
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void increment_1scalar_by_1scalar_kernel(
             const int ncol, const int nlay, const int ngpt,
             TF* __restrict__ tau1, const TF* __restrict__ tau2)
@@ -40,7 +40,7 @@ void increment_1scalar_by_1scalar_kernel(
 }
 
 
-template<typename TF>__global__
+template<typename TF> __global__
 void increment_2stream_by_2stream_kernel(
             const int ncol, const int nlay, const int ngpt, const TF eps,
             TF* __restrict__ tau1, TF* __restrict__ ssa1, TF* __restrict__ g1,
@@ -58,87 +58,87 @@ void increment_2stream_by_2stream_kernel(
         g1[idx] = (tau1[idx] * ssa1[idx] * g1[idx] + tau2[idx] * ssa2[idx] * g2[idx]) / max(tauscat12, eps);
         ssa1[idx] = tauscat12 / max(eps, tau12);
         tau1[idx] = tau12;
-        }
     }
+}
 
 
-    template<typename TF>__global__
-    void inc_1scalar_by_1scalar_bybnd_kernel(
-                const int ncol, const int nlay, const int ngpt,
-                TF* __restrict__ tau1, const TF* __restrict__ tau2,
-                const int nbnd, const int* __restrict__ band_lims_gpt)
+template<typename TF> __global__
+void inc_1scalar_by_1scalar_bybnd_kernel(
+            const int ncol, const int nlay, const int ngpt,
+            TF* __restrict__ tau1, const TF* __restrict__ tau2,
+            const int nbnd, const int* __restrict__ band_lims_gpt)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
+    if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
-        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-        const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-        const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
-
-        if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
+        for (int ibnd=0; ibnd<nbnd; ++ibnd)
         {
-            for (int ibnd=0; ibnd<nbnd; ++ibnd)
+            if ( ((igpt+1) >= band_lims_gpt[ibnd*2]) && ((igpt+1) <= band_lims_gpt[ibnd*2+1]) )
             {
-                if ( ((igpt+1) >= band_lims_gpt[ibnd*2]) && ((igpt+1) <= band_lims_gpt[ibnd*2+1]) )
-                {
-                    const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
-                    const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
+                const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
+                const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
 
-                    tau1[idx_gpt] = tau1[idx_gpt] + tau2[idx_bnd];
-                }
+                tau1[idx_gpt] = tau1[idx_gpt] + tau2[idx_bnd];
             }
         }
     }
+}
 
 
-    template<typename TF>__global__
-    void inc_2stream_by_2stream_bybnd_kernel(
-                const int ncol, const int nlay, const int ngpt, const TF eps,
-                TF* __restrict__ tau1, TF* __restrict__ ssa1, TF* __restrict__ g1,
-                const TF* __restrict__ tau2, const TF* __restrict__ ssa2, const TF* __restrict__ g2,
-                const int nbnd, const int* __restrict__ band_lims_gpt)
+template<typename TF> __global__
+void inc_2stream_by_2stream_bybnd_kernel(
+            const int ncol, const int nlay, const int ngpt, const TF eps,
+            TF* __restrict__ tau1, TF* __restrict__ ssa1, TF* __restrict__ g1,
+            const TF* __restrict__ tau2, const TF* __restrict__ ssa2, const TF* __restrict__ g2,
+            const int nbnd, const int* __restrict__ band_lims_gpt)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
+    if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
-        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-        const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-        const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+        const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
 
-        if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
+        for (int ibnd=0; ibnd<nbnd; ++ibnd)
         {
-            const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
-
-            for (int ibnd=0; ibnd<nbnd; ++ibnd)
+            if ( ((igpt+1) >= band_lims_gpt[ibnd*2]) && ((igpt+1) <= band_lims_gpt[ibnd*2+1]) )
             {
-                if ( ((igpt+1) >= band_lims_gpt[ibnd*2]) && ((igpt+1) <= band_lims_gpt[ibnd*2+1]) )
-                {
-                    const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
+                const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
 
-                    const TF tau12 = tau1[idx_gpt] + tau2[idx_bnd];
-                    const TF tauscat12 = tau1[idx_gpt] * ssa1[idx_gpt] + tau2[idx_bnd] * ssa2[idx_bnd];
+                const TF tau12 = tau1[idx_gpt] + tau2[idx_bnd];
+                const TF tauscat12 = tau1[idx_gpt] * ssa1[idx_gpt] + tau2[idx_bnd] * ssa2[idx_bnd];
 
-                    g1[idx_gpt] = (tau1[idx_gpt] * ssa1[idx_gpt] * g1[idx_gpt] +
-                                   tau2[idx_bnd] * ssa2[idx_bnd] * g2[idx_bnd]) / max(tauscat12, eps);
-                    ssa1[idx_gpt] = tauscat12 / max(eps, tau12);
-                    tau1[idx_gpt] = tau12;
-                }
+                g1[idx_gpt] = (tau1[idx_gpt] * ssa1[idx_gpt] * g1[idx_gpt] +
+                               tau2[idx_bnd] * ssa2[idx_bnd] * g2[idx_bnd]) / max(tauscat12, eps);
+                ssa1[idx_gpt] = tauscat12 / max(eps, tau12);
+                tau1[idx_gpt] = tau12;
             }
         }
     }
+}
 
 
-    template<typename TF>__global__
-    void delta_scale_2str_k_kernel(
-                const int ncol, const int nlay, const int ngpt, const TF eps,
-                TF* __restrict__ tau, TF* __restrict__ ssa, TF* __restrict__ g)
+template<typename TF> __global__
+void delta_scale_2str_k_kernel(
+            const int ncol, const int nlay, const int ngpt, const TF eps,
+            TF* __restrict__ tau, TF* __restrict__ ssa, TF* __restrict__ g)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+
+    if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
-        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-        const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-        const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
+        const int idx = icol + ilay*ncol + igpt*nlay*ncol;
+        const TF f = g[idx] * g[idx];
+        const TF wf = ssa[idx] * f;
+        tau[idx] *= (TF(1.) - wf);
+        ssa[idx] = (ssa[idx] - wf) / max(eps,(TF(1.)-wf));
+        g[idx] = (g[idx] - f) / max(eps,(TF(1.)-f));
 
-        if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
-        {
-            const int idx = icol + ilay*ncol + igpt*nlay*ncol;
-            const TF f = g[idx] * g[idx];
-            const TF wf = ssa[idx] * f;
-            tau[idx] *= (TF(1.) - wf);
-            ssa[idx] = (ssa[idx] - wf) / max(eps,(TF(1.)-wf));
-            g[idx] = (g[idx] - f) / max(eps,(TF(1.)-f));
-
-        }
     }
+}
