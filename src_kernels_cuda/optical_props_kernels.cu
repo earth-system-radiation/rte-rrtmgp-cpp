@@ -57,9 +57,13 @@ void increment_2stream_by_2stream_kernel(
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
         const int idx = icol + ilay*ncol + igpt*ncol*nlay;
-        const TF tau12 = tau1[idx] + tau2[idx];
-        const TF tauscat12 = tau1[idx] * ssa1[idx] + tau2[idx] * tau2[idx];
-        g1[idx] = (tau1[idx] * ssa1[idx] * g1[idx] + tau2[idx] * ssa2[idx] * g2[idx]) / max(tauscat12, eps);
+        const TF tau1_value = tau1[idx];
+        const TF tau2_value = tau2[idx];
+        const TF tau12 = tau1_value + tau2_value;
+        const TF ssa1_value = ssa1[idx];
+        const TF tauscat12 = (tau1_value * ssa1_value) + (tau2_value * tau2_value);
+
+        g1[idx] = ((tau1_value * ssa1_value * g1[idx]) + (tau2_value * ssa2[idx] * g2[idx])) / max(tauscat12, eps);
         ssa1[idx] = tauscat12 / max(eps, tau12);
         tau1[idx] = tau12;
     }
@@ -78,12 +82,13 @@ void inc_1scalar_by_1scalar_bybnd_kernel(
 
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
+        const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
+
         #pragma unroll loop_unroll_factor_nbnd
         for (int ibnd=0; ibnd<nbnd; ++ibnd)
         {
             if ( ((igpt+1) >= band_lims_gpt[ibnd*2]) && ((igpt+1) <= band_lims_gpt[ibnd*2+1]) )
             {
-                const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
                 const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
 
                 tau1[idx_gpt] = tau1[idx_gpt] + tau2[idx_bnd];
@@ -114,12 +119,14 @@ void inc_2stream_by_2stream_bybnd_kernel(
             if ( ((igpt+1) >= band_lims_gpt[ibnd*2]) && ((igpt+1) <= band_lims_gpt[ibnd*2+1]) )
             {
                 const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
+                const TF tau1_value = tau1[idx_gpt];
+                const TF tau2_value = tau2[idx_bnd];
+                const TF ssa1_value = ssa1[idx_gpt];
+                const TF ssa2_value = ssa2[idx_bnd];
+                const TF tau12 = tau1_value + tau2_value;
+                const TF tauscat12 = (tau1_value * ssa1_value) + (tau2_value * ssa2_value);
 
-                const TF tau12 = tau1[idx_gpt] + tau2[idx_bnd];
-                const TF tauscat12 = tau1[idx_gpt] * ssa1[idx_gpt] + tau2[idx_bnd] * ssa2[idx_bnd];
-
-                g1[idx_gpt] = (tau1[idx_gpt] * ssa1[idx_gpt] * g1[idx_gpt] +
-                               tau2[idx_bnd] * ssa2[idx_bnd] * g2[idx_bnd]) / max(tauscat12, eps);
+                g1[idx_gpt] = ((tau1_value * ssa1_value * g1[idx_gpt]) + (tau2_value * ssa2_value * g2[idx_bnd])) / max(tauscat12, eps);
                 ssa1[idx_gpt] = tauscat12 / max(eps, tau12);
                 tau1[idx_gpt] = tau12;
             }
@@ -140,11 +147,14 @@ void delta_scale_2str_k_kernel(
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
         const int idx = icol + ilay*ncol + igpt*nlay*ncol;
-        const TF f = g[idx] * g[idx];
-        const TF wf = ssa[idx] * f;
+        const TF g_value = g[idx];
+        const TF ssa_value = ssa[idx];
+        const TF f = g_value * g_value;
+        const TF wf = ssa_value * f;
+
         tau[idx] *= (TF(1.) - wf);
-        ssa[idx] = (ssa[idx] - wf) / max(eps,(TF(1.)-wf));
-        g[idx] = (g[idx] - f) / max(eps,(TF(1.)-f));
+        ssa[idx] = (ssa_value - wf) / max(eps,(TF(1.)-wf));
+        g[idx] = (g_value - f) / max(eps,(TF(1.)-f));
 
     }
 }
