@@ -23,6 +23,7 @@ def parse_command_line():
     parser.add_argument("--block_size_x_bybnd", type=int, default=16)
     parser.add_argument("--block_size_y_bybnd", type=int, default=4)
     parser.add_argument("--block_size_z_bybnd", type=int, default=1)
+    parser.add_argument("--loop_unroll_bybnd", type=int, default=1)
     return parser.parse_args()
 
 
@@ -78,6 +79,7 @@ def tune():
                                OrderedDict(block_size_x=16, block_size_y=4, block_size_z=1), compiler_options=common.cp)
     answer = [None for _ in range(0, len(args["bybnd"]))]
     answer[3] = ref_result[3]
+    tune_params["loop_unroll_factor_nbnd"] = [0] + [i for i in range(1, nbnd + 1) if nbnd // i == nbnd / i]
     result, env = kt.tune_kernel(kernel_name["bybnd"], kernels_src, problem_size, args["bybnd"], tune_params,
                                  answer=answer, compiler_options=common.cp, verbose=True, restrictions=restrictions)
     with open("timings_inc_1scalar_by_1scalar_bybnd_kernel.json", "w") as fp:
@@ -134,6 +136,7 @@ if __name__ == "__main__":
             parameters["bybnd"]["block_size_x"] = best_configuration["block_size_x"]
             parameters["bybnd"]["block_size_y"] = best_configuration["block_size_y"]
             parameters["bybnd"]["block_size_z"] = best_configuration["block_size_z"]
+            parameters["bybnd"]["loop_unroll_factor_nbnd"] = best_configuration["loop_unroll_factor_nbnd"]
         else:
             parameters["kernel"]["block_size_x"] = command_line.block_size_x
             parameters["kernel"]["block_size_y"] = command_line.block_size_y
@@ -141,4 +144,5 @@ if __name__ == "__main__":
             parameters["bybnd"]["block_size_x"] = command_line.block_size_x_bybnd
             parameters["bybnd"]["block_size_y"] = command_line.block_size_y_bybnd
             parameters["bybnd"]["block_size_z"] = command_line.block_size_z_bybnd
+            parameters["bybnd"]["loop_unroll_factor_nbnd"] = command_line.loop_unroll_bybnd
         run_and_test(parameters)

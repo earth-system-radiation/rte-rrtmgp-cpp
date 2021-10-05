@@ -22,6 +22,10 @@
  *
  */
 
+#ifndef kernel_tuner
+const int loop_unroll_factor_nbnd = 2;
+#endif
+
 
 template<typename TF> __global__
 void increment_1scalar_by_1scalar_kernel(
@@ -74,6 +78,7 @@ void inc_1scalar_by_1scalar_bybnd_kernel(
 
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
+        #pragma unroll loop_unroll_factor_nbnd
         for (int ibnd=0; ibnd<nbnd; ++ibnd)
         {
             if ( ((igpt+1) >= band_lims_gpt[ibnd*2]) && ((igpt+1) <= band_lims_gpt[ibnd*2+1]) )
