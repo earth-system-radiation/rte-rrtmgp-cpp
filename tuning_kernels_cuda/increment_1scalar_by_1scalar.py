@@ -31,7 +31,8 @@ def run_and_test(params: OrderedDict):
     # kernel
     print(f"Running {kernel_name['kernel']} [{params['kernel']['block_size_x']}, {params['kernel']['block_size_y']}, {params['kernel']['block_size_z']}]")
     increment_1scalar_by_1scalar(tau1_ref)
-    result = kt.run_kernel(kernel_name["kernel"], kernels_src, problem_size, args["kernel"], params["kernel"], compiler_options=common.cp)
+    result = kt.run_kernel(kernel_name["kernel"], kernels_src, problem_size, args["kernel"], params["kernel"],
+                           compiler_options=common.cp)
     common.compare_fields(tau1_ref, result[3], "tau1")
     # bybnd
     print(
@@ -45,6 +46,8 @@ def run_and_test(params: OrderedDict):
 
 # Tuning
 def tune():
+    global tau1
+    global tau1_ref
     tune_params = OrderedDict()
     tune_params["block_size_x"] = [2 ** i for i in range(0, 11)]
     tune_params["block_size_y"] = [2 ** i for i in range(0, 11)]
@@ -55,11 +58,15 @@ def tune():
     increment_1scalar_by_1scalar(tau1_ref)
     answer = [None for _ in range(0, len(args["kernel"]))]
     answer[3] = tau1_ref
-    result, env = kt.tune_kernel(kernel_name["kernel"], kernels_src, problem_size, args["kernel"], tune_params, answer=answer, compiler_options=common.cp, verbose=True, restrictions=restrictions)
+    result, env = kt.tune_kernel(kernel_name["kernel"], kernels_src, problem_size, args["kernel"], tune_params,
+                                 answer=answer, compiler_options=common.cp, verbose=True, restrictions=restrictions)
     with open("timings_increment_1scalar_by_1scalar_kernel.json", "w") as fp:
         json.dump(result, fp)
     # bybnd
     print(f"Tuning {kernel_name['bybnd']}")
+    tau1 = common.random(size, common.type_float)
+    tau1_ref = tau1
+    args["bybnd"][3] = tau1
     increment_1scalar_by_1scalar_bybnd(tau1_ref)
     answer = [None for _ in range(0, len(args["bybnd"]))]
     answer[3] = tau1_ref
