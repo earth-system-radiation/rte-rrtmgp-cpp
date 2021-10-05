@@ -108,6 +108,7 @@ void inc_2stream_by_2stream_bybnd_kernel(
     {
         const int idx_gpt = icol + ilay*ncol + igpt*nlay*ncol;
 
+        #pragma unroll loop_unroll_factor_nbnd
         for (int ibnd=0; ibnd<nbnd; ++ibnd)
         {
             if ( ((igpt+1) >= band_lims_gpt[ibnd*2]) && ((igpt+1) <= band_lims_gpt[ibnd*2+1]) )
