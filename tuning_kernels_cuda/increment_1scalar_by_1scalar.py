@@ -39,7 +39,7 @@ def run_and_test(params: OrderedDict):
     common.compare_fields(tau1_ref, result[3], "tau1")
     # bybnd
     print(
-        f"Running {kernel_name['bybnd']} [{params['bybnd']['block_size_x']}, {params['bybnd']['block_size_y']}, {params['bybnd']['block_size_z']}]")
+        f"Running {kernel_name['bybnd']} [{params['bybnd']['block_size_x']}, {params['bybnd']['block_size_y']}, {params['bybnd']['block_size_z']}, {params['bybnd']['loop_unroll_factor_nbnd']}]")
     tau1 = common.random(size, common.type_float)
     tau1_ref = tau1
     args["bybnd"][3] = tau1
