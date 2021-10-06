@@ -40,7 +40,7 @@ def run_and_test(params: OrderedDict):
                            compiler_options=common.cp)
     common.compare_fields(ref_result[4], result[4], "tau1")
     common.compare_fields(ref_result[5], result[5], "ssa1")
-    common.compare_fields(ref_result[6], result[6], "ssa1")
+    common.compare_fields(ref_result[6], result[6], "g1")
     # bybnd
     print(
         f"Running {kernel_name['bybnd']} [{params['bybnd']['block_size_x']}, {params['bybnd']['block_size_y']}, {params['bybnd']['block_size_z']}, {params['bybnd']['loop_unroll_factor_nbnd']}]")
@@ -50,7 +50,7 @@ def run_and_test(params: OrderedDict):
                            compiler_options=common.cp)
     common.compare_fields(ref_result[4], result[4], "tau1")
     common.compare_fields(ref_result[5], result[5], "ssa1")
-    common.compare_fields(ref_result[6], result[6], "ssa1")
+    common.compare_fields(ref_result[6], result[6], "g1")
 
 
 # Tuning
