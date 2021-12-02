@@ -3,21 +3,9 @@ import kernel_tuner as kt
 import numpy as np
 import argparse
 import json
-import os
 from collections import OrderedDict
 
-from common import reg_observer
-
-metrics = OrderedDict()
-metrics["registers"] = lambda p: p["num_regs"]
-
-
-# CUDA source code
-dir_name = os.path.dirname(os.path.realpath(__file__)) + '/'
-kernels_src = dir_name+'../src_kernels_cuda/rte_solver_kernels.cu'
-
-ref_kernels_src = dir_name+'reference_kernels/rte_solver_kernels.cu'
-
+import common
 
 
 # Parse command line arguments
@@ -40,11 +28,13 @@ def run_and_test(params: dict):
 
     source_ref_result = kt.run_kernel(
             source_ref_kernel_name, ref_kernels_src, problem_size,
-            source_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=512, block_size_y=1), compiler_options=cp)
+            source_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=512, block_size_y=1),
+            compiler_options=common.cp)
 
     source_result = kt.run_kernel(
             source_kernel_name, kernels_src, problem_size,
-            source_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=64, block_size_y=11), compiler_options=cp)
+            source_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=64, block_size_y=11),
+            compiler_options=common.cp)
 
     outputs = ["flux_dir", "source_sfc", "source_dn", "source_up"]
     for i, o in enumerate(outputs):
@@ -53,17 +43,19 @@ def run_and_test(params: dict):
         if okay:
             print(f'results for {o}: OKAY!')
         else:
-            print(f'results for {o}: NOT OKAY, {max_diff=}')
+            print(f'results for {o}: NOT OKAY, {max_diff}')
 
     print("Testing adding kernel")
 
     adding_ref_result = kt.run_kernel(
            adding_ref_kernel_name, ref_kernels_src, problem_size,
-           adding_ref_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=512, block_size_y=1), compiler_options=cp)
+           adding_ref_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=512, block_size_y=1),
+            compiler_options=common.cp)
 
     adding_result = kt.run_kernel(
            adding_kernel_name, kernels_src, problem_size,
-           adding_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=32, block_size_y=4, loop_unroll_factor_nlay=140), compiler_options=cp)
+           adding_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=32, block_size_y=4,
+                                    loop_unroll_factor_nlay=140), compiler_options=common.cp)
 
     outputs = ["flux_dir", "flux_dn", "flux_up"]
     for i, o in enumerate(outputs):
@@ -72,7 +64,7 @@ def run_and_test(params: dict):
         if okay:
             print(f'results for {o}: OKAY!')
         else:
-            print(f'results for {o}: NOT OKAY, {max_diff=}')
+            print(f'results for {o}: NOT OKAY, {max_diff}')
 
 
 
@@ -81,7 +73,8 @@ def tune():
 
     source_result = kt.run_kernel(
             source_ref_kernel_name, ref_kernels_src, problem_size,
-            source_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=512, block_size_y=1), compiler_options=cp)
+            source_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=512, block_size_y=1),
+            compiler_options=common.cp)
 
     source_answer = [None for _ in source_kernel_args]
     source_answer[-4] = source_result[-4] #source_up
@@ -97,9 +90,9 @@ def tune():
     #print(f"Tuning {source_kernel_name}")
     result, env = kt.tune_kernel(
             source_kernel_name, kernels_src, problem_size,
-            source_kernel_args, tune_params, compiler_options=cp,
+            source_kernel_args, tune_params, compiler_options=common.cp,
             answer=source_answer, atol=1e-14,
-            verbose=True, observers=[reg_observer], metrics=metrics, iterations=32)
+            verbose=True, observers=[common.reg_observer], metrics=common.metrics, iterations=32)
 
     with open('timings_sw_source_kernel.json', 'w') as fp:
         json.dump(result, fp)
@@ -111,7 +104,8 @@ def tune():
 
     adding_result = kt.run_kernel(
            adding_ref_kernel_name, ref_kernels_src, problem_size,
-           adding_ref_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=512, block_size_y=1), compiler_options=cp)
+           adding_ref_kernel_args, dict(RTE_RRTMGP_USE_CBOOL=1, block_size_x=512, block_size_y=1),
+            compiler_options=common.cp)
 
     adding_answer = [None for _ in adding_kernel_args]
 
@@ -126,9 +120,9 @@ def tune():
 
     result, env = kt.tune_kernel(
             adding_kernel_name, kernels_src, problem_size,
-            adding_kernel_args, tune_params, compiler_options=cp,
+            adding_kernel_args, tune_params, compiler_options=common.cp,
             answer=adding_answer, atol=1e-14,
-            verbose=True, observers=[reg_observer], metrics=metrics, iterations=32)
+            verbose=True, observers=[common.reg_observer], metrics=common.metrics, iterations=32)
 
     with open('timings_sw_adding_kernel.json', 'w') as fp:
         json.dump(result, fp)
@@ -137,16 +131,15 @@ def tune():
 if __name__ == '__main__':
     command_line = parse_command_line()
 
+    kernels_src = common.dir_name + '../src_kernels_cuda/rte_solver_kernels.cu'
+    ref_kernels_src = common.dir_name + 'reference_kernels/rte_solver_kernels.cu'
+
     # Settings
-    type_int = np.int32
-    type_float = np.float64
-    type_bool = np.int8  # = default without `RTE_RRTMGP_USE_CBOOL`
+    type_bool = np.int8
 
-    str_float = 'float' if type_float is np.float32 else 'double'
-
-    ncol = type_int(512)
-    nlay = type_int(140)
-    ngpt = type_int(224)
+    ncol = common.type_int(512)
+    nlay = common.type_int(140)
+    ngpt = common.type_int(224)
 
     top_at_1 = type_bool(0)
 
@@ -155,25 +148,25 @@ if __name__ == '__main__':
     alb_size = ncol * ngpt
 
     # Input arrays; for this kernel, the values don't matter..
-    t_noscat = np.random.random(opt_size).astype(type_float)
-    flux_up  = np.random.random(flx_size).astype(type_float)
-    flux_dn  = np.random.random(flx_size).astype(type_float)
-    flux_dir = np.random.random(flx_size).astype(type_float)
+    t_noscat = np.random.random(opt_size).astype(common.type_float)
+    flux_up  = np.random.random(flx_size).astype(common.type_float)
+    flux_dn  = np.random.random(flx_size).astype(common.type_float)
+    flux_dir = np.random.random(flx_size).astype(common.type_float)
 
-    sfc_alb_dir = np.random.random(alb_size).astype(type_float)
-    sfc_alb_dif = np.random.random(alb_size).astype(type_float)
+    sfc_alb_dir = np.random.random(alb_size).astype(common.type_float)
+    sfc_alb_dif = np.random.random(alb_size).astype(common.type_float)
 
     # Output arrays
-    r_dif = np.random.random(opt_size).astype(type_float)
-    t_dif = np.random.random(opt_size).astype(type_float)
-    r_dir = np.random.random(opt_size).astype(type_float)
-    t_dir = np.random.random(opt_size).astype(type_float)
-    source_up = np.random.random(opt_size).astype(type_float)
-    source_dn = np.random.random(opt_size).astype(type_float)
-    source_sfc = np.random.random(alb_size).astype(type_float)
-    albedo = np.random.random(flx_size).astype(type_float)
-    src = np.random.random(flx_size).astype(type_float)
-    denom = np.random.random(opt_size).astype(type_float)
+    r_dif = np.random.random(opt_size).astype(common.type_float)
+    t_dif = np.random.random(opt_size).astype(common.type_float)
+    r_dir = np.random.random(opt_size).astype(common.type_float)
+    t_dir = np.random.random(opt_size).astype(common.type_float)
+    source_up = np.random.random(opt_size).astype(common.type_float)
+    source_dn = np.random.random(opt_size).astype(common.type_float)
+    source_sfc = np.random.random(alb_size).astype(common.type_float)
+    albedo = np.random.random(flx_size).astype(common.type_float)
+    src = np.random.random(flx_size).astype(common.type_float)
+    denom = np.random.random(opt_size).astype(common.type_float)
 
     source_kernel_args = [ncol, nlay, ngpt, top_at_1, r_dir, t_dir, t_noscat,
                           sfc_alb_dir, source_up, source_dn, source_sfc, flux_dir]
@@ -186,10 +179,10 @@ if __name__ == '__main__':
 
 
     problem_size = (ncol, ngpt)
-    source_kernel_name = f'sw_source_kernel<{str_float}, {top_at_1}>'
-    source_ref_kernel_name = f'sw_source_kernel<{str_float}>'
-    adding_kernel_name = f'sw_adding_kernel<{str_float}, {top_at_1}>'
-    adding_ref_kernel_name = f'sw_adding_kernel<{str_float}>'
+    source_kernel_name = f'sw_source_kernel<{common.str_float}, {top_at_1}>'
+    source_ref_kernel_name = f'sw_source_kernel<{common.str_float}>'
+    adding_kernel_name = f'sw_adding_kernel<{common.str_float}, {top_at_1}>'
+    adding_ref_kernel_name = f'sw_adding_kernel<{common.str_float}>'
 
     if command_line.tune:
         tune()

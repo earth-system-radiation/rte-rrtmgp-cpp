@@ -123,7 +123,7 @@ void lw_solver_noscat_step_2_kernel(
 
         const TF pi = acos(TF(-1.));
         const int idx_top = icol + (top_at_1 ? 0 : nlay)*ncol + igpt*ncol*(nlay+1);
-        radn_dn[idx_top] = radn_dn[idx_top] / pow(TF(2.) * pi * weight[0], nlay);
+        radn_dn[idx_top] = radn_dn[idx_top] / (TF(2.) * pi * weight[0]);
 
 
         lw_transport_noscat_kernel(
@@ -312,67 +312,42 @@ void apply_BC_kernel_lw(const int isfc, int ncol, const int nlay, const int ngpt
     }
 }
 
-template<typename TF>__global__ //apply_BC_gpt
+template<typename TF> __global__
 void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const TF* __restrict__ inc_flux, TF* __restrict__ flux_dn)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
     if ( (icol < ncol) && (igpt < ngpt) )
     {
-        if (top_at_1)
-        {
-            const int idx_out = icol + igpt*ncol*(nlay+1);
-            const int idx_in  = icol + igpt*ncol;
-            flux_dn[idx_out] = inc_flux[idx_in];
-        }
-        else
-        {
-            const int idx_out = icol + nlay*ncol + igpt*ncol*(nlay+1);
-            const int idx_in  = icol + igpt*ncol;
-            flux_dn[idx_out] = inc_flux[idx_in];
-        }
+        const int idx_out = icol + ((top_at_1 ? 0 : (nlay * ncol))) + (igpt * ncol * (nlay + 1));
+        const int idx_in = icol + (igpt * ncol);
+        flux_dn[idx_out] = inc_flux[idx_in];
     }
 }
 
-template<typename TF>__global__
+template<typename TF> __global__
 void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const TF* __restrict__ inc_flux, const TF* __restrict__ factor, TF* __restrict__ flux_dn)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
     if ( (icol < ncol) && (igpt < ngpt) )
     {
-        if (top_at_1)
-        {
-            const int idx_out = icol + igpt*ncol*(nlay+1);
-            const int idx_in  = icol + igpt*ncol;
-            flux_dn[idx_out] = inc_flux[idx_in] * factor[icol];
-        }
-        else
-        {
-            const int idx_out = icol + nlay*ncol + igpt*ncol*(nlay+1);
-            const int idx_in  = icol + igpt*ncol;
-            flux_dn[idx_out] = inc_flux[idx_in] * factor[icol];
-        }
+        const int idx_out = icol + ((top_at_1 ? 0 : (nlay * ncol))) + (igpt * ncol * (nlay + 1));
+        const int idx_in = icol + (igpt * ncol);
+
+        flux_dn[idx_out] = inc_flux[idx_in] * factor[icol];
     }
 }
 
-template<typename TF>__global__
+template<typename TF> __global__
 void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, TF* __restrict__ flux_dn)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
     if ( (icol < ncol) && (igpt < ngpt) )
     {
-        if (top_at_1)
-        {
-            const int idx_out = icol + igpt*ncol*(nlay+1);
-            flux_dn[idx_out] = TF(0.);
-        }
-        else
-        {
-            const int idx_out = icol + nlay*ncol + igpt*ncol*(nlay+1);
-            flux_dn[idx_out] = TF(0.);
-        }
+        const int idx_out = icol + ((top_at_1 ? 0 : (nlay * ncol))) + (igpt * ncol * (nlay + 1));
+        flux_dn[idx_out] = TF(0.);
     }
 }
 
