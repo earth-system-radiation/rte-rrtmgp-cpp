@@ -123,11 +123,13 @@ void Rte_lw<TF>::rte_lw(
 
     expand_and_transpose(optical_props, sfc_emis, sfc_emis_gpt);
 
+    // CvH TODO WE REMOVE THE UPPER BC FOR NOW, TO MAKE 1.5 COMPILE
     // Upper boundary condition.
-    if (inc_flux.size() == 0)
-        rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
-    else
-        rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, gpt_flux_dn);
+    // if (inc_flux.size() == 0)
+    //     rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
+    // else
+    //     rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, gpt_flux_dn);
+    // CvH TODO END
 
     // Run the radiative transfer solver
     const int n_quad_angs = n_gauss_angles;
@@ -145,6 +147,7 @@ void Rte_lw<TF>::rte_lw(
     // Do not rescale and pass tau in twice in the last line to not trigger an exception.
     const BOOL_TYPE do_rescaling = false;
 
+    // CvH TODO We are missing the inc_flux_diffuse that is in 1.5
     rrtmgp_kernel_launcher::lw_solver_noscat_GaussQuad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,
             gauss_Ds_subset, gauss_wts_subset,
@@ -155,6 +158,7 @@ void Rte_lw<TF>::rte_lw(
             gpt_flux_up, gpt_flux_dn,
             do_jacobians, sfc_src_jac, gpt_flux_up_jac,
             do_rescaling, optical_props->get_tau(), optical_props->get_tau());
+    // CvH TODO END
 
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);

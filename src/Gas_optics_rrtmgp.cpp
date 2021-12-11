@@ -1261,10 +1261,12 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
         // rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
 
         // In case of 2str type
-        rrtmgp_kernel_launcher::combine_and_reorder_2str(
-                ncol, nlay, ngpt,
-                tau, tau_rayleigh,
-                optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
+        // CvH TODO REMOVE THIS AS IT HAS BEEN REMOVED FROM REPO.
+        // rrtmgp_kernel_launcher::combine_and_reorder_2str(
+        //         ncol, nlay, ngpt,
+        //         tau, tau_rayleigh,
+        //         optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
+        // CvH END.
     }
 }
 
