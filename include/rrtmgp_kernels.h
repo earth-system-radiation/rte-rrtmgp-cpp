@@ -147,11 +147,13 @@ namespace rrtmgp_kernels
 
     extern "C" void lw_solver_noscat_GaussQuad(
             int* ncol, int* nlay, int* ngpt, BOOL_TYPE* top_at_1, int* n_quad_angs,
-            FLOAT_TYPE* gauss_Ds_subset, FLOAT_TYPE* gauss_wts_subset,
+            FLOAT_TYPE* secants, FLOAT_TYPE* gauss_wts_subset,
             FLOAT_TYPE* tau,
             FLOAT_TYPE* lay_source, FLOAT_TYPE* lev_source_inc, FLOAT_TYPE* lev_source_dec,
             FLOAT_TYPE* sfc_emis_gpt, FLOAT_TYPE* sfc_source,
+            FLOAT_TYPE* inc_flux_diffuse,
             FLOAT_TYPE* gpt_flux_up, FLOAT_TYPE* gpt_flux_dn,
+            BOOL_TYPE* do_broadband, FLOAT_TYPE* flux_up_loc, FLOAT_TYPE* flux_dn_loc,
             BOOL_TYPE* do_jacobians, FLOAT_TYPE* sfc_source_jac, FLOAT_TYPE* gpt_flux_up_jac,
             BOOL_TYPE* do_rescaling, FLOAT_TYPE* ssa, FLOAT_TYPE* g);
 

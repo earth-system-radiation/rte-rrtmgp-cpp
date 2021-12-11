@@ -58,19 +58,21 @@ namespace rrtmgp_kernel_launcher
     template<typename TF>
     void lw_solver_noscat_GaussQuad(
             int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1, int n_quad_angs,
-            const Array<TF,2>& gauss_Ds_subset,
+            const Array<TF,3>& secants,
             const Array<TF,2>& gauss_wts_subset,
             const Array<TF,3>& tau,
             const Array<TF,3>& lay_source,
             const Array<TF,3>& lev_source_inc, const Array<TF,3>& lev_source_dec,
             const Array<TF,2>& sfc_emis_gpt, const Array<TF,2>& sfc_source,
+            const Array<TF,2>& inc_flux_diffuse,
             Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn,
+            BOOL_TYPE do_broadband, Array<TF,2>& flux_up_loc, Array<TF,2>& flux_dn_loc,
             BOOL_TYPE do_jacobians, const Array<TF,2>& sfc_source_jac, Array<TF,3>& gpt_flux_up_jac,
             BOOL_TYPE do_rescaling, const Array<TF,3>& ssa, const Array<TF,3>& g)
-{
-    rrtmgp_kernels::lw_solver_noscat_GaussQuad(
+    {
+        rrtmgp_kernels::lw_solver_noscat_GaussQuad(
                 &ncol, &nlay, &ngpt, &top_at_1, &n_quad_angs,
-                const_cast<TF*>(gauss_Ds_subset.ptr()),
+                const_cast<TF*>(secants.ptr()),
                 const_cast<TF*>(gauss_wts_subset.ptr()),
                 const_cast<TF*>(tau.ptr()),
                 const_cast<TF*>(lay_source.ptr()),
@@ -78,14 +80,12 @@ namespace rrtmgp_kernel_launcher
                 const_cast<TF*>(lev_source_dec.ptr()),
                 const_cast<TF*>(sfc_emis_gpt.ptr()),
                 const_cast<TF*>(sfc_source.ptr()),
+                const_cast<TF*>(inc_flux_diffuse.ptr()),
                 gpt_flux_up.ptr(),
                 gpt_flux_dn.ptr(),
-                &do_jacobians,
-                const_cast<TF*>(sfc_source_jac.ptr()),
-                gpt_flux_up_jac.ptr(),
-                &do_rescaling,
-                const_cast<TF*>(ssa.ptr()),
-                const_cast<TF*>(g.ptr()));
+                &do_broadband, flux_up_loc.ptr(), flux_dn_loc.ptr(),
+                &do_jacobians, const_cast<TF*>(sfc_source_jac.ptr()), gpt_flux_up_jac.ptr(),
+                &do_rescaling, const_cast<TF*>(ssa.ptr()), const_cast<TF*>(g.ptr()));
     }
 }
 
@@ -139,6 +139,19 @@ void Rte_lw<TF>::rte_lw(
     Array<TF,2> gauss_wts_subset = gauss_wts.subset(
             {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
 
+    Array<TF,3> secants({ncol, ngpt, n_quad_angs});
+    for (int imu=1; imu<n_quad_angs; ++imu)
+        for (int igpt=1; igpt<ngpt; ++igpt)
+            for (int icol=1; icol<ncol; ++icol)
+                secants({icol, igpt, imu}) = gauss_Ds({imu, n_quad_angs});
+
+    Array<TF,2> inc_flux_diffuse({ncol, ngpt});
+
+    const BOOL_TYPE do_broadband = false;
+    Array<TF,2> flux_up_loc({ncol, nlay+1});
+    Array<TF,2> flux_dn_loc({ncol, nlay+1});
+
+    // CvH TODO THESE CAN GO TO ZERO SIZE.
     // For now, just pass the arrays around.
     const BOOL_TYPE do_jacobians = false;
     Array<TF,2> sfc_src_jac(sources.get_sfc_source().get_dims());
@@ -147,18 +160,18 @@ void Rte_lw<TF>::rte_lw(
     // Do not rescale and pass tau in twice in the last line to not trigger an exception.
     const BOOL_TYPE do_rescaling = false;
 
-    // CvH TODO We are missing the inc_flux_diffuse that is in 1.5
     rrtmgp_kernel_launcher::lw_solver_noscat_GaussQuad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,
-            gauss_Ds_subset, gauss_wts_subset,
+            secants, gauss_wts_subset,
             optical_props->get_tau(),
             sources.get_lay_source(),
             sources.get_lev_source_inc(), sources.get_lev_source_dec(),
             sfc_emis_gpt, sources.get_sfc_source(),
+            inc_flux_diffuse,
             gpt_flux_up, gpt_flux_dn,
+            do_broadband, flux_up_loc, flux_dn_loc,
             do_jacobians, sfc_src_jac, gpt_flux_up_jac,
             do_rescaling, optical_props->get_tau(), optical_props->get_tau());
-    // CvH TODO END
 
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);
