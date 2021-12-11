@@ -1211,8 +1211,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
             col_mix, fmajor, fminor,
             play, tlay, col_gas,
             jeta, jtemp, jpress,
-            tau);
-
+            optical_props->get_tau());
 
     bool has_rayleigh = (this->krayl.size() > 0);
 
@@ -1228,8 +1227,9 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
                 fminor, jeta, tropo, jtemp,
                 tau_rayleigh);
 
+        // CvH TODO: I moved it here to avoid reordering for LW solver.
+        combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
     }
-    combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
 }
 
 template<typename TF>
