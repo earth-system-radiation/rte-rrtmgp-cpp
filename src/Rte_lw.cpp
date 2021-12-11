@@ -134,15 +134,15 @@ void Rte_lw<TF>::rte_lw(
     // Run the radiative transfer solver
     const int n_quad_angs = n_gauss_angles;
 
-    Array<TF,2> gauss_Ds_subset = gauss_Ds.subset(
-            {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
+    // Array<TF,2> gauss_Ds_subset = gauss_Ds.subset(
+    //        {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
     Array<TF,2> gauss_wts_subset = gauss_wts.subset(
             {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
 
     Array<TF,3> secants({ncol, ngpt, n_quad_angs});
-    for (int imu=1; imu<n_quad_angs; ++imu)
-        for (int igpt=1; igpt<ngpt; ++igpt)
-            for (int icol=1; icol<ncol; ++icol)
+    for (int imu=1; imu<=n_quad_angs; ++imu)
+        for (int igpt=1; igpt<=ngpt; ++igpt)
+            for (int icol=1; icol<=ncol; ++icol)
                 secants({icol, igpt, imu}) = gauss_Ds({imu, n_quad_angs});
 
     Array<TF,2> inc_flux_diffuse({ncol, ngpt});
@@ -151,8 +151,7 @@ void Rte_lw<TF>::rte_lw(
     Array<TF,2> flux_up_loc({ncol, nlay+1});
     Array<TF,2> flux_dn_loc({ncol, nlay+1});
 
-    // CvH TODO THESE CAN GO TO ZERO SIZE.
-    // For now, just pass the arrays around.
+    // CvH: For now, just pass the arrays around. Could we reduce the array size?
     const BOOL_TYPE do_jacobians = false;
     Array<TF,2> sfc_src_jac(sources.get_sfc_source().get_dims());
     Array<TF,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
