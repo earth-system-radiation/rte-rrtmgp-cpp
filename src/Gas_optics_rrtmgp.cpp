@@ -1088,13 +1088,13 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         Array<TF,6>& fmajor,
         const Array<TF,2>& col_dry) const
 {
-    Array<TF,3> tau({ngpt, nlay, ncol});
-    Array<TF,3> tau_rayleigh({ngpt, nlay, ncol});
+    Array<TF,3> tau({ncol, nlay, ngpt});
+    Array<TF,3> tau_rayleigh({ncol, nlay, ngpt});
     Array<TF,3> vmr({ncol, nlay, this->get_ngas()});
     Array<TF,3> col_gas({ncol, nlay, this->get_ngas()+1});
     col_gas.set_offsets({0, 0, -1});
-    Array<TF,4> col_mix({2, this->get_nflav(), ncol, nlay});
-    Array<TF,5> fminor({2, 2, this->get_nflav(), ncol, nlay});
+    Array<TF,4> col_mix({2, ncol, nlay, this->get_nflav()});
+    Array<TF,5> fminor({2, 2, ncol, nlay, this->get_nflav()});
 
     // CvH add all the checking...
     const int ngas = this->get_ngas();
@@ -1104,9 +1104,9 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     const int ntemp = this->get_ntemp();
 
     const int nminorlower = this->minor_scales_with_density_lower.dim(1);
-    const int nminorklower = this->kminor_lower.dim(1);
+    const int nminorklower = this->kminor_lower.dim(3);
     const int nminorupper = this->minor_scales_with_density_upper.dim(1);
-    const int nminorkupper = this->kminor_upper.dim(1);
+    const int nminorkupper = this->kminor_upper.dim(3);
 
     for (int igas=1; igas<=ngas; ++igas)
     {
