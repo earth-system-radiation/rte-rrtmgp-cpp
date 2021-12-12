@@ -420,8 +420,13 @@ Gas_optics_rrtmgp<TF>::Gas_optics_rrtmgp(
             Gas_optics<TF>(band_lims_wavenum, band2gpt),
             totplnk(totplnk)
 {
-    // CvH TODO Planckfrack needs to be reshaped.
-    this->planck_frac = planck_frac;
+    // Reshaping according to new dimension ordering since v1.5
+    this->planck_frac.set_dims({planck_frac.dim(4), planck_frac.dim(2), planck_frac.dim(3), planck_frac.dim(1)});
+    for (int i4=1; i4<=this->planck_frac.dim(4); ++i4)
+        for (int i3=1; i3<=this->planck_frac.dim(3); ++i3)
+            for (int i2=1; i2<=this->planck_frac.dim(2); ++i2)
+                for (int i1=1; i1<=this->planck_frac.dim(1); ++i1)
+                    this->planck_frac({i1, i2, i3, i4}) = planck_frac({i4, i2, i3, i1});
 
     // Initialize the absorption coefficient array, including Rayleigh scattering
     // tables if provided.
@@ -645,10 +650,15 @@ void Gas_optics_rrtmgp<TF>::init_abs_coeffs(
     this->press_ref = press_ref;
     this->temp_ref = temp_ref;
 
-    // CvH TODO, this needs to be transposed
-    this->kmajor = kmajor;
+    // Reshaping according to new dimension ordering since v1.5
+    this->kmajor.set_dims({kmajor.dim(4), kmajor.dim(2), kmajor.dim(3), kmajor.dim(1)});
+    for (int i4=1; i4<=this->kmajor.dim(4); ++i4)
+        for (int i3=1; i3<=this->kmajor.dim(3); ++i3)
+            for (int i2=1; i2<=this->kmajor.dim(2); ++i2)
+                for (int i1=1; i1<=this->kmajor.dim(1); ++i1)
+                    this->kmajor({i1, i2, i3, i4}) = kmajor({i4, i2, i3, i1});
 
-    // CvH TODO, these need to be transposed
+    // CvH TODO, these need to be reshaped
     // Create a new vector that consists of rayl_lower and rayl_upper stored in one variable.
     if (rayl_lower.size() > 0)
     {
