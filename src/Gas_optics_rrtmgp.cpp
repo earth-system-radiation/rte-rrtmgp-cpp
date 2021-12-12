@@ -1292,13 +1292,15 @@ void Gas_optics_rrtmgp<TF>::source(
     auto gpoint_bands = this->get_gpoint_bands();
     auto band_lims_gpoint = this->get_band_lims_gpoint();
 
-    Array<TF,3> lay_source_t({ngpt, nlay, ncol});
-    Array<TF,3> lev_source_inc_t({ngpt, nlay, ncol});
-    Array<TF,3> lev_source_dec_t({ngpt, nlay, ncol});
-    Array<TF,2> sfc_source_t({ngpt, ncol});
-    Array<TF,2> sfc_source_jac({ngpt, ncol});
+    // Array<TF,3> lay_source_t({ngpt, nlay, ncol});
+    // Array<TF,3> lev_source_inc_t({ngpt, nlay, ncol});
+    // Array<TF,3> lev_source_dec_t({ngpt, nlay, ncol});
+    // Array<TF,2> sfc_source_t({ngpt, ncol});
+    // Array<TF,2> sfc_source_jac({ngpt, ncol});
 
+    // CvH TODO THIS STATEMENT NEEDS CHECKING
     int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
+
     rrtmgp_kernel_launcher::compute_Planck_source(
             ncol, nlay, nbnd, ngpt,
             nflav, neta, npres, ntemp, nPlanckTemp,
@@ -1306,23 +1308,23 @@ void Gas_optics_rrtmgp<TF>::source(
             fmajor, jeta, tropo, jtemp, jpress,
             gpoint_bands, band_lims_gpoint, this->planck_frac, this->temp_ref_min,
             this->totplnk_delta, this->totplnk, this->gpoint_flavor,
-            sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t,
-            sfc_source_jac);
+            sources.get_sfc_source(), sources.get_lay_source(), sources.get_lev_source_inc(), sources.get_lev_source_dec(),
+            sources.get_sfc_source_jac());
 
-    // CvH this transpose is super slow.
-    for (int j=1; j<=sfc_source_t.dim(2); ++j)
-        for (int i=1; i<=sfc_source_t.dim(1); ++i)
-        {
-            sources.get_sfc_source    ()({j, i}) = sfc_source_t  ({i, j});
-            sources.get_sfc_source_jac()({j, i}) = sfc_source_jac({i, j});
-        }
+    // // CvH this transpose is super slow.
+    // for (int j=1; j<=sfc_source_t.dim(2); ++j)
+    //     for (int i=1; i<=sfc_source_t.dim(1); ++i)
+    //     {
+    //         sources.get_sfc_source    ()({j, i}) = sfc_source_t  ({i, j});
+    //         sources.get_sfc_source_jac()({j, i}) = sfc_source_jac({i, j});
+    //     }
 
-    rrtmgp_kernel_launcher::reorder123x321(lay_source_t, sources.get_lay_source());
-    rrtmgp_kernel_launcher::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());
-    rrtmgp_kernel_launcher::reorder123x321(lev_source_dec_t, sources.get_lev_source_dec());
-    // reorder123x321_test(sources.get_lay_source    ().ptr(), lay_source_t    .ptr(), ngpt, nlay, ncol);
-    // reorder123x321_test(sources.get_lev_source_inc().ptr(), lev_source_inc_t.ptr(), ngpt, nlay, ncol);
-    // reorder123x321_test(sources.get_lev_source_dec().ptr(), lev_source_dec_t.ptr(), ngpt, nlay, ncol);
+    // rrtmgp_kernel_launcher::reorder123x321(lay_source_t, sources.get_lay_source());
+    // rrtmgp_kernel_launcher::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());
+    // rrtmgp_kernel_launcher::reorder123x321(lev_source_dec_t, sources.get_lev_source_dec());
+    // // reorder123x321_test(sources.get_lay_source    ().ptr(), lay_source_t    .ptr(), ngpt, nlay, ncol);
+    // // reorder123x321_test(sources.get_lev_source_inc().ptr(), lev_source_inc_t.ptr(), ngpt, nlay, ncol);
+    // // reorder123x321_test(sources.get_lev_source_dec().ptr(), lev_source_dec_t.ptr(), ngpt, nlay, ncol);
 }
 
 template<typename TF>
