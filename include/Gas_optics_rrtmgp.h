@@ -386,7 +386,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
         int get_nflav() const { return flavor.dim(2); }
         int get_neta() const { return kmajor.dim(2); }
         int get_npres() const { return kmajor.dim(3)-1; }
-        int get_ntemp() const { return kmajor.dim(4); }
+        int get_ntemp() const { return kmajor.dim(1); }
         int get_nPlanckTemp() const { return totplnk.dim(1); }
 
         TF get_tsi() const;

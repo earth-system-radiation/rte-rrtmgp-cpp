@@ -149,6 +149,9 @@ namespace
                 else
                     n_elim += ng;
             }
+
+            // CvH TODO TRANSPOSE kminor_atm_red
+            // end CvH
         }
     }
 
@@ -415,9 +418,11 @@ Gas_optics_rrtmgp<TF>::Gas_optics_rrtmgp(
         const Array<TF,3>& rayl_lower,
         const Array<TF,3>& rayl_upper) :
             Gas_optics<TF>(band_lims_wavenum, band2gpt),
-            totplnk(totplnk),
-            planck_frac(planck_frac)
+            totplnk(totplnk)
 {
+    // CvH TODO Planckfrack needs to be reshaped.
+    this->planck_frac = planck_frac;
+
     // Initialize the absorption coefficient array, including Rayleigh scattering
     // tables if provided.
     init_abs_coeffs(
@@ -639,8 +644,11 @@ void Gas_optics_rrtmgp<TF>::init_abs_coeffs(
     // Arrays not reduced by the presence, or lack thereof, of a gas
     this->press_ref = press_ref;
     this->temp_ref = temp_ref;
+
+    // CvH TODO, this needs to be transposed
     this->kmajor = kmajor;
 
+    // CvH TODO, these need to be transposed
     // Create a new vector that consists of rayl_lower and rayl_upper stored in one variable.
     if (rayl_lower.size() > 0)
     {
