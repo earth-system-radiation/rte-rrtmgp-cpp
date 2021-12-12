@@ -92,9 +92,11 @@ namespace
 
         const int red_nm = std::accumulate(gas_is_present.v().begin(), gas_is_present.v().end(), 0);
 
+        Array<TF,3> kminor_atm_red_t;
+
         if (red_nm == nm)
         {
-            kminor_atm_red = kminor_atm;
+            kminor_atm_red_t = kminor_atm;
             minor_gases_atm_red = minor_gases_atm;
             minor_limits_gpt_atm_red = minor_limits_gpt_atm;
             minor_scales_with_density_atm_red = minor_scales_with_density_atm;
@@ -126,7 +128,7 @@ namespace
             resize_and_set(kminor_start_atm_red, kminor_start_atm);
 
             minor_limits_gpt_atm_red.set_dims({2, red_nm});
-            kminor_atm_red.set_dims({tot_g, kminor_atm.dim(2), kminor_atm.dim(3)});
+            kminor_atm_red_t.set_dims({tot_g, kminor_atm.dim(2), kminor_atm.dim(3)});
 
             int icnt = 0;
             int n_elim = 0;
@@ -143,15 +145,19 @@ namespace
                     for (int j=1; j<=ng; ++j)
                         for (int i2=1; i2<=kminor_atm.dim(2); ++i2)
                             for (int i3=1; i3<=kminor_atm.dim(3); ++i3)
-                                kminor_atm_red({kminor_start_atm_red({icnt})+j-1,i2,i3}) =
+                                kminor_atm_red_t({kminor_start_atm_red({icnt})+j-1,i2,i3}) =
                                         kminor_atm({kminor_start_atm({i})+j-1,i2,i3});
                 }
                 else
                     n_elim += ng;
             }
 
-            // CvH TODO TRANSPOSE kminor_atm_red
-            // end CvH
+            // Reshape following the new ordering in v1.5.
+            kminor_atm_red.set_dims({kminor_atm_red_t.dim(3), kminor_atm_red_t.dim(2), kminor_atm_red_t.dim(1)});
+            for (int i3=1; i3<=kminor_atm_red.dim(3); ++i3)
+                for (int i2=1; i2<=kminor_atm_red.dim(2); ++i2)
+                    for (int i1=1; i1<=kminor_atm_red.dim(1); ++i1)
+                        kminor_atm_red({i1, i2, i3}) = kminor_atm_red_t({i3, i2, i1});
         }
     }
 
@@ -247,7 +253,7 @@ namespace
         // Prepare list of key species.
         int i = 1;
         for (int ibnd=1; ibnd<=key_species.dim(3); ++ibnd)
-            for (int iatm=1; iatm<=key_species.dim(1); ++iatm)
+            for (int iatm=1; iatm<=key_species.dim(2); ++iatm)
             {
                 key_species_list({1,i}) = key_species({1,iatm,ibnd});
                 key_species_list({2,i}) = key_species({2,iatm,ibnd});
