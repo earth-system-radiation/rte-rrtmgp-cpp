@@ -806,8 +806,8 @@ void Gas_optics_rrtmgp<TF>::gas_optics(
     Array<int,2> jtemp({play.dim(1), play.dim(2)});
     Array<int,2> jpress({play.dim(1), play.dim(2)});
     Array<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
-    Array<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
-    Array<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
+    Array<TF,6> fmajor({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
+    Array<int,4> jeta({2, play.dim(1), play.dim(2), this->get_nflav()});
 
     // Gas optics.
     compute_gas_taus(
@@ -857,8 +857,8 @@ void Gas_optics_rrtmgp<TF>::gas_optics(
     Array<int,2> jtemp({play.dim(1), play.dim(2)});
     Array<int,2> jpress({play.dim(1), play.dim(2)});
     Array<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
-    Array<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
-    Array<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
+    Array<TF,6> fmajor({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
+    Array<int,4> jeta({2, play.dim(1), play.dim(2), this->get_nflav()});
 
     // Gas optics.
     compute_gas_taus(
