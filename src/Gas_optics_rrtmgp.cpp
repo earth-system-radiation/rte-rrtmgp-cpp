@@ -1175,8 +1175,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 
 
     // Call the fortran kernels
-    rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, tau);
-
     rrtmgp_kernel_launcher::interpolation(
             ncol, nlay,
             ngas, nflav, neta, npres, ntemp,
@@ -1208,39 +1206,41 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     if (idx_h2o == -1)
         throw std::runtime_error("idx_h2o cannot be found");
 
-    rrtmgp_kernel_launcher::compute_tau_absorption(
-            ncol, nlay, nband, ngpt,
-            ngas, nflav, neta, npres, ntemp,
-            nminorlower, nminorklower,
-            nminorupper, nminorkupper,
-            idx_h2o,
-            this->gpoint_flavor,
-            this->get_band_lims_gpoint(),
-            this->kmajor,
-            this->kminor_lower,
-            this->kminor_upper,
-            this->minor_limits_gpt_lower,
-            this->minor_limits_gpt_upper,
-            this->minor_scales_with_density_lower,
-            this->minor_scales_with_density_upper,
-            this->scale_by_complement_lower,
-            this->scale_by_complement_upper,
-            this->idx_minor_lower,
-            this->idx_minor_upper,
-            this->idx_minor_scaling_lower,
-            this->idx_minor_scaling_upper,
-            this->kminor_start_lower,
-            this->kminor_start_upper,
-            tropo,
-            col_mix, fmajor, fminor,
-            play, tlay, col_gas,
-            jeta, jtemp, jpress,
-            optical_props->get_tau());
-
     bool has_rayleigh = (this->krayl.size() > 0);
 
     if (has_rayleigh)
     {
+        rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, tau);
+
+        rrtmgp_kernel_launcher::compute_tau_absorption(
+                ncol, nlay, nband, ngpt,
+                ngas, nflav, neta, npres, ntemp,
+                nminorlower, nminorklower,
+                nminorupper, nminorkupper,
+                idx_h2o,
+                this->gpoint_flavor,
+                this->get_band_lims_gpoint(),
+                this->kmajor,
+                this->kminor_lower,
+                this->kminor_upper,
+                this->minor_limits_gpt_lower,
+                this->minor_limits_gpt_upper,
+                this->minor_scales_with_density_lower,
+                this->minor_scales_with_density_upper,
+                this->scale_by_complement_lower,
+                this->scale_by_complement_upper,
+                this->idx_minor_lower,
+                this->idx_minor_upper,
+                this->idx_minor_scaling_lower,
+                this->idx_minor_scaling_upper,
+                this->kminor_start_lower,
+                this->kminor_start_upper,
+                tropo,
+                col_mix, fmajor, fminor,
+                play, tlay, col_gas,
+                jeta, jtemp, jpress,
+                optical_props->get_tau());
+
         rrtmgp_kernel_launcher::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
@@ -1253,6 +1253,39 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 
         // CvH TODO: I moved it here to avoid reordering for LW solver.
         combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
+    }
+    else
+    {
+        rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, optical_props->get_tau());
+
+        rrtmgp_kernel_launcher::compute_tau_absorption(
+                ncol, nlay, nband, ngpt,
+                ngas, nflav, neta, npres, ntemp,
+                nminorlower, nminorklower,
+                nminorupper, nminorkupper,
+                idx_h2o,
+                this->gpoint_flavor,
+                this->get_band_lims_gpoint(),
+                this->kmajor,
+                this->kminor_lower,
+                this->kminor_upper,
+                this->minor_limits_gpt_lower,
+                this->minor_limits_gpt_upper,
+                this->minor_scales_with_density_lower,
+                this->minor_scales_with_density_upper,
+                this->scale_by_complement_lower,
+                this->scale_by_complement_upper,
+                this->idx_minor_lower,
+                this->idx_minor_upper,
+                this->idx_minor_scaling_lower,
+                this->idx_minor_scaling_upper,
+                this->kminor_start_lower,
+                this->kminor_start_upper,
+                tropo,
+                col_mix, fmajor, fminor,
+                play, tlay, col_gas,
+                jeta, jtemp, jpress,
+                optical_props->get_tau());
     }
 }
 
