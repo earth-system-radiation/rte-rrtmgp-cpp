@@ -123,14 +123,6 @@ void Rte_lw<TF>::rte_lw(
 
     expand_and_transpose(optical_props, sfc_emis, sfc_emis_gpt);
 
-    // CvH TODO WE REMOVE THE UPPER BC FOR NOW, TO MAKE 1.5 COMPILE
-    // Upper boundary condition.
-    // if (inc_flux.size() == 0)
-    //     rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
-    // else
-    //     rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, gpt_flux_dn);
-    // CvH TODO END
-
     // Run the radiative transfer solver
     const int n_quad_angs = n_gauss_angles;
 

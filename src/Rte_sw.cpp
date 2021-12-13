@@ -118,15 +118,6 @@ void Rte_sw<TF>::rte_sw(
     expand_and_transpose(optical_props, sfc_alb_dir, sfc_alb_dir_gpt);
     expand_and_transpose(optical_props, sfc_alb_dif, sfc_alb_dif_gpt);
 
-    // CvH TODO REMOVE THE BC CALL TO BE CONSISTENT WITH 1.5
-    // Upper boundary condition. At this stage, flux_dn contains the diffuse radiation only.
-    // rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dir, mu0, gpt_flux_dir);
-    // if (inc_flux_dif.size() == 0)
-    //     rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
-    // else
-    //     rrtmgp_kernel_launcher::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif, gpt_flux_dn);
-    // END TODO
-
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat
     const BOOL_TYPE has_dif_bc = false;

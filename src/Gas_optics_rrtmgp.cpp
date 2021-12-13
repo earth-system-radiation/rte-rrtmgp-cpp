@@ -361,30 +361,6 @@ namespace
                         flavor, rewritten_pair);
             }
     }
-
-    /*
-    template<typename TF>
-    inline void reorder123x321_test(
-            TF* restrict out, const TF* restrict in,
-            const int d1, const int d2, const int d3)
-    {
-        const int jj_in = d1;
-        const int kk_in = d1*d2;
-
-        const int ii_out = d3*d2;
-        const int jj_out = d3;
-
-        for (int i=0; i<d1; ++i)
-            for (int j=0; j<d2; ++j)
-                #pragma GCC ivdep
-                for (int k=0; k<d3; ++k)
-                {
-                    const int ijk_in  = i + j*jj_in  + k*kk_in ;
-                    const int ijk_out = k + j*jj_out + i*ii_out;
-                    out[ijk_out] = in[ijk_in];
-                }
-    }
-    */
 }
 
 // IMPLEMENTATION OF CLASS FUNCTIONS.
@@ -668,13 +644,6 @@ void Gas_optics_rrtmgp<TF>::init_abs_coeffs(
     // Create a new vector that consists of rayl_lower and rayl_upper stored in one variable.
     if (rayl_lower.size() > 0)
     {
-        // this->krayl.set_dims({rayl_lower.dim(1), rayl_lower.dim(2), rayl_lower.dim(3), 2});
-        // for (int i=0; i<rayl_lower.size(); ++i)
-        // {
-        //     this->krayl.v()[i                    ] = rayl_lower.v()[i];
-        //     this->krayl.v()[i + rayl_lower.size()] = rayl_upper.v()[i];
-        // }
-
         this->krayl.set_dims({rayl_lower.dim(3), rayl_lower.dim(2), rayl_lower.dim(1), 2});
         for (int i3=1; i3<=this->krayl.dim(3); ++i3)
             for (int i2=1; i2<=this->krayl.dim(2); ++i2)
@@ -1065,18 +1034,6 @@ namespace rrtmgp_kernel_launcher
                 data_out.ptr());
     }
 
-//     template<typename TF>
-//     void combine_and_reorder_2str(
-//             int ncol, int nlay, int ngpt,
-//             const Array<TF,3>& tau_local, const Array<TF,3>& tau_rayleigh,
-//             Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g)
-//     {
-//         rrtmgp_kernels::combine_and_reorder_2str(
-//                 &ncol, &nlay, &ngpt,
-//                 const_cast<TF*>(tau_local.ptr()), const_cast<TF*>(tau_rayleigh.ptr()),
-//                 tau.ptr(), ssa.ptr(), g.ptr());
-//     }
-
     template<typename TF>
     void compute_Planck_source(
             int ncol, int nlay, int nbnd, int ngpt,
@@ -1181,7 +1138,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         for (int ilay=1; ilay<=nlay; ++ilay)
             for (int icol=1; icol<=ncol; ++icol)
                 col_gas({icol, ilay, igas}) = vmr({icol, ilay, igas}) * col_dry({icol, ilay});
-
 
     // Call the fortran kernels
     rrtmgp_kernel_launcher::interpolation(
@@ -1346,13 +1302,6 @@ void Gas_optics_rrtmgp<TF>::source(
     auto gpoint_bands = this->get_gpoint_bands();
     auto band_lims_gpoint = this->get_band_lims_gpoint();
 
-    // Array<TF,3> lay_source_t({ngpt, nlay, ncol});
-    // Array<TF,3> lev_source_inc_t({ngpt, nlay, ncol});
-    // Array<TF,3> lev_source_dec_t({ngpt, nlay, ncol});
-    // Array<TF,2> sfc_source_t({ngpt, ncol});
-    // Array<TF,2> sfc_source_jac({ngpt, ncol});
-
-    // CvH TODO THIS STATEMENT NEEDS CHECKING
     int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
 
     rrtmgp_kernel_launcher::compute_Planck_source(
@@ -1364,21 +1313,6 @@ void Gas_optics_rrtmgp<TF>::source(
             this->totplnk_delta, this->totplnk, this->gpoint_flavor,
             sources.get_sfc_source(), sources.get_lay_source(), sources.get_lev_source_inc(), sources.get_lev_source_dec(),
             sources.get_sfc_source_jac());
-
-    // // CvH this transpose is super slow.
-    // for (int j=1; j<=sfc_source_t.dim(2); ++j)
-    //     for (int i=1; i<=sfc_source_t.dim(1); ++i)
-    //     {
-    //         sources.get_sfc_source    ()({j, i}) = sfc_source_t  ({i, j});
-    //         sources.get_sfc_source_jac()({j, i}) = sfc_source_jac({i, j});
-    //     }
-
-    // rrtmgp_kernel_launcher::reorder123x321(lay_source_t, sources.get_lay_source());
-    // rrtmgp_kernel_launcher::reorder123x321(lev_source_inc_t, sources.get_lev_source_inc());
-    // rrtmgp_kernel_launcher::reorder123x321(lev_source_dec_t, sources.get_lev_source_dec());
-    // // reorder123x321_test(sources.get_lay_source    ().ptr(), lay_source_t    .ptr(), ngpt, nlay, ncol);
-    // // reorder123x321_test(sources.get_lev_source_inc().ptr(), lev_source_inc_t.ptr(), ngpt, nlay, ncol);
-    // // reorder123x321_test(sources.get_lev_source_dec().ptr(), lev_source_dec_t.ptr(), ngpt, nlay, ncol);
 }
 
 template<typename TF>
