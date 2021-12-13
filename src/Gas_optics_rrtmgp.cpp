@@ -664,16 +664,25 @@ void Gas_optics_rrtmgp<TF>::init_abs_coeffs(
                 for (int i1=1; i1<=this->kmajor.dim(1); ++i1)
                     this->kmajor({i1, i2, i3, i4}) = kmajor({i4, i2, i3, i1});
 
-    // CvH TODO, these need to be reshaped
+    // Reshaping according to new 1.5 release.
     // Create a new vector that consists of rayl_lower and rayl_upper stored in one variable.
     if (rayl_lower.size() > 0)
     {
-        this->krayl.set_dims({rayl_lower.dim(1), rayl_lower.dim(2), rayl_lower.dim(3), 2});
-        for (int i=0; i<rayl_lower.size(); ++i)
-        {
-            this->krayl.v()[i                    ] = rayl_lower.v()[i];
-            this->krayl.v()[i + rayl_lower.size()] = rayl_upper.v()[i];
-        }
+        // this->krayl.set_dims({rayl_lower.dim(1), rayl_lower.dim(2), rayl_lower.dim(3), 2});
+        // for (int i=0; i<rayl_lower.size(); ++i)
+        // {
+        //     this->krayl.v()[i                    ] = rayl_lower.v()[i];
+        //     this->krayl.v()[i + rayl_lower.size()] = rayl_upper.v()[i];
+        // }
+
+        this->krayl.set_dims({rayl_lower.dim(3), rayl_lower.dim(2), rayl_lower.dim(1), 2});
+        for (int i3=1; i3<=this->krayl.dim(3); ++i3)
+            for (int i2=1; i2<=this->krayl.dim(2); ++i2)
+                for (int i1=1; i1<=this->krayl.dim(1); ++i1)
+                {
+                    this->krayl({i1, i2, i3, 1}) = rayl_lower({i3, i2, i1});
+                    this->krayl({i1, i2, i3, 2}) = rayl_upper({i3, i2, i1});
+                }
     }
 
     // ---- post processing ----
