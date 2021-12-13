@@ -151,14 +151,14 @@ namespace
                 else
                     n_elim += ng;
             }
-
-            // Reshape following the new ordering in v1.5.
-            kminor_atm_red.set_dims({kminor_atm_red_t.dim(3), kminor_atm_red_t.dim(2), kminor_atm_red_t.dim(1)});
-            for (int i3=1; i3<=kminor_atm_red.dim(3); ++i3)
-                for (int i2=1; i2<=kminor_atm_red.dim(2); ++i2)
-                    for (int i1=1; i1<=kminor_atm_red.dim(1); ++i1)
-                        kminor_atm_red({i1, i2, i3}) = kminor_atm_red_t({i3, i2, i1});
         }
+
+        // Reshape following the new ordering in v1.5.
+        kminor_atm_red.set_dims({kminor_atm_red_t.dim(3), kminor_atm_red_t.dim(2), kminor_atm_red_t.dim(1)});
+        for (int i3=1; i3<=kminor_atm_red.dim(3); ++i3)
+            for (int i2=1; i2<=kminor_atm_red.dim(2); ++i2)
+                for (int i1=1; i1<=kminor_atm_red.dim(1); ++i1)
+                    kminor_atm_red({i1, i2, i3}) = kminor_atm_red_t({i3, i2, i1});
     }
 
     void create_idx_minor(
