@@ -75,7 +75,10 @@ namespace rrtmgp_kernel_launcher
             const Array<TF,3>& g,
             const Array<TF,1>& mu0,
             const Array<TF,2>& sfc_alb_dir_gpt, const Array<TF,2>& sfc_alb_dif_gpt,
-            Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn, Array<TF,3>& gpt_flux_dir)
+            const Array<TF,2>& inc_flux,
+            Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn, Array<TF,3>& gpt_flux_dir,
+            BOOL_TYPE has_dif_bc, const Array<TF,2>& inc_flux_dif,
+            BOOL_TYPE do_broadband, Array<TF,2>& flux_up_loc, Array<TF,2>& flux_dn_loc, Array<TF,2>& flux_dir_loc)
     {
         rrtmgp_kernels::sw_solver_2stream(
                 &ncol, &nlay, &ngpt, &top_at_1,
@@ -85,7 +88,10 @@ namespace rrtmgp_kernel_launcher
                 const_cast<TF*>(mu0.ptr()),
                 const_cast<TF*>(sfc_alb_dir_gpt.ptr()),
                 const_cast<TF*>(sfc_alb_dif_gpt.ptr()),
-                gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr());
+                const_cast<TF*>(inc_flux.ptr()),
+                gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr(),
+                &has_dif_bc, const_cast<TF*>(inc_flux_dif.ptr()),
+                &do_broadband, flux_up_loc.ptr(), flux_dn_loc.ptr(), flux_dir_loc.ptr());
     }
 }
 
@@ -123,6 +129,13 @@ void Rte_sw<TF>::rte_sw(
 
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat
+    const BOOL_TYPE has_dif_bc = false;
+    const BOOL_TYPE do_broadband = false;
+
+    Array<TF,2> flux_up_loc ({ncol, nlay+1});
+    Array<TF,2> flux_dn_loc ({ncol, nlay+1});
+    Array<TF,2> flux_dir_loc({ncol, nlay+1});
+
     rrtmgp_kernel_launcher::sw_solver_2stream(
             ncol, nlay, ngpt, top_at_1,
             optical_props->get_tau(),
@@ -130,11 +143,13 @@ void Rte_sw<TF>::rte_sw(
             optical_props->get_g  (),
             mu0,
             sfc_alb_dir_gpt, sfc_alb_dif_gpt,
-            gpt_flux_up, gpt_flux_dn, gpt_flux_dir);
+            inc_flux_dir,
+            gpt_flux_up, gpt_flux_dn, gpt_flux_dir,
+            has_dif_bc, inc_flux_dif,
+            do_broadband, flux_up_loc, flux_dn_loc, flux_dir_loc);
 
     // CvH: The original fortran code had a call to the reduce here.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
-
 }
 
 template<typename TF>

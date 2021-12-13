@@ -169,7 +169,10 @@ namespace rrtmgp_kernels
             FLOAT_TYPE* g,
             FLOAT_TYPE* mu0,
             FLOAT_TYPE* sfc_alb_dir_gpt, FLOAT_TYPE* sfc_alb_dif_gpt,
-            FLOAT_TYPE* gpt_flux_up, FLOAT_TYPE* gpt_flux_dn, FLOAT_TYPE* gpt_flux_dir);
+            FLOAT_TYPE* inc_flux_dir,
+            FLOAT_TYPE* gpt_flux_up, FLOAT_TYPE* gpt_flux_dn, FLOAT_TYPE* gpt_flux_dir,
+            BOOL_TYPE* has_dif_bc, FLOAT_TYPE* inc_flux_dif,
+            BOOL_TYPE* do_broadband, FLOAT_TYPE* flux_up_loc, FLOAT_TYPE* flux_dn_loc, FLOAT_TYPE* flux_dir_loc);
 
     extern "C" void increment_2stream_by_2stream(
             int* ncol, int* nlev, int* ngpt,
