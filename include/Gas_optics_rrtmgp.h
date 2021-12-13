@@ -272,10 +272,9 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 Array<TF,6>& fmajor,
                 const Array<TF,2>& col_dry) const;
 
-        void combine_and_reorder(
+        void combine_abs_and_rayleigh(
                 const Array<TF,3>& tau,
                 const Array<TF,3>& tau_rayleigh,
-                const bool has_rayleigh,
                 std::unique_ptr<Optical_props_arry<TF>>& optical_props) const;
 
         void source(

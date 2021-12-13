@@ -1056,17 +1056,17 @@ namespace rrtmgp_kernel_launcher
                 data_out.ptr());
     }
 
-    template<typename TF>
-    void combine_and_reorder_2str(
-            int ncol, int nlay, int ngpt,
-            const Array<TF,3>& tau_local, const Array<TF,3>& tau_rayleigh,
-            Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g)
-    {
-        rrtmgp_kernels::combine_and_reorder_2str(
-                &ncol, &nlay, &ngpt,
-                const_cast<TF*>(tau_local.ptr()), const_cast<TF*>(tau_rayleigh.ptr()),
-                tau.ptr(), ssa.ptr(), g.ptr());
-    }
+//     template<typename TF>
+//     void combine_and_reorder_2str(
+//             int ncol, int nlay, int ngpt,
+//             const Array<TF,3>& tau_local, const Array<TF,3>& tau_rayleigh,
+//             Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g)
+//     {
+//         rrtmgp_kernels::combine_and_reorder_2str(
+//                 &ncol, &nlay, &ngpt,
+//                 const_cast<TF*>(tau_local.ptr()), const_cast<TF*>(tau_rayleigh.ptr()),
+//                 tau.ptr(), ssa.ptr(), g.ptr());
+//     }
 
     template<typename TF>
     void compute_Planck_source(
@@ -1251,8 +1251,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
                 fminor, jeta, tropo, jtemp,
                 tau_rayleigh);
 
-        // CvH TODO: I moved it here to avoid reordering for LW solver.
-        combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
+        combine_abs_and_rayleigh(tau, tau_rayleigh, optical_props);
     }
     else
     {
@@ -1290,41 +1289,30 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 }
 
 template<typename TF>
-void Gas_optics_rrtmgp<TF>::combine_and_reorder(
+void Gas_optics_rrtmgp<TF>::combine_abs_and_rayleigh(
         const Array<TF,3>& tau,
         const Array<TF,3>& tau_rayleigh,
-        const bool has_rayleigh,
         std::unique_ptr<Optical_props_arry<TF>>& optical_props) const
 {
-    int ncol = tau.dim(3);
+    int ncol = tau.dim(1);
     int nlay = tau.dim(2);
-    int ngpt = tau.dim(1);
+    int ngpt = tau.dim(3);
 
-    if (!has_rayleigh)
-    {
-        // CvH for 2 stream and n-stream zero the g and ssa
-        // rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
+    for (int igpt=1; igpt<=ngpt; ++igpt)
+        for (int ilay=1; ilay<=nlay; ++ilay)
+            for (int icol=1; icol<=ncol; ++icol)
+            {
+                const TF t = tau({icol, ilay, igpt}) + tau_rayleigh({icol, ilay, igpt});
 
-        // END CUDA TEST.
-        //
-        // reorder123x321_test(optical_props->get_tau().ptr(), tau.ptr(), ngpt, nlay, ncol);
+                if (t > TF(2.) * std::numeric_limits<TF>::epsilon())
+                    optical_props->get_ssa()({icol, ilay, igpt}) = tau_rayleigh({icol, ilay, igpt}) / t;
+                else
+                    optical_props->get_ssa()({icol, ilay, igpt}) = TF(0.);
 
-        // rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, optical_props->get_ssa());
-        // rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, optical_props->get_g  ());
-    }
-    else
-    {
-        // In case of 1scl type
-        // rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
+                optical_props->get_tau()({icol, ilay, igpt}) = t;
+            }
 
-        // In case of 2str type
-        // CvH TODO REMOVE THIS AS IT HAS BEEN REMOVED FROM REPO.
-        // rrtmgp_kernel_launcher::combine_and_reorder_2str(
-        //         ncol, nlay, ngpt,
-        //         tau, tau_rayleigh,
-        //         optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
-        // CvH END.
-    }
+    rrtmgp_kernel_launcher::zero_array(ncol, nlay, ngpt, optical_props->get_g());
 }
 
 template<typename TF>
