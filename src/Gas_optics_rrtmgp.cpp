@@ -1239,7 +1239,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
                 col_mix, fmajor, fminor,
                 play, tlay, col_gas,
                 jeta, jtemp, jpress,
-                optical_props->get_tau());
+                tau);
 
         rrtmgp_kernel_launcher::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
@@ -1256,7 +1256,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     }
     else
     {
-        rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, optical_props->get_tau());
+        rrtmgp_kernel_launcher::zero_array(ncol, nlay, ngpt, optical_props->get_tau());
 
         rrtmgp_kernel_launcher::compute_tau_absorption(
                 ncol, nlay, nband, ngpt,
