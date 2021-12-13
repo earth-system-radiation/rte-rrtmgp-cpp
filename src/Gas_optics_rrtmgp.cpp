@@ -1270,7 +1270,7 @@ void Gas_optics_rrtmgp<TF>::combine_and_reorder(
     if (!has_rayleigh)
     {
         // CvH for 2 stream and n-stream zero the g and ssa
-        rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
+        // rrtmgp_kernel_launcher::reorder123x321(tau, optical_props->get_tau());
 
         // END CUDA TEST.
         //
