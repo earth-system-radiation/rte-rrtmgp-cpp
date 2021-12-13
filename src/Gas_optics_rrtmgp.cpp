@@ -361,7 +361,30 @@ namespace
                         flavor, rewritten_pair);
             }
     }
+
+    template<typename TF>
+    void combine_abs_and_rayleigh_kernel(
+            const int ncol, const int nlay, const int ngpt,
+            const TF* __restrict__ tau, const TF* __restrict__ tau_rayleigh,
+            TF* __restrict__ tau_out, TF* __restrict__ ssa_out)
+    {
+        for (int igpt=0; igpt<ngpt; ++igpt)
+            for (int ilay=0; ilay<nlay; ++ilay)
+                for (int icol=0; icol<ncol; ++icol)
+                {
+                    const int idx = icol + ilay*ncol + igpt*ncol*nlay;
+                    const TF t = tau[idx] + tau_rayleigh[idx];
+    
+                    if (t > TF(2.) * std::numeric_limits<TF>::epsilon())
+                        ssa_out[idx] = tau_rayleigh[idx] / t;
+                    else
+                        ssa_out[idx] = TF(0.);
+    
+                    tau_out[idx] = t;
+                }
+    }
 }
+
 
 // IMPLEMENTATION OF CLASS FUNCTIONS.
 // Constructor of longwave variant.
@@ -1078,8 +1101,6 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         Array<TF,6>& fmajor,
         const Array<TF,2>& col_dry) const
 {
-    Array<TF,3> tau({ncol, nlay, ngpt});
-    Array<TF,3> tau_rayleigh({ncol, nlay, ngpt});
     Array<TF,3> vmr({ncol, nlay, this->get_ngas()});
     Array<TF,3> col_gas({ncol, nlay, this->get_ngas()+1});
     col_gas.set_offsets({0, 0, -1});
@@ -1175,7 +1196,8 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
 
     if (has_rayleigh)
     {
-        rrtmgp_kernel_launcher::zero_array(ngpt, nlay, ncol, tau);
+        Array<TF,3> tau({ncol, nlay, ngpt});
+        Array<TF,3> tau_rayleigh({ncol, nlay, ngpt});
 
         rrtmgp_kernel_launcher::compute_tau_absorption(
                 ncol, nlay, nband, ngpt,
@@ -1253,6 +1275,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
     }
 }
 
+
 template<typename TF>
 void Gas_optics_rrtmgp<TF>::combine_abs_and_rayleigh(
         const Array<TF,3>& tau,
@@ -1263,6 +1286,7 @@ void Gas_optics_rrtmgp<TF>::combine_abs_and_rayleigh(
     int nlay = tau.dim(2);
     int ngpt = tau.dim(3);
 
+    /*
     for (int igpt=1; igpt<=ngpt; ++igpt)
         for (int ilay=1; ilay<=nlay; ++ilay)
             for (int icol=1; icol<=ncol; ++icol)
@@ -1276,6 +1300,12 @@ void Gas_optics_rrtmgp<TF>::combine_abs_and_rayleigh(
 
                 optical_props->get_tau()({icol, ilay, igpt}) = t;
             }
+            */
+
+    combine_abs_and_rayleigh_kernel(
+            ncol, nlay, ngpt,
+            tau.ptr(), tau_rayleigh.ptr(),
+            optical_props->get_tau().ptr(), optical_props->get_ssa().ptr());
 
     rrtmgp_kernel_launcher::zero_array(ncol, nlay, ngpt, optical_props->get_g());
 }
