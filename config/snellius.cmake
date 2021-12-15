@@ -71,8 +71,7 @@ if(USECUDA)
     set(LIBS ${LIBS} -rdynamic $ENV{EBROOTCUDA}/lib64/libcufft.so)
     set(USER_CUDA_NVCC_FLAGS "-arch=sm_80 --use_fast_math")
     list(APPEND CUDA_NVCC_FLAGS "-std=c++14 --expt-relaxed-constexpr")
+    add_definitions(-DRTE_RRTMGP_GPU_MEMPOOL_OWN)
 endif()
 
-
 add_definitions(-DRTE_RRTMGP_USE_CBOOL)
-add_definitions(-DRTE_RRTMGP_GPU_MEMPOOL_OWN)
