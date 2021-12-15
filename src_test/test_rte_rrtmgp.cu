@@ -479,13 +479,13 @@ void solve_radiation(int argc, char** argv)
     ////// RUN THE SHORTWAVE SOLVER //////
     if (switch_shortwave)
     {
-        // note: many Array's initialised below are later copied to Array_gpu, this is not necessary I think
         // Initialize the solver.
         Status::print_message("Initializing the shortwave solver.");
 
 
         Gas_concs_gpu<TF> gas_concs_gpu(gas_concs);
         Radiation_solver_shortwave<TF> rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
+
         // Read the boundary conditions.
         const int n_bnd_sw = rad_sw.get_n_bnd_gpu();
         const int n_gpt_sw = rad_sw.get_n_gpt_gpu();
@@ -547,7 +547,6 @@ void solve_radiation(int argc, char** argv)
             sw_bnd_flux_dn_dir.set_dims({n_col, n_lev, n_bnd_sw});
             sw_bnd_flux_net   .set_dims({n_col, n_lev, n_bnd_sw});
         }
-
 
 
         // Solve the radiation.
