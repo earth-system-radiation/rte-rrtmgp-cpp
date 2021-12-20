@@ -759,10 +759,10 @@ void Radiation_solver_shortwave<TF>::solve(
             for (int ilev=1; ilev<=n_lev; ++ilev)
                 for (int icol=1; icol<=n_col_in; ++icol)
                 {
-                    sw_flux_up     ({icol+col_s_in-1, ilev}) = fluxes.get_flux_up    ()({icol, ilev});
-                    sw_flux_dn     ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn    ()({icol, ilev});
-                    sw_flux_dn_dir ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn_dir()({icol, ilev});
-                    sw_flux_net    ({icol+col_s_in-1, ilev}) = fluxes.get_flux_net   ()({icol, ilev});
+                    sw_flux_up    ({icol+col_s_in-1, ilev}) = fluxes.get_flux_up    ()({icol, ilev});
+                    sw_flux_dn    ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn    ()({icol, ilev});
+                    sw_flux_dn_dir({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn_dir()({icol, ilev});
+                    sw_flux_net   ({icol+col_s_in-1, ilev}) = fluxes.get_flux_net   ()({icol, ilev});
                 }
 
             // Aggegated fluxes per band
@@ -772,10 +772,10 @@ void Radiation_solver_shortwave<TF>::solve(
                 for (int ilev=1; ilev<=n_lev; ++ilev)
                     for (int icol=1; icol<=n_col_in; ++icol)
                     {
-                        sw_bnd_flux_up     ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_up     ()({icol, ilev, ibnd});
-                        sw_bnd_flux_dn     ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn     ()({icol, ilev, ibnd});
-                        sw_bnd_flux_dn_dir ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn_dir ()({icol, ilev, ibnd});
-                        sw_bnd_flux_net    ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_net    ()({icol, ilev, ibnd});
+                        sw_bnd_flux_up    ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_up    ()({icol, ilev, ibnd});
+                        sw_bnd_flux_dn    ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn    ()({icol, ilev, ibnd});
+                        sw_bnd_flux_dn_dir({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn_dir()({icol, ilev, ibnd});
+                        sw_bnd_flux_net   ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_net   ()({icol, ilev, ibnd});
                     }
         }
         else
@@ -784,10 +784,10 @@ void Radiation_solver_shortwave<TF>::solve(
             for (int ilev=1; ilev<=n_lev; ++ilev)
                 for (int icol=1; icol<=n_col_in; ++icol)
                 {
-                    sw_flux_up     ({icol+col_s_in-1, ilev}) = gpt_flux_up    ({icol, ilev, 1});
-                    sw_flux_dn     ({icol+col_s_in-1, ilev}) = gpt_flux_dn    ({icol, ilev, 1});
-                    sw_flux_dn_dir ({icol+col_s_in-1, ilev}) = gpt_flux_dn_dir({icol, ilev, 1});
-                    sw_flux_net    ({icol+col_s_in-1, ilev}) = gpt_flux_dn({icol, ilev, 1}) - gpt_flux_up({icol, ilev, 1});
+                    sw_flux_up    ({icol+col_s_in-1, ilev}) = gpt_flux_up    ({icol, ilev, 1});
+                    sw_flux_dn    ({icol+col_s_in-1, ilev}) = gpt_flux_dn    ({icol, ilev, 1});
+                    sw_flux_dn_dir({icol+col_s_in-1, ilev}) = gpt_flux_dn_dir({icol, ilev, 1});
+                    sw_flux_net   ({icol+col_s_in-1, ilev}) = gpt_flux_dn({icol, ilev, 1}) - gpt_flux_up({icol, ilev, 1});
                 }
         }
     };
@@ -828,6 +828,7 @@ void Radiation_solver_shortwave<TF>::solve(
                 *bnd_fluxes_residual);
     }
 }
+
 
 #ifdef RTE_RRTMGP_SINGLE_PRECISION
 template class Radiation_solver_longwave<float>;
