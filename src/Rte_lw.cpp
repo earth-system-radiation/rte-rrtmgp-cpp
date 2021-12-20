@@ -66,7 +66,7 @@ namespace rrtmgp_kernel_launcher
             const Array<TF,2>& sfc_emis_gpt, const Array<TF,2>& sfc_source,
             const Array<TF,2>& inc_flux_diffuse,
             Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn,
-            BOOL_TYPE do_broadband, Array<TF,2>& flux_up_loc, Array<TF,2>& flux_dn_loc,
+            BOOL_TYPE do_broadband, Array<TF,3>& flux_up_loc, Array<TF,3>& flux_dn_loc,
             BOOL_TYPE do_jacobians, const Array<TF,2>& sfc_source_jac, Array<TF,3>& gpt_flux_up_jac,
             BOOL_TYPE do_rescaling, const Array<TF,3>& ssa, const Array<TF,3>& g)
     {
@@ -139,9 +139,7 @@ void Rte_lw<TF>::rte_lw(
 
     Array<TF,2> inc_flux_diffuse({ncol, ngpt});
 
-    const BOOL_TYPE do_broadband = false;
-    Array<TF,2> flux_up_loc({ncol, nlay+1});
-    Array<TF,2> flux_dn_loc({ncol, nlay+1});
+    const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
     // CvH: For now, just pass the arrays around. Could we reduce the array size?
     const BOOL_TYPE do_jacobians = false;
@@ -160,7 +158,7 @@ void Rte_lw<TF>::rte_lw(
             sfc_emis_gpt, sources.get_sfc_source(),
             inc_flux_diffuse,
             gpt_flux_up, gpt_flux_dn,
-            do_broadband, flux_up_loc, flux_dn_loc,
+            do_broadband, gpt_flux_up, gpt_flux_dn,
             do_jacobians, sfc_src_jac, gpt_flux_up_jac,
             do_rescaling, optical_props->get_tau(), optical_props->get_tau());
 
