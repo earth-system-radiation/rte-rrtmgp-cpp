@@ -699,9 +699,23 @@ void Radiation_solver_shortwave<TF>::solve(
         if (!switch_fluxes)
             return;
 
-        Array<TF,3> gpt_flux_up    ({n_col_in, n_lev, n_gpt});
-        Array<TF,3> gpt_flux_dn    ({n_col_in, n_lev, n_gpt});
-        Array<TF,3> gpt_flux_dn_dir({n_col_in, n_lev, n_gpt});
+        Array<TF,3> gpt_flux_up;
+        Array<TF,3> gpt_flux_dn;
+        Array<TF,3> gpt_flux_dn_dir;
+
+        // Save the output per gpt if postprocessing is desired.
+        if (switch_output_bnd_fluxes)
+        {
+            gpt_flux_up.set_dims({n_col_in, n_lev, n_gpt});
+            gpt_flux_dn.set_dims({n_col_in, n_lev, n_gpt});
+            gpt_flux_dn_dir.set_dims({n_col_in, n_lev, n_gpt});
+        }
+        else
+        {
+            gpt_flux_up.set_dims({n_col_in, n_lev, 1});
+            gpt_flux_dn.set_dims({n_col_in, n_lev, 1});
+            gpt_flux_dn_dir.set_dims({n_col_in, n_lev, 1});
+        }
 
         Rte_sw<TF>::rte_sw(
                 optical_props_subset_in,
@@ -715,7 +729,9 @@ void Radiation_solver_shortwave<TF>::solve(
                 gpt_flux_dn,
                 gpt_flux_dn_dir);
 
-        fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
+        // Reduce if the output is per g-point, otherwise assume it is already done in the flux solver.
+        if (switch_output_bnd_fluxes)
+            fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
 
         // Copy the data to the output.
         for (int ilev=1; ilev<=n_lev; ++ilev)

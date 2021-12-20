@@ -78,7 +78,7 @@ namespace rrtmgp_kernel_launcher
             const Array<TF,2>& inc_flux,
             Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn, Array<TF,3>& gpt_flux_dir,
             BOOL_TYPE has_dif_bc, const Array<TF,2>& inc_flux_dif,
-            BOOL_TYPE do_broadband, Array<TF,2>& flux_up_loc, Array<TF,2>& flux_dn_loc, Array<TF,2>& flux_dir_loc)
+            BOOL_TYPE do_broadband, Array<TF,3>& flux_up_loc, Array<TF,3>& flux_dn_loc, Array<TF,3>& flux_dir_loc)
     {
         rrtmgp_kernels::sw_solver_2stream(
                 &ncol, &nlay, &ngpt, &top_at_1,
@@ -121,7 +121,7 @@ void Rte_sw<TF>::rte_sw(
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat
     const BOOL_TYPE has_dif_bc = false;
-    const BOOL_TYPE do_broadband = false;
+    const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
     Array<TF,2> flux_up_loc ({ncol, nlay+1});
     Array<TF,2> flux_dn_loc ({ncol, nlay+1});
@@ -137,7 +137,7 @@ void Rte_sw<TF>::rte_sw(
             inc_flux_dir,
             gpt_flux_up, gpt_flux_dn, gpt_flux_dir,
             has_dif_bc, inc_flux_dif,
-            do_broadband, flux_up_loc, flux_dn_loc, flux_dir_loc);
+            do_broadband, gpt_flux_up, gpt_flux_dn, gpt_flux_dir);
 
     // CvH: The original fortran code had a call to the reduce here.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
