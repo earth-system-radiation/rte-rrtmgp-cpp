@@ -729,22 +729,20 @@ void Radiation_solver_shortwave<TF>::solve(
                 gpt_flux_dn,
                 gpt_flux_dn_dir);
 
-        // Reduce if the output is per g-point, otherwise assume it is already done in the flux solver.
-        if (switch_output_bnd_fluxes)
-            fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
-
-        // Copy the data to the output.
-        for (int ilev=1; ilev<=n_lev; ++ilev)
-            for (int icol=1; icol<=n_col_in; ++icol)
-            {
-                sw_flux_up     ({icol+col_s_in-1, ilev}) = fluxes.get_flux_up    ()({icol, ilev});
-                sw_flux_dn     ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn    ()({icol, ilev});
-                sw_flux_dn_dir ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn_dir()({icol, ilev});
-                sw_flux_net    ({icol+col_s_in-1, ilev}) = fluxes.get_flux_net   ()({icol, ilev});
-            }
-
         if (switch_output_bnd_fluxes)
         {
+            // Aggegated fluxes.
+            fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
+            for (int ilev=1; ilev<=n_lev; ++ilev)
+                for (int icol=1; icol<=n_col_in; ++icol)
+                {
+                    sw_flux_up     ({icol+col_s_in-1, ilev}) = fluxes.get_flux_up    ()({icol, ilev});
+                    sw_flux_dn     ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn    ()({icol, ilev});
+                    sw_flux_dn_dir ({icol+col_s_in-1, ilev}) = fluxes.get_flux_dn_dir()({icol, ilev});
+                    sw_flux_net    ({icol+col_s_in-1, ilev}) = fluxes.get_flux_net   ()({icol, ilev});
+                }
+
+            // Aggegated fluxes per band
             bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
 
             for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
@@ -756,6 +754,18 @@ void Radiation_solver_shortwave<TF>::solve(
                         sw_bnd_flux_dn_dir ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_dn_dir ()({icol, ilev, ibnd});
                         sw_bnd_flux_net    ({icol+col_s_in-1, ilev, ibnd}) = bnd_fluxes.get_bnd_flux_net    ()({icol, ilev, ibnd});
                     }
+        }
+        else
+        {
+            // Copy the data to the output.
+            for (int ilev=1; ilev<=n_lev; ++ilev)
+                for (int icol=1; icol<=n_col_in; ++icol)
+                {
+                    sw_flux_up     ({icol+col_s_in-1, ilev}) = gpt_flux_up    ({icol, ilev, 1});
+                    sw_flux_dn     ({icol+col_s_in-1, ilev}) = gpt_flux_dn    ({icol, ilev, 1});
+                    sw_flux_dn_dir ({icol+col_s_in-1, ilev}) = gpt_flux_dn_dir({icol, ilev, 1});
+                    sw_flux_net    ({icol+col_s_in-1, ilev}) = gpt_flux_dn({icol, ilev, 1}) - gpt_flux_up({icol, ilev, 1});
+                }
         }
     };
 

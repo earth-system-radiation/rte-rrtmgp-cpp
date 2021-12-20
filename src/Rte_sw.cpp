@@ -123,10 +123,6 @@ void Rte_sw<TF>::rte_sw(
     const BOOL_TYPE has_dif_bc = false;
     const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
-    Array<TF,2> flux_up_loc ({ncol, nlay+1});
-    Array<TF,2> flux_dn_loc ({ncol, nlay+1});
-    Array<TF,2> flux_dir_loc({ncol, nlay+1});
-
     rrtmgp_kernel_launcher::sw_solver_2stream(
             ncol, nlay, ngpt, top_at_1,
             optical_props->get_tau(),
