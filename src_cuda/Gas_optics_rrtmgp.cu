@@ -955,6 +955,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
 }
 
 
+// Gas optics solver shortwave variant.
 template<typename TF>
 void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
         const Array_gpu<TF,2>& play,
@@ -1040,7 +1041,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
             ncol, nlay, vmr_2d.dim(1), vmr_2d.dim(2), ngas, igas, vmr.ptr(), vmr_2d.ptr(), col_gas.ptr(), col_dry.ptr());
     }
 
-    rrtmgp_kernel_launcher_cuda::zero_array(ngpt, nlay, ncol, tau);
+    // rrtmgp_kernel_launcher_cuda::zero_array(ngpt, nlay, ncol, tau);
 
     rrtmgp_kernel_launcher_cuda::interpolation(
             ncol, nlay,
@@ -1073,41 +1074,43 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
     if (idx_h2o == -1)
         throw std::runtime_error("idx_h2o cannot be found");
 
-
-    rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
-            ncol, nlay, nband, ngpt,
-            ngas, nflav, neta, npres, ntemp,
-            nminorlower, nminorklower,
-            nminorupper, nminorkupper,
-            idx_h2o,
-            gpoint_flavor_gpu,
-            this->get_band_lims_gpoint(),
-            kmajor_gpu,
-            kminor_lower_gpu,
-            kminor_upper_gpu,
-            minor_limits_gpt_lower_gpu,
-            minor_limits_gpt_upper_gpu,
-            minor_scales_with_density_lower_gpu,
-            minor_scales_with_density_upper_gpu,
-            scale_by_complement_lower_gpu,
-            scale_by_complement_upper_gpu,
-            idx_minor_lower_gpu,
-            idx_minor_upper_gpu,
-            idx_minor_scaling_lower_gpu,
-            idx_minor_scaling_upper_gpu,
-            kminor_start_lower_gpu,
-            kminor_start_upper_gpu,
-            tropo,
-            col_mix, fmajor, fminor,
-            play, tlay, col_gas,
-            jeta, jtemp, jpress,
-            tau,
-            compute_gas_taus_map);
-
     bool has_rayleigh = (this->krayl.size() > 0);
 
     if (has_rayleigh)
     {
+        Array_gpu<TF,3> tau({ncol, nlay, ngpt});
+        Array_gpu<TF,3> tau_rayleigh({ncol, nlay, ngpt});
+
+        rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
+                ncol, nlay, nband, ngpt,
+                ngas, nflav, neta, npres, ntemp,
+                nminorlower, nminorklower,
+                nminorupper, nminorkupper,
+                idx_h2o,
+                gpoint_flavor_gpu,
+                this->get_band_lims_gpoint(),
+                kmajor_gpu,
+                kminor_lower_gpu,
+                kminor_upper_gpu,
+                minor_limits_gpt_lower_gpu,
+                minor_limits_gpt_upper_gpu,
+                minor_scales_with_density_lower_gpu,
+                minor_scales_with_density_upper_gpu,
+                scale_by_complement_lower_gpu,
+                scale_by_complement_upper_gpu,
+                idx_minor_lower_gpu,
+                idx_minor_upper_gpu,
+                idx_minor_scaling_lower_gpu,
+                idx_minor_scaling_upper_gpu,
+                kminor_start_lower_gpu,
+                kminor_start_upper_gpu,
+                tropo,
+                col_mix, fmajor, fminor,
+                play, tlay, col_gas,
+                jeta, jtemp, jpress,
+                tau,
+                compute_gas_taus_map);
+
         rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
@@ -1119,9 +1122,41 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 fminor, jeta, tropo, jtemp,
                 tau_rayleigh,
                 compute_tau_rayleigh_map);
-    }
 
-    combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
+        combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
+    }
+    else
+    {
+        rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
+                ncol, nlay, nband, ngpt,
+                ngas, nflav, neta, npres, ntemp,
+                nminorlower, nminorklower,
+                nminorupper, nminorkupper,
+                idx_h2o,
+                gpoint_flavor_gpu,
+                this->get_band_lims_gpoint(),
+                kmajor_gpu,
+                kminor_lower_gpu,
+                kminor_upper_gpu,
+                minor_limits_gpt_lower_gpu,
+                minor_limits_gpt_upper_gpu,
+                minor_scales_with_density_lower_gpu,
+                minor_scales_with_density_upper_gpu,
+                scale_by_complement_lower_gpu,
+                scale_by_complement_upper_gpu,
+                idx_minor_lower_gpu,
+                idx_minor_upper_gpu,
+                idx_minor_scaling_lower_gpu,
+                idx_minor_scaling_upper_gpu,
+                kminor_start_lower_gpu,
+                kminor_start_upper_gpu,
+                tropo,
+                col_mix, fmajor, fminor,
+                play, tlay, col_gas,
+                jeta, jtemp, jpress,
+                optical_props->get_tau(),
+                compute_gas_taus_map);
+    }
 }
 
 
