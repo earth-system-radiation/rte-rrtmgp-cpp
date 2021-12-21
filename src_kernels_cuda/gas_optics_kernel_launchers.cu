@@ -224,22 +224,22 @@ namespace rrtmgp_kernel_launcher_cuda
     }
 
     template<typename TF>
-    struct Compute_tau_major_absorption_kernel
+    struct Gas_optical_depths_major_kernel
     {
         template<int I, int J, int K, class... Args>
         static void launch(dim3 grid, dim3 block, Args... args)
         {
-            compute_tau_major_absorption_kernel<TF, I, J, K><<<grid, block>>>(args...);
+            gas_optical_depths_major_kernel<TF, I, J, K><<<grid, block>>>(args...);
         }
     };
 
     template<typename TF>
-    struct Compute_tau_minor_absorption_kernel
+    struct Gas_optical_depths_minor_kernel
     {
         template<int I, int J, int K, class... Args>
         static void launch(dim3 grid, dim3 block, Args... args)
         {
-            compute_tau_minor_absorption_kernel<TF, I, J, K><<<grid, block>>>(args...);
+            gas_optical_depths_minor_kernel<TF, I, J, K><<<grid, block>>>(args...);
         }
     };
 
@@ -278,11 +278,11 @@ namespace rrtmgp_kernel_launcher_cuda
     {
         dim3 grid_gpu_maj{1, nlay, ncol}, block_gpu_maj;
 
-        if (tunings.count("compute_tau_major_absorption_kernel") == 0)
+        if (tunings.count("gas_optical_depths_major_kernel") == 0)
         {
             std::tie(grid_gpu_maj, block_gpu_maj) =
-                tune_kernel_compile_time<Compute_tau_major_absorption_kernel<TF>>(
-                    "compute_tau_major_absorption_kernel",
+                tune_kernel_compile_time<Gas_optical_depths_major_kernel<TF>>(
+                    "gas_optical_depths_major_kernel",
                     {1, nlay, ncol},
                     std::integer_sequence<int, 16>{},
                     std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
@@ -294,16 +294,16 @@ namespace rrtmgp_kernel_launcher_cuda
                     tropo.ptr(), jtemp.ptr(), jpress.ptr(),
                     Array_gpu<TF,3>(tau).ptr(), nullptr);
 
-            tunings["compute_tau_major_absorption_kernel"].first = grid_gpu_maj;
-            tunings["compute_tau_major_absorption_kernel"].second = block_gpu_maj;
+            tunings["gas_optical_depths_major_kernel"].first = grid_gpu_maj;
+            tunings["gas_optical_depths_major_kernel"].second = block_gpu_maj;
         }
         else
         {
-            grid_gpu_maj = tunings["compute_tau_major_absorption_kernel"].first;
-            block_gpu_maj = tunings["compute_tau_major_absorption_kernel"].second;
+            grid_gpu_maj = tunings["gas_optical_depths_major_kernel"].first;
+            block_gpu_maj = tunings["gas_optical_depths_major_kernel"].second;
         }
 
-        run_kernel_compile_time<Compute_tau_major_absorption_kernel<TF>>(
+        run_kernel_compile_time<Gas_optical_depths_major_kernel<TF>>(
                 std::integer_sequence<int, 16>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
@@ -318,17 +318,16 @@ namespace rrtmgp_kernel_launcher_cuda
         const int nscale_lower = scale_by_complement_lower.dim(1);
         const int nscale_upper = scale_by_complement_upper.dim(1);
 
-
         // Lower
         int idx_tropo = 1;
 
         dim3 grid_gpu_min_1{1, nlay, ncol}, block_gpu_min_1;
 
-        if (tunings.count("compute_tau_minor_absorption_kernel_lower") == 0)
+        if (tunings.count("gas_optical_depths_minor_kernel_lower") == 0)
         {
             std::tie(grid_gpu_min_1, block_gpu_min_1) =
-                tune_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
-                        "compute_tau_minor_absorption_kernel_lower",
+                tune_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
+                        "gas_optical_depths_minor_kernel_lower",
                         {1, nlay, ncol},
                         std::integer_sequence<int, 8, 16>{},
                         std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
@@ -351,16 +350,16 @@ namespace rrtmgp_kernel_launcher_cuda
                         fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                         tropo.ptr(), tau.ptr(), nullptr);
 
-            tunings["compute_tau_minor_absorption_kernel_lower"].first = grid_gpu_min_1;
-            tunings["compute_tau_minor_absorption_kernel_lower"].second = block_gpu_min_1;
+            tunings["gas_optical_depths_minor_kernel_lower"].first = grid_gpu_min_1;
+            tunings["gas_optical_depths_minor_kernel_lower"].second = block_gpu_min_1;
         }
         else
         {
-            grid_gpu_min_1 = tunings["compute_tau_minor_absorption_kernel_lower"].first;
-            block_gpu_min_1 = tunings["compute_tau_minor_absorption_kernel_lower"].second;
+            grid_gpu_min_1 = tunings["gas_optical_depths_minor_kernel_lower"].first;
+            block_gpu_min_1 = tunings["gas_optical_depths_minor_kernel_lower"].second;
         }
 
-        run_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
+        run_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
                 std::integer_sequence<int, 8, 16>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
@@ -390,11 +389,11 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 grid_gpu_min_2{ngpt, nlay, ncol}, block_gpu_min_2;
 
 
-        if (tunings.count("compute_tau_minor_absorption_kernel_upper") == 0)
+        if (tunings.count("gas_optical_depths_minor_kernel_upper") == 0)
         {
             std::tie(grid_gpu_min_2, block_gpu_min_2) =
-                tune_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
-                        "compute_tau_minor_absorption_kernel_upper",
+                tune_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
+                        "gas_optical_depths_minor_kernel_upper",
                         {1, nlay, ncol},
                         std::integer_sequence<int, 8, 16>{},
                         std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
@@ -417,16 +416,16 @@ namespace rrtmgp_kernel_launcher_cuda
                         fminor.ptr(), jeta.ptr(), jtemp.ptr(),
                         tropo.ptr(), tau.ptr(), nullptr);
 
-            tunings["compute_tau_minor_absorption_kernel_upper"].first = grid_gpu_min_2;
-            tunings["compute_tau_minor_absorption_kernel_upper"].second = block_gpu_min_2;
+            tunings["gas_optical_depths_minor_kernel_upper"].first = grid_gpu_min_2;
+            tunings["gas_optical_depths_minor_kernel_upper"].second = block_gpu_min_2;
         }
         else
         {
-            grid_gpu_min_2 = tunings["compute_tau_minor_absorption_kernel_upper"].first;
-            block_gpu_min_2 = tunings["compute_tau_minor_absorption_kernel_upper"].second;
+            grid_gpu_min_2 = tunings["gas_optical_depths_minor_kernel_upper"].first;
+            block_gpu_min_2 = tunings["gas_optical_depths_minor_kernel_upper"].second;
         }
 
-        run_kernel_compile_time<Compute_tau_minor_absorption_kernel<TF>>(
+        run_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
                 std::integer_sequence<int, 8, 16>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},

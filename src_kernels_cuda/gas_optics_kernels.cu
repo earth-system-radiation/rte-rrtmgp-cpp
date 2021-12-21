@@ -300,13 +300,11 @@ void interpolation_kernel(
 
 
 #ifndef kernel_tuner
- // #define max_gpt 16
- // #define block_size_x 16
 const int loop_unroll_factor_x = 1;
 #endif
 
 template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
-void compute_tau_major_absorption_kernel(
+void gas_optical_depths_major_kernel(
         const int ncol, const int nlay, const int nband, const int ngpt,
         const int nflav, const int neta, const int npres, const int ntemp,
         const int* __restrict__ gpoint_flavor,
@@ -322,23 +320,21 @@ void compute_tau_major_absorption_kernel(
     const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
     const int icol = (blockIdx.z * blockDim.z) + threadIdx.z;
 
-    if ((icol < ncol) && (ilay < nlay)) {
-
-
-        const int idx_collay = icol + ilay * ncol;
+    if ((icol < ncol) && (ilay < nlay))
+    {
+        const int idx_collay = icol + ilay*ncol;
         const int ljtemp = jtemp[idx_collay];
         const int itropo = !tropo[idx_collay];
-        const int jpressi = jpress[idx_collay]+itropo;
+        const int jpressi = jpress[idx_collay] + itropo;
         const int npress = npres+1;
 
-        for (int ibnd = 0; ibnd < nband; ibnd++) {
-
+        for (int ibnd = 0; ibnd < nband; ibnd++)
+        {
             const int gpt_start = band_lims_gpt[2*ibnd] - 1;
             const int gpt_end = band_lims_gpt[2*ibnd + 1];
             const int band_gpt = gpt_end-gpt_start;
 
             //major gases//
-
             const int iflav = gpoint_flavor[itropo + 2*gpt_start] - 1;
             const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav);
             const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav);
@@ -360,10 +356,10 @@ void compute_tau_major_absorption_kernel(
                     for (int i=0; i<2; i++)
                     {
                         ltau_major += col_mix[idx_fcl1+i] *
-                                          (ifmajor[i*4+0] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
-                                           ifmajor[i*4+1] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
-                                           ifmajor[i*4+2] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress] +
-                                           ifmajor[i*4+3] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress]);
+                            (ifmajor[i*4+0] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
+                             ifmajor[i*4+1] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
+                             ifmajor[i*4+2] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress] +
+                             ifmajor[i*4+3] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress]);
                     }
 
                     tau[idx_out] = ltau_major;
@@ -571,7 +567,7 @@ void compute_tau_minor_absorption_kernel(
 template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
 
 
-void compute_tau_minor_absorption_kernel(
+void gas_optical_depths_minor_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
         const int nscale,
@@ -692,7 +688,7 @@ void compute_tau_minor_absorption_kernel(
 
 
 template<typename TF> __global__
-void compute_tau_minor_absorption_reference_kernel(
+void gas_optical_depths_minor_reference_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
         const int nscale,
