@@ -292,7 +292,7 @@ namespace rrtmgp_kernel_launcher_cuda
                     gpoint_flavor.ptr(), band_lims_gpt.ptr(),
                     kmajor.ptr(), col_mix.ptr(), fmajor.ptr(), jeta.ptr(),
                     tropo.ptr(), jtemp.ptr(), jpress.ptr(),
-                    Array_gpu<TF,3>(tau).ptr(), nullptr);
+                    Array_gpu<TF,3>(tau).ptr());
 
             tunings["gas_optical_depths_major_kernel"].first = grid_gpu_maj;
             tunings["gas_optical_depths_major_kernel"].second = block_gpu_maj;
@@ -313,7 +313,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 gpoint_flavor.ptr(), band_lims_gpt.ptr(),
                 kmajor.ptr(), col_mix.ptr(), fmajor.ptr(), jeta.ptr(),
                 tropo.ptr(), jtemp.ptr(), jpress.ptr(),
-                tau.ptr(), nullptr);
+                tau.ptr());
 
         const int nscale_lower = scale_by_complement_lower.dim(1);
         const int nscale_upper = scale_by_complement_upper.dim(1);

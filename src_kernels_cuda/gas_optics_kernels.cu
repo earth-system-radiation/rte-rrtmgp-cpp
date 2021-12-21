@@ -299,9 +299,9 @@ void interpolation_kernel(
 }
 
 
-#ifndef kernel_tuner
-const int loop_unroll_factor_x = 1;
-#endif
+// #ifndef kernel_tuner
+// const int loop_unroll_factor_x = 1;
+// #endif
 
 template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
 void gas_optical_depths_major_kernel(
@@ -313,10 +313,8 @@ void gas_optical_depths_major_kernel(
         const TF* __restrict__ col_mix, const TF* __restrict__ fmajor,
         const int* __restrict__ jeta, const BOOL_TYPE* __restrict__ tropo,
         const int* __restrict__ jtemp, const int* __restrict__ jpress,
-        TF* __restrict__ tau, TF* __restrict__ tau_major)
+        TF* __restrict__ tau)
 {
-    // Fetch the three coordinates.
-
     const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
     const int icol = (blockIdx.z * blockDim.z) + threadIdx.z;
 
@@ -328,16 +326,18 @@ void gas_optical_depths_major_kernel(
         const int jpressi = jpress[idx_collay] + itropo;
         const int npress = npres+1;
 
-        for (int ibnd = 0; ibnd < nband; ibnd++)
+        for (int ibnd = 0; ibnd<nband; ++ibnd)
         {
             const int gpt_start = band_lims_gpt[2*ibnd] - 1;
             const int gpt_end = band_lims_gpt[2*ibnd + 1];
             const int band_gpt = gpt_end-gpt_start;
 
-            //major gases//
+            // Major gases.
             const int iflav = gpoint_flavor[itropo + 2*gpt_start] - 1;
-            const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav);
-            const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav);
+            // const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav); 1.5
+            const int idx_fcl3 = 2 * 2 * 2 * (icol + ilay*ncol + iflav*ncol*nlay);
+            // const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav); // 1.5 edited as above
+            const int idx_fcl1 = 2 * (icol + ilay*ncol + iflav*ncol*nlay);
 
             const TF* __restrict__ ifmajor = &fmajor[idx_fcl3];
             const TF* __restrict__ k = &kmajor[gpt_start];
@@ -348,7 +348,9 @@ void gas_optical_depths_major_kernel(
                 {
                     const int igpt = threadIdx.x;
 
-                    const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
+                    // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
+                    const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
+
                     TF ltau_major = tau[idx_out];
 
                     // un-unrolling this loops saves registers and improves parallelism/utilization.
@@ -372,7 +374,8 @@ void gas_optical_depths_major_kernel(
 
                 for (int igpt=threadIdx.x; igpt<band_gpt; igpt+=block_size_x)
                 {
-                    const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
+                    // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
+                    const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
 
                     tau[idx_out] += col_mix[idx_fcl1]*
                                       (ifmajor[0] * k[igpt + (j0-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1)*neta*ngpt*npress] +
@@ -399,6 +402,7 @@ void gas_optical_depths_major_kernel(
  #define use_shared_tau 0
 #endif
 
+/*
 #if use_shared_tau
 template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
 void compute_tau_minor_absorption_kernel(
@@ -562,11 +566,10 @@ void compute_tau_minor_absorption_kernel(
     }
 }
 #endif
+*/
 
 #if use_shared_tau == 0
 template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
-
-
 void gas_optical_depths_minor_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
@@ -592,11 +595,8 @@ void gas_optical_depths_minor_kernel(
         TF* __restrict__ tau,
         TF* __restrict__ tau_minor)
 {
-    // Fetch the three coordinates.
     const int ilay = blockIdx.y * block_size_y + threadIdx.y;
     const int icol = blockIdx.z * block_size_z + threadIdx.z;
-    //const int ilay = blockIdx.z * blockDim.z + threadIdx.z;
-    //const int icol = blockIdx.y * blockDim.y + threadIdx.y;
 
     __shared__ TF scalings[block_size_z][block_size_y];
 
@@ -606,19 +606,22 @@ void gas_optical_depths_minor_kernel(
 
         if (tropo[idx_collay] == idx_tropo)
         {
-            for (int imnr = 0; imnr < nscale; ++imnr)
+            for (int imnr=0; imnr<nscale; ++imnr)
             {
                 TF scaling = TF(0.);
 
-                if (threadIdx.x == 0) {
+                if (threadIdx.x == 0)
+                {
                     const int ncl = ncol * nlay;
                     scaling = col_gas[idx_collay + idx_minor[imnr] * ncl];
 
-                    if (minor_scales_with_density[imnr]) {
+                    if (minor_scales_with_density[imnr])
+                    {
                         const TF PaTohPa = 0.01;
                         scaling *= PaTohPa * play[idx_collay] / tlay[idx_collay];
 
-                        if (idx_minor_scaling[imnr] > 0) {
+                        if (idx_minor_scaling[imnr] > 0)
+                        {
                             const int idx_collaywv = icol + ilay*ncol + idx_h2o*ncl;
                             TF vmr_fact = TF(1.) / col_gas[idx_collay];
                             TF dry_fact = TF(1.) / (TF(1.) + col_gas[idx_collaywv] * vmr_fact);
@@ -633,14 +636,18 @@ void gas_optical_depths_minor_kernel(
                     scalings[threadIdx.z][threadIdx.y] = scaling;
                 }
                 __syncthreads();
+
                 scaling = scalings[threadIdx.z][threadIdx.y];
 
                 const int gpt_start = minor_limits_gpt[2*imnr]-1;
                 const int gpt_end = minor_limits_gpt[2*imnr+1];
                 const int gpt_offs = 1-idx_tropo;
                 const int iflav = gpoint_flavor[2*gpt_start + gpt_offs]-1;
-                const int idx_fcl2 = 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav);
-                const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav);
+
+                // const int idx_fcl2 = 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav); 1.5
+                // const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav); 1.5
+                const int idx_fcl2 = 2 * 2 * (icol + ilay*ncol + iflav*ncol*nlay);
+                const int idx_fcl1 = 2 * (icol + ilay*ncol + iflav*ncol*nlay);
 
                 const TF* kfminor = &fminor[idx_fcl2];
                 const TF* kin = &kminor[kminor_start[imnr]-1];
@@ -655,14 +662,13 @@ void gas_optical_depths_minor_kernel(
                     {
                         const int igpt = threadIdx.x;
 
-
-
                         TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
                                         kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
                                         kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
                                         kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
 
-                        const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
+                        // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt; 1.5
+                        const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
                         tau[idx_out] += ltau_minor * scaling;
                     }
                 }
@@ -675,7 +681,8 @@ void gas_optical_depths_minor_kernel(
                                         kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
                                         kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
 
-                        const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
+                        // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt; 1.5
+                        const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
                         tau[idx_out] += ltau_minor * scaling;
                     }
                 }
@@ -683,10 +690,10 @@ void gas_optical_depths_minor_kernel(
         }
     }
 }
-
 #endif
 
 
+/*
 template<typename TF> __global__
 void gas_optical_depths_minor_reference_kernel(
         const int ncol, const int nlay, const int ngpt,
@@ -775,6 +782,7 @@ void gas_optical_depths_minor_reference_kernel(
         }
     }
 }
+*/
 
 
 template<typename TF> __global__
