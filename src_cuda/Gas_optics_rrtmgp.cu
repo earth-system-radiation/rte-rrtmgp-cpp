@@ -121,9 +121,11 @@ namespace
 
         const int red_nm = std::accumulate(gas_is_present.v().begin(), gas_is_present.v().end(), 0);
 
+        Array<TF,3> kminor_atm_red_t;
+
         if (red_nm == nm)
         {
-            kminor_atm_red = kminor_atm;
+            kminor_atm_red_t = kminor_atm;
             minor_gases_atm_red = minor_gases_atm;
             minor_limits_gpt_atm_red = minor_limits_gpt_atm;
             minor_scales_with_density_atm_red = minor_scales_with_density_atm;
@@ -155,7 +157,7 @@ namespace
             resize_and_set(kminor_start_atm_red, kminor_start_atm);
 
             minor_limits_gpt_atm_red.set_dims({2, red_nm});
-            kminor_atm_red.set_dims({tot_g, kminor_atm.dim(2), kminor_atm.dim(3)});
+            kminor_atm_red_t.set_dims({tot_g, kminor_atm.dim(2), kminor_atm.dim(3)});
 
             int icnt = 0;
             int n_elim = 0;
@@ -172,13 +174,20 @@ namespace
                     for (int j=1; j<=ng; ++j)
                         for (int i2=1; i2<=kminor_atm.dim(2); ++i2)
                             for (int i3=1; i3<=kminor_atm.dim(3); ++i3)
-                                kminor_atm_red({kminor_start_atm_red({icnt})+j-1,i2,i3}) =
+                                kminor_atm_red_t({kminor_start_atm_red({icnt})+j-1,i2,i3}) =
                                         kminor_atm({kminor_start_atm({i})+j-1,i2,i3});
                 }
                 else
                     n_elim += ng;
             }
         }
+
+        // Reshape following the new ordering in v1.5.
+        kminor_atm_red.set_dims({kminor_atm_red_t.dim(3), kminor_atm_red_t.dim(2), kminor_atm_red_t.dim(1)});
+        for (int i3=1; i3<=kminor_atm_red.dim(3); ++i3)
+            for (int i2=1; i2<=kminor_atm_red.dim(2); ++i2)
+                for (int i1=1; i1<=kminor_atm_red.dim(1); ++i1)
+                    kminor_atm_red({i1, i2, i3}) = kminor_atm_red_t({i3, i2, i1});
     }
 
     void create_idx_minor(
@@ -273,7 +282,7 @@ namespace
         // Prepare list of key species.
         int i = 1;
         for (int ibnd=1; ibnd<=key_species.dim(3); ++ibnd)
-            for (int iatm=1; iatm<=key_species.dim(1); ++iatm)
+            for (int iatm=1; iatm<=key_species.dim(2); ++iatm)
             {
                 key_species_list({1,i}) = key_species({1,iatm,ibnd});
                 key_species_list({2,i}) = key_species({2,iatm,ibnd});
@@ -420,9 +429,16 @@ Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
         const Array<TF,3>& rayl_lower,
         const Array<TF,3>& rayl_upper) :
             Gas_optics_gpu<TF>(band_lims_wavenum, band2gpt),
-            totplnk(totplnk),
-            planck_frac(planck_frac)
+            totplnk(totplnk)
 {
+    // Reshaping according to new dimension ordering since v1.5
+    this->planck_frac.set_dims({planck_frac.dim(4), planck_frac.dim(2), planck_frac.dim(3), planck_frac.dim(1)});
+    for (int i4=1; i4<=this->planck_frac.dim(4); ++i4)
+        for (int i3=1; i3<=this->planck_frac.dim(3); ++i3)
+            for (int i2=1; i2<=this->planck_frac.dim(2); ++i2)
+                for (int i1=1; i1<=this->planck_frac.dim(1); ++i1)
+                    this->planck_frac({i1, i2, i3, i4}) = planck_frac({i4, i2, i3, i1});
+
     // Initialize the absorption coefficient array, including Rayleigh scattering
     // tables if provided.
     init_abs_coeffs(
@@ -646,17 +662,27 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
     // Arrays not reduced by the presence, or lack thereof, of a gas
     this->press_ref = press_ref;
     this->temp_ref = temp_ref;
-    this->kmajor = kmajor;
 
+    // Reshaping according to new dimension ordering since v1.5
+    this->kmajor.set_dims({kmajor.dim(4), kmajor.dim(2), kmajor.dim(3), kmajor.dim(1)});
+    for (int i4=1; i4<=this->kmajor.dim(4); ++i4)
+        for (int i3=1; i3<=this->kmajor.dim(3); ++i3)
+            for (int i2=1; i2<=this->kmajor.dim(2); ++i2)
+                for (int i1=1; i1<=this->kmajor.dim(1); ++i1)
+                    this->kmajor({i1, i2, i3, i4}) = kmajor({i4, i2, i3, i1});
+
+    // Reshaping according to new 1.5 release.
     // Create a new vector that consists of rayl_lower and rayl_upper stored in one variable.
     if (rayl_lower.size() > 0)
     {
-        this->krayl.set_dims({rayl_lower.dim(1), rayl_lower.dim(2), rayl_lower.dim(3), 2});
-        for (int i=0; i<rayl_lower.size(); ++i)
-        {
-            this->krayl.v()[i                    ] = rayl_lower.v()[i];
-            this->krayl.v()[i + rayl_lower.size()] = rayl_upper.v()[i];
-        }
+        this->krayl.set_dims({rayl_lower.dim(3), rayl_lower.dim(2), rayl_lower.dim(1), 2});
+        for (int i3=1; i3<=this->krayl.dim(3); ++i3)
+            for (int i2=1; i2<=this->krayl.dim(2); ++i2)
+                for (int i1=1; i1<=this->krayl.dim(1); ++i1)
+                {
+                    this->krayl({i1, i2, i3, 1}) = rayl_lower({i3, i2, i1});
+                    this->krayl({i1, i2, i3, 2}) = rayl_upper({i3, i2, i1});
+                }
     }
 
     // ---- post processing ----
@@ -909,8 +935,8 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
     Array_gpu<int,2> jtemp({play.dim(1), play.dim(2)});
     Array_gpu<int,2> jpress({play.dim(1), play.dim(2)});
     Array_gpu<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
-    Array_gpu<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
-    Array_gpu<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
+    Array_gpu<TF,6> fmajor({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
+    Array_gpu<int,4> jeta({2, play.dim(1), play.dim(2), this->get_nflav()});
 
     // Gas optics.
     compute_gas_taus(
@@ -947,8 +973,8 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
     Array_gpu<int,2> jtemp({play.dim(1), play.dim(2)});
     Array_gpu<int,2> jpress({play.dim(1), play.dim(2)});
     Array_gpu<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
-    Array_gpu<TF,6> fmajor({2, 2, 2, this->get_nflav(), play.dim(1), play.dim(2)});
-    Array_gpu<int,4> jeta({2, this->get_nflav(), play.dim(1), play.dim(2)});
+    Array_gpu<TF,6> fmajor({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
+    Array_gpu<int,4> jeta({2, play.dim(1), play.dim(2), this->get_nflav()});
 
     // Gas optics.
     compute_gas_taus(
@@ -982,8 +1008,8 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
     Array_gpu<TF,3> vmr({ncol, nlay, this->get_ngas()});
     Array_gpu<TF,3> col_gas({ncol, nlay, this->get_ngas()+1});
     col_gas.set_offsets({0, 0, -1});
-    Array_gpu<TF,4> col_mix({2, this->get_nflav(), ncol, nlay});
-    Array_gpu<TF,5> fminor({2, 2, this->get_nflav(), ncol, nlay});
+    Array_gpu<TF,4> col_mix({2, ncol, nlay, this->get_nflav()});
+    Array_gpu<TF,5> fminor({2, 2, ncol, nlay, this->get_nflav()});
 
 
     // CvH add all the checking...
@@ -994,9 +1020,9 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
     const int ntemp = this->get_ntemp();
 
     const int nminorlower = this->minor_scales_with_density_lower.dim(1);
-    const int nminorklower = this->kminor_lower.dim(1);
+    const int nminorklower = this->kminor_lower.dim(3);
     const int nminorupper = this->minor_scales_with_density_upper.dim(1);
-    const int nminorkupper = this->kminor_upper.dim(1);
+    const int nminorkupper = this->kminor_upper.dim(3);
 
     const int block_lay = 16;
     const int block_col = 16;
