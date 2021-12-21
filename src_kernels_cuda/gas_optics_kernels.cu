@@ -279,7 +279,7 @@ void interpolation_kernel(
             const TF loceta = eta * TF(neta-1);
             jeta[colmix_idx] = min(int(loceta)+1, neta-1);
             const TF feta = fmod(loceta, TF(1.));
-            const TF ftemp_term  = TF(1-itemp) + TF(2*itemp-1)*ftemp;
+            const TF ftemp_term = TF(1-itemp) + TF(2*itemp-1)*ftemp;
 
             // Compute interpolation fractions needed for minot species.
             // const int fminor_idx = 2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*nflav)); 1.5
@@ -798,9 +798,9 @@ void compute_tau_rayleigh_kernel(
         TF* __restrict__ tau_rayleigh)
 {
     // Fetch the three coordinates.
-    const int igpt = blockIdx.x*blockDim.x + threadIdx.x;
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-    const int icol = blockIdx.z*blockDim.z + threadIdx.z;
+    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
 
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {

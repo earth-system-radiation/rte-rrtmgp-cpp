@@ -181,13 +181,13 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& tau_rayleigh,
             Tuner_map& tunings)
     {
-        dim3 grid{ngpt, nlay, ncol}, block;
+        dim3 grid{ncol, nlay, ngpt}, block;
 
         if (tunings.count("compute_tau_rayleigh_kernel") == 0)
         {
             std::tie(grid, block) = tune_kernel(
                 "compute_tau_rayleigh_kernel",
-                {ngpt, nlay, ncol},
+                {ncol, nlay, ngpt},
                 {16, 24, 32, 48, 64, 96}, {1, 2, 4}, {1, 2, 4, 8, 16},
                 compute_tau_rayleigh_kernel<TF>,
                 ncol, nlay, nbnd, ngpt,
