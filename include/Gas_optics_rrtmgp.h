@@ -541,10 +541,9 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 Array_gpu<TF,6>& fmajor,
                 const Array_gpu<TF,2>& col_dry);
 
-        void combine_and_reorder(
+        void combine_abs_and_rayleigh(
                 const Array_gpu<TF,3>& tau,
                 const Array_gpu<TF,3>& tau_rayleigh,
-                const bool has_rayleigh,
                 std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props);
 
         void source(
@@ -561,7 +560,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
         Tuner_map compute_gas_taus_map;
         Tuner_map compute_tau_rayleigh_map;
         Tuner_map source_map;
-        Tuner_map combine_and_reorder_map;
+        Tuner_map combine_abs_and_rayleigh_map;
 };
 #endif
 

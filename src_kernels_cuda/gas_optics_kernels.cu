@@ -835,7 +835,7 @@ void compute_tau_rayleigh_kernel(
 
 
 template<typename TF> __global__
-void combine_and_reorder_2str_kernel(
+void combine_abs_and_rayleigh_kernel(
         const int ncol, const int nlay, const int ngpt, const TF tmin,
         const TF* __restrict__ tau_abs, const TF* __restrict__ tau_rayleigh,
         TF* __restrict__ tau, TF* __restrict__ ssa, TF* __restrict__ g)
@@ -847,17 +847,16 @@ void combine_and_reorder_2str_kernel(
 
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
-        const int idx_in  = igpt + ilay*ngpt + icol*(ngpt*nlay);
-        const int idx_out = icol + ilay*ncol + igpt*(ncol*nlay);
+        const int idx = icol + ilay*ncol + igpt*ncol*nlay;
 
-        const TF tau_tot = tau_abs[idx_in] + tau_rayleigh[idx_in];
+        const TF tau_tot = tau_abs[idx] + tau_rayleigh[idx];
 
-        tau[idx_out] = tau_tot;
-        g  [idx_out] = TF(0.);
+        tau[idx] = tau_tot;
+        g  [idx] = TF(0.);
 
         if (tau_tot>(TF(2.)*tmin))
-            ssa[idx_out] = tau_rayleigh[idx_in]/tau_tot;
+            ssa[idx] = tau_rayleigh[idx]/tau_tot;
         else
-            ssa[idx_out] = TF(0.);
+            ssa[idx] = TF(0.);
     }
 }

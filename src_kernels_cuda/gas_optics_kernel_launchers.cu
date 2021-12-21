@@ -131,37 +131,37 @@ namespace rrtmgp_kernel_launcher_cuda
     }
 
     template<typename TF>
-    void combine_and_reorder_2str(
+    void combine_abs_and_rayleigh(
             const int ncol, const int nlay, const int ngpt,
             const Array_gpu<TF,3>& tau_abs, const Array_gpu<TF,3>& tau_rayleigh,
             Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g,
             Tuner_map& tunings)
     {
-        TF tmin = std::numeric_limits<TF>::min();
+        TF tmin = std::numeric_limits<TF>::epsilon();
 
         dim3 grid{ncol, nlay, ngpt}, block;
 
-        if (tunings.count("combine_and_reorder_2str_kernel") == 0)
+        if (tunings.count("combine_abs_and_rayleigh_kernel") == 0)
         {
             std::tie(grid, block) = tune_kernel(
-                "combine_and_reorder_2str_kernel",
+                "combine_abs_and_rayleigh_kernel",
                 {ncol, nlay, ngpt},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96}, {1, 2, 4}, {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
-                combine_and_reorder_2str_kernel<TF>,
+                combine_abs_and_rayleigh_kernel<TF>,
                 ncol, nlay, ngpt, tmin,
                 tau_abs.ptr(), tau_rayleigh.ptr(),
                 tau.ptr(), ssa.ptr(), g.ptr());
 
-            tunings["combine_and_reorder_2str_kernel"].first = grid;
-            tunings["combine_and_reorder_2str_kernel"].second = block;
+            tunings["combine_abs_and_rayleigh_kernel"].first = grid;
+            tunings["combine_abs_and_rayleigh_kernel"].second = block;
         }
         else
         {
-            grid = tunings["combine_and_reorder_2str_kernel"].first;
-            block = tunings["combine_and_reorder_2str_kernel"].second;
+            grid = tunings["combine_abs_and_rayleigh_kernel"].first;
+            block = tunings["combine_abs_and_rayleigh_kernel"].second;
         }
 
-        combine_and_reorder_2str_kernel<<<grid, block>>>(
+        combine_abs_and_rayleigh_kernel<<<grid, block>>>(
                 ncol, nlay, ngpt, tmin,
                 tau_abs.ptr(), tau_rayleigh.ptr(),
                 tau.ptr(), ssa.ptr(), g.ptr());
@@ -548,7 +548,7 @@ template void rrtmgp_kernel_launcher_cuda::interpolation<float>(
         const Array_gpu<float,2>&, Array_gpu<float,3>&, Array_gpu<int,2>&, Array_gpu<float,6>&, Array_gpu<float,5>&,
         Array_gpu<float,4>&, Array_gpu<BOOL_TYPE,2>&, Array_gpu<int,4>&, Array_gpu<int,2>&);
 
-template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<float>(
+template void rrtmgp_kernel_launcher_cuda::combine_abs_and_rayleigh<float>(
         const int, const int, const int, const Array_gpu<float,3>&, const Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, Tuner_map&);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float>(
@@ -591,7 +591,7 @@ template void rrtmgp_kernel_launcher_cuda::interpolation<double>(
         const Array_gpu<double,2>&, Array_gpu<double,3>&, Array_gpu<int,2>&, Array_gpu<double,6>&, Array_gpu<double,5>&,
         Array_gpu<double,4>&, Array_gpu<BOOL_TYPE,2>&, Array_gpu<int,4>&, Array_gpu<int,2>&);
 
-template void rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str<double>(
+template void rrtmgp_kernel_launcher_cuda::combine_abs_and_rayleigh<double>(
         const int, const int, const int, const Array_gpu<double,3>&, const Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, Tuner_map&);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(

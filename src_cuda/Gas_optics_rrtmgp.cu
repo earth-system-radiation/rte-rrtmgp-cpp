@@ -1123,7 +1123,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 tau_rayleigh,
                 compute_tau_rayleigh_map);
 
-        combine_and_reorder(tau, tau_rayleigh, has_rayleigh, optical_props);
+        combine_abs_and_rayleigh(tau, tau_rayleigh, optical_props);
     }
     else
     {
@@ -1161,31 +1161,20 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
 
 
 template<typename TF>
-void Gas_optics_rrtmgp_gpu<TF>::combine_and_reorder(
+void Gas_optics_rrtmgp_gpu<TF>::combine_abs_and_rayleigh(
         const Array_gpu<TF,3>& tau,
         const Array_gpu<TF,3>& tau_rayleigh,
-        const bool has_rayleigh,
         std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props)
 {
-    int ncol = tau.dim(3);
+    int ncol = tau.dim(1);
     int nlay = tau.dim(2);
-    int ngpt = tau.dim(1);
+    int ngpt = tau.dim(3);
 
-    if (!has_rayleigh)
-    {
-        // CvH for 2 stream and n-stream zero the g and ssa.
-        rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-                ncol, nlay, ngpt, tau, optical_props->get_tau(),
-                combine_and_reorder_map);
-    }
-    else
-    {
-        rrtmgp_kernel_launcher_cuda::combine_and_reorder_2str(
-                ncol, nlay, ngpt,
-                tau, tau_rayleigh,
-                optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g(),
-                combine_and_reorder_map);
-    }
+    rrtmgp_kernel_launcher_cuda::combine_abs_and_rayleigh(
+            ncol, nlay, ngpt,
+            tau, tau_rayleigh,
+            optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g(),
+            combine_abs_and_rayleigh_map);
 }
 
 
