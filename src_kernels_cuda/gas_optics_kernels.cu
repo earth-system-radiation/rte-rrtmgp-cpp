@@ -369,12 +369,12 @@ void gas_optical_depths_major_kernel(
             }
             else
             {
-                const int j0 = jeta[idx_fcl1];
+                const int j0 = jeta[idx_fcl1  ];
                 const int j1 = jeta[idx_fcl1+1];
 
                 for (int igpt=threadIdx.x; igpt<band_gpt; igpt+=block_size_x)
                 {
-                    // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt;
+                    // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt; 1.5
                     const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
 
                     tau[idx_out] += col_mix[idx_fcl1]*
@@ -392,7 +392,6 @@ void gas_optical_depths_major_kernel(
         }
     }
 }
-
 
 #ifndef kernel_tuner
  #undef block_size_x
@@ -813,11 +812,13 @@ void compute_tau_rayleigh_kernel(
 
         const int gpt_start = band_lims_gpt[2*ibnd]-1;
         const int iflav = gpoint_flavor[itropo+2*gpt_start]-1;
-        const int idx_fcl2 = 2*2*(iflav + icol*nflav + ilay*ncol*nflav);
-        const int idx_fcl1   = 2*(iflav + icol*nflav + ilay*ncol*nflav);
-        const int idx_krayl  = gpt_start + ngpt*neta*ntemp*itropo;
+        // const int idx_fcl2 = 2*2*(iflav + icol*nflav + ilay*ncol*nflav); 1.5
+        // const int idx_fcl1 =   2*(iflav + icol*nflav + ilay*ncol*nflav); 1.5
+        const int idx_fcl2 = 2*2*(icol + ilay*ncol + iflav*ncol*nlay);
+        const int idx_fcl1 =   2*(icol + ilay*ncol + iflav*ncol*nlay);
+        const int idx_krayl = gpt_start + ngpt*neta*ntemp*itropo;
 
-        const int j0 = jeta[idx_fcl1];
+        const int j0 = jeta[idx_fcl1  ];
         const int j1 = jeta[idx_fcl1+1];
         const int jtempl = jtemp[idx_collay];
 
@@ -826,7 +827,8 @@ void compute_tau_rayleigh_kernel(
                         fminor[idx_fcl2+2] * krayl[idx_krayl + (igpt-gpt_start) + (j1-1)*ngpt + jtempl    *neta*ngpt] +
                         fminor[idx_fcl2+3] * krayl[idx_krayl + (igpt-gpt_start) +  j1   *ngpt + jtempl    *neta*ngpt];
 
-        const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt;
+        // const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt; 1.5
+        const int idx_out = icol + ilay*ncol + igpt*ncol*nlay;
         tau_rayleigh[idx_out] = kloc * (col_gas[idx_collaywv] + col_dry[idx_collay]);
     }
 }
