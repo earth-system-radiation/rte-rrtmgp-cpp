@@ -237,9 +237,9 @@ void interpolation_kernel(
         int* __restrict__ jeta,
         int* __restrict__ jpress)
 {
-    const int iflav = blockIdx.x*blockDim.x + threadIdx.x;
-    const int icol  = blockIdx.y*blockDim.y + threadIdx.y;
-    const int ilay  = blockIdx.z*blockDim.z + threadIdx.z;
+    const int icol  = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilay  = blockIdx.y*blockDim.y + threadIdx.y;
+    const int iflav = blockIdx.z*blockDim.z + threadIdx.z;
 
     if ( (icol < ncol) && (ilay < nlay) && (iflav < nflav) )
     {
@@ -256,13 +256,14 @@ void interpolation_kernel(
         tropo[idx] = log(play[idx]) > press_ref_trop_log;
         const int itropo = !tropo[idx];
 
-        const int gas1 = flavor[2*iflav];
+        const int gas1 = flavor[2*iflav  ];
         const int gas2 = flavor[2*iflav+1];
 
         for (int itemp=0; itemp<2; ++itemp)
         {
             const int vmr_base_idx = itropo + (jtemp[idx]+itemp-1) * (ngas+1) * 2;
-            const int colmix_idx = itemp + 2*(iflav + nflav*icol + nflav*ncol*ilay);
+            // const int colmix_idx = itemp + 2*(iflav + nflav*icol + nflav*ncol*ilay); 1.5
+            const int colmix_idx = itemp + 2*(icol + ilay*ncol + iflav*ncol*nlay);
             const int colgas1_idx = icol + ilay*ncol + gas1*nlay*ncol;
             const int colgas2_idx = icol + ilay*ncol + gas2*nlay*ncol;
             const TF ratio_eta_half = vmr_ref[vmr_base_idx + 2*gas1] /
@@ -281,15 +282,17 @@ void interpolation_kernel(
             const TF ftemp_term  = TF(1-itemp) + TF(2*itemp-1)*ftemp;
 
             // Compute interpolation fractions needed for minot species.
-            const int fminor_idx = 2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*nflav));
-            fminor[fminor_idx] = (TF(1.0)-feta) * ftemp_term;
+            // const int fminor_idx = 2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*nflav)); 1.5
+            const int fminor_idx = 2*(itemp + 2*(icol + ilay*ncol + iflav*ncol*nlay));
+            fminor[fminor_idx  ] = (TF(1.)-feta) * ftemp_term;
             fminor[fminor_idx+1] = feta * ftemp_term;
 
             // Compute interpolation fractions needed for major species.
-            const int fmajor_idx = 2*2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*nflav));
-            fmajor[fmajor_idx] = (TF(1.0)-fpress) * fminor[fminor_idx];
-            fmajor[fmajor_idx+1] = (TF(1.0)-fpress) * fminor[fminor_idx+1];
-            fmajor[fmajor_idx+2] = fpress * fminor[fminor_idx];
+            // const int fmajor_idx = 2*2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*nflav)); 1.5
+            const int fmajor_idx = 2*2*(itemp + 2*(icol + ilay*ncol + iflav*ncol*nlay));
+            fmajor[fmajor_idx  ] = (TF(1.)-fpress) * fminor[fminor_idx  ];
+            fmajor[fmajor_idx+1] = (TF(1.)-fpress) * fminor[fminor_idx+1];
+            fmajor[fmajor_idx+2] = fpress * fminor[fminor_idx  ];
             fmajor[fmajor_idx+3] = fpress * fminor[fminor_idx+1];
         }
     }
