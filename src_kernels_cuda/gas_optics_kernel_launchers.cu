@@ -111,8 +111,8 @@ namespace rrtmgp_kernel_launcher_cuda
         const int block_lay  = 2;
         const int block_flav = 16;
 
-        const int grid_lay  = nlay /block_lay  + (nlay%block_lay   > 0);
         const int grid_col  = ncol /block_col  + (ncol%block_col   > 0);
+        const int grid_lay  = nlay /block_lay  + (nlay%block_lay   > 0);
         const int grid_flav = nflav/block_flav + (nflav%block_flav > 0);
 
         dim3 grid_gpu(grid_col, grid_lay, grid_flav);
@@ -188,7 +188,8 @@ namespace rrtmgp_kernel_launcher_cuda
             std::tie(grid, block) = tune_kernel(
                 "compute_tau_rayleigh_kernel",
                 {ncol, nlay, ngpt},
-                {16, 24, 32, 48, 64, 96}, {1, 2, 4}, {1, 2, 4, 8, 16},
+                // {1, 2, 4, 16, 24, 32, 48, 64, 96}, {1, 2, 4}, {1, 2, 4, 8, 16},
+                {1, 2, 4, 16, 24, 32}, {1, 2, 4}, {1, 2, 4, 8, 16},
                 compute_tau_rayleigh_kernel<TF>,
                 ncol, nlay, nbnd, ngpt,
                 ngas, nflav, neta, npres, ntemp,

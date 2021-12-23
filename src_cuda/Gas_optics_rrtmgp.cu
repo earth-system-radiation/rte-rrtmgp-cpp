@@ -1081,6 +1081,9 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
         Array_gpu<TF,3> tau({ncol, nlay, ngpt});
         Array_gpu<TF,3> tau_rayleigh({ncol, nlay, ngpt});
 
+        rrtmgp_kernel_launcher_cuda::zero_array(ncol, nlay, ngpt, tau);
+        rrtmgp_kernel_launcher_cuda::zero_array(ncol, nlay, ngpt, tau_rayleigh);
+
         rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
