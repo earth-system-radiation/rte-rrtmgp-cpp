@@ -303,6 +303,55 @@ void interpolation_kernel(
 // const int loop_unroll_factor_x = 1;
 // #endif
 
+
+template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
+void gas_optical_depths_major_kernel(
+        const int ncol, const int nlay, const int nband, const int ngpt,
+        const int nflav, const int neta, const int npres, const int ntemp,
+        const int* __restrict__ gpoint_flavor,
+        const int* __restrict__ band_lims_gpt,
+        const TF* __restrict__ kmajor,
+        const TF* __restrict__ col_mix, const TF* __restrict__ fmajor,
+        const int* __restrict__ jeta, const BOOL_TYPE* __restrict__ tropo,
+        const int* __restrict__ jtemp, const int* __restrict__ jpress,
+        TF* __restrict__ tau)
+{
+    const int igpt = (blockIdx.x * blockDim.x) + threadIdx.x;
+    const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
+    const int icol = (blockIdx.z * blockDim.z) + threadIdx.z;
+
+    if ((icol < ncol) && (ilay < nlay) && (igpt < ngpt))
+    {
+        const int idx_collay = icol + ilay*ncol;
+        const int itropo = !tropo[idx_collay];
+        const int iflav = gpoint_flavor[itropo + 2*igpt] - 1;
+
+        const int ljtemp = jtemp[idx_collay];
+        const int jpressi = jpress[idx_collay] + itropo;
+        const int npress = npres+1;
+
+        // Major gases.
+        const int idx_fcl3 = 2 * 2 * 2 * (icol + ilay*ncol + iflav*ncol*nlay);
+        const int idx_fcl1 = 2 *         (icol + ilay*ncol + iflav*ncol*nlay);
+
+        const int idx_out = icol + ilay*ncol + igpt*ncol*nlay;
+
+        TF ltau_major = tau[idx_out];
+
+        // un-unrolling this loops saves registers and improves parallelism/utilization.
+        #pragma unroll 1
+        for (int i=0; i<2; ++i)
+        {
+            tau[idx_out] += col_mix[idx_fcl1+i] *
+                (ifmajor[i*4+0] * kmajor[(ljtemp-1+i) + (jeta[idx_fcl1+i]-1)*ntemp + (jpressi-1)*ntemp*neta + igpt*ntemp*neta*npress] +
+                 ifmajor[i*4+1] * kmajor[(ljtemp-1+i) +  jeta[idx_fcl1+i]   *ntemp + (jpressi-1)*ntemp*neta + igpt*ntemp*neta*npress] +
+                 ifmajor[i*4+2] * kmajor[(ljtemp-1+i) + (jeta[idx_fcl1+i]-1)*ntemp + jpressi    *ntemp*neta + igpt*ntemp*neta*npress] +
+                 ifmajor[i*4+3] * kmajor[(ljtemp-1+i) +  jeta[idx_fcl1+i]   *ntemp + jpressi    *ntemp*neta + igpt*ntemp*neta*npress]);
+        }
+    }
+}
+
+/*
 template<typename TF, int block_size_x, int block_size_y, int block_size_z, int max_gpt=16> __global__
 void gas_optical_depths_major_kernel(
         const int ncol, const int nlay, const int nband, const int ngpt,
@@ -360,8 +409,8 @@ void gas_optical_depths_major_kernel(
                         ltau_major += col_mix[idx_fcl1+i] *
                             (ifmajor[i*4+0] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
                              ifmajor[i*4+1] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + (jpressi-1)*neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
-                             ifmajor[i*4+2] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress] +
-                             ifmajor[i*4+3] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + jpressi*neta*ngpt     + (ljtemp-1+i)*neta*ngpt*npress]);
+                             ifmajor[i*4+2] * k[igpt + (jeta[idx_fcl1+i]-1)*ngpt + jpressi    *neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress] +
+                             ifmajor[i*4+3] * k[igpt +  jeta[idx_fcl1+i]   *ngpt + jpressi    *neta*ngpt + (ljtemp-1+i)*neta*ngpt*npress]);
                     }
 
                     tau[idx_out] = ltau_major;
@@ -392,6 +441,8 @@ void gas_optical_depths_major_kernel(
         }
     }
 }
+*/
+
 
 #ifndef kernel_tuner
  #undef block_size_x
