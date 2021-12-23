@@ -119,7 +119,8 @@ void zero_array_kernel(
     const int ii = blockIdx.x*blockDim.x + threadIdx.x;
     const int ij = blockIdx.y*blockDim.y + threadIdx.y;
     const int ik = blockIdx.z*blockDim.z + threadIdx.z;
-    if ( (ii < ni) && (ij < nj) && (ik < nk))
+
+    if ( (ii < ni) && (ij < nj) && (ik < nk) )
     {
         const int idx = ii + ij*ni + ik*nj*ni;
         arr[idx] = TF(0.);
@@ -157,21 +158,21 @@ void Planck_source_kernel(
         const int itropo = !tropo[idx_collay];
         const int gpt_start = band_lims_gpt[2*ibnd] - 1;
 
-        const int iflav = gpoint_flavor[itropo + 2 * gpt_start] - 1;
-        const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav);
-        const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav);
+        const int iflav = gpoint_flavor[itropo + 2*gpt_start] - 1;
 
+        // const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav); 1.5
+        // const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav); 1.5
+        const int idx_fcl3 = 2 * 2 * 2 * (icol + ilay*ncol + iflav*ncol*nlay);
+        const int idx_fcl1 = 2 *         (icol + ilay*ncol + iflav*ncol*nlay);
 
         const int j0 = jeta[idx_fcl1+0];
         const int j1 = jeta[idx_fcl1+1];
         const int jtemp_idx = jtemp[idx_collay];
         const int jpress_idx = jpress[idx_collay]+itropo;
 
-
         // compute layer source irradiances.
         const int idx_tmp = icol + ilay*ncol;
         const TF planck_function_lay = interpolate1D(tlay[idx_tmp], temp_ref_min, totplnk_delta, nPlanckTemp, &totplnk[ibnd * nPlanckTemp]);
-
 
         // compute level source irradiances.
         const int idx_tmp1 = icol + (ilay+1)*ncol;
@@ -179,19 +180,32 @@ void Planck_source_kernel(
         const TF planck_function_lev1 = interpolate1D(tlev[idx_tmp1], temp_ref_min, totplnk_delta, nPlanckTemp, &totplnk[ibnd * nPlanckTemp]);
         const TF planck_function_lev2 = interpolate1D(tlev[idx_tmp2], temp_ref_min, totplnk_delta, nPlanckTemp, &totplnk[ibnd * nPlanckTemp]);
 
-        const int idx = igpt + ilay*ngpt + icol*nlay*ngpt;
-        const int idx_sfc = igpt + icol*ngpt;
+        // CvH TODO THIS NEEDS CHECKING, DID I CONVERT CORRECTLY TO 1.5 STRUCTURE?
+        // const int idx = igpt + ilay*ngpt + icol*nlay*ngpt;
+        // const int idx_sfc = igpt + icol*ngpt;
+        const int idx = icol + ilay*ncol + igpt*ncol*nlay;
+        const int idx_sfc = icol + igpt*ncol;
 
         const TF pfrac_loc =
-              (fmajor[idx_fcl3+0] * pfracin[igpt + (j0-1)*ngpt + (jpress_idx-1)*neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+1] * pfracin[igpt +  j0   *ngpt + (jpress_idx-1)*neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+2] * pfracin[igpt + (j0-1)*ngpt + jpress_idx*neta*ngpt     + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+3] * pfracin[igpt +  j0   *ngpt + jpress_idx*neta*ngpt     + (jtemp_idx-1)*neta*ngpt*(npres+1)])
-            + 
-              (fmajor[idx_fcl3+4] * pfracin[igpt + (j1-1)*ngpt + (jpress_idx-1)*neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+5] * pfracin[igpt +  j1   *ngpt + (jpress_idx-1)*neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+6] * pfracin[igpt + (j1-1)*ngpt + jpress_idx*neta*ngpt     + jtemp_idx*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+7] * pfracin[igpt +  j1   *ngpt + jpress_idx*neta*ngpt     + jtemp_idx*neta*ngpt*(npres+1)]);
+        //       (fmajor[idx_fcl3+0] * pfracin[igpt + (j0-1)*ngpt + (jpress_idx-1)*neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
+        //        fmajor[idx_fcl3+1] * pfracin[igpt +  j0   *ngpt + (jpress_idx-1)*neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
+        //        fmajor[idx_fcl3+2] * pfracin[igpt + (j0-1)*ngpt + jpress_idx    *neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
+        //        fmajor[idx_fcl3+3] * pfracin[igpt +  j0   *ngpt + jpress_idx    *neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)])
+
+        //     + (fmajor[idx_fcl3+4] * pfracin[igpt + (j1-1)*ngpt + (jpress_idx-1)*neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
+        //        fmajor[idx_fcl3+5] * pfracin[igpt +  j1   *ngpt + (jpress_idx-1)*neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
+        //        fmajor[idx_fcl3+6] * pfracin[igpt + (j1-1)*ngpt + jpress_idx    *neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
+        //        fmajor[idx_fcl3+7] * pfracin[igpt +  j1   *ngpt + jpress_idx    *neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)]);
+
+              (fmajor[idx_fcl3+0] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + (jpress_idx-1)*ntemp*neta + igpt*neta*ngpt*(npres+1)] +
+               fmajor[idx_fcl3+1] * pfracin[(jtemp_idx-1) +  j0   *ntemp + (jpress_idx-1)*ntemp*neta + igpt*neta*ngpt*(npres+1)] +
+               fmajor[idx_fcl3+2] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + jpress_idx    *ntemp*neta + igpt*neta*ngpt*(npres+1)] +
+               fmajor[idx_fcl3+3] * pfracin[(jtemp_idx-1) +  j0   *ntemp + jpress_idx    *ntemp*neta + igpt*neta*ngpt*(npres+1)])
+
+            + (fmajor[idx_fcl3+4] * pfracin[jtemp_idx + (j1-1)*ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
+               fmajor[idx_fcl3+5] * pfracin[jtemp_idx +  j1   *ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
+               fmajor[idx_fcl3+6] * pfracin[jtemp_idx + (j1-1)*ntemp + jpress_idx    *ntemp*neta + igpt*ntemp*neta*(npres+1)] +
+               fmajor[idx_fcl3+7] * pfracin[jtemp_idx +  j1   *ntemp + jpress_idx    *ntemp*neta + igpt*ntemp*neta*(npres+1)]);
 
         // Layer source
         lay_src[idx] = pfrac_loc * planck_function_lay;
