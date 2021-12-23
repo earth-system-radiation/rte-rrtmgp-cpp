@@ -873,20 +873,28 @@ void compute_tau_rayleigh_kernel(
 
         const int gpt_start = band_lims_gpt[2*ibnd]-1;
         const int iflav = gpoint_flavor[itropo+2*gpt_start]-1;
+
         // const int idx_fcl2 = 2*2*(iflav + icol*nflav + ilay*ncol*nflav); 1.5
         // const int idx_fcl1 =   2*(iflav + icol*nflav + ilay*ncol*nflav); 1.5
         const int idx_fcl2 = 2*2*(icol + ilay*ncol + iflav*ncol*nlay);
         const int idx_fcl1 =   2*(icol + ilay*ncol + iflav*ncol*nlay);
-        const int idx_krayl = gpt_start + ngpt*neta*ntemp*itropo;
+
+        // const int idx_krayl = gpt_start + ngpt*neta*ntemp*itropo; 1.5
+        const int idx_krayl = gpt_start*ntemp*neta + itropo*ntemp*neta*ngpt;
 
         const int j0 = jeta[idx_fcl1  ];
         const int j1 = jeta[idx_fcl1+1];
         const int jtempl = jtemp[idx_collay];
 
-        const TF kloc = fminor[idx_fcl2+0] * krayl[idx_krayl + (igpt-gpt_start) + (j0-1)*ngpt + (jtempl-1)*neta*ngpt] +
-                        fminor[idx_fcl2+1] * krayl[idx_krayl + (igpt-gpt_start) +  j0   *ngpt + (jtempl-1)*neta*ngpt] +
-                        fminor[idx_fcl2+2] * krayl[idx_krayl + (igpt-gpt_start) + (j1-1)*ngpt + jtempl    *neta*ngpt] +
-                        fminor[idx_fcl2+3] * krayl[idx_krayl + (igpt-gpt_start) +  j1   *ngpt + jtempl    *neta*ngpt];
+        // const TF kloc = fminor[idx_fcl2+0] * krayl[idx_krayl + (igpt-gpt_start) + (j0-1)*ngpt + (jtempl-1)*neta*ngpt] +
+        //                 fminor[idx_fcl2+1] * krayl[idx_krayl + (igpt-gpt_start) +  j0   *ngpt + (jtempl-1)*neta*ngpt] +
+        //                 fminor[idx_fcl2+2] * krayl[idx_krayl + (igpt-gpt_start) + (j1-1)*ngpt + jtempl    *neta*ngpt] +
+        //                 fminor[idx_fcl2+3] * krayl[idx_krayl + (igpt-gpt_start) +  j1   *ngpt + jtempl    *neta*ngpt];
+
+        const TF kloc = fminor[idx_fcl2+0] * krayl[idx_krayl + (jtempl-1) + (j0-1)*ntemp + (igpt-gpt_start)*ntemp*neta] +
+                        fminor[idx_fcl2+1] * krayl[idx_krayl + (jtempl-1) +  j0   *ntemp + (igpt-gpt_start)*ntemp*neta] +
+                        fminor[idx_fcl2+2] * krayl[idx_krayl + (jtempl  ) + (j1-1)*ntemp + (igpt-gpt_start)*ntemp*neta] +
+                        fminor[idx_fcl2+3] * krayl[idx_krayl + (jtempl  ) +  j1   *ntemp + (igpt-gpt_start)*ntemp*neta];
 
         // const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt; 1.5
         const int idx_out = icol + ilay*ncol + igpt*ncol*nlay;
