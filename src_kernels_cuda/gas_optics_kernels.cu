@@ -712,10 +712,15 @@ void gas_optical_depths_minor_kernel(
                     {
                         const int igpt = threadIdx.x;
 
-                        TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
-                                        kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
-                                        kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
-                                        kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
+                        // TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
+                        //                 kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
+                        //                 kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
+                        //                 kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
+
+                        TF ltau_minor = kfminor[0] * kin[(kjtemp-1) + (j0-1)*ntemp + igpt*ntemp*neta] +
+                                        kfminor[1] * kin[(kjtemp-1) +  j0   *ntemp + igpt*ntemp*neta] +
+                                        kfminor[2] * kin[kjtemp     + (j1-1)*ntemp + igpt*ntemp*neta] +
+                                        kfminor[3] * kin[kjtemp     +  j1   *ntemp + igpt*ntemp*neta];
 
                         // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt; 1.5
                         const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
@@ -726,10 +731,15 @@ void gas_optical_depths_minor_kernel(
                 {
                     for (int igpt=threadIdx.x; igpt<band_gpt; igpt+=block_size_x)
                     {
-                        TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
-                                        kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
-                                        kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
-                                        kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
+                        // TF ltau_minor = kfminor[0] * kin[igpt + (j0-1)*nminork + (kjtemp-1)*neta*nminork] +
+                        //                 kfminor[1] * kin[igpt +  j0   *nminork + (kjtemp-1)*neta*nminork] +
+                        //                 kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
+                        //                 kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
+
+                        TF ltau_minor = kfminor[0] * kin[(kjtemp-1) + (j0-1)*ntemp + igpt*ntemp*neta] +
+                                        kfminor[1] * kin[(kjtemp-1) +  j0   *ntemp + igpt*ntemp*neta] +
+                                        kfminor[2] * kin[kjtemp     + (j1-1)*ntemp + igpt*ntemp*neta] +
+                                        kfminor[3] * kin[kjtemp     +  j1   *ntemp + igpt*ntemp*neta];
 
                         // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt; 1.5
                         const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
