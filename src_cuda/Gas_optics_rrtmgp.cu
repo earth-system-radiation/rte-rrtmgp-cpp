@@ -1127,6 +1127,8 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
     }
     else
     {
+        rrtmgp_kernel_launcher_cuda::zero_array(ncol, nlay, ngpt, optical_props->get_tau());
+
         rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,

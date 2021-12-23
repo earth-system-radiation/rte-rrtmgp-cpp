@@ -320,7 +320,7 @@ void gas_optical_depths_major_kernel(
     const int ilay = (blockIdx.y * blockDim.y) + threadIdx.y;
     const int icol = (blockIdx.z * blockDim.z) + threadIdx.z;
 
-    if ((icol < ncol) && (ilay < nlay) && (igpt < ngpt))
+    if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
         const int idx_collay = icol + ilay*ncol;
         const int itropo = !tropo[idx_collay];
@@ -334,9 +334,9 @@ void gas_optical_depths_major_kernel(
         const int idx_fcl3 = 2 * 2 * 2 * (icol + ilay*ncol + iflav*ncol*nlay);
         const int idx_fcl1 = 2 *         (icol + ilay*ncol + iflav*ncol*nlay);
 
-        const int idx_out = icol + ilay*ncol + igpt*ncol*nlay;
+        const TF* __restrict__ ifmajor = &fmajor[idx_fcl3];
 
-        TF ltau_major = tau[idx_out];
+        const int idx_out = icol + ilay*ncol + igpt*ncol*nlay;
 
         // un-unrolling this loops saves registers and improves parallelism/utilization.
         #pragma unroll 1
