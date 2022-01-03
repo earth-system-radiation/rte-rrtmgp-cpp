@@ -714,11 +714,12 @@ void gas_optical_depths_minor_kernel(
                 const int idx_fcl1 = 2 * (icol + ilay*ncol + iflav*ncol*nlay);
 
                 const TF* kfminor = &fminor[idx_fcl2];
-                const TF* kin = &kminor[kminor_start[imnr]-1];
+                const TF* kin = &kminor[0];//[kminor_start[imnr]-1];
                 const int j0 = jeta[idx_fcl1];
                 const int j1 = jeta[idx_fcl1+1];
                 const int kjtemp = jtemp[idx_collay];
                 const int band_gpt = gpt_end-gpt_start;
+                const int gpt_offset = kminor_start[imnr]-1;
 
                 if constexpr (block_size_x == max_gpt)
                 {
@@ -731,10 +732,10 @@ void gas_optical_depths_minor_kernel(
                         //                 kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
                         //                 kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
 
-                        TF ltau_minor = kfminor[0] * kin[(kjtemp-1) + (j0-1)*ntemp + igpt*ntemp*neta] +
-                                        kfminor[1] * kin[(kjtemp-1) +  j0   *ntemp + igpt*ntemp*neta] +
-                                        kfminor[2] * kin[kjtemp     + (j1-1)*ntemp + igpt*ntemp*neta] +
-                                        kfminor[3] * kin[kjtemp     +  j1   *ntemp + igpt*ntemp*neta];
+                        TF ltau_minor = kfminor[0] * kin[(kjtemp-1) + (j0-1)*ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[1] * kin[(kjtemp-1) +  j0   *ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[2] * kin[kjtemp     + (j1-1)*ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[3] * kin[kjtemp     +  j1   *ntemp + (igpt+gpt_offset)*ntemp*neta];
 
                         // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt; 1.5
                         const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
@@ -750,10 +751,10 @@ void gas_optical_depths_minor_kernel(
                         //                 kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
                         //                 kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
 
-                        TF ltau_minor = kfminor[0] * kin[(kjtemp-1) + (j0-1)*ntemp + igpt*ntemp*neta] +
-                                        kfminor[1] * kin[(kjtemp-1) +  j0   *ntemp + igpt*ntemp*neta] +
-                                        kfminor[2] * kin[kjtemp     + (j1-1)*ntemp + igpt*ntemp*neta] +
-                                        kfminor[3] * kin[kjtemp     +  j1   *ntemp + igpt*ntemp*neta];
+                        TF ltau_minor = kfminor[0] * kin[(kjtemp-1) + (j0-1)*ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[1] * kin[(kjtemp-1) +  j0   *ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[2] * kin[kjtemp     + (j1-1)*ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[3] * kin[kjtemp     +  j1   *ntemp + (igpt+gpt_offset)*ntemp*neta];
 
                         // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt; 1.5
                         const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
