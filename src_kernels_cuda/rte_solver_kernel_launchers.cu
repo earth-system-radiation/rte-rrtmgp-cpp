@@ -373,7 +373,7 @@ namespace rte_kernel_launcher_cuda
             {
                 std::tie(grid_adding, block_adding) = tune_kernel(
                         "sw_adding",
-                        {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4, 8, 16}, {1},
+                        {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512, 768, 1024}, {1, 2, 4, 8, 16}, {1},
                         sw_adding_kernel<TF, 1>,
                         ncol, nlay, ngpt, top_at_1,
                         sfc_alb_dif.ptr(), r_dif, t_dif,
@@ -384,7 +384,7 @@ namespace rte_kernel_launcher_cuda
             {
                 std::tie(grid_adding, block_adding) = tune_kernel(
                         "sw_adding",
-                        {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512}, {1, 2, 4, 8, 16}, {1},
+                        {ncol, ngpt}, {8, 16, 32, 64, 96, 128, 256, 384, 512, 768, 1024}, {1, 2, 4, 8, 16}, {1},
                         sw_adding_kernel<TF, 0>,
                         ncol, nlay, ngpt, top_at_1,
                         sfc_alb_dif.ptr(), r_dif, t_dif,
