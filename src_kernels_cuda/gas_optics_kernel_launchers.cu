@@ -285,9 +285,9 @@ namespace rrtmgp_kernel_launcher_cuda
                 tune_kernel_compile_time<Gas_optical_depths_major_kernel<TF>>(
                     "gas_optical_depths_major_kernel",
                     {ngpt, nlay, ncol},
-                    std::integer_sequence<int, 16>{},
-                    std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
-                    std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
+                    std::integer_sequence<int, 8, 16, 24, 32, 48>{},
+                    std::integer_sequence<int, 1, 2, 4>{},
+                    std::integer_sequence<int, 8, 16, 24, 32, 48>{},
                     ncol, nlay, nband, ngpt,
                     nflav, neta, npres, ntemp,
                     gpoint_flavor.ptr(), band_lims_gpt.ptr(),
@@ -305,9 +305,9 @@ namespace rrtmgp_kernel_launcher_cuda
         }
 
         run_kernel_compile_time<Gas_optical_depths_major_kernel<TF>>(
-                std::integer_sequence<int, 16>{},
-                std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
-                std::integer_sequence<int, 1, 2, 4, 8, 10, 12, 14, 16>{},
+                std::integer_sequence<int, 8, 16, 24, 32, 48>{},
+                std::integer_sequence<int, 1, 2, 4>{},
+                std::integer_sequence<int, 8, 16, 24, 32, 48>{},
                 grid_gpu_maj, block_gpu_maj,
                 ncol, nlay, nband, ngpt,
                 nflav, neta, npres, ntemp,
