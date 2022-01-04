@@ -330,7 +330,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 tune_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
                         "gas_optical_depths_minor_kernel_lower",
                         {1, nlay, ncol},
-                        std::integer_sequence<int, 8, 16>{},
+                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                         std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
                         std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
                         ncol, nlay, ngpt,
@@ -361,7 +361,7 @@ namespace rrtmgp_kernel_launcher_cuda
         }
 
         run_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
-                std::integer_sequence<int, 8, 16>{},
+                std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
                 grid_gpu_min_1, block_gpu_min_1,
@@ -396,7 +396,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 tune_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
                         "gas_optical_depths_minor_kernel_upper",
                         {1, nlay, ncol},
-                        std::integer_sequence<int, 8, 16>{},
+                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                         std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
                         std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
                         ncol, nlay, ngpt,
@@ -427,7 +427,7 @@ namespace rrtmgp_kernel_launcher_cuda
         }
 
         run_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
-                std::integer_sequence<int, 8, 16>{},
+                std::integer_sequence<int, 1, 2, 4, 8, 16>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
                 std::integer_sequence<int, 1, 2, 4, 8, 16, 32>{},
                 grid_gpu_min_2, block_gpu_min_2,
@@ -496,9 +496,9 @@ namespace rrtmgp_kernel_launcher_cuda
             std::tie(grid_gpu, block_gpu) = tune_kernel(
                     "Planck_source_kernel",
                     {ngpt, nlay, ncol},
-                    {1, 2, 3, 4, 8, 12, 16, 24},
-                    {1, 2, 3, 4, 8, 12, 16, 24},
-                    {1, 2, 3, 4, 8, 12, 16, 24},
+                    {1, 2, 4, 8},
+                    {1, 2, 4, 8},
+                    {1, 2, 4, 8, 16, 32, 48, 64},
                     Planck_source_kernel<TF>,
                     ncol, nlay, nbnd, ngpt,
                     nflav, neta, npres, ntemp, nPlanckTemp,
