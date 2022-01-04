@@ -197,10 +197,10 @@ void Planck_source_kernel(
         //        fmajor[idx_fcl3+6] * pfracin[igpt + (j1-1)*ngpt + jpress_idx    *neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
         //        fmajor[idx_fcl3+7] * pfracin[igpt +  j1   *ngpt + jpress_idx    *neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)]);
 
-              (fmajor[idx_fcl3+0] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + (jpress_idx-1)*ntemp*neta + igpt*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+1] * pfracin[(jtemp_idx-1) +  j0   *ntemp + (jpress_idx-1)*ntemp*neta + igpt*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+2] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + jpress_idx    *ntemp*neta + igpt*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+3] * pfracin[(jtemp_idx-1) +  j0   *ntemp + jpress_idx    *ntemp*neta + igpt*neta*ngpt*(npres+1)])
+              (fmajor[idx_fcl3+0] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
+               fmajor[idx_fcl3+1] * pfracin[(jtemp_idx-1) +  j0   *ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
+               fmajor[idx_fcl3+2] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + jpress_idx    *ntemp*neta + igpt*ntemp*neta*(npres+1)] +
+               fmajor[idx_fcl3+3] * pfracin[(jtemp_idx-1) +  j0   *ntemp + jpress_idx    *ntemp*neta + igpt*ntemp*neta*(npres+1)])
 
             + (fmajor[idx_fcl3+4] * pfracin[jtemp_idx + (j1-1)*ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
                fmajor[idx_fcl3+5] * pfracin[jtemp_idx +  j1   *ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
@@ -714,11 +714,12 @@ void gas_optical_depths_minor_kernel(
                 const int idx_fcl1 = 2 * (icol + ilay*ncol + iflav*ncol*nlay);
 
                 const TF* kfminor = &fminor[idx_fcl2];
-                const TF* kin = &kminor[kminor_start[imnr]-1];
+                const TF* kin = &kminor[0];//[kminor_start[imnr]-1];
                 const int j0 = jeta[idx_fcl1];
                 const int j1 = jeta[idx_fcl1+1];
                 const int kjtemp = jtemp[idx_collay];
                 const int band_gpt = gpt_end-gpt_start;
+                const int gpt_offset = kminor_start[imnr]-1;
 
                 if constexpr (block_size_x == max_gpt)
                 {
@@ -731,10 +732,10 @@ void gas_optical_depths_minor_kernel(
                         //                 kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
                         //                 kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
 
-                        TF ltau_minor = kfminor[0] * kin[(kjtemp-1) + (j0-1)*ntemp + igpt*ntemp*neta] +
-                                        kfminor[1] * kin[(kjtemp-1) +  j0   *ntemp + igpt*ntemp*neta] +
-                                        kfminor[2] * kin[kjtemp     + (j1-1)*ntemp + igpt*ntemp*neta] +
-                                        kfminor[3] * kin[kjtemp     +  j1   *ntemp + igpt*ntemp*neta];
+                        TF ltau_minor = kfminor[0] * kin[(kjtemp-1) + (j0-1)*ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[1] * kin[(kjtemp-1) +  j0   *ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[2] * kin[kjtemp     + (j1-1)*ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[3] * kin[kjtemp     +  j1   *ntemp + (igpt+gpt_offset)*ntemp*neta];
 
                         // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt; 1.5
                         const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
@@ -750,10 +751,10 @@ void gas_optical_depths_minor_kernel(
                         //                 kfminor[2] * kin[igpt + (j1-1)*nminork + kjtemp    *neta*nminork] +
                         //                 kfminor[3] * kin[igpt +  j1   *nminork + kjtemp    *neta*nminork];
 
-                        TF ltau_minor = kfminor[0] * kin[(kjtemp-1) + (j0-1)*ntemp + igpt*ntemp*neta] +
-                                        kfminor[1] * kin[(kjtemp-1) +  j0   *ntemp + igpt*ntemp*neta] +
-                                        kfminor[2] * kin[kjtemp     + (j1-1)*ntemp + igpt*ntemp*neta] +
-                                        kfminor[3] * kin[kjtemp     +  j1   *ntemp + igpt*ntemp*neta];
+                        TF ltau_minor = kfminor[0] * kin[(kjtemp-1) + (j0-1)*ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[1] * kin[(kjtemp-1) +  j0   *ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[2] * kin[kjtemp     + (j1-1)*ntemp + (igpt+gpt_offset)*ntemp*neta] +
+                                        kfminor[3] * kin[kjtemp     +  j1   *ntemp + (igpt+gpt_offset)*ntemp*neta];
 
                         // const int idx_out = (igpt+gpt_start) + ilay*ngpt + icol*nlay*ngpt; 1.5
                         const int idx_out = icol + ilay*ncol + (igpt+gpt_start)*ncol*nlay;
@@ -894,7 +895,7 @@ void compute_tau_rayleigh_kernel(
         const int idx_fcl1 =   2*(icol + ilay*ncol + iflav*ncol*nlay);
 
         // const int idx_krayl = gpt_start + ngpt*neta*ntemp*itropo; 1.5
-        const int idx_krayl = gpt_start*ntemp*neta + itropo*ntemp*neta*ngpt;
+        const int idx_krayl = itropo*ntemp*neta*ngpt;
 
         const int j0 = jeta[idx_fcl1  ];
         const int j1 = jeta[idx_fcl1+1];
@@ -905,10 +906,10 @@ void compute_tau_rayleigh_kernel(
         //                 fminor[idx_fcl2+2] * krayl[idx_krayl + (igpt-gpt_start) + (j1-1)*ngpt + jtempl    *neta*ngpt] +
         //                 fminor[idx_fcl2+3] * krayl[idx_krayl + (igpt-gpt_start) +  j1   *ngpt + jtempl    *neta*ngpt];
 
-        const TF kloc = fminor[idx_fcl2+0] * krayl[idx_krayl + (jtempl-1) + (j0-1)*ntemp + (igpt-gpt_start)*ntemp*neta] +
-                        fminor[idx_fcl2+1] * krayl[idx_krayl + (jtempl-1) +  j0   *ntemp + (igpt-gpt_start)*ntemp*neta] +
-                        fminor[idx_fcl2+2] * krayl[idx_krayl + (jtempl  ) + (j1-1)*ntemp + (igpt-gpt_start)*ntemp*neta] +
-                        fminor[idx_fcl2+3] * krayl[idx_krayl + (jtempl  ) +  j1   *ntemp + (igpt-gpt_start)*ntemp*neta];
+        const TF kloc = fminor[idx_fcl2+0] * krayl[idx_krayl + (jtempl-1) + (j0-1)*ntemp + igpt*ntemp*neta] +
+                        fminor[idx_fcl2+1] * krayl[idx_krayl + (jtempl-1) +  j0   *ntemp + igpt*ntemp*neta] +
+                        fminor[idx_fcl2+2] * krayl[idx_krayl + (jtempl  ) + (j1-1)*ntemp + igpt*ntemp*neta] +
+                        fminor[idx_fcl2+3] * krayl[idx_krayl + (jtempl  ) +  j1   *ntemp + igpt*ntemp*neta];
 
         // const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt; 1.5
         const int idx_out = icol + ilay*ncol + igpt*ncol*nlay;

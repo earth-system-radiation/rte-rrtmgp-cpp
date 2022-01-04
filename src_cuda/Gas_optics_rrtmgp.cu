@@ -1080,6 +1080,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
     {
         Array_gpu<TF,3> tau({ncol, nlay, ngpt});
         Array_gpu<TF,3> tau_rayleigh({ncol, nlay, ngpt});
+        rrtmgp_kernel_launcher_cuda::zero_array(ngpt, nlay, ncol, tau);
 
         rrtmgp_kernel_launcher_cuda::zero_array(ncol, nlay, ngpt, tau);
         rrtmgp_kernel_launcher_cuda::zero_array(ncol, nlay, ngpt, tau_rayleigh);
@@ -1217,23 +1218,8 @@ void Gas_optics_rrtmgp_gpu<TF>::source(
             fmajor, jeta, tropo, jtemp, jpress,
             gpoint_bands, band_lims_gpoint, this->planck_frac_gpu, this->temp_ref_min,
             this->totplnk_delta, this->totplnk_gpu, this->gpoint_flavor_gpu,
-            sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t,
-            sfc_source_jac, source_map);
-
-    rrtmgp_kernel_launcher_cuda::reorder12x21(
-            ncol, ngpt, sfc_source_t, sources.get_sfc_source());
-
-    rrtmgp_kernel_launcher_cuda::reorder12x21<TF>(
-            ncol, ngpt, sfc_source_jac, sources.get_sfc_source_jac());
-
-    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-            ncol, nlay, ngpt, lay_source_t, sources.get_lay_source(), source_map);
-
-    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-            ncol, nlay, ngpt, lev_source_inc_t, sources.get_lev_source_inc(), source_map);
-
-    rrtmgp_kernel_launcher_cuda::reorder123x321<TF>(
-            ncol, nlay, ngpt, lev_source_dec_t, sources.get_lev_source_dec(), source_map);
+            sources.get_sfc_source(), sources.get_lay_source(), sources.get_lev_source_inc(), 
+            sources.get_lev_source_dec(), sources.get_sfc_source_jac(), source_map);
 }
 
 
