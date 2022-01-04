@@ -197,10 +197,10 @@ void Planck_source_kernel(
         //        fmajor[idx_fcl3+6] * pfracin[igpt + (j1-1)*ngpt + jpress_idx    *neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
         //        fmajor[idx_fcl3+7] * pfracin[igpt +  j1   *ngpt + jpress_idx    *neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)]);
 
-              (fmajor[idx_fcl3+0] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + (jpress_idx-1)*ntemp*neta + igpt*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+1] * pfracin[(jtemp_idx-1) +  j0   *ntemp + (jpress_idx-1)*ntemp*neta + igpt*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+2] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + jpress_idx    *ntemp*neta + igpt*neta*ngpt*(npres+1)] +
-               fmajor[idx_fcl3+3] * pfracin[(jtemp_idx-1) +  j0   *ntemp + jpress_idx    *ntemp*neta + igpt*neta*ngpt*(npres+1)])
+              (fmajor[idx_fcl3+0] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
+               fmajor[idx_fcl3+1] * pfracin[(jtemp_idx-1) +  j0   *ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
+               fmajor[idx_fcl3+2] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + jpress_idx    *ntemp*neta + igpt*ntemp*neta*(npres+1)] +
+               fmajor[idx_fcl3+3] * pfracin[(jtemp_idx-1) +  j0   *ntemp + jpress_idx    *ntemp*neta + igpt*ntemp*neta*(npres+1)])
 
             + (fmajor[idx_fcl3+4] * pfracin[jtemp_idx + (j1-1)*ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
                fmajor[idx_fcl3+5] * pfracin[jtemp_idx +  j1   *ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
@@ -895,7 +895,7 @@ void compute_tau_rayleigh_kernel(
         const int idx_fcl1 =   2*(icol + ilay*ncol + iflav*ncol*nlay);
 
         // const int idx_krayl = gpt_start + ngpt*neta*ntemp*itropo; 1.5
-        const int idx_krayl = gpt_start*ntemp*neta + itropo*ntemp*neta*ngpt;
+        const int idx_krayl = itropo*ntemp*neta*ngpt;
 
         const int j0 = jeta[idx_fcl1  ];
         const int j1 = jeta[idx_fcl1+1];
@@ -906,10 +906,10 @@ void compute_tau_rayleigh_kernel(
         //                 fminor[idx_fcl2+2] * krayl[idx_krayl + (igpt-gpt_start) + (j1-1)*ngpt + jtempl    *neta*ngpt] +
         //                 fminor[idx_fcl2+3] * krayl[idx_krayl + (igpt-gpt_start) +  j1   *ngpt + jtempl    *neta*ngpt];
 
-        const TF kloc = fminor[idx_fcl2+0] * krayl[idx_krayl + (jtempl-1) + (j0-1)*ntemp + (igpt-gpt_start)*ntemp*neta] +
-                        fminor[idx_fcl2+1] * krayl[idx_krayl + (jtempl-1) +  j0   *ntemp + (igpt-gpt_start)*ntemp*neta] +
-                        fminor[idx_fcl2+2] * krayl[idx_krayl + (jtempl  ) + (j1-1)*ntemp + (igpt-gpt_start)*ntemp*neta] +
-                        fminor[idx_fcl2+3] * krayl[idx_krayl + (jtempl  ) +  j1   *ntemp + (igpt-gpt_start)*ntemp*neta];
+        const TF kloc = fminor[idx_fcl2+0] * krayl[idx_krayl + (jtempl-1) + (j0-1)*ntemp + igpt*ntemp*neta] +
+                        fminor[idx_fcl2+1] * krayl[idx_krayl + (jtempl-1) +  j0   *ntemp + igpt*ntemp*neta] +
+                        fminor[idx_fcl2+2] * krayl[idx_krayl + (jtempl  ) + (j1-1)*ntemp + igpt*ntemp*neta] +
+                        fminor[idx_fcl2+3] * krayl[idx_krayl + (jtempl  ) +  j1   *ntemp + igpt*ntemp*neta];
 
         // const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt; 1.5
         const int idx_out = icol + ilay*ncol + igpt*ncol*nlay;
