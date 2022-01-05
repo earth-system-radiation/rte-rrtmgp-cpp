@@ -145,16 +145,20 @@ void Rte_sw_gpu<TF>::rte_sw(
     else
         rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif, gpt_flux_dn);
 
+    const BOOL_TYPE has_dif_bc = false;
+    const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
+
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat.
     rte_kernel_launcher_cuda::sw_solver_2stream(
             ncol, nlay, ngpt, top_at_1,
-            optical_props->get_tau(),
-            optical_props->get_ssa(),
-            optical_props->get_g  (),
+            optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g(),
             mu0,
             sfc_alb_dir_gpt, sfc_alb_dif_gpt,
+            inc_flux_dir,
             gpt_flux_up, gpt_flux_dn, gpt_flux_dir,
+            has_dif_bc, inc_flux_dif,
+            do_broadband, gpt_flux_up, gpt_flux_dn, gpt_flux_dir,
             sw_solver_2stream_map);
 
     // CvH: The original fortran code had a call to the reduce here.
