@@ -736,9 +736,23 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         if (!switch_fluxes)
             return;
 
-        Array_gpu<TF,3> gpt_flux_up    ({n_col_in, n_lev, n_gpt});
-        Array_gpu<TF,3> gpt_flux_dn    ({n_col_in, n_lev, n_gpt});
-        Array_gpu<TF,3> gpt_flux_dn_dir({n_col_in, n_lev, n_gpt});
+        Array_gpu<TF,3> gpt_flux_up;
+        Array_gpu<TF,3> gpt_flux_dn;
+        Array_gpu<TF,3> gpt_flux_dn_dir;
+
+        // Save the output per gpt if postprocessing is desired.
+        if (switch_output_bnd_fluxes)
+        {
+            gpt_flux_up.set_dims({n_col_in, n_lev, n_gpt});
+            gpt_flux_dn.set_dims({n_col_in, n_lev, n_gpt});
+            gpt_flux_dn_dir.set_dims({n_col_in, n_lev, n_gpt});
+        }
+        else
+        {
+            gpt_flux_up.set_dims({n_col_in, n_lev, 1});
+            gpt_flux_dn.set_dims({n_col_in, n_lev, 1});
+            gpt_flux_dn_dir.set_dims({n_col_in, n_lev, 1});
+        }
 
         rte_sw.rte_sw(
                 optical_props_subset_in,
@@ -752,6 +766,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                 gpt_flux_dn,
                 gpt_flux_dn_dir);
 
+        /*
         fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
 
         // Copy the data to the output.
@@ -766,6 +781,39 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
             subset_kernel_launcher_cuda::get_from_subset(
                     n_col, n_lev, n_bnd, n_col_in, col_s_in, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dn_dir, sw_bnd_flux_net,
                     bnd_fluxes.get_bnd_flux_up(), bnd_fluxes.get_bnd_flux_dn(), bnd_fluxes.get_bnd_flux_dn_dir(), bnd_fluxes.get_bnd_flux_net());
+        }
+        */
+
+        if (switch_output_bnd_fluxes)
+        {
+            // Aggegated fluxes.
+            fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
+
+            // Copy the data to the output.
+            subset_kernel_launcher_cuda::get_from_subset(
+                    n_col, n_lev, n_col_in, col_s_in, sw_flux_up, sw_flux_dn, sw_flux_dn_dir, sw_flux_net,
+                    fluxes.get_flux_up(), fluxes.get_flux_dn(), fluxes.get_flux_dn_dir(), fluxes.get_flux_net());
+
+            // Aggegated fluxes per band
+            bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
+
+            subset_kernel_launcher_cuda::get_from_subset(
+                    n_col, n_lev, n_bnd, n_col_in, col_s_in, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dn_dir, sw_bnd_flux_net,
+                    bnd_fluxes.get_bnd_flux_up(), bnd_fluxes.get_bnd_flux_dn(), bnd_fluxes.get_bnd_flux_dn_dir(), bnd_fluxes.get_bnd_flux_net());
+        }
+        else
+        {
+            // Copy the data to the output.
+            /*
+            for (int ilev=1; ilev<=n_lev; ++ilev)
+                for (int icol=1; icol<=n_col_in; ++icol)
+                {
+                    sw_flux_up    ({icol+col_s_in-1, ilev}) = gpt_flux_up    ({icol, ilev, 1});
+                    sw_flux_dn    ({icol+col_s_in-1, ilev}) = gpt_flux_dn    ({icol, ilev, 1});
+                    sw_flux_dn_dir({icol+col_s_in-1, ilev}) = gpt_flux_dn_dir({icol, ilev, 1});
+                    sw_flux_net   ({icol+col_s_in-1, ilev}) = gpt_flux_dn    ({icol, ilev, 1}) - gpt_flux_up({icol, ilev, 1});
+                }
+            */
         }
     };
 
