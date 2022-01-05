@@ -160,8 +160,6 @@ void Planck_source_kernel(
 
         const int iflav = gpoint_flavor[itropo + 2*gpt_start] - 1;
 
-        // const int idx_fcl3 = 2 * 2 * 2 * (iflav + icol*nflav + ilay*ncol*nflav); 1.5
-        // const int idx_fcl1 = 2 * (iflav + icol*nflav + ilay*ncol*nflav); 1.5
         const int idx_fcl3 = 2 * 2 * 2 * (icol + ilay*ncol + iflav*ncol*nlay);
         const int idx_fcl1 = 2 *         (icol + ilay*ncol + iflav*ncol*nlay);
 
@@ -180,23 +178,10 @@ void Planck_source_kernel(
         const TF planck_function_lev1 = interpolate1D(tlev[idx_tmp1], temp_ref_min, totplnk_delta, nPlanckTemp, &totplnk[ibnd * nPlanckTemp]);
         const TF planck_function_lev2 = interpolate1D(tlev[idx_tmp2], temp_ref_min, totplnk_delta, nPlanckTemp, &totplnk[ibnd * nPlanckTemp]);
 
-        // CvH TODO THIS NEEDS CHECKING, DID I CONVERT CORRECTLY TO 1.5 STRUCTURE?
-        // const int idx = igpt + ilay*ngpt + icol*nlay*ngpt;
-        // const int idx_sfc = igpt + icol*ngpt;
         const int idx = icol + ilay*ncol + igpt*ncol*nlay;
         const int idx_sfc = icol + igpt*ncol;
 
         const TF pfrac_loc =
-        //       (fmajor[idx_fcl3+0] * pfracin[igpt + (j0-1)*ngpt + (jpress_idx-1)*neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
-        //        fmajor[idx_fcl3+1] * pfracin[igpt +  j0   *ngpt + (jpress_idx-1)*neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
-        //        fmajor[idx_fcl3+2] * pfracin[igpt + (j0-1)*ngpt + jpress_idx    *neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)] +
-        //        fmajor[idx_fcl3+3] * pfracin[igpt +  j0   *ngpt + jpress_idx    *neta*ngpt + (jtemp_idx-1)*neta*ngpt*(npres+1)])
-
-        //     + (fmajor[idx_fcl3+4] * pfracin[igpt + (j1-1)*ngpt + (jpress_idx-1)*neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
-        //        fmajor[idx_fcl3+5] * pfracin[igpt +  j1   *ngpt + (jpress_idx-1)*neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
-        //        fmajor[idx_fcl3+6] * pfracin[igpt + (j1-1)*ngpt + jpress_idx    *neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)] +
-        //        fmajor[idx_fcl3+7] * pfracin[igpt +  j1   *ngpt + jpress_idx    *neta*ngpt + jtemp_idx*neta*ngpt*(npres+1)]);
-
               (fmajor[idx_fcl3+0] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
                fmajor[idx_fcl3+1] * pfracin[(jtemp_idx-1) +  j0   *ntemp + (jpress_idx-1)*ntemp*neta + igpt*ntemp*neta*(npres+1)] +
                fmajor[idx_fcl3+2] * pfracin[(jtemp_idx-1) + (j0-1)*ntemp + jpress_idx    *ntemp*neta + igpt*ntemp*neta*(npres+1)] +
@@ -276,7 +261,6 @@ void interpolation_kernel(
         for (int itemp=0; itemp<2; ++itemp)
         {
             const int vmr_base_idx = itropo + (jtemp[idx]+itemp-1) * (ngas+1) * 2;
-            // const int colmix_idx = itemp + 2*(iflav + nflav*icol + nflav*ncol*ilay); 1.5
             const int colmix_idx = itemp + 2*(icol + ilay*ncol + iflav*ncol*nlay);
             const int colgas1_idx = icol + ilay*ncol + gas1*nlay*ncol;
             const int colgas2_idx = icol + ilay*ncol + gas2*nlay*ncol;
@@ -295,14 +279,12 @@ void interpolation_kernel(
             const TF feta = fmod(loceta, TF(1.));
             const TF ftemp_term = TF(1-itemp) + TF(2*itemp-1)*ftemp;
 
-            // Compute interpolation fractions needed for minot species.
-            // const int fminor_idx = 2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*nflav)); 1.5
+            // Compute interpolation fractions needed for minor species.
             const int fminor_idx = 2*(itemp + 2*(icol + ilay*ncol + iflav*ncol*nlay));
             fminor[fminor_idx  ] = (TF(1.)-feta) * ftemp_term;
             fminor[fminor_idx+1] = feta * ftemp_term;
 
             // Compute interpolation fractions needed for major species.
-            // const int fmajor_idx = 2*2*(itemp + 2*(iflav + icol*nflav + ilay*ncol*nflav)); 1.5
             const int fmajor_idx = 2*2*(itemp + 2*(icol + ilay*ncol + iflav*ncol*nlay));
             fmajor[fmajor_idx  ] = (TF(1.)-fpress) * fminor[fminor_idx  ];
             fmajor[fmajor_idx+1] = (TF(1.)-fpress) * fminor[fminor_idx+1];
@@ -783,29 +765,20 @@ void compute_tau_rayleigh_kernel(
         const int gpt_start = band_lims_gpt[2*ibnd]-1;
         const int iflav = gpoint_flavor[itropo+2*gpt_start]-1;
 
-        // const int idx_fcl2 = 2*2*(iflav + icol*nflav + ilay*ncol*nflav); 1.5
-        // const int idx_fcl1 =   2*(iflav + icol*nflav + ilay*ncol*nflav); 1.5
         const int idx_fcl2 = 2*2*(icol + ilay*ncol + iflav*ncol*nlay);
         const int idx_fcl1 =   2*(icol + ilay*ncol + iflav*ncol*nlay);
 
-        // const int idx_krayl = gpt_start + ngpt*neta*ntemp*itropo; 1.5
         const int idx_krayl = itropo*ntemp*neta*ngpt;
 
         const int j0 = jeta[idx_fcl1  ];
         const int j1 = jeta[idx_fcl1+1];
         const int jtempl = jtemp[idx_collay];
 
-        // const TF kloc = fminor[idx_fcl2+0] * krayl[idx_krayl + (igpt-gpt_start) + (j0-1)*ngpt + (jtempl-1)*neta*ngpt] +
-        //                 fminor[idx_fcl2+1] * krayl[idx_krayl + (igpt-gpt_start) +  j0   *ngpt + (jtempl-1)*neta*ngpt] +
-        //                 fminor[idx_fcl2+2] * krayl[idx_krayl + (igpt-gpt_start) + (j1-1)*ngpt + jtempl    *neta*ngpt] +
-        //                 fminor[idx_fcl2+3] * krayl[idx_krayl + (igpt-gpt_start) +  j1   *ngpt + jtempl    *neta*ngpt];
-
         const TF kloc = fminor[idx_fcl2+0] * krayl[idx_krayl + (jtempl-1) + (j0-1)*ntemp + igpt*ntemp*neta] +
                         fminor[idx_fcl2+1] * krayl[idx_krayl + (jtempl-1) +  j0   *ntemp + igpt*ntemp*neta] +
                         fminor[idx_fcl2+2] * krayl[idx_krayl + (jtempl  ) + (j1-1)*ntemp + igpt*ntemp*neta] +
                         fminor[idx_fcl2+3] * krayl[idx_krayl + (jtempl  ) +  j1   *ntemp + igpt*ntemp*neta];
 
-        // const int idx_out = igpt + ilay*ngpt + icol*nlay*ngpt; 1.5
         const int idx_out = icol + ilay*ncol + igpt*ncol*nlay;
         tau_rayleigh[idx_out] = kloc * (col_gas[idx_collaywv] + col_dry[idx_collay]);
     }
