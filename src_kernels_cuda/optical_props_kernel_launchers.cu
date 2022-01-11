@@ -22,12 +22,11 @@
  *
  */
 
+#include <limits>
 
 #include "Array.h"
 #include "Types.h"
 #include "tuner.h"
-
-
 
 namespace
 {
