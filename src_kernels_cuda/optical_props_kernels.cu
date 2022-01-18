@@ -39,7 +39,7 @@ void increment_1scalar_by_1scalar_kernel(
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
         const int idx = icol + ilay*ncol + igpt*ncol*nlay;
-        tau1[idx] = tau2[idx]+tau2[idx];
+        tau1[idx] = tau1[idx]+tau2[idx];
     }
 }
 
@@ -61,7 +61,8 @@ void increment_2stream_by_2stream_kernel(
         const TF tau2_value = tau2[idx];
         const TF tau12 = tau1_value + tau2_value;
         const TF ssa1_value = ssa1[idx];
-        const TF tauscat12 = (tau1_value * ssa1_value) + (tau2_value * tau2_value);
+        const TF ssa2_value = ssa2[idx];
+        const TF tauscat12 = (tau1_value * ssa1_value) + (tau2_value * ssa2_value);
 
         g1[idx] = ((tau1_value * ssa1_value * g1[idx]) + (tau2_value * ssa2[idx] * g2[idx])) / max(tauscat12, eps);
         ssa1[idx] = tauscat12 / max(eps, tau12);
