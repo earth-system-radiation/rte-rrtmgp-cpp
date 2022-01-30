@@ -1,3 +1,4 @@
+#include <float.h>
 #include "Types.h"
 
 #ifndef kernel_tuner
@@ -493,8 +494,12 @@ void add_fluxes_kernel(
 
 
 template<typename TF> __device__ constexpr TF tmin();
-template<> __forceinline__ __device__ constexpr double tmin() { return 2.2250738585072014e-308; }
-template<> __forceinline__ __device__ constexpr float tmin() { return 1.175494e-38f; }
+template<> __forceinline__ __device__ constexpr double tmin() { return DBL_EPSILON; }
+template<> __forceinline__ __device__ constexpr float tmin() { return FLT_EPSILON; }
+
+template<typename TF> __device__ constexpr TF tkmin();
+template<> __forceinline__ __device__ constexpr double tkmin() { return double(1000.) * DBL_EPSILON; }
+template<> __forceinline__ __device__ constexpr float tkmin() { return float(1000.) * FLT_EPSILON; }
 
 
 template<typename TF> __device__
@@ -528,11 +533,11 @@ void sw_2stream_function(
         t_dif[idx] = rt_term * TF(2.) * k * exp_minusktau;
         *t_noscat = exp(-tau[idx] * mu0_inv);
 
-        const TF k_mu     = k * mu0[icol];
+        const TF k_mu     = (abs(TF(1.) - k * k * mu0[icol] * mu0[icol]) > tkmin<TF>()) ? k * mu0[icol] : TF(1.) - tkmin<TF>(); //const TF k_mu     = k * mu0[icol];
         const TF k_gamma3 = k * gamma3;
         const TF k_gamma4 = k * gamma4;
 
-        const TF fact = (abs(TF(1.) - k_mu*k_mu) > tmin<TF>()) ? TF(1.) - k_mu*k_mu : tmin<TF>();
+        const TF fact = TF(1.) - k_mu*k_mu; //(abs(TF(1.) - k_mu*k_mu) > tmin<TF>()) ? TF(1.) - k_mu*k_mu : tmin<TF>();
         const TF rt_term2 = ssa[idx] * rt_term / fact;
 
         *r_dir = rt_term2  * ((TF(1.) - k_mu) * (alpha2 + k_gamma3)   -
@@ -542,6 +547,9 @@ void sw_2stream_function(
         *t_dir = -rt_term2 * ((TF(1.) + k_mu) * (alpha1 + k_gamma4) * t_noscat[0]   -
                                   (TF(1.) - k_mu) * (alpha1 - k_gamma4) * exp_minus2ktau * t_noscat[0] -
                                    TF(2.) * (k_gamma4 + alpha1 * k_mu)  * exp_minusktau);
+        
+        *r_dir = max(*r_dir, tmin<TF>());
+        *t_dir = max(*t_dir, tmin<TF>());
 }
 
 
