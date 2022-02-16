@@ -109,14 +109,7 @@ void Rte_lw_gpu<TF>::rte_lw(
     const int ngpt = optical_props->get_ngpt();
 
     Array_gpu<TF,2> sfc_emis_gpt({ncol, ngpt});
-
     expand_and_transpose(optical_props, sfc_emis, sfc_emis_gpt);
-
-    // Upper boundary condition.
-    if (inc_flux.size() == 0)
-        rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
-    else
-        rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, gpt_flux_dn);
 
     // Run the radiative transfer solver.
     const int n_quad_angs = n_gauss_angles;
@@ -137,6 +130,7 @@ void Rte_lw_gpu<TF>::rte_lw(
             sources.get_lay_source(),
             sources.get_lev_source_inc(), sources.get_lev_source_dec(),
             sfc_emis_gpt, sources.get_sfc_source(),
+            inc_flux,
             gpt_flux_up, gpt_flux_dn,
             sfc_src_jac, gpt_flux_up_jac,
             rte_lw_map);
