@@ -323,6 +323,13 @@ namespace rte_kernel_launcher_cuda
 
         dim3 grid_source{ncol, ngpt}, block_source;
 
+        // Step0. Upper boundary condition. At this stage, flux_dn contains the diffuse radiation only.
+        rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dir, mu0, flux_dir);
+        if (inc_flux_dif.size() == 0)
+            rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, flux_dn);
+        else
+            rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif, flux_dn);
+
 
         // Step 1.
         if (tunings.count("sw_source_2stream_kernel") == 0)

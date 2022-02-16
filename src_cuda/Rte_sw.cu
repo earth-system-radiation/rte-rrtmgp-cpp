@@ -138,13 +138,6 @@ void Rte_sw_gpu<TF>::rte_sw(
     expand_and_transpose(optical_props, sfc_alb_dir, sfc_alb_dir_gpt);
     expand_and_transpose(optical_props, sfc_alb_dif, sfc_alb_dif_gpt);
 
-    // Upper boundary condition. At this stage, flux_dn contains the diffuse radiation only.
-    rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dir, mu0, gpt_flux_dir);
-    if (inc_flux_dif.size() == 0)
-        rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
-    else
-        rte_kernel_launcher_cuda::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif, gpt_flux_dn);
-
     const BOOL_TYPE has_dif_bc = false;
     const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
