@@ -6,8 +6,8 @@ ref_nc = nc.Dataset("ref.nc", "r")
 data_nc = nc.Dataset("rte_rrtmgp_output.nc", "r")
 
 def compare(name):
-    ref = ref_nc.variables[name][:]
-    data = data_nc.variables[name][:]
+    ref = ref_nc.variables[name][:].flatten()
+    data = data_nc.variables[name][:].flatten()
     print(name, abs(ref - data).max())
     return ref, data
 
