@@ -250,6 +250,8 @@ namespace rte_kernel_launcher_cuda
         {
             for (int imu=1; imu<nmus; ++imu)
             {
+                throw std::runtime_error("Not implemented due to lacking test case");
+                /*
                 lw_solver_noscat_step_1_kernel<<<grid_1, block_1>>>(
                         ncol, nlay, ngpt, eps, top_at_1,
                         secants.ptr()+imu, weights.ptr()+imu, tau.ptr(), lay_source.ptr(),
@@ -279,6 +281,7 @@ namespace rte_kernel_launcher_cuda
                         ncol, nlay+1, ngpt,
                         radn_up.ptr(), radn_dn.ptr(), radn_up_jac.ptr(),
                         flux_up.ptr(), flux_dn.ptr(), flux_up_jac.ptr());
+                        */
             }
         }
     }

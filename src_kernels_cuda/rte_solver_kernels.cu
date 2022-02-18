@@ -107,7 +107,8 @@ void lw_solver_noscat_step_1_kernel(
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
         const int idx = icol + ilay*ncol + igpt*ncol*nlay;
-        tau_loc[idx] = tau[idx] * D[0];
+        const int idx_D = icol + igpt*ncol;
+        tau_loc[idx] = tau[idx] * D[idx_D];
         trans[idx] = exp(-tau_loc[idx]);
 
         const TF fact = (tau_loc[idx]>0. && (tau_loc[idx]*tau_loc[idx])>eps) ? (TF(1.) - trans[idx]) / tau_loc[idx] - trans[idx] : tau_loc[idx] * (TF(.5) - TF(1.)/TF(3.)*tau_loc[idx]);
@@ -256,7 +257,8 @@ void sw_adding_kernel(
                 const int lev_idx1 = icol + ilay*ncol + igpt*(nlay+1)*ncol;
                 const int lev_idx2 = icol + (ilay+1)*ncol + igpt*(nlay+1)*ncol;
 
-                    if (ilay >= 0) {
+                    if (ilay >= 0)
+                    {
                         flux_dn[lev_idx1] = (t_dif[lay_idx]*flux_dn[lev_idx2] +
                                              r_dif[lay_idx]*src[lev_idx1] +
                                              source_dn[lay_idx]) * denom[lay_idx];
@@ -264,9 +266,7 @@ void sw_adding_kernel(
                     }
 
                     flux_dn[lev_idx2] += flux_dir[lev_idx2];
-
             }
-
         }
     }
 }
@@ -447,6 +447,7 @@ void sw_source_adding_kernel(const int ncol, const int nlay, const int ngpt, con
     }
 }
 */
+
 template<typename TF>__global__
 void lw_solver_noscat_gaussquad_kernel(
         const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1, const int nmus,
@@ -467,9 +468,11 @@ void lw_solver_noscat_gaussquad_kernel(
 
     if ( (icol < ncol) && (igpt < ngpt) )
     {
-        lw_solver_noscat_kernel(icol, igpt, ncol, nlay, ngpt, eps, top_at_1, ds[0], weights[0], tau, lay_source,
-                         lev_source_inc, lev_source_dec, sfc_emis, sfc_src, flux_up, flux_dn, sfc_src_jac,
-                         flux_up_jac, tau_loc, trans, source_dn, source_up, source_sfc, sfc_albedo, source_sfc_jac);
+        lw_solver_noscat_kernel(
+                icol, igpt, ncol, nlay, ngpt, eps, top_at_1, ds[0], weights[0], tau, lay_source,
+                lev_source_inc, lev_source_dec, sfc_emis, sfc_src, flux_up, flux_dn, sfc_src_jac,
+                flux_up_jac, tau_loc, trans, source_dn, source_up, source_sfc, sfc_albedo, source_sfc_jac);
+
         const int top_level = top_at_1 ? 0 : nlay;
         apply_BC_kernel_lw(icol, igpt, top_level, ncol, nlay, ngpt, top_at_1, flux_dn, radn_dn);
 
@@ -477,9 +480,10 @@ void lw_solver_noscat_gaussquad_kernel(
         {
             for (int imu=1; imu<nmus; ++imu)
             {
-                lw_solver_noscat_kernel(icol, igpt, ncol, nlay, ngpt, eps, top_at_1, ds[imu], weights[imu], tau, lay_source,
-                                 lev_source_inc, lev_source_dec, sfc_emis, sfc_src, radn_up, radn_dn, sfc_src_jac,
-                                 radn_up_jac, tau_loc, trans, source_dn, source_up, source_sfc, sfc_albedo, source_sfc_jac);
+                lw_solver_noscat_kernel(
+                        icol, igpt, ncol, nlay, ngpt, eps, top_at_1, ds[imu], weights[imu], tau, lay_source,
+                        lev_source_inc, lev_source_dec, sfc_emis, sfc_src, radn_up, radn_dn, sfc_src_jac,
+                        radn_up_jac, tau_loc, trans, source_dn, source_up, source_sfc, sfc_albedo, source_sfc_jac);
 
                 for (int ilev=0; ilev<(nlay+1); ++ilev)
                 {
