@@ -73,7 +73,7 @@ namespace optical_props_kernel_launcher_cuda
         dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
         dim3 block_gpu(block_col, block_lay, block_gpt);
 
-        TF eps = std::numeric_limits<TF>::epsilon();
+        TF eps = std::numeric_limits<TF>::min() * TF(3.);
 
         increment_2stream_by_2stream_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, eps,
@@ -119,7 +119,7 @@ namespace optical_props_kernel_launcher_cuda
     {
         dim3 grid{ncol, nlay, ngpt}, block;
 
-        TF eps = std::numeric_limits<TF>::epsilon();
+        TF eps = std::numeric_limits<TF>::min() * TF(3.);
 
 
 
@@ -170,7 +170,7 @@ namespace optical_props_kernel_launcher_cuda
         dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
         dim3 block_gpu(block_col, block_lay, block_gpt);
 
-        TF eps = std::numeric_limits<TF>::epsilon();
+        TF eps = std::numeric_limits<TF>::min()*TF(3.);
 
         delta_scale_2str_k_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, eps,
