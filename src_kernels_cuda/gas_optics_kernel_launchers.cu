@@ -137,7 +137,7 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g,
             Tuner_map& tunings)
     {
-        TF tmin = std::numeric_limits<TF>::epsilon();
+        TF tmin = std::numeric_limits<TF>::min();
 
         dim3 grid{ncol, nlay, ngpt}, block;
 
