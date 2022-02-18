@@ -21,7 +21,7 @@ void lw_secants_array_kernel(
     if ( (icol < ncol) && (igpt < ngpt) && (imu < n_gauss_quad) )
     {
         const int idx_s = icol + igpt*ncol + imu*ncol*ngpt;
-        const int idx_g = imu + n_gauss_quad*max_gauss_pts;
+        const int idx_g = imu + (n_gauss_quad-1)*max_gauss_pts;
 
         secants[idx_s] = gauss_Ds[idx_g];
     }
@@ -178,6 +178,7 @@ void lw_solver_noscat_step_3_kernel(
         radn_up_jac[idx] *= TF(2.) * pi * weight[0];
     }
 }
+
 
 template<typename TF, BOOL_TYPE top_at_1> __global__
 void sw_adding_kernel(

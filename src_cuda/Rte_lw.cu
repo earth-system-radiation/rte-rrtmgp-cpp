@@ -90,12 +90,12 @@ void Rte_lw_gpu<TF>::rte_lw(
         const int n_gauss_angles)
 {
     const int max_gauss_pts = 4;
-    const Array<TF,2> gauss_Ds(
-            {      1.66,         0.,         0.,         0.,
+    const Array_gpu<TF,2> gauss_Ds(
+            Array<TF,2>({      1.66,         0.,         0.,         0.,
              1.18350343, 2.81649655,         0.,         0.,
              1.09719858, 1.69338507, 4.70941630,         0.,
              1.06056257, 1.38282560, 2.40148179, 7.15513024},
-            { max_gauss_pts, max_gauss_pts });
+            { max_gauss_pts, max_gauss_pts }));
 
     const Array<TF,2> gauss_wts(
             {         0.5,           0.,           0.,           0.,
@@ -114,15 +114,15 @@ void Rte_lw_gpu<TF>::rte_lw(
     // Run the radiative transfer solver.
     const int n_quad_angs = n_gauss_angles;
 
-    Array_gpu<TF,2> gauss_Ds_subset = gauss_Ds.subset(
-            {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
+    // Array_gpu<TF,2> gauss_Ds_subset = gauss_Ds.subset(
+    //         {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
     Array_gpu<TF,2> gauss_wts_subset = gauss_wts.subset(
             {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
 
     Array_gpu<TF,3> secants({ncol, ngpt, n_quad_angs});
     rte_kernel_launcher_cuda::lw_secants_array(
             ncol, ngpt, n_quad_angs, max_gauss_pts,
-            gauss_Ds_subset, secants);
+            gauss_Ds, secants);
 
     // For now, just pass the arrays around.
     Array_gpu<TF,2> sfc_src_jac(sources.get_sfc_source().get_dims());
