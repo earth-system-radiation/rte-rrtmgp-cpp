@@ -119,13 +119,18 @@ void Rte_lw_gpu<TF>::rte_lw(
     Array_gpu<TF,2> gauss_wts_subset = gauss_wts.subset(
             {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
 
+    Array_gpu<TF,3> secants({ncol, ngpt, n_quad_angs});
+    rte_kernel_launcher_cuda::lw_secants_array(
+            ncol, ngpt, n_quad_angs, max_gauss_pts,
+            gauss_Ds_subset, secants);
+
     // For now, just pass the arrays around.
     Array_gpu<TF,2> sfc_src_jac(sources.get_sfc_source().get_dims());
     Array_gpu<TF,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
 
     rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,
-            gauss_Ds_subset, gauss_wts_subset,
+            secants, gauss_wts_subset,
             optical_props->get_tau(),
             sources.get_lay_source(),
             sources.get_lev_source_inc(), sources.get_lev_source_dec(),

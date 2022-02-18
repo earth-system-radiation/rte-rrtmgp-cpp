@@ -9,7 +9,7 @@ def remove(filename):
         pass
 
 remove('rte_rrtmgp_output.nc')
-subprocess.run(['./test_rte_rrtmgp', '--cloud-optics'])
+subprocess.run(['./test_rte_rrtmgp', '--cloud-optics', '--output-bnd-fluxes'])
 
 remove('rrtmgp-allsky.nc')
 os.rename('rte_rrtmgp_output.nc', 'rrtmgp-allsky.nc')

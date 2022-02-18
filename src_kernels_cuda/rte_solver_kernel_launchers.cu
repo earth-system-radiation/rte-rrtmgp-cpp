@@ -28,8 +28,8 @@ namespace rte_kernel_launcher_cuda
 
         dim3 grid_gpu(grid_col, grid_gpt);
         dim3 block_gpu(block_col, block_gpt);
-        apply_BC_kernel<<<grid_gpu, block_gpu>>>(ncol, nlay, ngpt, top_at_1, inc_flux_dir.ptr(), mu0.ptr(), gpt_flux_dir.ptr());
 
+        apply_BC_kernel<<<grid_gpu, block_gpu>>>(ncol, nlay, ngpt, top_at_1, inc_flux_dir.ptr(), mu0.ptr(), gpt_flux_dir.ptr());
     }
 
 
@@ -59,14 +59,35 @@ namespace rte_kernel_launcher_cuda
 
         dim3 grid_gpu(grid_col, grid_gpt);
         dim3 block_gpu(block_col, block_gpt);
+
         apply_BC_kernel<<<grid_gpu, block_gpu>>>(ncol, nlay, ngpt, top_at_1, inc_flux_dif.ptr(), gpt_flux_dn.ptr());
+    }
+
+
+    template<typename TF>
+    void lw_secants_array(
+            const int ncol, const int ngpt, const int n_gauss_quad, const int max_gauss_pts,
+            const Array_gpu<TF,2>& gauss_Ds, Array_gpu<TF,3>& secants)
+    {
+        const int block_col = 32;
+        const int block_gpt = 32;
+
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
+
+        dim3 grid_gpu(grid_col, grid_gpt, n_gauss_quad);
+        dim3 block_gpu(block_col, block_gpt, 1);
+
+        lw_secants_array_kernel<<<grid_gpu, block_gpu>>>(
+                ncol, ngpt, n_gauss_quad, max_gauss_pts,
+                gauss_Ds.ptr(), secants.ptr());
     }
 
 
     template<typename TF>
     void lw_solver_noscat_gaussquad(
             const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,
-            const Array_gpu<TF,2>& ds, const Array_gpu<TF,2>& weights,
+            const Array_gpu<TF,3>& secants, const Array_gpu<TF,2>& weights,
             const Array_gpu<TF,3>& tau, const Array_gpu<TF,3> lay_source,
             const Array_gpu<TF,3>& lev_source_inc, const Array_gpu<TF,3>& lev_source_dec,
             const Array_gpu<TF,2>& sfc_emis, const Array_gpu<TF,2>& sfc_src,
@@ -91,6 +112,7 @@ namespace rte_kernel_launcher_cuda
         Array_gpu<TF,3> radn_dn(flux_dn.get_dims());
         Array_gpu<TF,3> radn_up(flux_dn.get_dims());
         Array_gpu<TF,3> radn_up_jac(flux_dn.get_dims());
+
         const int block_col2d = 64;
         const int block_gpt2d = 2;
 
@@ -130,9 +152,12 @@ namespace rte_kernel_launcher_cuda
                     "lw_step_1",
                     {ncol, nlay, ngpt}, {8, 16, 24, 32, 48, 64, 96, 128, 256, 512, 1024}, {1, 2, 4, 8}, {1},
                     lw_solver_noscat_step_1_kernel<TF>,
-                    ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
-                    lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
-                    flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+                    ncol, nlay, ngpt, eps, top_at_1,
+                    secants.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+                    lev_source_inc.ptr(), lev_source_dec.ptr(),
+                    sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
+                    flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(),
+                    source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
 
             tunings["lw_step_1"].first = grid_1;
             tunings["lw_step_1"].second = block_1;
@@ -144,9 +169,12 @@ namespace rte_kernel_launcher_cuda
         }
 
         lw_solver_noscat_step_1_kernel<<<grid_1, block_1>>>(
-                ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
-                lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
-                flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+                ncol, nlay, ngpt, eps, top_at_1,
+                secants.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+                lev_source_inc.ptr(), lev_source_dec.ptr(),
+                sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
+                flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(),
+                source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
 
 
         // Step 2.
@@ -158,9 +186,12 @@ namespace rte_kernel_launcher_cuda
                     "lw_step_2",
                     {ncol, ngpt}, {64, 128, 256, 384, 512, 768, 1024}, {1, 2, 4}, {1},
                     lw_solver_noscat_step_2_kernel<TF>,
-                    ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
-                    lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
-                    flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+                    ncol, nlay, ngpt, eps, top_at_1,
+                    secants.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+                    lev_source_inc.ptr(), lev_source_dec.ptr(),
+                    sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
+                    flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(),
+                    source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
 
             tunings["lw_step_2"].first = grid_2;
             tunings["lw_step_2"].second = block_2;
@@ -172,9 +203,12 @@ namespace rte_kernel_launcher_cuda
         }
 
         lw_solver_noscat_step_2_kernel<<<grid_2, block_2>>>(
-                ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
-                lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
-                flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+                ncol, nlay, ngpt, eps, top_at_1,
+                secants.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+                lev_source_inc.ptr(), lev_source_dec.ptr(),
+                sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
+                flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(),
+                source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
 
 
         // Step 3.
@@ -186,9 +220,12 @@ namespace rte_kernel_launcher_cuda
                     "lw_step_3",
                     {ncol, nlay+1, ngpt}, {8, 16, 24, 32, 48, 64, 96, 128, 256}, {1, 2, 4, 8}, {1},
                     lw_solver_noscat_step_3_kernel<TF>,
-                    ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
-                    lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
-                    flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+                    ncol, nlay, ngpt, eps, top_at_1,
+                    secants.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+                    lev_source_inc.ptr(), lev_source_dec.ptr(),
+                    sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
+                    flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(),
+                    source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
 
             tunings["lw_step_3"].first = grid_3;
             tunings["lw_step_3"].second = block_3;
@@ -200,9 +237,12 @@ namespace rte_kernel_launcher_cuda
         }
 
         lw_solver_noscat_step_3_kernel<<<grid_3, block_3>>>(
-                ncol, nlay, ngpt, eps, top_at_1, ds.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
-                lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
-                flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+                ncol, nlay, ngpt, eps, top_at_1,
+                secants.ptr(), weights.ptr(), tau.ptr(), lay_source.ptr(),
+                lev_source_inc.ptr(), lev_source_dec.ptr(),
+                sfc_emis.ptr(), sfc_src.ptr(), flux_up.ptr(), flux_dn.ptr(), sfc_src_jac.ptr(),
+                flux_up_jac.ptr(), tau_loc.ptr(), trans.ptr(),
+                source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
 
         apply_BC_kernel_lw<<<grid_gpu2d, block_gpu2d>>>(top_level, ncol, nlay, ngpt, top_at_1, flux_dn.ptr(), radn_dn.ptr());
 
@@ -211,19 +251,29 @@ namespace rte_kernel_launcher_cuda
             for (int imu=1; imu<nmus; ++imu)
             {
                 lw_solver_noscat_step_1_kernel<<<grid_1, block_1>>>(
-                        ncol, nlay, ngpt, eps, top_at_1, ds.ptr()+imu, weights.ptr()+imu, tau.ptr(), lay_source.ptr(),
-                        lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), radn_up.ptr(), radn_dn.ptr(), sfc_src_jac.ptr(),
-                        radn_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+                        ncol, nlay, ngpt, eps, top_at_1,
+                        secants.ptr()+imu, weights.ptr()+imu, tau.ptr(), lay_source.ptr(),
+                        lev_source_inc.ptr(), lev_source_dec.ptr(),
+                        sfc_emis.ptr(), sfc_src.ptr(), radn_up.ptr(), radn_dn.ptr(), sfc_src_jac.ptr(),
+                        radn_up_jac.ptr(), tau_loc.ptr(), trans.ptr(),
+                        source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
 
                 lw_solver_noscat_step_2_kernel<<<grid_2, block_2>>>(
-                        ncol, nlay, ngpt, eps, top_at_1, ds.ptr()+imu, weights.ptr()+imu, tau.ptr(), lay_source.ptr(),
-                        lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), radn_up.ptr(), radn_dn.ptr(), sfc_src_jac.ptr(),
-                        radn_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+                        ncol, nlay, ngpt, eps, top_at_1,
+                        secants.ptr()+imu, weights.ptr()+imu, tau.ptr(), lay_source.ptr(),
+                        lev_source_inc.ptr(), lev_source_dec.ptr(),
+                        sfc_emis.ptr(), sfc_src.ptr(),
+                        radn_up.ptr(), radn_dn.ptr(), sfc_src_jac.ptr(),
+                        radn_up_jac.ptr(), tau_loc.ptr(), trans.ptr(),
+                        source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
 
                 lw_solver_noscat_step_3_kernel<<<grid_3, block_3>>>(
-                        ncol, nlay, ngpt, eps, top_at_1, ds.ptr()+imu, weights.ptr()+imu, tau.ptr(), lay_source.ptr(),
-                        lev_source_inc.ptr(), lev_source_dec.ptr(), sfc_emis.ptr(), sfc_src.ptr(), radn_up.ptr(), radn_dn.ptr(), sfc_src_jac.ptr(),
-                        radn_up_jac.ptr(), tau_loc.ptr(), trans.ptr(), source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
+                        ncol, nlay, ngpt, eps, top_at_1,
+                        secants.ptr()+imu, weights.ptr()+imu, tau.ptr(), lay_source.ptr(),
+                        lev_source_inc.ptr(), lev_source_dec.ptr(),
+                        sfc_emis.ptr(), sfc_src.ptr(), radn_up.ptr(), radn_dn.ptr(), sfc_src_jac.ptr(),
+                        radn_up_jac.ptr(), tau_loc.ptr(), trans.ptr(),
+                        source_dn.ptr(), source_up.ptr(), source_sfc.ptr(), sfc_albedo.ptr(), source_sfc_jac.ptr());
 
                 add_fluxes_kernel<<<grid_gpu3d, block_gpu3d>>>(
                         ncol, nlay+1, ngpt,
@@ -403,12 +453,16 @@ template void rte_kernel_launcher_cuda::sw_solver_2stream<float>(
 
 template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<float>(
             const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,
-            const Array_gpu<float,2>& ds, const Array_gpu<float,2>& weights, const Array_gpu<float,3>& tau, const Array_gpu<float,3> lay_source,
+            const Array_gpu<float,3>& secants, const Array_gpu<float,2>& weights, const Array_gpu<float,3>& tau, const Array_gpu<float,3> lay_source,
             const Array_gpu<float,3>& lev_source_inc, const Array_gpu<float,3>& lev_source_dec,
             const Array_gpu<float,2>& sfc_emis, const Array_gpu<float,2>& sfc_src,
             const Array_gpu<float,2>& inc_flux,
             Array_gpu<float,3>& flux_dn, Array_gpu<float,3>& flux_up,
             const Array_gpu<float,2>& sfc_src_jac, Array_gpu<float,3>& flux_up_jac, Tuner_map& tunings);
+
+template void rte_kernel_launcher_cuda::lw_secants_array<float>(
+            const int ncol, const int ngpt, const int n_guass_quad, const int max_gauss_pts,
+            const Array_gpu<float,2>& Gauss_Ds, Array_gpu<float,3>& secants);
 #else
 template void rte_kernel_launcher_cuda::apply_BC(const int, const int, const int, const BOOL_TYPE,
                   const Array_gpu<double,2>&, const Array_gpu<double,1>&, Array_gpu<double,3>&);
@@ -429,10 +483,14 @@ template void rte_kernel_launcher_cuda::sw_solver_2stream<double>(
 
 template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<double>(
             const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,
-            const Array_gpu<double,2>& ds, const Array_gpu<double,2>& weights, const Array_gpu<double,3>& tau, const Array_gpu<double,3> lay_source,
+            const Array_gpu<double,3>& secants, const Array_gpu<double,2>& weights, const Array_gpu<double,3>& tau, const Array_gpu<double,3> lay_source,
             const Array_gpu<double,3>& lev_source_inc, const Array_gpu<double,3>& lev_source_dec,
             const Array_gpu<double,2>& sfc_emis, const Array_gpu<double,2>& sfc_src,
             const Array_gpu<double,2>& inc_flux,
             Array_gpu<double,3>& flux_up, Array_gpu<double,3>& flux_dn,
             const Array_gpu<double,2>& sfc_src_jac,Array_gpu<double,3>& flux_up_jac, Tuner_map& tunings);
+
+template void rte_kernel_launcher_cuda::lw_secants_array<double>(
+            const int ncol, const int ngpt, const int n_guass_quad, const int max_gauss_pts,
+            const Array_gpu<double,2>& Gauss_Ds, Array_gpu<double,3>& secants);
 #endif

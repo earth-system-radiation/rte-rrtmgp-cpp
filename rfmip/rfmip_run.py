@@ -10,7 +10,7 @@ expts = 18
 # Run the experiments.
 for expt in range(expts):
     shutil.copyfile('rte_rrtmgp_input_expt_{:02d}.nc'.format(expt), 'rte_rrtmgp_input.nc')
-    subprocess.run(['./test_rte_rrtmgp'])
+    subprocess.run(['./test_rte_rrtmgp', '--output-bnd-fluxes'])
     shutil.move('rte_rrtmgp_output.nc', 'rte_rrtmgp_output_expt_{:02d}.nc'.format(expt))
     print(' ')
 

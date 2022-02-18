@@ -8,6 +8,26 @@ template<typename TF> __device__ constexpr TF k_min();
 template<> __device__ constexpr double k_min() { return 1.e-12; }
 template<> __device__ constexpr float k_min() { return 1.e-4f; }
 
+
+template<typename TF> __global__
+void lw_secants_array_kernel(
+        const int ncol, const int ngpt, const int n_gauss_quad, const int max_gauss_pts,
+        const TF* __restrict__ gauss_Ds, TF* __restrict__ secants)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+    const int imu = blockIdx.z;
+
+    if ( (icol < ncol) && (igpt < ngpt) && (imu < n_gauss_quad) )
+    {
+        const int idx_s = icol + igpt*ncol + imu*ncol*ngpt;
+        const int idx_g = imu + n_gauss_quad*max_gauss_pts;
+
+        secants[idx_s] = gauss_Ds[idx_g];
+    }
+}
+
+ 
 template<typename TF>__device__
 void lw_transport_noscat_kernel(
         const int icol, const int igpt, const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
@@ -428,18 +448,22 @@ void sw_source_adding_kernel(const int ncol, const int nlay, const int ngpt, con
 }
 */
 template<typename TF>__global__
-void lw_solver_noscat_gaussquad_kernel(const int ncol, const int nlay, const int ngpt, const TF eps,
-                                       const BOOL_TYPE top_at_1, const int nmus, const TF* __restrict__ ds, const TF* __restrict__ weights,
-                                       const TF* __restrict__ tau, const TF* __restrict__ lay_source,
-                                       const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
-                                       const TF* __restrict__ sfc_src, TF* __restrict__ radn_up, TF* __restrict__ radn_dn,
-                                       const TF* __restrict__ sfc_src_jac, TF* __restrict__ radn_up_jac, TF* __restrict__ tau_loc,
-                                       TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up,
-                                       TF* __restrict__ source_sfc, TF* __restrict__ sfc_albedo, TF* __restrict__ source_sfc_jac,
-                                       TF* __restrict__ flux_up, TF* __restrict__ flux_dn, TF* __restrict__ flux_up_jac)
+void lw_solver_noscat_gaussquad_kernel(
+        const int ncol, const int nlay, const int ngpt, const TF eps, const BOOL_TYPE top_at_1, const int nmus,
+        const TF* __restrict__ secants, const TF* __restrict__ weights,
+        const TF* __restrict__ tau, const TF* __restrict__ lay_source,
+        const TF* __restrict__ lev_source_inc, const TF* __restrict__ lev_source_dec, const TF* __restrict__ sfc_emis,
+        const TF* __restrict__ sfc_src, TF* __restrict__ radn_up, TF* __restrict__ radn_dn,
+        const TF* __restrict__ sfc_src_jac, TF* __restrict__ radn_up_jac, TF* __restrict__ tau_loc,
+        TF* __restrict__ trans, TF* __restrict__ source_dn, TF* __restrict__ source_up,
+        TF* __restrict__ source_sfc, TF* __restrict__ sfc_albedo, TF* __restrict__ source_sfc_jac,
+        TF* __restrict__ flux_up, TF* __restrict__ flux_dn, TF* __restrict__ flux_up_jac)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
+
+    // CvH ONLY TO MAKE IT COMPILE. REMOVE !!!!
+    TF* ds = secants;
 
     if ( (icol < ncol) && (igpt < ngpt) )
     {
