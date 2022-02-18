@@ -40,17 +40,33 @@ namespace rte_kernel_launcher_cuda
     void apply_BC(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const Array_gpu<TF,2>& inc_flux_dif, Array_gpu<TF,3>& gpt_flux_dn);
 
     template<typename TF>
-    void sw_solver_2stream(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
-                           const Array_gpu<TF,3>& tau, const Array_gpu<TF,3>& ssa, const Array_gpu<TF,3>& g,
-                           const Array_gpu<TF,1>& mu0, const Array_gpu<TF,2>& sfc_alb_dir, const Array_gpu<TF,2>& sfc_alb_dif,
-                           Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn, Array_gpu<TF,3>& flux_dir, Tuner_map& tunings);
+    void sw_solver_2stream(
+            const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
+            const Array_gpu<TF,3>& tau, const Array_gpu<TF,3>& ssa, const Array_gpu<TF,3>& g,
+            const Array_gpu<TF,1>& mu0,
+            const Array_gpu<TF,2>& sfc_alb_dir, const Array_gpu<TF,2>& sfc_alb_dif,
+            const Array_gpu<TF,2>& inc_flux_dir,
+            Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn, Array_gpu<TF,3>& flux_dir,
+            const BOOL_TYPE has_dif_bc, const Array_gpu<TF,2>& inc_flux_dif,
+            const BOOL_TYPE do_broadband, Array_gpu<TF,3>& flux_up_loc, Array_gpu<TF,3>& flux_dn_loc, Array_gpu<TF,3>& flux_dir_loc,
+            Tuner_map& tunings);
 
     template<typename TF>
     void lw_solver_noscat_gaussquad(
             const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,
-            const Array_gpu<TF,2>& ds, const Array_gpu<TF,2>& weights, const Array_gpu<TF,3>& tau, const Array_gpu<TF,3> lay_source,
-            const Array_gpu<TF,3>& lev_source_inc, const Array_gpu<TF,3>& lev_source_dec, const Array_gpu<TF,2>& sfc_emis,
-            const Array_gpu<TF,2>& sfc_src, Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn,
-            const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac, Tuner_map& tunings);
+            const Array_gpu<TF,3>& secants, const Array_gpu<TF,2>& weights,
+            const Array_gpu<TF,3>& tau, const Array_gpu<TF,3> lay_source,
+            const Array_gpu<TF,3>& lev_source_inc, const Array_gpu<TF,3>& lev_source_dec,
+            const Array_gpu<TF,2>& sfc_emis, const Array_gpu<TF,2>& sfc_src,
+            const Array_gpu<TF,2>& inc_flux,
+            Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn,
+            const BOOL_TYPE do_broadband, Array_gpu<TF,3>& flux_up_loc, Array_gpu<TF,3>& flux_dn_loc,
+            const BOOL_TYPE do_jacobians, const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac,
+            Tuner_map& tunings);
+
+    template<typename TF>
+    void lw_secants_array(
+            const int ncol, const int ngpt, const int n_quad_angs, const int max_gauss_pts,
+            const Array_gpu<TF,2>& Gauss_Ds, Array_gpu<TF,3>& secants);
 }
 #endif

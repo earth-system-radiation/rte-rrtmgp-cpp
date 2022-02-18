@@ -502,6 +502,7 @@ void Radiation_solver_longwave<TF>::solve(
         {
             // Aggegated fluxes.
             fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
+
             for (int ilev=1; ilev<=n_lev; ++ilev)
                 for (int icol=1; icol<=n_col_in; ++icol)
                 {
