@@ -488,6 +488,12 @@ void Radiation_solver_longwave<TF>::solve_gpu(
         if (!switch_fluxes)
             return;
 
+        Array_gpu<TF,3> gpt_flux_up({n_col_in, n_lev, n_gpt});
+        Array_gpu<TF,3> gpt_flux_dn({n_col_in, n_lev, n_gpt});
+
+
+        // CvH The structure below is valid if broadband flux solvers are implemented
+        /*
         Array_gpu<TF,3> gpt_flux_up;
         Array_gpu<TF,3> gpt_flux_dn;
 
@@ -502,6 +508,7 @@ void Radiation_solver_longwave<TF>::solve_gpu(
             gpt_flux_up.set_dims({n_col_in, n_lev, 1});
             gpt_flux_dn.set_dims({n_col_in, n_lev, 1});
         }
+        */
 
         constexpr int n_ang = 1;
 
@@ -514,7 +521,6 @@ void Radiation_solver_longwave<TF>::solve_gpu(
                 gpt_flux_up, gpt_flux_dn,
                 n_ang);
 
-        /*
         fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
 
         // Copy the data to the output.
@@ -531,8 +537,10 @@ void Radiation_solver_longwave<TF>::solve_gpu(
                     n_col, n_lev, n_bnd, n_col_in, col_s_in, lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net,
                     bnd_fluxes.get_bnd_flux_up(), bnd_fluxes.get_bnd_flux_dn(), bnd_fluxes.get_bnd_flux_net());
 
-        }*/
+        }
 
+        // CvH The structure below is valid if broadband flux solvers are implemented
+        /*
         if (switch_output_bnd_fluxes)
         {
             // Aggegated fluxes.
@@ -553,7 +561,6 @@ void Radiation_solver_longwave<TF>::solve_gpu(
         else
         {
             // Copy the data to the output.
-            /*
             for (int ilev=1; ilev<=n_lev; ++ilev)
                 for (int icol=1; icol<=n_col_in; ++icol)
                 {
@@ -561,8 +568,8 @@ void Radiation_solver_longwave<TF>::solve_gpu(
                     lw_flux_dn ({icol+col_s_in-1, ilev}) = gpt_flux_dn({icol, ilev, 1});
                     lw_flux_net({icol+col_s_in-1, ilev}) = gpt_flux_dn({icol, ilev, 1}) - gpt_flux_up({icol, ilev, 1});
                 }
-            */
         }
+        */
     };
 
     for (int b=1; b<=n_blocks; ++b)
@@ -720,7 +727,6 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
             add_to(
                     dynamic_cast<Optical_props_2str_gpu<TF>&>(*optical_props_subset_in),
                     dynamic_cast<Optical_props_2str_gpu<TF>&>(*cloud_optical_props_subset_in));
-
         }
 
         // Store the optical properties, if desired.
@@ -736,11 +742,17 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         if (!switch_fluxes)
             return;
 
+        // Save the output per gpt if postprocessing is desired.
+        Array_gpu<TF,3> gpt_flux_up({n_col_in, n_lev, n_gpt});
+        Array_gpu<TF,3> gpt_flux_dn({n_col_in, n_lev, n_gpt});
+        Array_gpu<TF,3> gpt_flux_dn_dir({n_col_in, n_lev, n_gpt});
+
+        // CvH The structure below is valid if broadband flux solvers are implemented
+        /*
         Array_gpu<TF,3> gpt_flux_up;
         Array_gpu<TF,3> gpt_flux_dn;
         Array_gpu<TF,3> gpt_flux_dn_dir;
 
-        // Save the output per gpt if postprocessing is desired.
         if (switch_output_bnd_fluxes)
         {
             gpt_flux_up.set_dims({n_col_in, n_lev, n_gpt});
@@ -753,6 +765,7 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
             gpt_flux_dn.set_dims({n_col_in, n_lev, 1});
             gpt_flux_dn_dir.set_dims({n_col_in, n_lev, 1});
         }
+        */
 
         rte_sw.rte_sw(
                 optical_props_subset_in,
@@ -766,7 +779,6 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                 gpt_flux_dn,
                 gpt_flux_dn_dir);
 
-        /*
         fluxes.reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dn_dir, optical_props_subset_in, top_at_1);
 
         // Copy the data to the output.
@@ -782,8 +794,9 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                     n_col, n_lev, n_bnd, n_col_in, col_s_in, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dn_dir, sw_bnd_flux_net,
                     bnd_fluxes.get_bnd_flux_up(), bnd_fluxes.get_bnd_flux_dn(), bnd_fluxes.get_bnd_flux_dn_dir(), bnd_fluxes.get_bnd_flux_net());
         }
-        */
 
+        // CvH The structure below is valid if broadband flux solvers are implemented
+        /*
         if (switch_output_bnd_fluxes)
         {
             // Aggegated fluxes.
@@ -804,7 +817,6 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
         else
         {
             // Copy the data to the output.
-            /*
             for (int ilev=1; ilev<=n_lev; ++ilev)
                 for (int icol=1; icol<=n_col_in; ++icol)
                 {
@@ -813,8 +825,8 @@ void Radiation_solver_shortwave<TF>::solve_gpu(
                     sw_flux_dn_dir({icol+col_s_in-1, ilev}) = gpt_flux_dn_dir({icol, ilev, 1});
                     sw_flux_net   ({icol+col_s_in-1, ilev}) = gpt_flux_dn    ({icol, ilev, 1}) - gpt_flux_up({icol, ilev, 1});
                 }
-            */
         }
+        */
     };
 
 
