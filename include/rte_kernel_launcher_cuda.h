@@ -60,7 +60,9 @@ namespace rte_kernel_launcher_cuda
             const Array_gpu<TF,2>& sfc_emis, const Array_gpu<TF,2>& sfc_src,
             const Array_gpu<TF,2>& inc_flux,
             Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn,
-            const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac, Tuner_map& tunings);
+            const BOOL_TYPE do_broadband, Array_gpu<TF,3>& flux_up_loc, Array_gpu<TF,3>& flux_dn_loc,
+            const BOOL_TYPE do_jacobians, const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac,
+            Tuner_map& tunings);
 
     template<typename TF>
     void lw_secants_array(

@@ -93,7 +93,8 @@ namespace rte_kernel_launcher_cuda
             const Array_gpu<TF,2>& sfc_emis, const Array_gpu<TF,2>& sfc_src,
             const Array_gpu<TF,2>& inc_flux,
             Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn,
-            const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac,
+            const BOOL_TYPE do_broadband, Array_gpu<TF,3>& flux_up_loc, Array_gpu<TF,3>& flux_dn_loc,
+            const BOOL_TYPE do_jacobians, const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac,
             Tuner_map& tunings)
     {
         TF eps = std::numeric_limits<TF>::epsilon();
@@ -461,7 +462,9 @@ template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<float>(
             const Array_gpu<float,2>& sfc_emis, const Array_gpu<float,2>& sfc_src,
             const Array_gpu<float,2>& inc_flux,
             Array_gpu<float,3>& flux_dn, Array_gpu<float,3>& flux_up,
-            const Array_gpu<float,2>& sfc_src_jac, Array_gpu<float,3>& flux_up_jac, Tuner_map& tunings);
+            const BOOL_TYPE, Array_gpu<float,3>& flux_dn_loc, Array_gpu<float,3>& flux_up_loc,
+            const BOOL_TYPE, const Array_gpu<float,2>& sfc_src_jac, Array_gpu<float,3>& flux_up_jac,
+            Tuner_map& tunings);
 
 template void rte_kernel_launcher_cuda::lw_secants_array<float>(
             const int ncol, const int ngpt, const int n_guass_quad, const int max_gauss_pts,
@@ -491,7 +494,9 @@ template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<double>(
             const Array_gpu<double,2>& sfc_emis, const Array_gpu<double,2>& sfc_src,
             const Array_gpu<double,2>& inc_flux,
             Array_gpu<double,3>& flux_up, Array_gpu<double,3>& flux_dn,
-            const Array_gpu<double,2>& sfc_src_jac,Array_gpu<double,3>& flux_up_jac, Tuner_map& tunings);
+            const BOOL_TYPE, Array_gpu<double,3>& flux_up_loc, Array_gpu<double,3>& flux_dn_loc,
+            const BOOL_TYPE, const Array_gpu<double,2>& sfc_src_jac,Array_gpu<double,3>& flux_up_jac,
+            Tuner_map& tunings);
 
 template void rte_kernel_launcher_cuda::lw_secants_array<double>(
             const int ncol, const int ngpt, const int n_guass_quad, const int max_gauss_pts,

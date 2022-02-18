@@ -141,6 +141,10 @@ void Rte_sw_gpu<TF>::rte_sw(
     const BOOL_TYPE has_dif_bc = false;
     const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
+    if (do_broadband)
+        throw std::runtime_error("Broadband fluxes not implemented, performance gain on GPU is negligible");
+
+
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat.
     rte_kernel_launcher_cuda::sw_solver_2stream(

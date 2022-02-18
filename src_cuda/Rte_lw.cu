@@ -114,8 +114,6 @@ void Rte_lw_gpu<TF>::rte_lw(
     // Run the radiative transfer solver.
     const int n_quad_angs = n_gauss_angles;
 
-    // Array_gpu<TF,2> gauss_Ds_subset = gauss_Ds.subset(
-    //         {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
     Array_gpu<TF,2> gauss_wts_subset = gauss_wts.subset(
             {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
 
@@ -128,6 +126,13 @@ void Rte_lw_gpu<TF>::rte_lw(
     Array_gpu<TF,2> sfc_src_jac(sources.get_sfc_source().get_dims());
     Array_gpu<TF,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
 
+    const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
+
+    if (do_broadband)
+        throw std::runtime_error("Broadband fluxes not implemented, performance gain on GPU is negligible");
+
+    const BOOL_TYPE do_jacobians = false;
+
     rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,
             secants, gauss_wts_subset,
@@ -137,7 +142,8 @@ void Rte_lw_gpu<TF>::rte_lw(
             sfc_emis_gpt, sources.get_sfc_source(),
             inc_flux,
             gpt_flux_up, gpt_flux_dn,
-            sfc_src_jac, gpt_flux_up_jac,
+            do_broadband, gpt_flux_up, gpt_flux_dn,
+            do_jacobians, sfc_src_jac, gpt_flux_up_jac,
             rte_lw_map);
 
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
