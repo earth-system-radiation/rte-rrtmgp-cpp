@@ -172,7 +172,8 @@ void solve_radiation(int argc, char** argv)
         {"fluxes"           , { true,  "Enable computation of fluxes."             }},
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
         {"output-optical"   , { false, "Enable output of optical properties."      }},
-        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }} };
+        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
+        {"timings"          , { false, "Repeat computation 10x for run times."     }} };
 
     if (parse_command_line_options(command_line_options, argc, argv))
         return;
@@ -183,6 +184,7 @@ void solve_radiation(int argc, char** argv)
     const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
+    const bool switch_timings           = command_line_options.at("timings"          ).first;
 
     // Print the options to the screen.
     print_command_line_options(command_line_options);
@@ -408,10 +410,12 @@ void solve_radiation(int argc, char** argv)
         run_solver();
         cudaProfilerStop();
 
-        constexpr int n_measures=10;
-        for (int n=0; n<n_measures; ++n)
-            run_solver();
-
+        if (switch_timings)
+        {
+            constexpr int n_measures=10;
+            for (int n=0; n<n_measures; ++n)
+                run_solver();
+        }
 
         //// Store the output.
         Status::print_message("Storing the longwave output.");
@@ -617,10 +621,12 @@ void solve_radiation(int argc, char** argv)
         run_solver();
         cudaProfilerStop();
 
-        constexpr int n_measures=10;
-        for (int n=0; n<n_measures; ++n)
-            run_solver();
-
+        if (switch_timings)
+        {   
+            constexpr int n_measures=10;
+            for (int n=0; n<n_measures; ++n)
+                run_solver();
+        }
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");
