@@ -12,6 +12,12 @@
 namespace
 {
     #include "gas_optics_kernels.cu"
+
+    // The function below does proper casting from int to unsigned int to avoid n^n compiler warnings.
+    // template<typename TI> dim3 make_dim3(TI d1, TI d2, TI d3)
+    // {
+    //     return dim3{static_cast<unsigned int>(d1), static_cast<unsigned int>(d2), static_cast<unsigned int>(d3)};
+    // }
 }
 
 
@@ -23,13 +29,14 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<TF,3>& arr_in, Array_gpu<TF,3>& arr_out,
             Tuner_map& tunings)
     {
-        dim3 grid{ni, nj, nk}, block;
+        dim3 grid(ni, nj, nk);
+        dim3 block;
 
         if (tunings.count("reorder123x321_kernel") == 0)
         {
             std::tie(grid, block) = tune_kernel(
                 "reorder123x321_kernel",
-                {ni, nj, nk},
+                dim3(ni, nj, nk),
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
@@ -139,13 +146,14 @@ namespace rrtmgp_kernel_launcher_cuda
     {
         TF tmin = std::numeric_limits<TF>::min();
 
-        dim3 grid{ncol, nlay, ngpt}, block;
+        dim3 grid(ncol, nlay, ngpt);
+        dim3 block;
 
         if (tunings.count("combine_abs_and_rayleigh_kernel") == 0)
         {
             std::tie(grid, block) = tune_kernel(
                 "combine_abs_and_rayleigh_kernel",
-                {ncol, nlay, ngpt},
+                dim3(ncol, nlay, ngpt),
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96}, {1, 2, 4}, {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
                 combine_abs_and_rayleigh_kernel<TF>,
                 ncol, nlay, ngpt, tmin,
@@ -185,13 +193,14 @@ namespace rrtmgp_kernel_launcher_cuda
         Tuner& tuner = Tuner::get();
         Tuner_map& tunings = tuner.get_map(calling_class_ptr);
 
-        dim3 grid{ncol, nlay, ngpt}, block;
+        dim3 grid(ncol, nlay, ngpt);
+        dim3 block;
 
         if (tunings.count("compute_tau_rayleigh_kernel") == 0)
         {
             std::tie(grid, block) = tune_kernel(
                 "compute_tau_rayleigh_kernel",
-                {ncol, nlay, ngpt},
+                dim3(ncol, nlay, ngpt),
                 // {1, 2, 4, 16, 24, 32, 48, 64, 96}, {1, 2, 4}, {1, 2, 4, 8, 16},
                 {1, 2, 4, 16, 24, 32}, {1, 2, 4}, {1, 2, 4, 8, 16},
                 compute_tau_rayleigh_kernel<TF>,
@@ -231,7 +240,7 @@ namespace rrtmgp_kernel_launcher_cuda
     template<typename TF>
     struct Gas_optical_depths_major_kernel
     {
-        template<int I, int J, int K, class... Args>
+        template<unsigned int I, unsigned int J, unsigned int K, class... Args>
         static void launch(dim3 grid, dim3 block, Args... args)
         {
             gas_optical_depths_major_kernel<TF, I, J, K><<<grid, block>>>(args...);
@@ -241,7 +250,7 @@ namespace rrtmgp_kernel_launcher_cuda
     template<typename TF>
     struct Gas_optical_depths_minor_kernel
     {
-        template<int I, int J, int K, class... Args>
+        template<unsigned int I, unsigned int J, unsigned int K, class... Args>
         static void launch(dim3 grid, dim3 block, Args... args)
         {
             gas_optical_depths_minor_kernel<TF, I, J, K><<<grid, block>>>(args...);
@@ -282,7 +291,8 @@ namespace rrtmgp_kernel_launcher_cuda
             void* calling_class_ptr)
             // Tuner_map& tunings)
     {
-        dim3 grid_gpu_maj{ngpt, nlay, ncol}, block_gpu_maj;
+        dim3 grid_gpu_maj(ngpt, nlay, ncol);
+        dim3 block_gpu_maj;
 
         Tuner& tuner = Tuner::get();
         Tuner_map& tunings = tuner.get_map(calling_class_ptr);
@@ -292,10 +302,10 @@ namespace rrtmgp_kernel_launcher_cuda
             std::tie(grid_gpu_maj, block_gpu_maj) =
                 tune_kernel_compile_time<Gas_optical_depths_major_kernel<TF>>(
                     "gas_optical_depths_major_kernel",
-                    {ngpt, nlay, ncol},
-                    std::integer_sequence<int, 1, 2, 4, 8, 16, 24, 32, 48, 64>{},
-                    std::integer_sequence<int, 1, 2, 4>{},
-                    std::integer_sequence<int, 8, 16, 24, 32, 48, 64, 96, 128, 256>{},
+                    dim3(ngpt, nlay, ncol),
+                    std::integer_sequence<unsigned int, 1, 2, 4, 8, 16, 24, 32, 48, 64>{},
+                    std::integer_sequence<unsigned int, 1, 2, 4>{},
+                    std::integer_sequence<unsigned int, 8, 16, 24, 32, 48, 64, 96, 128, 256>{},
                     ncol, nlay, nband, ngpt,
                     nflav, neta, npres, ntemp,
                     gpoint_flavor.ptr(), band_lims_gpt.ptr(),
@@ -313,9 +323,9 @@ namespace rrtmgp_kernel_launcher_cuda
         }
 
         run_kernel_compile_time<Gas_optical_depths_major_kernel<TF>>(
-                std::integer_sequence<int, 1, 2, 4, 8, 16, 24, 32, 48, 64>{},
-                std::integer_sequence<int, 1, 2, 4>{},
-                std::integer_sequence<int, 8, 16, 24, 32, 48, 64, 96, 128, 256>{},
+                std::integer_sequence<unsigned int, 1, 2, 4, 8, 16, 24, 32, 48, 64>{},
+                std::integer_sequence<unsigned int, 1, 2, 4>{},
+                std::integer_sequence<unsigned int, 8, 16, 24, 32, 48, 64, 96, 128, 256>{},
                 grid_gpu_maj, block_gpu_maj,
                 ncol, nlay, nband, ngpt,
                 nflav, neta, npres, ntemp,
@@ -330,17 +340,18 @@ namespace rrtmgp_kernel_launcher_cuda
         // Lower
         int idx_tropo = 1;
 
-        dim3 grid_gpu_min_1{1, nlay, ncol}, block_gpu_min_1;
+        dim3 grid_gpu_min_1(1, nlay, ncol);
+        dim3 block_gpu_min_1;
 
         if (tunings.count("gas_optical_depths_minor_kernel_lower") == 0)
         {
             std::tie(grid_gpu_min_1, block_gpu_min_1) =
                 tune_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
                         "gas_optical_depths_minor_kernel_lower",
-                        {1, nlay, ncol},
-                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
-                        std::integer_sequence<int, 1, 2, 4>{},
-                        std::integer_sequence<int, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128>{},
+                        dim3(1, nlay, ncol),
+                        std::integer_sequence<unsigned int, 1, 2, 4, 8, 16>{},
+                        std::integer_sequence<unsigned int, 1, 2, 4>{},
+                        std::integer_sequence<unsigned int, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128>{},
                         ncol, nlay, ngpt,
                         ngas, nflav, ntemp, neta,
                         nscale_lower,
@@ -369,9 +380,9 @@ namespace rrtmgp_kernel_launcher_cuda
         }
 
         run_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
-                std::integer_sequence<int, 1, 2, 4, 8, 16>{},
-                std::integer_sequence<int, 1, 2, 4>{},
-                std::integer_sequence<int, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128>{},
+                std::integer_sequence<unsigned int, 1, 2, 4, 8, 16>{},
+                std::integer_sequence<unsigned int, 1, 2, 4>{},
+                std::integer_sequence<unsigned int, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128>{},
                 grid_gpu_min_1, block_gpu_min_1,
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
@@ -395,18 +406,18 @@ namespace rrtmgp_kernel_launcher_cuda
         // Upper
         idx_tropo = 0;
 
-        dim3 grid_gpu_min_2{ngpt, nlay, ncol}, block_gpu_min_2;
-
+        dim3 grid_gpu_min_2(ngpt, nlay, ncol);
+        dim3 block_gpu_min_2;
 
         if (tunings.count("gas_optical_depths_minor_kernel_upper") == 0)
         {
             std::tie(grid_gpu_min_2, block_gpu_min_2) =
                 tune_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
                         "gas_optical_depths_minor_kernel_upper",
-                        {1, nlay, ncol},
-                        std::integer_sequence<int, 1, 2, 4, 8, 16>{},
-                        std::integer_sequence<int, 1, 2, 4>{},
-                        std::integer_sequence<int, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128>{},
+                        dim3(1, nlay, ncol),
+                        std::integer_sequence<unsigned int, 1, 2, 4, 8, 16>{},
+                        std::integer_sequence<unsigned int, 1, 2, 4>{},
+                        std::integer_sequence<unsigned int, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128>{},
                         ncol, nlay, ngpt,
                         ngas, nflav, ntemp, neta,
                         nscale_upper,
@@ -435,9 +446,9 @@ namespace rrtmgp_kernel_launcher_cuda
         }
 
         run_kernel_compile_time<Gas_optical_depths_minor_kernel<TF>>(
-                std::integer_sequence<int, 1, 2, 4, 8, 16>{},
-                std::integer_sequence<int, 1, 2, 4>{},
-                std::integer_sequence<int, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128>{},
+                std::integer_sequence<unsigned int, 1, 2, 4, 8, 16>{},
+                std::integer_sequence<unsigned int, 1, 2, 4>{},
+                std::integer_sequence<unsigned int, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128>{},
                 grid_gpu_min_2, block_gpu_min_2,
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
@@ -503,7 +514,7 @@ namespace rrtmgp_kernel_launcher_cuda
         {
             std::tie(grid_gpu, block_gpu) = tune_kernel(
                     "Planck_source_kernel",
-                    {ngpt, nlay, ncol},
+                    dim3(ngpt, nlay, ncol),
                     {1, 2, 4},
                     {1, 2},
                     {1, 2, 4, 8, 16, 32, 48, 64, 96, 128, 256},

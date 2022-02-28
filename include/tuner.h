@@ -48,7 +48,7 @@ template<class Func, class... Args>
 std::tuple<dim3, dim3> tune_kernel(
         const std::string& kernel_name,
         dim3 problem_size,
-        const std::vector<int>& ib, const std::vector<int>& jb, const std::vector<int>& kb,
+        const std::vector<unsigned int>& ib, const std::vector<unsigned int>& jb, const std::vector<unsigned int>& kb,
         Func&& f, Args&&... args)
 {
     std::cout << "Tuning " << kernel_name << ": ";
@@ -79,9 +79,9 @@ std::tuple<dim3, dim3> tune_kernel(
     dim3 fastest_block{1, 1, 1};
     dim3 fastest_grid{problem_size};
 
-    for (const int k : kb)
-        for (const int j : jb)
-            for (const int i : ib)
+    for (const unsigned int k : kb)
+        for (const int unsigned j : jb)
+            for (const unsigned int i : ib)
             {
                 dim3 block{i, j, k};
                 dim3 grid{
@@ -153,7 +153,7 @@ std::tuple<dim3, dim3> tune_kernel(
 
 ////  COMPILE TIME TUNER ////
 // Tuning functions.
-template<class Func, int I, int J, int K, class... Args>
+template<class Func, unsigned int I, unsigned int J, unsigned int K, class... Args>
 void tune_ijk(
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest,
         std::ofstream& tuner_output,
@@ -217,9 +217,9 @@ void tune_ijk(
 }
 
 
-template<class Func, int I, int J, int... Ks, class... Args>
+template<class Func, unsigned int I, unsigned int J, unsigned int... Ks, class... Args>
 void tune_ij(
-        std::integer_sequence<int, Ks...> ks,
+        std::integer_sequence<unsigned int, Ks...> ks,
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest,
         std::ofstream& tuner_output,
         Args... args)
@@ -228,10 +228,10 @@ void tune_ij(
 }
 
 
-template<class Func, int I, int... Js, int... Ks, class... Args>
+template<class Func, unsigned int I, unsigned int... Js, unsigned int... Ks, class... Args>
 void tune_i(
-        std::integer_sequence<int, Js...> js,
-        std::integer_sequence<int, Ks...> ks,
+        std::integer_sequence<unsigned int, Js...> js,
+        std::integer_sequence<unsigned int, Ks...> ks,
         dim3 problem_size, dim3& fastest_grid, dim3& fastest_block, float& fastest,
         std::ofstream& tuner_output,
         Args... args)
@@ -240,13 +240,13 @@ void tune_i(
 }
 
 
-template<class Func, class... Args, int... Is, int... Js, int... Ks>
+template<class Func, class... Args, unsigned int... Is, unsigned int... Js, unsigned int... Ks>
 std::tuple<dim3, dim3> tune_kernel_compile_time(
         const std::string& kernel_name,
         dim3 problem_size,
-        std::integer_sequence<int, Is...> is,
-        std::integer_sequence<int, Js...> js,
-        std::integer_sequence<int, Ks...> ks,
+        std::integer_sequence<unsigned int, Is...> is,
+        std::integer_sequence<unsigned int, Js...> js,
+        std::integer_sequence<unsigned int, Ks...> ks,
         Args&&... args)
 {
     std::cout << "Tuning " << kernel_name << ": ";
@@ -289,7 +289,7 @@ std::tuple<dim3, dim3> tune_kernel_compile_time(
 
 
 // Running functions.
-template<class Func, int I, int J, int K, class... Args>
+template<class Func, unsigned int I, unsigned int J, unsigned int K, class... Args>
 void run_ijk(
         dim3 grid, dim3 block,
         Args... args)
@@ -299,9 +299,9 @@ void run_ijk(
 }
 
 
-template<class Func, int I, int J, int... Ks, class... Args>
+template<class Func, unsigned int I, unsigned int J, unsigned int... Ks, class... Args>
 void run_ij(
-        std::integer_sequence<int, Ks...> ks,
+        std::integer_sequence<unsigned int, Ks...> ks,
         dim3 grid, dim3 block,
         Args... args)
 {
@@ -309,10 +309,10 @@ void run_ij(
 }
 
 
-template<class Func, int I, int... Js, int... Ks, class... Args>
+template<class Func, unsigned int I, unsigned int... Js, unsigned int... Ks, class... Args>
 void run_i(
-        std::integer_sequence<int, Js...> js,
-        std::integer_sequence<int, Ks...> ks,
+        std::integer_sequence<unsigned int, Js...> js,
+        std::integer_sequence<unsigned int, Ks...> ks,
         dim3 grid, dim3 block,
         Args... args)
 {
@@ -320,11 +320,11 @@ void run_i(
 }
 
 
-template<class Func, class... Args, int... Is, int... Js, int... Ks>
+template<class Func, class... Args, unsigned int... Is, unsigned int... Js, unsigned int... Ks>
 void run_kernel_compile_time(
-        std::integer_sequence<int, Is...> is,
-        std::integer_sequence<int, Js...> js,
-        std::integer_sequence<int, Ks...> ks,
+        std::integer_sequence<unsigned int, Is...> is,
+        std::integer_sequence<unsigned int, Js...> js,
+        std::integer_sequence<unsigned int, Ks...> ks,
         dim3 grid, dim3 block,
         Args&&... args)
 {
