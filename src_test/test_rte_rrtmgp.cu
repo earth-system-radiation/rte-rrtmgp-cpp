@@ -88,6 +88,7 @@ void configure_memory_pool(int nlays, int ncols, int nchunks, int ngpts, int nbn
         {(nlays + 1) * nchunks * ngpts * sizeof(int)/2, 6},
         {(nlays + 1) * nchunks * ngpts * sizeof(TF), 18}
     };
+
     #ifdef GPU_MEM_POOL
     Memory_pool_gpu::init_instance(pool_queues);
     #endif

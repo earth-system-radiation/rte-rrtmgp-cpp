@@ -33,13 +33,6 @@
 namespace rrtmgp_kernel_launcher_cuda
 {
     template<typename TF>
-    void fill_gases(
-            const int ncol, const int nlay, const int ngas,
-            Array<TF,3>& vmr_out,
-            Array<TF,3>& col_gas, const Array<TF,2>& col_dry,
-            const Gas_concs<TF>& gas_desc, const Array<std::string,1>& gas_names);
-
-    template<typename TF>
     void reorder123x321(const int ni, const int nj, const int nk,
             const Array_gpu<TF,3>& arr_in, Array_gpu<TF,3>& arr_out,
             void*);

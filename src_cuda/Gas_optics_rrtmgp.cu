@@ -390,8 +390,39 @@ namespace
                         flavor, rewritten_pair);
             }
     }
-}
 
+    template<typename TF> __global__
+    void fill_gases_kernel(
+            const int ncol, const int nlay, const int dim1, const int dim2, const int ngas, const int igas,
+            TF* __restrict__ vmr_out, const TF* __restrict__ vmr_in,
+            TF* __restrict__ col_gas, const TF* __restrict__ col_dry)
+    {
+        const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+        const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+
+        if ( (icol < ncol) && (ilay < nlay) )
+        {
+            const int idx_in = icol + ilay*ncol;
+            const int idx_out1 = icol + ilay*ncol + (igas-1)*ncol*nlay;
+            const int idx_out2 = icol + ilay*ncol + igas*ncol*nlay;
+
+            if (igas > 0)
+            {
+                if (dim1 == 1 && dim2 == 1)
+                     vmr_out[idx_out1] = vmr_in[0];
+                else if (dim1 == 1)
+                     vmr_out[idx_out1] = vmr_in[ilay];
+                else
+                    vmr_out[idx_out1] = vmr_in[idx_in];
+                col_gas[idx_out2] = vmr_out[idx_out1] * col_dry[idx_in];
+            }
+            else if (igas == 0)
+            {
+                col_gas[idx_out2] = col_dry[idx_in];
+            }
+        }
+    }
+}
 
 // Constructor of longwave variant.
 template<typename TF>
@@ -776,41 +807,7 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
 }
 
 
-template<typename TF>__global__
-void fill_gases_kernel(
-        const int ncol, const int nlay, const int dim1, const int dim2, const int ngas, const int igas,
-        TF* __restrict__ vmr_out, const TF* __restrict__ vmr_in,
-        TF* __restrict__ col_gas, const TF* __restrict__ col_dry)
-{
-    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-    if ( ( icol < ncol) && (ilay < nlay) )
-    {
-        const int idx_in = icol + ilay*ncol;
-        const int idx_out1 = icol + ilay*ncol + (igas-1)*ncol*nlay;
-        const int idx_out2 = icol + ilay*ncol + igas*ncol*nlay;
-        if (igas > 0)
-        {
-            if (dim1 == 1 && dim2 == 1)
-            {
-                 vmr_out[idx_out1] = vmr_in[0];
-            }
-            else if (dim1 == 1)
-            {
-                 vmr_out[idx_out1] = vmr_in[ilay];
-            }
-            else
-            {
-                vmr_out[idx_out1] = vmr_in[idx_in];
-            }
-            col_gas[idx_out2] = vmr_out[idx_out1] * col_dry[idx_in];
-        }
-        else if (igas == 0)
-        {
-            col_gas[idx_out2] = col_dry[idx_in];
-        }
-    }
-}
+
 
 
 template<typename TF> __global__
