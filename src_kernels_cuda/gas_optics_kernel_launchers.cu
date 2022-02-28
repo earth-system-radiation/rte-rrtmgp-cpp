@@ -12,12 +12,6 @@
 namespace
 {
     #include "gas_optics_kernels.cu"
-
-    // The function below does proper casting from int to unsigned int to avoid n^n compiler warnings.
-    // template<typename TI> dim3 make_dim3(TI d1, TI d2, TI d3)
-    // {
-    //     return dim3{static_cast<unsigned int>(d1), static_cast<unsigned int>(d2), static_cast<unsigned int>(d3)};
-    // }
 }
 
 
@@ -27,8 +21,10 @@ namespace rrtmgp_kernel_launcher_cuda
     void reorder123x321(
             const int ni, const int nj, const int nk,
             const Array_gpu<TF,3>& arr_in, Array_gpu<TF,3>& arr_out,
-            Tuner_map& tunings)
+            void* calling_class_ptr)
     {
+        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+
         dim3 grid(ni, nj, nk);
         dim3 block;
 
@@ -142,8 +138,10 @@ namespace rrtmgp_kernel_launcher_cuda
             const int ncol, const int nlay, const int ngpt,
             const Array_gpu<TF,3>& tau_abs, const Array_gpu<TF,3>& tau_rayleigh,
             Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g,
-            Tuner_map& tunings)
+            void* calling_class_ptr)
     {
+        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+
         TF tmin = std::numeric_limits<TF>::min();
 
         dim3 grid(ncol, nlay, ngpt);
@@ -188,10 +186,8 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
             Array_gpu<TF,3>& tau_rayleigh,
             void* calling_class_ptr)
-            // Tuner_map& tunings)
     {
-        Tuner& tuner = Tuner::get();
-        Tuner_map& tunings = tuner.get_map(calling_class_ptr);
+        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
 
         dim3 grid(ncol, nlay, ngpt);
         dim3 block;
@@ -289,13 +285,11 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<int,2>& jpress,
             Array_gpu<TF,3>& tau,
             void* calling_class_ptr)
-            // Tuner_map& tunings)
     {
+        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+
         dim3 grid_gpu_maj(ngpt, nlay, ncol);
         dim3 block_gpu_maj;
-
-        Tuner& tuner = Tuner::get();
-        Tuner_map& tunings = tuner.get_map(calling_class_ptr);
 
         if (tunings.count("gas_optical_depths_major_kernel") == 0)
         {
@@ -495,8 +489,10 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& lev_src_inc,
             Array_gpu<TF,3>& lev_src_dec,
             Array_gpu<TF,2>& sfc_src_jac,
-            Tuner_map& tunings)
+            void* calling_class_ptr)
     {
+        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+
         const TF delta_Tsurf = TF(1.);
 
         const int block_gpt = 16;
@@ -556,7 +552,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
 
 #ifdef RTE_RRTMGP_SINGLE_PRECISION
-template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, const Array_gpu<float,3>&, Array_gpu<float,3>&, Tuner_map&);
+template void rrtmgp_kernel_launcher_cuda::reorder123x321<float>(const int, const int, const int, const Array_gpu<float,3>&, Array_gpu<float,3>&, void*);
 template void rrtmgp_kernel_launcher_cuda::reorder12x21<float>(const int, const int, const Array_gpu<float,2>&, Array_gpu<float,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::zero_array<float>(const int, const int, const int, Array_gpu<float,3>&);
@@ -569,7 +565,7 @@ template void rrtmgp_kernel_launcher_cuda::interpolation<float>(
         Array_gpu<float,4>&, Array_gpu<BOOL_TYPE,2>&, Array_gpu<int,4>&, Array_gpu<int,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::combine_abs_and_rayleigh<float>(
-        const int, const int, const int, const Array_gpu<float,3>&, const Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, Tuner_map&);
+        const int, const int, const int, const Array_gpu<float,3>&, const Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&, void*);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<float>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
@@ -584,7 +580,6 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<float>(const i
         const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&,
         const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<BOOL_TYPE,2>& tropo,
         const Array_gpu<float,4>&, const Array_gpu<float,6>&, const Array_gpu<float,5>&, const Array_gpu<float,2>&, const Array_gpu<float,2>&, const Array_gpu<float,3>&,
-        // const Array_gpu<int,4>&, const Array_gpu<int,2>&, const Array_gpu<int,2>&, Array_gpu<float,3>&, Tuner_map& tunings);
         const Array_gpu<int,4>&, const Array_gpu<int,2>&, const Array_gpu<int,2>&, Array_gpu<float,3>&, void* calling_class_ptr);
 
 template void rrtmgp_kernel_launcher_cuda::Planck_source<float>(const int ncol, const int nlay, const int nbnd, const int ngpt,
@@ -596,12 +591,10 @@ template void rrtmgp_kernel_launcher_cuda::Planck_source<float>(const int ncol, 
         const Array_gpu<float,4>& pfracin, const float temp_ref_min, const float totplnk_delta,
         const Array_gpu<float,2>& totplnk, const Array_gpu<int,2>& gpoint_flavor,
         Array_gpu<float,2>& sfc_src,  Array_gpu<float,3>& lay_src, Array_gpu<float,3>& lev_src_inc,
-        // Array_gpu<float,3>& lev_src_dec, Array_gpu<float,2>& sfc_src_jac, Tuner_map& tunings);
         const Array_gpu<int,2>&, Array_gpu<float,3>&, void* calling_class_ptr);
 
 #else
-template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array_gpu<double,3>&, Array_gpu<double,3>&, Tuner_map&);
-
+template void rrtmgp_kernel_launcher_cuda::reorder123x321<double>(const int, const int, const int, const Array_gpu<double,3>&, Array_gpu<double,3>&, void*);
 template void rrtmgp_kernel_launcher_cuda::reorder12x21<double>(const int, const int, const Array_gpu<double,2>&, Array_gpu<double,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::zero_array<double>(const int, const int, const int, Array_gpu<double,3>&);
@@ -614,13 +607,12 @@ template void rrtmgp_kernel_launcher_cuda::interpolation<double>(
         Array_gpu<double,4>&, Array_gpu<BOOL_TYPE,2>&, Array_gpu<int,4>&, Array_gpu<int,2>&);
 
 template void rrtmgp_kernel_launcher_cuda::combine_abs_and_rayleigh<double>(
-        const int, const int, const int, const Array_gpu<double,3>&, const Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, Tuner_map&);
+        const int, const int, const int, const Array_gpu<double,3>&, const Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&, void*);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh<double>(
         const int, const int, const int, const int, const int, const int, const int, const int, const int,
         const Array_gpu<int,2>&, const Array_gpu<int,1>&, const Array_gpu<int,2>&, const Array_gpu<double,4>&, int, const Array_gpu<double,2>&,
         const Array_gpu<double,3>&, const Array_gpu<double,5>&, const Array_gpu<int,4>&, const Array_gpu<BOOL_TYPE,2>&,
-        // const Array_gpu<int,2>&, Array_gpu<double,3>&, Tuner_map& tunings);
         const Array_gpu<int,2>&, Array_gpu<double,3>&, void* calling_class_ptr);
 
 template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<double>(const int, const int, const int, const int, const int, const int,
@@ -630,7 +622,7 @@ template void rrtmgp_kernel_launcher_cuda::compute_tau_absorption<double>(const 
         const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<BOOL_TYPE,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&,
         const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<int,1>&, const Array_gpu<BOOL_TYPE,2>& tropo,
         const Array_gpu<double,4>&, const Array_gpu<double,6>&, const Array_gpu<double,5>&, const Array_gpu<double,2>&, const Array_gpu<double,2>&, const Array_gpu<double,3>&,
-        const Array_gpu<int,4>&, const Array_gpu<int,2>&, const Array_gpu<int,2>&, Array_gpu<double,3>&, void* calling_class_ptr); // Tuner_map& tunings);
+        const Array_gpu<int,4>&, const Array_gpu<int,2>&, const Array_gpu<int,2>&, Array_gpu<double,3>&, void* calling_class_ptr);
 
 template void rrtmgp_kernel_launcher_cuda::Planck_source<double>(const int ncol, const int nlay, const int nbnd, const int ngpt,
         const int nflav, const int neta, const int npres, const int ntemp,
@@ -641,5 +633,5 @@ template void rrtmgp_kernel_launcher_cuda::Planck_source<double>(const int ncol,
         const Array_gpu<double,4>& pfracin, const double temp_ref_min, const double totplnk_delta,
         const Array_gpu<double,2>& totplnk, const Array_gpu<int,2>& gpoint_flavor,
         Array_gpu<double,2>& sfc_src,  Array_gpu<double,3>& lay_src, Array_gpu<double,3>& lev_src_inc,
-        Array_gpu<double,3>& lev_src_dec, Array_gpu<double,2>& sfc_src_jac, Tuner_map& tunings);
+        Array_gpu<double,3>& lev_src_dec, Array_gpu<double,2>& sfc_src_jac, void* calling_class_ptr);
 #endif

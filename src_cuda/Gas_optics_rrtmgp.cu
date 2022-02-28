@@ -1114,7 +1114,6 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 jeta, jtemp, jpress,
                 tau,
                 static_cast<void*>(this));
-                // compute_gas_taus_map);
 
         rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
@@ -1127,7 +1126,6 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 fminor, jeta, tropo, jtemp,
                 tau_rayleigh,
                 static_cast<void*>(this));
-                // compute_gas_taus_map);
 
         combine_abs_and_rayleigh(tau, tau_rayleigh, optical_props);
     }
@@ -1164,7 +1162,6 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 jeta, jtemp, jpress,
                 optical_props->get_tau(),
                 static_cast<void*>(this));
-                // compute_gas_taus_map);
     }
 }
 
@@ -1183,7 +1180,7 @@ void Gas_optics_rrtmgp_gpu<TF>::combine_abs_and_rayleigh(
             ncol, nlay, ngpt,
             tau, tau_rayleigh,
             optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g(),
-            combine_abs_and_rayleigh_map);
+            static_cast<void*>(this));
 }
 
 
@@ -1222,7 +1219,8 @@ void Gas_optics_rrtmgp_gpu<TF>::source(
             gpoint_bands, band_lims_gpoint, this->planck_frac_gpu, this->temp_ref_min,
             this->totplnk_delta, this->totplnk_gpu, this->gpoint_flavor_gpu,
             sources.get_sfc_source(), sources.get_lay_source(), sources.get_lev_source_inc(), 
-            sources.get_lev_source_dec(), sources.get_sfc_source_jac(), source_map);
+            sources.get_lev_source_dec(), sources.get_sfc_source_jac(),
+            static_cast<void*>(this));
 }
 
 

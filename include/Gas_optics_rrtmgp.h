@@ -555,12 +555,6 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 const Array_gpu<TF,6>& fmajor,
                 Source_func_lw_gpu<TF>& sources,
                 const Array_gpu<TF,2>& tlev);
-
-    private:
-        Tuner_map compute_gas_taus_map;
-        Tuner_map compute_tau_rayleigh_map;
-        Tuner_map source_map;
-        Tuner_map combine_abs_and_rayleigh_map;
 };
 #endif
 

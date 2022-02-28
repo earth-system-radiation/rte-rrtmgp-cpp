@@ -29,7 +29,6 @@
 #include "Types.h"
 #include "Gas_concs.h"
 
-#include "tuner.h"
 
 namespace rrtmgp_kernel_launcher_cuda
 {
@@ -43,7 +42,7 @@ namespace rrtmgp_kernel_launcher_cuda
     template<typename TF>
     void reorder123x321(const int ni, const int nj, const int nk,
             const Array_gpu<TF,3>& arr_in, Array_gpu<TF,3>& arr_out,
-            Tuner_map& tunings);
+            void*);
 
     template<typename TF>
     void reorder12x21(const int ni, const int nj, const Array_gpu<TF,2>& arr_in, Array_gpu<TF,2>& arr_out);
@@ -77,7 +76,8 @@ namespace rrtmgp_kernel_launcher_cuda
     void combine_abs_and_rayleigh(
             const int ncol, const int nlay, const int ngpt,
             const Array_gpu<TF,3>& tau_local, const Array_gpu<TF,3>& tau_rayleigh,
-            Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g, Tuner_map&);
+            Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g,
+            void*);
 
     template<typename TF>
     void compute_tau_rayleigh(
@@ -92,7 +92,6 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<BOOL_TYPE,2>& tropo, const Array_gpu<int,2>& jtemp,
             Array_gpu<TF,3>& tau_rayleigh,
             void* calling_class_ptr);
-            // Tuner_map& tunings);
 
     template<typename TF>
     void compute_tau_absorption(
@@ -125,7 +124,6 @@ namespace rrtmgp_kernel_launcher_cuda
             const Array_gpu<int,4>& jeta, const Array_gpu<int,2>& jtemp,
             const Array_gpu<int,2>& jpress, Array_gpu<TF,3>& tau,
             void* calling_class_ptr);
-            // Tuner_map& tunings);
 
     template<typename TF>
     void Planck_source(
@@ -152,6 +150,6 @@ namespace rrtmgp_kernel_launcher_cuda
             Array_gpu<TF,3>& lev_src_inc,
             Array_gpu<TF,3>& lev_src_dec,
             Array_gpu<TF,2>& sfc_src_jac,
-            Tuner_map& tunings);
+            void* calling_class_ptr);
 }
 #endif
