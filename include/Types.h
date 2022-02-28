@@ -15,8 +15,4 @@ using FLOAT_TYPE = float;
 using FLOAT_TYPE = double;
 #endif
 
-#ifdef __CUDACC__
-using Tuner_map = std::map<std::string, std::pair<dim3, dim3>>;
-#endif
-
 #endif

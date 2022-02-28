@@ -2,8 +2,40 @@
 #define TUNER_H
 
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <limits>
+#include <vector>
+
+
+// #ifdef __CUDACC__
+using Tuner_map = std::map<std::string, std::pair<dim3, dim3>>;
+// #endif
+
+
+class Tuner
+{
+    public:
+        static Tuner& get()
+        {
+            static Tuner tuner;
+            return tuner;
+        }
+
+        Tuner_map& get_map(void* ptr)
+        {
+            return tuner_maps[ptr];
+        }
+
+    private:
+        Tuner() = default;
+        ~Tuner() = default;
+        Tuner(const Tuner&) = delete;
+        Tuner& operator=(const Tuner&) = delete;
+
+        std::map<void*, Tuner_map> tuner_maps;
+};
+
 
 inline bool file_exists(const std::string& name)
 {

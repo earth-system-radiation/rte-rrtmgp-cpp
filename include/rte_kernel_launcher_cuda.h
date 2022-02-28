@@ -27,6 +27,7 @@
 
 #include "Array.h"
 #include "Types.h"
+#include "tuner.h"
 #include "Gas_concs.h"
 
 namespace rte_kernel_launcher_cuda

@@ -30,6 +30,10 @@
 #include "Array.h"
 #include "Types.h"
 
+#ifdef __CUDACC__
+#include "tuner.h"
+#endif
+
 
 template<typename TF>
 class Optical_props

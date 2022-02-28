@@ -1113,7 +1113,8 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 play, tlay, col_gas,
                 jeta, jtemp, jpress,
                 tau,
-                compute_gas_taus_map);
+                static_cast<void*>(this));
+                // compute_gas_taus_map);
 
         rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
@@ -1125,7 +1126,8 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 idx_h2o, col_dry, col_gas,
                 fminor, jeta, tropo, jtemp,
                 tau_rayleigh,
-                compute_tau_rayleigh_map);
+                static_cast<void*>(this));
+                // compute_gas_taus_map);
 
         combine_abs_and_rayleigh(tau, tau_rayleigh, optical_props);
     }
@@ -1161,7 +1163,8 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
                 play, tlay, col_gas,
                 jeta, jtemp, jpress,
                 optical_props->get_tau(),
-                compute_gas_taus_map);
+                static_cast<void*>(this));
+                // compute_gas_taus_map);
     }
 }
 

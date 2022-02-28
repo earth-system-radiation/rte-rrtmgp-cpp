@@ -29,6 +29,10 @@
 
 #include "Types.h"
 
+#ifdef __CUDACC__
+#include "tuner.h"
+#endif
+
 // Forward declarations.
 template<typename, int> class Array;
 template<typename, int> class Array_gpu;
