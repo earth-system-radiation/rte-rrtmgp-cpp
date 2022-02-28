@@ -328,9 +328,6 @@ namespace rrtmgp_kernel_launcher_cuda
                 tropo.ptr(), jtemp.ptr(), jpress.ptr(),
                 tau.ptr());
 
-        const int nscale_lower = scale_by_complement_lower.dim(1);
-        const int nscale_upper = scale_by_complement_upper.dim(1);
-
         // Lower
         int idx_tropo = 1;
 
@@ -348,7 +345,6 @@ namespace rrtmgp_kernel_launcher_cuda
                         std::integer_sequence<unsigned int, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128>{},
                         ncol, nlay, ngpt,
                         ngas, nflav, ntemp, neta,
-                        nscale_lower,
                         nminorlower,
                         nminorklower,
                         idx_h2o, idx_tropo,
@@ -380,7 +376,6 @@ namespace rrtmgp_kernel_launcher_cuda
                 grid_gpu_min_1, block_gpu_min_1,
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
-                nscale_lower,
                 nminorlower,
                 nminorklower,
                 idx_h2o, idx_tropo,
@@ -414,7 +409,6 @@ namespace rrtmgp_kernel_launcher_cuda
                         std::integer_sequence<unsigned int, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128>{},
                         ncol, nlay, ngpt,
                         ngas, nflav, ntemp, neta,
-                        nscale_upper,
                         nminorupper,
                         nminorkupper,
                         idx_h2o, idx_tropo,
@@ -446,7 +440,6 @@ namespace rrtmgp_kernel_launcher_cuda
                 grid_gpu_min_2, block_gpu_min_2,
                 ncol, nlay, ngpt,
                 ngas, nflav, ntemp, neta,
-                nscale_upper,
                 nminorupper,
                 nminorkupper,
                 idx_h2o, idx_tropo,

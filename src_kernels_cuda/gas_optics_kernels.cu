@@ -526,7 +526,6 @@ template<typename TF, int block_size_x, int block_size_y, int block_size_z, int 
 void gas_optical_depths_minor_kernel(
         const int ncol, const int nlay, const int ngpt,
         const int ngas, const int nflav, const int ntemp, const int neta,
-        const int nscale,
         const int nminor,
         const int nminork,
         const int idx_h2o, const int idx_tropo,
@@ -559,7 +558,7 @@ void gas_optical_depths_minor_kernel(
 
         if (tropo[idx_collay] == idx_tropo)
         {
-            for (int imnr=0; imnr<nscale; ++imnr)
+            for (int imnr=0; imnr<nminor; ++imnr)
             {
                 TF scaling = TF(0.);
 
