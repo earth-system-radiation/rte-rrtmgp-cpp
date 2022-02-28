@@ -8,8 +8,8 @@ def remove(filename):
     except OSError:
         pass
 
-#remove('rte_rrtmgp_output.nc')
-#subprocess.run(['./test_rte_rrtmgp', '--cloud-optics'])
+remove('rte_rrtmgp_output.nc')
+subprocess.run(['./test_rte_rrtmgp', '--cloud-optics'])
 
 remove('rrtmgp-allsky.nc')
 
