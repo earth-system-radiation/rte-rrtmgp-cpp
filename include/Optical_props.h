@@ -30,10 +30,6 @@
 #include "Array.h"
 #include "Types.h"
 
-#ifdef __CUDACC__
-#include "tuner.h"
-#endif
-
 
 template<typename TF>
 class Optical_props
@@ -197,21 +193,21 @@ class Optical_props_gpu
         Optical_props_gpu(const Optical_props_gpu&) = default;
 
         Array<int,1> get_gpoint_bands() const { return this->gpt2band; }
- 
+
         const Array_gpu<int,1>& get_gpoint_bands_gpu() const { return this->gpt2band_gpu; }
         const Array_gpu<int,2>& get_band_lims_gpoint_gpu() const { return this->band2gpt_gpu;}
         int get_nband() const { return this->band2gpt.dim(2); }
         int get_ngpt() const { return this->band2gpt.max(); }
         const Array<int,2>& get_band_lims_gpoint() const { return this->band2gpt;}
         const Array<TF,2>& get_band_lims_wavenumber() const { return this->band_lims_wvn; }
-        
+
     private:
         Array<int,2> band2gpt;         // (begin g-point, end g-point) = band2gpt(2,band)
         Array_gpu<int,2> band2gpt_gpu; // (begin g-point, end g-point) = band2gpt(2,band)
-        
+
         Array<int,1> gpt2band;         // band = gpt2band(g-point)
         Array_gpu<int,1> gpt2band_gpu; // band = gpt2band(g-point)
-        
+
         Array<TF,2> band_lims_wvn; // (upper and lower wavenumber by band) = band_lims_wvn(2,band)
 };
 
@@ -294,8 +290,6 @@ class Optical_props_2str_gpu : public Optical_props_arry_gpu<TF>
         Array_gpu<TF,3> tau;
         Array_gpu<TF,3> ssa;
         Array_gpu<TF,3> g;
-
-        Tuner_map add_to_map;
 
         friend void add_to<TF>(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<TF>& op_in);
 };

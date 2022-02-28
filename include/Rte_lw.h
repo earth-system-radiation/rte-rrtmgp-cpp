@@ -29,9 +29,6 @@
 
 #include "Types.h"
 
-#ifdef __CUDACC__
-#include "tuner.h"
-#endif
 
 // Forward declarations.
 template<typename, int> class Array;
@@ -82,8 +79,6 @@ class Rte_lw_gpu
                 const Array_gpu<TF,2> arr_in,
                 Array_gpu<TF,2>& arr_out);
 
-    private:
-        Tuner_map rte_lw_map;
 };
 #endif
 

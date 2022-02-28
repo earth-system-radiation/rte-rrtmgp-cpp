@@ -95,7 +95,7 @@ namespace rte_kernel_launcher_cuda
             Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn,
             const BOOL_TYPE do_broadband, Array_gpu<TF,3>& flux_up_loc, Array_gpu<TF,3>& flux_dn_loc,
             const BOOL_TYPE do_jacobians, const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac,
-            Tuner_map& tunings)
+            void* calling_class_ptr)
     {
         TF eps = std::numeric_limits<TF>::epsilon();
 
@@ -145,6 +145,8 @@ namespace rte_kernel_launcher_cuda
 
 
         // Step 1.
+        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+
         dim3 grid_1, block_1;
 
         if (tunings.count("lw_step_1") == 0)
@@ -301,7 +303,7 @@ namespace rte_kernel_launcher_cuda
             Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn, Array_gpu<TF,3>& flux_dir,
             const BOOL_TYPE has_dif_bc, const Array_gpu<TF,2>& inc_flux_dif,
             const BOOL_TYPE do_broadband, Array_gpu<TF,3>& flux_up_loc, Array_gpu<TF,3>& flux_dn_loc, Array_gpu<TF,3>& flux_dir_loc,
-            Tuner_map& tunings)
+            void* calling_class_ptr)
     {
         const int opt_size = tau.size();
         const int alb_size = sfc_alb_dir.size();
@@ -330,6 +332,8 @@ namespace rte_kernel_launcher_cuda
 
 
         // Step 1.
+        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+
         if (tunings.count("sw_source_2stream_kernel") == 0)
         {
             if (top_at_1)
@@ -460,7 +464,7 @@ template void rte_kernel_launcher_cuda::sw_solver_2stream<float>(
             Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&,
             const BOOL_TYPE, const Array_gpu<float,2>&,
             const BOOL_TYPE, Array_gpu<float,3>&, Array_gpu<float,3>&, Array_gpu<float,3>&,
-            Tuner_map&);
+            void*);
 
 template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<float>(
             const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,
@@ -471,7 +475,7 @@ template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<float>(
             Array_gpu<float,3>& flux_dn, Array_gpu<float,3>& flux_up,
             const BOOL_TYPE, Array_gpu<float,3>& flux_dn_loc, Array_gpu<float,3>& flux_up_loc,
             const BOOL_TYPE, const Array_gpu<float,2>& sfc_src_jac, Array_gpu<float,3>& flux_up_jac,
-            Tuner_map& tunings);
+            void* calling_class_ptr);
 
 template void rte_kernel_launcher_cuda::lw_secants_array<float>(
             const int ncol, const int ngpt, const int n_guass_quad, const int max_gauss_pts,
@@ -492,7 +496,7 @@ template void rte_kernel_launcher_cuda::sw_solver_2stream<double>(
             Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&,
             const BOOL_TYPE, const Array_gpu<double,2>&,
             const BOOL_TYPE, Array_gpu<double,3>&, Array_gpu<double,3>&, Array_gpu<double,3>&,
-            Tuner_map&);
+            void*);
 
 template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<double>(
             const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,
@@ -503,7 +507,7 @@ template void rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad<double>(
             Array_gpu<double,3>& flux_up, Array_gpu<double,3>& flux_dn,
             const BOOL_TYPE, Array_gpu<double,3>& flux_up_loc, Array_gpu<double,3>& flux_dn_loc,
             const BOOL_TYPE, const Array_gpu<double,2>& sfc_src_jac,Array_gpu<double,3>& flux_up_jac,
-            Tuner_map& tunings);
+            void* calling_class_ptr);
 
 template void rte_kernel_launcher_cuda::lw_secants_array<double>(
             const int ncol, const int ngpt, const int n_guass_quad, const int max_gauss_pts,

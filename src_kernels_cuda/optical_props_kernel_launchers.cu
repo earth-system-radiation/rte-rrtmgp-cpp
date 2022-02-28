@@ -111,8 +111,10 @@ namespace optical_props_kernel_launcher_cuda
             Array_gpu<TF,3>& tau_inout, Array_gpu<TF,3>& ssa_inout, Array_gpu<TF,3>& g_inout,
             const Array_gpu<TF,3>& tau_in, const Array_gpu<TF,3>& ssa_in, const Array_gpu<TF,3>& g_in,
             int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
-            Tuner_map& tunings)
+            void* calling_class_ptr)
     {
+        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+
         dim3 grid(ncol, nlay, ngpt), block;
 
         TF eps = std::numeric_limits<TF>::min() * TF(3.);
@@ -192,7 +194,7 @@ template void optical_props_kernel_launcher_cuda::inc_2stream_by_2stream_bybnd(
         Array_gpu<float,3>& tau_inout, Array_gpu<float,3>& ssa_inout, Array_gpu<float,3>& g_inout,
         const Array_gpu<float,3>& tau_in, const Array_gpu<float,3>& ssa_in, const Array_gpu<float,3>& g_in,
         int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
-        Tuner_map& tunings);
+        void* calling_class_ptr);
 
 
 template void optical_props_kernel_launcher_cuda::delta_scale_2str_k(
@@ -218,7 +220,7 @@ template void optical_props_kernel_launcher_cuda::inc_2stream_by_2stream_bybnd(
         Array_gpu<double,3>& tau_inout, Array_gpu<double,3>& ssa_inout, Array_gpu<double,3>& g_inout,
         const Array_gpu<double,3>& tau_in, const Array_gpu<double,3>& ssa_in, const Array_gpu<double,3>& g_in,
         int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
-        Tuner_map& tunings);
+        void* calling_class_ptr);
 
 template void optical_props_kernel_launcher_cuda::delta_scale_2str_k(
         int ncol, int nlay, int ngpt,

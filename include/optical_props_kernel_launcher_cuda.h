@@ -49,7 +49,7 @@ namespace optical_props_kernel_launcher_cuda
             Array_gpu<TF,3>& tau_inout, Array_gpu<TF,3>& ssa_inout, Array_gpu<TF,3>& g_inout,
             const Array_gpu<TF,3>& tau_in, const Array_gpu<TF,3>& ssa_in, const Array_gpu<TF,3>& g_in,
             int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
-            Tuner_map& tunings);
+            void* calling_class_ptr);
 
     template<typename TF> void delta_scale_2str_k(
             int ncol, int nlay, int ngpt,

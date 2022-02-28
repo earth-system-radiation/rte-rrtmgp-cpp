@@ -27,8 +27,8 @@
 
 #include "Array.h"
 #include "Types.h"
-#include "tuner.h"
 #include "Gas_concs.h"
+
 
 namespace rte_kernel_launcher_cuda
 {
@@ -50,7 +50,7 @@ namespace rte_kernel_launcher_cuda
             Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn, Array_gpu<TF,3>& flux_dir,
             const BOOL_TYPE has_dif_bc, const Array_gpu<TF,2>& inc_flux_dif,
             const BOOL_TYPE do_broadband, Array_gpu<TF,3>& flux_up_loc, Array_gpu<TF,3>& flux_dn_loc, Array_gpu<TF,3>& flux_dir_loc,
-            Tuner_map& tunings);
+            void* calling_class_ptr);
 
     template<typename TF>
     void lw_solver_noscat_gaussquad(
@@ -63,7 +63,7 @@ namespace rte_kernel_launcher_cuda
             Array_gpu<TF,3>& flux_up, Array_gpu<TF,3>& flux_dn,
             const BOOL_TYPE do_broadband, Array_gpu<TF,3>& flux_up_loc, Array_gpu<TF,3>& flux_dn_loc,
             const BOOL_TYPE do_jacobians, const Array_gpu<TF,2>& sfc_src_jac, Array_gpu<TF,3>& flux_up_jac,
-            Tuner_map& tunings);
+            void* calling_class_ptr);
 
     template<typename TF>
     void lw_secants_array(

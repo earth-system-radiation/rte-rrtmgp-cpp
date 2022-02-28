@@ -28,9 +28,6 @@
 #include <memory>
 #include "Types.h"
 
-#ifdef __CUDACC__
-#include "tuner.h"
-#endif
 
 // Forward declarations.
 template<typename, int> class Array;
@@ -82,9 +79,6 @@ class Rte_sw_gpu
                 const std::unique_ptr<Optical_props_arry_gpu<TF>>& ops,
                 const Array_gpu<TF,2> arr_in,
                 Array_gpu<TF,2>& arr_out);
-
-    private:
-        Tuner_map sw_solver_2stream_map;
 };
 #endif
 

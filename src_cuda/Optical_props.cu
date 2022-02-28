@@ -171,7 +171,7 @@ void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<T
                 op_inout.get_tau(), op_inout.get_ssa(), op_inout.get_g(),
                 op_in   .get_tau(), op_in   .get_ssa(), op_in   .get_g(),
                 op_inout.get_nband(), op_inout.get_band_lims_gpoint(),
-                op_inout.add_to_map);
+                static_cast<void*>(&op_inout));
     }
 }
 
