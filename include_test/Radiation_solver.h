@@ -29,17 +29,16 @@
 #include "Source_functions.h"
 
 
-template<typename TF>
 class Radiation_solver_longwave
 {
     public:
         Radiation_solver_longwave(
-                const Gas_concs<TF>& gas_concs,
+                const Gas_concs<Float>& gas_concs,
                 const std::string& file_name_gas,
                 const std::string& file_name_cloud);
 
         Radiation_solver_longwave(
-                const Gas_concs_gpu<TF>& gas_concs,
+                const Gas_concs_gpu<Float>& gas_concs,
                 const std::string& file_name_gas,
                 const std::string& file_name_cloud);
 
@@ -48,17 +47,17 @@ class Radiation_solver_longwave
                 const bool switch_cloud_optics,
                 const bool switch_output_optical,
                 const bool switch_output_bnd_fluxes,
-                const Gas_concs<TF>& gas_concs,
-                const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
-                const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
-                const Array<TF,2>& col_dry,
-                const Array<TF,1>& t_sfc, const Array<TF,2>& emis_sfc,
-                const Array<TF,2>& lwp, const Array<TF,2>& iwp,
-                const Array<TF,2>& rel, const Array<TF,2>& rei,
-                Array<TF,3>& tau, Array<TF,3>& lay_source,
-                Array<TF,3>& lev_source_inc, Array<TF,3>& lev_source_dec, Array<TF,2>& sfc_source,
-                Array<TF,2>& lw_flux_up, Array<TF,2>& lw_flux_dn, Array<TF,2>& lw_flux_net,
-                Array<TF,3>& lw_bnd_flux_up, Array<TF,3>& lw_bnd_flux_dn, Array<TF,3>& lw_bnd_flux_net) const;
+                const Gas_concs<Float>& gas_concs,
+                const Array<Float,2>& p_lay, const Array<Float,2>& p_lev,
+                const Array<Float,2>& t_lay, const Array<Float,2>& t_lev,
+                const Array<Float,2>& col_dry,
+                const Array<Float,1>& t_sfc, const Array<Float,2>& emis_sfc,
+                const Array<Float,2>& lwp, const Array<Float,2>& iwp,
+                const Array<Float,2>& rel, const Array<Float,2>& rei,
+                Array<Float,3>& tau, Array<Float,3>& lay_source,
+                Array<Float,3>& lev_source_inc, Array<Float,3>& lev_source_dec, Array<Float,2>& sfc_source,
+                Array<Float,2>& lw_flux_up, Array<Float,2>& lw_flux_dn, Array<Float,2>& lw_flux_net,
+                Array<Float,3>& lw_bnd_flux_up, Array<Float,3>& lw_bnd_flux_dn, Array<Float,3>& lw_bnd_flux_net) const;
         
         int get_n_gpt() const { return this->kdist->get_ngpt(); };
         int get_n_bnd() const { return this->kdist->get_nband(); };
@@ -66,7 +65,7 @@ class Radiation_solver_longwave
         Array<int,2> get_band_lims_gpoint() const
         { return this->kdist->get_band_lims_gpoint(); }
 
-        Array<TF,2> get_band_lims_wavenumber() const
+        Array<Float,2> get_band_lims_wavenumber() const
         { return this->kdist->get_band_lims_wavenumber(); }
 
         #ifdef __CUDACC__
@@ -75,17 +74,17 @@ class Radiation_solver_longwave
                 const bool switch_cloud_optics,
                 const bool switch_output_optical,
                 const bool switch_output_bnd_fluxes,
-                const Gas_concs_gpu<TF>& gas_concs,
-                const Array_gpu<TF,2>& p_lay, const Array_gpu<TF,2>& p_lev,
-                const Array_gpu<TF,2>& t_lay, const Array_gpu<TF,2>& t_lev,
-                const Array_gpu<TF,2>& col_dry,
-                const Array_gpu<TF,1>& t_sfc, const Array_gpu<TF,2>& emis_sfc,
-                const Array_gpu<TF,2>& lwp, const Array_gpu<TF,2>& iwp,
-                const Array_gpu<TF,2>& rel, const Array_gpu<TF,2>& rei,
-                Array_gpu<TF,3>& tau, Array_gpu<TF,3>& lay_source,
-                Array_gpu<TF,3>& lev_source_inc, Array_gpu<TF,3>& lev_source_dec, Array_gpu<TF,2>& sfc_source,
-                Array_gpu<TF,2>& lw_flux_up, Array_gpu<TF,2>& lw_flux_dn, Array_gpu<TF,2>& lw_flux_net,
-                Array_gpu<TF,3>& lw_bnd_flux_up, Array_gpu<TF,3>& lw_bnd_flux_dn, Array_gpu<TF,3>& lw_bnd_flux_net);
+                const Gas_concs_gpu<Float>& gas_concs,
+                const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
+                const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
+                const Array_gpu<Float,2>& col_dry,
+                const Array_gpu<Float,1>& t_sfc, const Array_gpu<Float,2>& emis_sfc,
+                const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
+                const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
+                Array_gpu<Float,3>& tau, Array_gpu<Float,3>& lay_source,
+                Array_gpu<Float,3>& lev_source_inc, Array_gpu<Float,3>& lev_source_dec, Array_gpu<Float,2>& sfc_source,
+                Array_gpu<Float,2>& lw_flux_up, Array_gpu<Float,2>& lw_flux_dn, Array_gpu<Float,2>& lw_flux_net,
+                Array_gpu<Float,3>& lw_bnd_flux_up, Array_gpu<Float,3>& lw_bnd_flux_dn, Array_gpu<Float,3>& lw_bnd_flux_net);
 
         int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
@@ -93,40 +92,40 @@ class Radiation_solver_longwave
         Array<int,2> get_band_lims_gpoint_gpu() const
         { return this->kdist_gpu->get_band_lims_gpoint(); }
 
-        Array<TF,2> get_band_lims_wavenumber_gpu() const
+        Array<Float,2> get_band_lims_wavenumber_gpu() const
         { return this->kdist_gpu->get_band_lims_wavenumber(); }
         #endif
 
     private:
-        std::unique_ptr<Gas_optics_rrtmgp<TF>> kdist;
-        std::unique_ptr<Cloud_optics<TF>> cloud_optics;
+        std::unique_ptr<Gas_optics_rrtmgp<Float>> kdist;
+        std::unique_ptr<Cloud_optics<Float>> cloud_optics;
 
         #ifdef __CUDACC__
-        std::unique_ptr<Gas_optics_rrtmgp_gpu<TF>> kdist_gpu;
-        std::unique_ptr<Cloud_optics_gpu<TF>> cloud_optics_gpu;
-        Rte_lw_gpu<TF> rte_lw;
+        std::unique_ptr<Gas_optics_rrtmgp_gpu<Float>> kdist_gpu;
+        std::unique_ptr<Cloud_optics_gpu<Float>> cloud_optics_gpu;
+        Rte_lw_gpu<Float> rte_lw;
 
-        std::unique_ptr<Optical_props_arry_gpu<TF>> optical_props_subset;
-        std::unique_ptr<Optical_props_arry_gpu<TF>> optical_props_residual;
+        std::unique_ptr<Optical_props_arry_gpu<Float>> optical_props_subset;
+        std::unique_ptr<Optical_props_arry_gpu<Float>> optical_props_residual;
 
-        std::unique_ptr<Source_func_lw_gpu<TF>> sources_subset;
-        std::unique_ptr<Source_func_lw_gpu<TF>> sources_residual;
+        std::unique_ptr<Source_func_lw_gpu<Float>> sources_subset;
+        std::unique_ptr<Source_func_lw_gpu<Float>> sources_residual;
 
-        std::unique_ptr<Optical_props_1scl_gpu<TF>> cloud_optical_props_subset;
-        std::unique_ptr<Optical_props_1scl_gpu<TF>> cloud_optical_props_residual;
+        std::unique_ptr<Optical_props_1scl_gpu<Float>> cloud_optical_props_subset;
+        std::unique_ptr<Optical_props_1scl_gpu<Float>> cloud_optical_props_residual;
         #endif
 };
 
-template<typename TF>
+
 class Radiation_solver_shortwave
 {
     public:
         Radiation_solver_shortwave(
-                const Gas_concs<TF>& gas_concs,
+                const Gas_concs<Float>& gas_concs,
                 const std::string& file_name_gas,
                 const std::string& file_name_cloud);
         Radiation_solver_shortwave(
-                const Gas_concs_gpu<TF>& gas_concs,
+                const Gas_concs_gpu<Float>& gas_concs,
                 const std::string& file_name_gas,
                 const std::string& file_name_cloud);
 
@@ -135,30 +134,30 @@ class Radiation_solver_shortwave
                 const bool switch_cloud_optics,
                 const bool switch_output_optical,
                 const bool switch_output_bnd_fluxes,
-                const Gas_concs<TF>& gas_concs,
-                const Array<TF,2>& p_lay, const Array<TF,2>& p_lev,
-                const Array<TF,2>& t_lay, const Array<TF,2>& t_lev,
-                const Array<TF,2>& col_dry,
-                const Array<TF,2>& sfc_alb_dir, const Array<TF,2>& sfc_alb_dif,
-                const Array<TF,1>& tsi_scaling, const Array<TF,1>& mu0,
-                const Array<TF,2>& lwp, const Array<TF,2>& iwp,
-                const Array<TF,2>& rel, const Array<TF,2>& rei,
-                Array<TF,3>& tau, Array<TF,3>& ssa, Array<TF,3>& g,
-                Array<TF,2>& toa_src,
-                Array<TF,2>& sw_flux_up, Array<TF,2>& sw_flux_dn,
-                Array<TF,2>& sw_flux_dn_dir, Array<TF,2>& sw_flux_net,
-                Array<TF,3>& sw_bnd_flux_up, Array<TF,3>& sw_bnd_flux_dn,
-                Array<TF,3>& sw_bnd_flux_dn_dir, Array<TF,3>& sw_bnd_flux_net) const;
+                const Gas_concs<Float>& gas_concs,
+                const Array<Float,2>& p_lay, const Array<Float,2>& p_lev,
+                const Array<Float,2>& t_lay, const Array<Float,2>& t_lev,
+                const Array<Float,2>& col_dry,
+                const Array<Float,2>& sfc_alb_dir, const Array<Float,2>& sfc_alb_dif,
+                const Array<Float,1>& tsi_scaling, const Array<Float,1>& mu0,
+                const Array<Float,2>& lwp, const Array<Float,2>& iwp,
+                const Array<Float,2>& rel, const Array<Float,2>& rei,
+                Array<Float,3>& tau, Array<Float,3>& ssa, Array<Float,3>& g,
+                Array<Float,2>& toa_src,
+                Array<Float,2>& sw_flux_up, Array<Float,2>& sw_flux_dn,
+                Array<Float,2>& sw_flux_dn_dir, Array<Float,2>& sw_flux_net,
+                Array<Float,3>& sw_bnd_flux_up, Array<Float,3>& sw_bnd_flux_dn,
+                Array<Float,3>& sw_bnd_flux_dn_dir, Array<Float,3>& sw_bnd_flux_net) const;
 
         int get_n_gpt() const { return this->kdist->get_ngpt(); };
         int get_n_bnd() const { return this->kdist->get_nband(); };
 
-        TF get_tsi() const { return this->kdist->get_tsi(); };
+        Float get_tsi() const { return this->kdist->get_tsi(); };
 
         Array<int,2> get_band_lims_gpoint() const
         { return this->kdist->get_band_lims_gpoint(); }
 
-        Array<TF,2> get_band_lims_wavenumber() const
+        Array<Float,2> get_band_lims_wavenumber() const
         { return this->kdist->get_band_lims_wavenumber(); }
 
         #ifdef __CUDACC__
@@ -167,47 +166,47 @@ class Radiation_solver_shortwave
                 const bool switch_cloud_optics,
                 const bool switch_output_optical,
                 const bool switch_output_bnd_fluxes,
-                const Gas_concs_gpu<TF>& gas_concs,
-                const Array_gpu<TF,2>& p_lay, const Array_gpu<TF,2>& p_lev,
-                const Array_gpu<TF,2>& t_lay, const Array_gpu<TF,2>& t_lev,
-                const Array_gpu<TF,2>& col_dry,
-                const Array_gpu<TF,2>& sfc_alb_dir, const Array_gpu<TF,2>& sfc_alb_dif,
-                const Array_gpu<TF,1>& tsi_scaling, const Array_gpu<TF,1>& mu0,
-                const Array_gpu<TF,2>& lwp, const Array_gpu<TF,2>& iwp,
-                const Array_gpu<TF,2>& rel, const Array_gpu<TF,2>& rei,
-                Array_gpu<TF,3>& tau, Array_gpu<TF,3>& ssa, Array_gpu<TF,3>& g,
-                Array_gpu<TF,2>& toa_src,
-                Array_gpu<TF,2>& sw_flux_up, Array_gpu<TF,2>& sw_flux_dn,
-                Array_gpu<TF,2>& sw_flux_dn_dir, Array_gpu<TF,2>& sw_flux_net,
-                Array_gpu<TF,3>& sw_bnd_flux_up, Array_gpu<TF,3>& sw_bnd_flux_dn,
-                Array_gpu<TF,3>& sw_bnd_flux_dn_dir, Array_gpu<TF,3>& sw_bnd_flux_net);
+                const Gas_concs_gpu<Float>& gas_concs,
+                const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
+                const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
+                const Array_gpu<Float,2>& col_dry,
+                const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
+                const Array_gpu<Float,1>& tsi_scaling, const Array_gpu<Float,1>& mu0,
+                const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
+                const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
+                Array_gpu<Float,3>& tau, Array_gpu<Float,3>& ssa, Array_gpu<Float,3>& g,
+                Array_gpu<Float,2>& toa_src,
+                Array_gpu<Float,2>& sw_flux_up, Array_gpu<Float,2>& sw_flux_dn,
+                Array_gpu<Float,2>& sw_flux_dn_dir, Array_gpu<Float,2>& sw_flux_net,
+                Array_gpu<Float,3>& sw_bnd_flux_up, Array_gpu<Float,3>& sw_bnd_flux_dn,
+                Array_gpu<Float,3>& sw_bnd_flux_dn_dir, Array_gpu<Float,3>& sw_bnd_flux_net);
 
         int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
 
-        TF get_tsi_gpu() const { return this->kdist_gpu->get_tsi(); };
+        Float get_tsi_gpu() const { return this->kdist_gpu->get_tsi(); };
         
         Array<int,2> get_band_lims_gpoint_gpu() const
         { return this->kdist_gpu->get_band_lims_gpoint(); }
 
-        Array<TF,2> get_band_lims_wavenumber_gpu() const
+        Array<Float,2> get_band_lims_wavenumber_gpu() const
         { return this->kdist_gpu->get_band_lims_wavenumber(); }
         #endif
 
     private:
-        std::unique_ptr<Gas_optics<TF>> kdist;
-        std::unique_ptr<Cloud_optics<TF>> cloud_optics;
+        std::unique_ptr<Gas_optics<Float>> kdist;
+        std::unique_ptr<Cloud_optics<Float>> cloud_optics;
 
         #ifdef __CUDACC__
-        std::unique_ptr<Gas_optics_gpu<TF>> kdist_gpu;
-        std::unique_ptr<Cloud_optics_gpu<TF>> cloud_optics_gpu;
-        Rte_sw_gpu<TF> rte_sw;
+        std::unique_ptr<Gas_optics_gpu<Float>> kdist_gpu;
+        std::unique_ptr<Cloud_optics_gpu<Float>> cloud_optics_gpu;
+        Rte_sw_gpu<Float> rte_sw;
 
-        std::unique_ptr<Optical_props_arry_gpu<TF>> optical_props_subset;
-        std::unique_ptr<Optical_props_arry_gpu<TF>> optical_props_residual;
+        std::unique_ptr<Optical_props_arry_gpu<Float>> optical_props_subset;
+        std::unique_ptr<Optical_props_arry_gpu<Float>> optical_props_residual;
 
-        std::unique_ptr<Optical_props_2str_gpu<TF>> cloud_optical_props_subset;
-        std::unique_ptr<Optical_props_2str_gpu<TF>> cloud_optical_props_residual;
+        std::unique_ptr<Optical_props_2str_gpu<Float>> cloud_optical_props_subset;
+        std::unique_ptr<Optical_props_2str_gpu<Float>> cloud_optical_props_residual;
         #endif
 };
 #endif

@@ -252,7 +252,7 @@ void solve_radiation(int argc, char** argv)
     {
         // Initialize the solver.
         Status::print_message("Initializing the longwave solver.");
-        Radiation_solver_longwave<Float> rad_lw(gas_concs, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
+        Radiation_solver_longwave rad_lw(gas_concs, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
 
         // Read the boundary conditions.
         const int n_bnd_lw = rad_lw.get_n_bnd();
@@ -387,7 +387,7 @@ void solve_radiation(int argc, char** argv)
         // Initialize the solver.
         Status::print_message("Initializing the shortwave solver.");
 
-        Radiation_solver_shortwave<Float> rad_sw(gas_concs, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
+        Radiation_solver_shortwave rad_sw(gas_concs, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
 
         // Read the boundary conditions.
         const int n_bnd_sw = rad_sw.get_n_bnd();
