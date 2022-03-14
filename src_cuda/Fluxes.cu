@@ -180,7 +180,7 @@ Fluxes_broadband_gpu<TF>::Fluxes_broadband_gpu(const int ncol, const int nlev) :
 template<typename TF>
 void Fluxes_broadband_gpu<TF>::reduce(
     const Array_gpu<TF,3>& gpt_flux_up, const Array_gpu<TF,3>& gpt_flux_dn,
-    const std::unique_ptr<Optical_props_arry_gpu<TF>>& spectral_disc,
+    const std::unique_ptr<Optical_props_arry_gpu>& spectral_disc,
     const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
@@ -210,7 +210,7 @@ void Fluxes_broadband_gpu<TF>::reduce(
 template<typename TF>
 void Fluxes_broadband_gpu<TF>::reduce(
     const Array_gpu<TF,3>& gpt_flux_up, const Array_gpu<TF,3>& gpt_flux_dn, const Array_gpu<TF,3>& gpt_flux_dn_dir,
-    const std::unique_ptr<Optical_props_arry_gpu<TF>>& spectral_disc,
+    const std::unique_ptr<Optical_props_arry_gpu>& spectral_disc,
     const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
@@ -245,7 +245,7 @@ template<typename TF>
 void Fluxes_byband_gpu<TF>::reduce(
     const Array_gpu<TF,3>& gpt_flux_up,
     const Array_gpu<TF,3>& gpt_flux_dn,
-    const std::unique_ptr<Optical_props_arry_gpu<TF>>& spectral_disc,
+    const std::unique_ptr<Optical_props_arry_gpu>& spectral_disc,
     const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
@@ -288,7 +288,7 @@ void Fluxes_byband_gpu<TF>::reduce(
     const Array_gpu<TF,3>& gpt_flux_up,
     const Array_gpu<TF,3>& gpt_flux_dn,
     const Array_gpu<TF,3>& gpt_flux_dn_dir,
-    const std::unique_ptr<Optical_props_arry_gpu<TF>>& spectral_disc,
+    const std::unique_ptr<Optical_props_arry_gpu>& spectral_disc,
     const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);

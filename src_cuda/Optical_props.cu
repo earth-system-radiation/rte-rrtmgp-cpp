@@ -31,7 +31,7 @@
 
 // Optical properties per gpoint.
 Optical_props_gpu::Optical_props_gpu(
-        const Array<TF,2>& band_lims_wvn,
+        const Array<Float,2>& band_lims_wvn,
         const Array<int,2>& band_lims_gpt)
 {
     Array<int,2> band_lims_gpt_lcl(band_lims_gpt);
@@ -54,7 +54,7 @@ Optical_props_gpu::Optical_props_gpu(
 
 // Optical properties per band.
 Optical_props_gpu::Optical_props_gpu(
-        const Array<TF,2>& band_lims_wvn)
+        const Array<Float,2>& band_lims_wvn)
 {
     Array<int,2> band_lims_gpt_lcl({2, band_lims_wvn.dim(2)});
 
@@ -83,7 +83,7 @@ Optical_props_1scl_gpu::Optical_props_1scl_gpu(
         const int ncol,
         const int nlay,
         const Optical_props_gpu& optical_props_gpu) :
-    Optical_props_arry_gpu<TF>(optical_props_gpu),
+    Optical_props_arry_gpu(optical_props_gpu),
     tau({ncol, nlay, this->get_ngpt()})
 {}
 
@@ -93,7 +93,7 @@ Optical_props_2str_gpu::Optical_props_2str_gpu(
         const int ncol,
         const int nlay,
         const Optical_props_gpu& optical_props_gpu) :
-    Optical_props_arry_gpu<TF>(optical_props_gpu),
+    Optical_props_arry_gpu(optical_props_gpu),
     tau({ncol, nlay, this->get_ngpt()}),
     ssa({ncol, nlay, this->get_ngpt()}),
     g  ({ncol, nlay, this->get_ngpt()})
@@ -101,7 +101,7 @@ Optical_props_2str_gpu::Optical_props_2str_gpu(
 
 
 
-void Optical_props_2str_gpu::delta_scale(const Array_gpu<TF,3>& forward_frac)
+void Optical_props_2str_gpu::delta_scale(const Array_gpu<Float,3>& forward_frac)
 {
     const int ncol = this->get_ncol();
     const int nlay = this->get_nlay();

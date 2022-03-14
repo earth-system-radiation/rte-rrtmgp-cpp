@@ -134,7 +134,7 @@ Cloud_optics_gpu<TF>::Cloud_optics_gpu(
         const TF radice_lwr, const TF radice_upr, const TF radice_fac,
         const Array<TF,2>& lut_extliq, const Array<TF,2>& lut_ssaliq, const Array<TF,2>& lut_asyliq,
         const Array<TF,3>& lut_extice, const Array<TF,3>& lut_ssaice, const Array<TF,3>& lut_asyice) :
-    Optical_props_gpu<TF>(band_lims_wvn)
+    Optical_props_gpu(band_lims_wvn)
 {
     const int nsize_liq = lut_extliq.dim(1);
     const int nsize_ice = lut_extice.dim(1);
@@ -183,14 +183,14 @@ template<typename TF>
 void Cloud_optics_gpu<TF>::cloud_optics(
         const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
         const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
-        Optical_props_2str_gpu<TF>& optical_props)
+        Optical_props_2str_gpu& optical_props)
 {
     const int ncol = clwp.dim(1);
     const int nlay = clwp.dim(2);
     const int nbnd = this->get_nband();
 
-    Optical_props_2str_gpu<TF> clouds_liq(ncol, nlay, optical_props);
-    Optical_props_2str_gpu<TF> clouds_ice(ncol, nlay, optical_props);
+    Optical_props_2str_gpu clouds_liq(ncol, nlay, optical_props);
+    Optical_props_2str_gpu clouds_ice(ncol, nlay, optical_props);
 
     // Set the mask.
     constexpr TF mask_min_value = TF(0.);
@@ -259,14 +259,14 @@ template<typename TF>
 void Cloud_optics_gpu<TF>::cloud_optics(
         const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
         const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
-        Optical_props_1scl_gpu<TF>& optical_props)
+        Optical_props_1scl_gpu& optical_props)
 {
     const int ncol = clwp.dim(1);
     const int nlay = clwp.dim(2);
     const int nbnd = this->get_nband();
 
-    Optical_props_1scl_gpu<TF> clouds_liq(ncol, nlay, optical_props);
-    Optical_props_1scl_gpu<TF> clouds_ice(ncol, nlay, optical_props);
+    Optical_props_1scl_gpu clouds_liq(ncol, nlay, optical_props);
+    Optical_props_1scl_gpu clouds_ice(ncol, nlay, optical_props);
 
     // Set the mask.
     constexpr TF mask_min_value = TF(0.);

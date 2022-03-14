@@ -28,6 +28,7 @@
 
 #include "rrtmgp_kernels.h"
 
+
 namespace rrtmgp_kernel_launcher
 {
     template<typename TF>
@@ -82,6 +83,7 @@ namespace rrtmgp_kernel_launcher
     }
 }
 
+
 template<typename TF>
 Fluxes_broadband<TF>::Fluxes_broadband(const int ncol, const int nlev) :
     flux_up    ({ncol, nlev}),
@@ -90,10 +92,11 @@ Fluxes_broadband<TF>::Fluxes_broadband(const int ncol, const int nlev) :
     flux_net   ({ncol, nlev})
 {}
 
+
 template<typename TF>
 void Fluxes_broadband<TF>::reduce(
     const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn,
-    const std::unique_ptr<Optical_props_arry<TF>>& spectral_disc,
+    const std::unique_ptr<Optical_props_arry>& spectral_disc,
     const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
@@ -110,11 +113,12 @@ void Fluxes_broadband<TF>::reduce(
             ncol, nlev, this->flux_dn, this->flux_up, this->flux_net);
 }
 
+
 // CvH: unnecessary code duplication.
 template<typename TF>
 void Fluxes_broadband<TF>::reduce(
     const Array<TF,3>& gpt_flux_up, const Array<TF,3>& gpt_flux_dn, const Array<TF,3>& gpt_flux_dn_dir,
-    const std::unique_ptr<Optical_props_arry<TF>>& spectral_disc,
+    const std::unique_ptr<Optical_props_arry>& spectral_disc,
     const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
@@ -128,6 +132,7 @@ void Fluxes_broadband<TF>::reduce(
             gpt_flux_dn_dir, this->flux_dn_dir);
 }
 
+
 template<typename TF>
 Fluxes_byband<TF>::Fluxes_byband(const int ncol, const int nlev, const int nbnd) :
     Fluxes_broadband<TF>(ncol, nlev),
@@ -137,11 +142,12 @@ Fluxes_byband<TF>::Fluxes_byband(const int ncol, const int nlev, const int nbnd)
     bnd_flux_net   ({ncol, nlev, nbnd})
 {}
 
+
 template<typename TF>
 void Fluxes_byband<TF>::reduce(
     const Array<TF,3>& gpt_flux_up,
     const Array<TF,3>& gpt_flux_dn,
-    const std::unique_ptr<Optical_props_arry<TF>>& spectral_disc,
+    const std::unique_ptr<Optical_props_arry>& spectral_disc,
     const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
@@ -168,13 +174,14 @@ void Fluxes_byband<TF>::reduce(
             this->bnd_flux_dn, this->bnd_flux_up, this->bnd_flux_net);
 }
 
+
 // CvH: a lot of code duplication.
 template<typename TF>
 void Fluxes_byband<TF>::reduce(
     const Array<TF,3>& gpt_flux_up,
     const Array<TF,3>& gpt_flux_dn,
     const Array<TF,3>& gpt_flux_dn_dir,
-    const std::unique_ptr<Optical_props_arry<TF>>& spectral_disc,
+    const std::unique_ptr<Optical_props_arry>& spectral_disc,
     const BOOL_TYPE top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);

@@ -30,6 +30,7 @@
 #include <chrono>
 #include "rrtmgp_kernels.h"
 
+
 namespace rrtmgp_kernel_launcher
 {
     template<typename TF>
@@ -97,7 +98,7 @@ namespace rrtmgp_kernel_launcher
 
 template<typename TF>
 void Rte_sw<TF>::rte_sw(
-        const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+        const std::unique_ptr<Optical_props_arry>& optical_props,
         const BOOL_TYPE top_at_1,
         const Array<TF,1>& mu0,
         const Array<TF,2>& inc_flux_dir,
@@ -141,7 +142,7 @@ void Rte_sw<TF>::rte_sw(
 
 template<typename TF>
 void Rte_sw<TF>::expand_and_transpose(
-        const std::unique_ptr<Optical_props_arry<TF>>& ops,
+        const std::unique_ptr<Optical_props_arry>& ops,
         const Array<TF,2> arr_in,
         Array<TF,2>& arr_out)
 {

@@ -32,16 +32,17 @@
 // Forward declarations.
 template<typename, int> class Array;
 template<typename, int> class Array_gpu;
-template<typename> class Optical_props_arry;
-template<typename> class Optical_props_arry_gpu;
+class Optical_props_arry;
+class Optical_props_arry_gpu;
 template<typename> class Fluxes_broadband;
+
 
 template<typename TF>
 class Rte_sw
 {
     public:
         static void rte_sw(
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry>& optical_props,
                 const BOOL_TYPE top_at_1,
                 const Array<TF,1>& mu0,
                 const Array<TF,2>& inc_flux_dir,
@@ -53,7 +54,7 @@ class Rte_sw
                 Array<TF,3>& gpt_flux_dir);
 
         static void expand_and_transpose(
-                const std::unique_ptr<Optical_props_arry<TF>>& ops,
+                const std::unique_ptr<Optical_props_arry>& ops,
                 const Array<TF,2> arr_in,
                 Array<TF,2>& arr_out);
 };
@@ -64,7 +65,7 @@ class Rte_sw_gpu
 {
     public:
         void rte_sw(
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 const BOOL_TYPE top_at_1,
                 const Array_gpu<TF,1>& mu0,
                 const Array_gpu<TF,2>& inc_flux_dir,
@@ -76,7 +77,7 @@ class Rte_sw_gpu
                 Array_gpu<TF,3>& gpt_flux_dir);
 
         void expand_and_transpose(
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& ops,
+                const std::unique_ptr<Optical_props_arry_gpu>& ops,
                 const Array_gpu<TF,2> arr_in,
                 Array_gpu<TF,2>& arr_out);
 };

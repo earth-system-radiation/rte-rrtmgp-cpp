@@ -91,7 +91,7 @@ namespace rrtmgp_kernel_launcher
 
 template<typename TF>
 void Rte_lw<TF>::rte_lw(
-        const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+        const std::unique_ptr<Optical_props_arry>& optical_props,
         const BOOL_TYPE top_at_1,
         const Source_func_lw<TF>& sources,
         const Array<TF,2>& sfc_emis,
@@ -168,7 +168,7 @@ void Rte_lw<TF>::rte_lw(
 
 template<typename TF>
 void Rte_lw<TF>::expand_and_transpose(
-        const std::unique_ptr<Optical_props_arry<TF>>& ops,
+        const std::unique_ptr<Optical_props_arry>& ops,
         const Array<TF,2> arr_in,
         Array<TF,2>& arr_out)
 {

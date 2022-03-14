@@ -31,8 +31,8 @@ template<typename TF>
 Source_func_lw_gpu<TF>::Source_func_lw_gpu(
         const int n_col,
         const int n_lay,
-        const Optical_props_gpu<TF>& optical_props) :
-    Optical_props_gpu<TF>(optical_props),
+        const Optical_props_gpu& optical_props) :
+    Optical_props_gpu(optical_props),
     sfc_source({n_col, optical_props.get_ngpt()}),
     sfc_source_jac({n_col, optical_props.get_ngpt()}),
     lay_source({n_col, n_lay, optical_props.get_ngpt()}),

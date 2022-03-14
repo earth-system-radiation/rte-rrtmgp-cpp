@@ -33,8 +33,8 @@
 // Forward declarations.
 template<typename, int> class Array;
 template<typename, int> class Array_gpu;
-template<typename> class Optical_props_arry;
-template<typename> class Optical_props_arry_gpu;
+class Optical_props_arry;
+class Optical_props_arry_gpu;
 template<typename> class Source_func_lw;
 template<typename> class Source_func_lw_gpu;
 template<typename> class Fluxes_broadband;
@@ -44,7 +44,7 @@ class Rte_lw
 {
     public:
         static void rte_lw(
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry>& optical_props,
                 const BOOL_TYPE top_at_1,
                 const Source_func_lw<TF>& sources,
                 const Array<TF,2>& sfc_emis,
@@ -54,7 +54,7 @@ class Rte_lw
                 const int n_gauss_angles);
 
         static void expand_and_transpose(
-                const std::unique_ptr<Optical_props_arry<TF>>& ops,
+                const std::unique_ptr<Optical_props_arry>& ops,
                 const Array<TF,2> arr_in,
                 Array<TF,2>& arr_out);
 };
@@ -65,7 +65,7 @@ class Rte_lw_gpu
 {
     public:
         void rte_lw(
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 const BOOL_TYPE top_at_1,
                 const Source_func_lw_gpu<TF>& sources,
                 const Array_gpu<TF,2>& sfc_emis,
@@ -75,7 +75,7 @@ class Rte_lw_gpu
                 const int n_gauss_angles);
 
         void expand_and_transpose(
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& ops,
+                const std::unique_ptr<Optical_props_arry_gpu>& ops,
                 const Array_gpu<TF,2> arr_in,
                 Array_gpu<TF,2>& arr_out);
 

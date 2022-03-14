@@ -26,10 +26,10 @@
 #include "Array.h"
 #include "rrtmgp_kernels.h"
 
+
 // Optical properties per gpoint.
-template<typename TF>
-Optical_props<TF>::Optical_props(
-        const Array<TF,2>& band_lims_wvn,
+Optical_props::Optical_props(
+        const Array<Float,2>& band_lims_wvn,
         const Array<int,2>& band_lims_gpt)
 {
     Array<int,2> band_lims_gpt_lcl(band_lims_gpt);
@@ -46,10 +46,10 @@ Optical_props<TF>::Optical_props(
     }
 }
 
+
 // Optical properties per band.
-template<typename TF>
-Optical_props<TF>::Optical_props(
-        const Array<TF,2>& band_lims_wvn)
+Optical_props::Optical_props(
+        const Array<Float,2>& band_lims_wvn)
 {
     Array<int,2> band_lims_gpt_lcl({2, band_lims_wvn.dim(2)});
 
@@ -71,18 +71,18 @@ Optical_props<TF>::Optical_props(
     }
 }
 
-template<typename TF>
-Optical_props_1scl<TF>::Optical_props_1scl(
+
+Optical_props_1scl::Optical_props_1scl(
         const int ncol,
         const int nlay,
-        const Optical_props<TF>& optical_props) :
-    Optical_props_arry<TF>(optical_props),
+        const Optical_props& optical_props) :
+    Optical_props_arry(optical_props),
     tau({ncol, nlay, this->get_ngpt()})
 {}
 
-template<typename TF>
-void Optical_props_1scl<TF>::set_subset(
-        const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+
+void Optical_props_1scl::set_subset(
+        const std::unique_ptr<Optical_props_arry>& optical_props_sub,
         const int col_s, const int col_e)
 {
     for (int igpt=1; igpt<=tau.dim(3); ++igpt)
@@ -91,9 +91,9 @@ void Optical_props_1scl<TF>::set_subset(
                 tau({icol, ilay, igpt}) = optical_props_sub->get_tau()({icol-col_s+1, ilay, igpt});
 }
 
-template<typename TF>
-void Optical_props_1scl<TF>::get_subset(
-        const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+
+void Optical_props_1scl::get_subset(
+        const std::unique_ptr<Optical_props_arry>& optical_props_sub,
         const int col_s, const int col_e)
 {
     for (int igpt=1; igpt<=tau.dim(3); ++igpt)
@@ -102,20 +102,20 @@ void Optical_props_1scl<TF>::get_subset(
                 tau({icol-col_s+1, ilay, igpt}) = optical_props_sub->get_tau()({icol, ilay, igpt});
 }
 
-template<typename TF>
-Optical_props_2str<TF>::Optical_props_2str(
+
+Optical_props_2str::Optical_props_2str(
         const int ncol,
         const int nlay,
-        const Optical_props<TF>& optical_props) :
-    Optical_props_arry<TF>(optical_props),
+        const Optical_props& optical_props) :
+    Optical_props_arry(optical_props),
     tau({ncol, nlay, this->get_ngpt()}),
     ssa({ncol, nlay, this->get_ngpt()}),
     g  ({ncol, nlay, this->get_ngpt()})
 {}
 
-template<typename TF>
-void Optical_props_2str<TF>::set_subset(
-        const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+
+void Optical_props_2str::set_subset(
+        const std::unique_ptr<Optical_props_arry>& optical_props_sub,
         const int col_s, const int col_e)
 {
     for (int igpt=1; igpt<=tau.dim(3); ++igpt)
@@ -128,9 +128,9 @@ void Optical_props_2str<TF>::set_subset(
             }
 }
 
-template<typename TF>
-void Optical_props_2str<TF>::get_subset(
-        const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+
+void Optical_props_2str::get_subset(
+        const std::unique_ptr<Optical_props_arry>& optical_props_sub,
         const int col_s, const int col_e)
 {
     for (int igpt=1; igpt<=tau.dim(3); ++igpt)
@@ -143,58 +143,59 @@ void Optical_props_2str<TF>::get_subset(
             }
 }
 
+
 namespace rrtmgp_kernel_launcher
 {
-    template<typename TF> void increment_1scalar_by_1scalar(
+    template<typename Float> void increment_1scalar_by_1scalar(
             int ncol, int nlay, int ngpt,
-            Array<TF,3>& tau_inout, const Array<TF,3>& tau_in)
+            Array<Float,3>& tau_inout, const Array<Float,3>& tau_in)
 
     {
         rrtmgp_kernels::increment_1scalar_by_1scalar(
                 &ncol, &nlay, &ngpt,
-                tau_inout.ptr(), const_cast<TF*>(tau_in.ptr()));
+                tau_inout.ptr(), const_cast<Float*>(tau_in.ptr()));
     }
 
-    template<typename TF> void increment_2stream_by_2stream(
+    template<typename Float> void increment_2stream_by_2stream(
             int ncol, int nlay, int ngpt,
-            Array<TF,3>& tau_inout, Array<TF,3>& ssa_inout, Array<TF,3>& g_inout,
-            const Array<TF,3>& tau_in, const Array<TF,3>& ssa_in, const Array<TF,3>& g_in)
+            Array<Float,3>& tau_inout, Array<Float,3>& ssa_inout, Array<Float,3>& g_inout,
+            const Array<Float,3>& tau_in, const Array<Float,3>& ssa_in, const Array<Float,3>& g_in)
     {
         rrtmgp_kernels::increment_2stream_by_2stream(
                 &ncol, &nlay, &ngpt,
                 tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr(),
-                const_cast<TF*>(tau_in.ptr()), const_cast<TF*>(ssa_in.ptr()), const_cast<TF*>(g_in.ptr()));
+                const_cast<Float*>(tau_in.ptr()), const_cast<Float*>(ssa_in.ptr()), const_cast<Float*>(g_in.ptr()));
     }
 
-    template<typename TF> void inc_1scalar_by_1scalar_bybnd(
+    template<typename Float> void inc_1scalar_by_1scalar_bybnd(
             int ncol, int nlay, int ngpt,
-            Array<TF,3>& tau_inout, const Array<TF,3>& tau_in,
+            Array<Float,3>& tau_inout, const Array<Float,3>& tau_in,
             int nbnd, const Array<int,2>& band_lims_gpoint)
 
     {
         rrtmgp_kernels::inc_1scalar_by_1scalar_bybnd(
                 &ncol, &nlay, &ngpt,
-                tau_inout.ptr(), const_cast<TF*>(tau_in.ptr()),
+                tau_inout.ptr(), const_cast<Float*>(tau_in.ptr()),
                 &nbnd, const_cast<int*>(band_lims_gpoint.ptr()));
     }
 
-    template<typename TF> void inc_2stream_by_2stream_bybnd(
+    template<typename Float> void inc_2stream_by_2stream_bybnd(
             int ncol, int nlay, int ngpt,
-            Array<TF,3>& tau_inout, Array<TF,3>& ssa_inout, Array<TF,3>& g_inout,
-            const Array<TF,3>& tau_in, const Array<TF,3>& ssa_in, const Array<TF,3>& g_in,
+            Array<Float,3>& tau_inout, Array<Float,3>& ssa_inout, Array<Float,3>& g_inout,
+            const Array<Float,3>& tau_in, const Array<Float,3>& ssa_in, const Array<Float,3>& g_in,
             int nbnd, const Array<int,2>& band_lims_gpoint)
 
     {
         rrtmgp_kernels::inc_2stream_by_2stream_bybnd(
                 &ncol, &nlay, &ngpt,
                 tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr(),
-                const_cast<TF*>(tau_in.ptr()), const_cast<TF*>(ssa_in.ptr()), const_cast<TF*>(g_in.ptr()),
+                const_cast<Float*>(tau_in.ptr()), const_cast<Float*>(ssa_in.ptr()), const_cast<Float*>(g_in.ptr()),
                 &nbnd, const_cast<int*>(band_lims_gpoint.ptr()));
     }
 
-    template<typename TF> void delta_scale_2str_k(
+    template<typename Float> void delta_scale_2str_k(
             int ncol, int nlay, int ngpt,
-            Array<TF,3>& tau_inout, Array<TF,3>& ssa_inout, Array<TF,3>& g_inout)
+            Array<Float,3>& tau_inout, Array<Float,3>& ssa_inout, Array<Float,3>& g_inout)
     {
         rrtmgp_kernels::delta_scale_2str_k(
                 &ncol, &nlay, &ngpt,
@@ -202,8 +203,8 @@ namespace rrtmgp_kernel_launcher
     }
 }
 
-template<typename TF>
-void Optical_props_2str<TF>::delta_scale(const Array<TF,3>& forward_frac)
+
+void Optical_props_2str::delta_scale(const Array<Float,3>& forward_frac)
 {
     const int ncol = this->get_ncol();
     const int nlay = this->get_nlay();
@@ -214,8 +215,8 @@ void Optical_props_2str<TF>::delta_scale(const Array<TF,3>& forward_frac)
             this->get_tau(), this->get_ssa(), this->get_g());
 }
 
-template<typename TF>
-void add_to(Optical_props_1scl<TF>& op_inout, const Optical_props_1scl<TF>& op_in)
+
+void add_to(Optical_props_1scl& op_inout, const Optical_props_1scl& op_in)
 {
     const int ncol = op_inout.get_ncol();
     const int nlay = op_inout.get_nlay();
@@ -239,8 +240,8 @@ void add_to(Optical_props_1scl<TF>& op_inout, const Optical_props_1scl<TF>& op_i
     }
 }
 
-template<typename TF>
-void add_to(Optical_props_2str<TF>& op_inout, const Optical_props_2str<TF>& op_in)
+
+void add_to(Optical_props_2str& op_inout, const Optical_props_2str& op_in)
 {
     const int ncol = op_inout.get_ncol();
     const int nlay = op_inout.get_nlay();
@@ -265,17 +266,3 @@ void add_to(Optical_props_2str<TF>& op_inout, const Optical_props_2str<TF>& op_i
                 op_inout.get_nband(), op_inout.get_band_lims_gpoint());
     }
 }
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template class Optical_props<float>;
-template class Optical_props_1scl<float>;
-template class Optical_props_2str<float>;
-template void add_to(Optical_props_2str<float>&, const Optical_props_2str<float>&);
-template void add_to(Optical_props_1scl<float>&, const Optical_props_1scl<float>&);
-#else
-template class Optical_props<double>;
-template class Optical_props_1scl<double>;
-template class Optical_props_2str<double>;
-template void add_to(Optical_props_2str<double>&, const Optical_props_2str<double>&);
-template void add_to(Optical_props_1scl<double>&, const Optical_props_1scl<double>&);
-#endif

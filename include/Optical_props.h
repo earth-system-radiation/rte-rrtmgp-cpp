@@ -25,7 +25,6 @@
 #ifndef OPTICAL_PROPS_H
 #define OPTICAL_PROPS_H
 
-
 #include <memory>
 #include "Array.h"
 #include "Types.h"
@@ -162,6 +161,7 @@ class Optical_props_2str : public Optical_props_arry
         Array<Float,3> g;
 };
 
+
 void add_to(Optical_props_1scl& op_inout, const Optical_props_1scl& op_in);
 void add_to(Optical_props_2str& op_inout, const Optical_props_2str& op_in);
 
@@ -263,13 +263,13 @@ class Optical_props_1scl_gpu : public Optical_props_arry_gpu
 };
 
 
-class Optical_props_2str_gpu : public Optical_props_arry_gpu<Float>
+class Optical_props_2str_gpu : public Optical_props_arry_gpu
 {
     public:
         Optical_props_2str_gpu(
                 const int ncol,
                 const int nlay,
-                const Optical_props_gpu<Float>& optical_props_gpu);
+                const Optical_props_gpu& optical_props_gpu);
 
         int get_ncol() const { return tau.dim(1); }
         int get_nlay() const { return tau.dim(2); }
@@ -289,7 +289,7 @@ class Optical_props_2str_gpu : public Optical_props_arry_gpu<Float>
         Array_gpu<Float,3> ssa;
         Array_gpu<Float,3> g;
 
-        friend void add_to(Optical_props_2str_gpu<Float>& op_inout, const Optical_props_2str_gpu<Float>& op_in);
+        friend void add_to(Optical_props_2str_gpu& op_inout, const Optical_props_2str_gpu& op_in);
 };
 #endif
 

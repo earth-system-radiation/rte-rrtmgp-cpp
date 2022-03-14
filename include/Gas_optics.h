@@ -38,13 +38,13 @@ template<typename TF> class Source_func_lw_gpu;
 
 
 template<typename TF>
-class Gas_optics : public Optical_props<TF>
+class Gas_optics : public Optical_props
 {
     public:
         Gas_optics(
                 const Array<TF,2>& band_lims_wvn,
                 const Array<int,2>& band_lims_gpt) :
-            Optical_props<TF>(band_lims_wvn, band_lims_gpt)
+            Optical_props(band_lims_wvn, band_lims_gpt)
         {}
 
         virtual ~Gas_optics() {};
@@ -65,7 +65,7 @@ class Gas_optics : public Optical_props<TF>
                 const Array<TF,2>& tlay,
                 const Array<TF,1>& tsfc,
                 const Gas_concs& gas_desc,
-                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                std::unique_ptr<Optical_props_arry>& optical_props,
                 Source_func_lw<TF>& sources,
                 const Array<TF,2>& col_dry,
                 const Array<TF,2>& tlev) const = 0;
@@ -76,7 +76,7 @@ class Gas_optics : public Optical_props<TF>
                 const Array<TF,2>& plev,
                 const Array<TF,2>& tlay,
                 const Gas_concs& gas_desc,
-                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                std::unique_ptr<Optical_props_arry>& optical_props,
                 Array<TF,2>& toa_src,
                 const Array<TF,2>& col_dry) const = 0;
 
@@ -85,13 +85,13 @@ class Gas_optics : public Optical_props<TF>
 
 #ifdef __CUDACC__
 template<typename TF>
-class Gas_optics_gpu : public Optical_props_gpu<TF>
+class Gas_optics_gpu : public Optical_props_gpu
 {
     public:
         Gas_optics_gpu(
                 const Array<TF,2>& band_lims_wvn,
                 const Array<int,2>& band_lims_gpt) :
-            Optical_props_gpu<TF>(band_lims_wvn, band_lims_gpt)
+            Optical_props_gpu(band_lims_wvn, band_lims_gpt)
         {}
 
         virtual ~Gas_optics_gpu() {};
@@ -112,7 +112,7 @@ class Gas_optics_gpu : public Optical_props_gpu<TF>
                 const Array_gpu<TF,2>& tlay,
                 const Array_gpu<TF,1>& tsfc,
                 const Gas_concs_gpu& gas_desc,
-                std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 Source_func_lw_gpu<TF>& sources,
                 const Array_gpu<TF,2>& col_dry,
                 const Array_gpu<TF,2>& tlev) = 0;
@@ -123,7 +123,7 @@ class Gas_optics_gpu : public Optical_props_gpu<TF>
                 const Array_gpu<TF,2>& plev,
                 const Array_gpu<TF,2>& tlay,
                 const Gas_concs_gpu& gas_desc,
-                std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 Array_gpu<TF,2>& toa_src,
                 const Array_gpu<TF,2>& col_dry) = 0;
 

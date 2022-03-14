@@ -25,21 +25,24 @@
 #ifndef SOURCE_FUNCTIONS_H
 #define SOURCE_FUNCTIONS_H
 
+#include "Optical_props.h"
+
+
 template<typename, int> class Array;
-template<typename> class Optical_props;
-template<typename> class Source_func_lw;
 template<typename, int> class Array_gpu;
-template<typename> class Optical_props_gpu;
+// class Optical_props;
+// class Optical_props_gpu;
+template<typename> class Source_func_lw;
 template<typename> class Source_func_lw_gpu;
 
 template<typename TF>
-class Source_func_lw : public Optical_props<TF>
+class Source_func_lw : public Optical_props
 {
     public:
         Source_func_lw(
                 const int n_col,
                 const int n_lay,
-                const Optical_props<TF>& optical_props);
+                const Optical_props& optical_props);
 
         void set_subset(
                 const Source_func_lw<TF>& sources_sub,
@@ -69,15 +72,16 @@ class Source_func_lw : public Optical_props<TF>
         Array<TF,3> lev_source_dec;
 };
 
-#ifdef USECUDA
+
+#ifdef __CUDACC__
 template<typename TF>
-class Source_func_lw_gpu : public Optical_props_gpu<TF>
+class Source_func_lw_gpu : public Optical_props_gpu
 {
     public:
         Source_func_lw_gpu(
                 const int n_col,
                 const int n_lay,
-                const Optical_props_gpu<TF>& optical_props);
+                const Optical_props_gpu& optical_props);
 
 //        void set_subset(
 //                const Source_func_lw<TF>& sources_sub,

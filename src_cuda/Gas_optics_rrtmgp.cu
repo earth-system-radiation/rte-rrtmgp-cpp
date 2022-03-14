@@ -919,7 +919,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
         const Array_gpu<TF,2>& tlay,
         const Array_gpu<TF,1>& tsfc,
         const Gas_concs_gpu& gas_desc,
-        std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+        std::unique_ptr<Optical_props_arry_gpu>& optical_props,
         Source_func_lw_gpu<TF>& sources,
         const Array_gpu<TF,2>& col_dry,
         const Array_gpu<TF,2>& tlev)
@@ -959,7 +959,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
         const Array_gpu<TF,2>& plev,
         const Array_gpu<TF,2>& tlay,
         const Gas_concs_gpu& gas_desc,
-        std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+        std::unique_ptr<Optical_props_arry_gpu>& optical_props,
         Array_gpu<TF,2>& toa_src,
         const Array_gpu<TF,2>& col_dry)
 {
@@ -994,7 +994,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
         const Array_gpu<TF,2>& plev,
         const Array_gpu<TF,2>& tlay,
         const Gas_concs_gpu& gas_desc,
-        std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+        std::unique_ptr<Optical_props_arry_gpu>& optical_props,
         Array_gpu<int,2>& jtemp, Array_gpu<int,2>& jpress,
         Array_gpu<int,4>& jeta,
         Array_gpu<BOOL_TYPE,2>& tropo,
@@ -1167,7 +1167,7 @@ template<typename TF>
 void Gas_optics_rrtmgp_gpu<TF>::combine_abs_and_rayleigh(
         const Array_gpu<TF,3>& tau,
         const Array_gpu<TF,3>& tau_rayleigh,
-        std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props)
+        std::unique_ptr<Optical_props_arry_gpu>& optical_props)
 {
     int ncol = tau.dim(1);
     int nlay = tau.dim(2);

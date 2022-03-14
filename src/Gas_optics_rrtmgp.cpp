@@ -801,7 +801,7 @@ void Gas_optics_rrtmgp<TF>::gas_optics(
         const Array<TF,2>& tlay,
         const Array<TF,1>& tsfc,
         const Gas_concs& gas_desc,
-        std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+        std::unique_ptr<Optical_props_arry>& optical_props,
         Source_func_lw<TF>& sources,
         const Array<TF,2>& col_dry,
         const Array<TF,2>& tlev) const
@@ -857,7 +857,7 @@ void Gas_optics_rrtmgp<TF>::gas_optics(
         const Array<TF,2>& plev,
         const Array<TF,2>& tlay,
         const Gas_concs& gas_desc,
-        std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+        std::unique_ptr<Optical_props_arry>& optical_props,
         Array<TF,2>& toa_src,
         const Array<TF,2>& col_dry) const
 {
@@ -1094,7 +1094,7 @@ void Gas_optics_rrtmgp<TF>::compute_gas_taus(
         const Array<TF,2>& plev,
         const Array<TF,2>& tlay,
         const Gas_concs& gas_desc,
-        std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+        std::unique_ptr<Optical_props_arry>& optical_props,
         Array<int,2>& jtemp, Array<int,2>& jpress,
         Array<int,4>& jeta,
         Array<BOOL_TYPE,2>& tropo,
@@ -1280,7 +1280,7 @@ template<typename TF>
 void Gas_optics_rrtmgp<TF>::combine_abs_and_rayleigh(
         const Array<TF,3>& tau,
         const Array<TF,3>& tau_rayleigh,
-        std::unique_ptr<Optical_props_arry<TF>>& optical_props) const
+        std::unique_ptr<Optical_props_arry>& optical_props) const
 {
     int ncol = tau.dim(1);
     int nlay = tau.dim(2);

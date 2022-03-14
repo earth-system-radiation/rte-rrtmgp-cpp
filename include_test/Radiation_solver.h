@@ -105,14 +105,14 @@ class Radiation_solver_longwave
         std::unique_ptr<Cloud_optics_gpu<Float>> cloud_optics_gpu;
         Rte_lw_gpu<Float> rte_lw;
 
-        std::unique_ptr<Optical_props_arry_gpu<Float>> optical_props_subset;
-        std::unique_ptr<Optical_props_arry_gpu<Float>> optical_props_residual;
+        std::unique_ptr<Optical_props_arry_gpu> optical_props_subset;
+        std::unique_ptr<Optical_props_arry_gpu> optical_props_residual;
 
         std::unique_ptr<Source_func_lw_gpu<Float>> sources_subset;
         std::unique_ptr<Source_func_lw_gpu<Float>> sources_residual;
 
-        std::unique_ptr<Optical_props_1scl_gpu<Float>> cloud_optical_props_subset;
-        std::unique_ptr<Optical_props_1scl_gpu<Float>> cloud_optical_props_residual;
+        std::unique_ptr<Optical_props_1scl_gpu> cloud_optical_props_subset;
+        std::unique_ptr<Optical_props_1scl_gpu> cloud_optical_props_residual;
         #endif
 };
 
@@ -202,11 +202,11 @@ class Radiation_solver_shortwave
         std::unique_ptr<Cloud_optics_gpu<Float>> cloud_optics_gpu;
         Rte_sw_gpu<Float> rte_sw;
 
-        std::unique_ptr<Optical_props_arry_gpu<Float>> optical_props_subset;
-        std::unique_ptr<Optical_props_arry_gpu<Float>> optical_props_residual;
+        std::unique_ptr<Optical_props_arry_gpu> optical_props_subset;
+        std::unique_ptr<Optical_props_arry_gpu> optical_props_residual;
 
-        std::unique_ptr<Optical_props_2str_gpu<Float>> cloud_optical_props_subset;
-        std::unique_ptr<Optical_props_2str_gpu<Float>> cloud_optical_props_residual;
+        std::unique_ptr<Optical_props_2str_gpu> cloud_optical_props_subset;
+        std::unique_ptr<Optical_props_2str_gpu> cloud_optical_props_residual;
         #endif
 };
 #endif

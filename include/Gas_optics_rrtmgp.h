@@ -37,14 +37,15 @@
 
 // Forward declarations.
 // template<typename TF> class Gas_optics;
-template<typename TF> class Optical_props;
-template<typename TF> class Optical_props_arry;
-template<typename TF> class Optical_props_gpu;
-template<typename TF> class Optical_props_arry_gpu;
+class Optical_props;
+class Optical_props_arry;
+class Optical_props_gpu;
+class Optical_props_arry_gpu;
 class Gas_concs;
 class Gas_concs_gpu;
 template<typename TF> class Source_func_lw;
 template<typename TF> class Source_func_lw_gpu;
+
 
 template<typename TF>
 class Gas_optics_rrtmgp : public Gas_optics<TF>
@@ -153,7 +154,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array<TF,2>& tlay,
                 const Array<TF,1>& tsfc,
                 const Gas_concs& gas_desc,
-                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                std::unique_ptr<Optical_props_arry>& optical_props,
                 Source_func_lw<TF>& sources,
                 const Array<TF,2>& col_dry,
                 const Array<TF,2>& tlev) const;
@@ -164,7 +165,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array<TF,2>& plev,
                 const Array<TF,2>& tlay,
                 const Gas_concs& gas_desc,
-                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                std::unique_ptr<Optical_props_arry>& optical_props,
                 Array<TF,2>& toa_src,
                 const Array<TF,2>& col_dry) const;
 
@@ -265,7 +266,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
                 const Array<TF,2>& plev,
                 const Array<TF,2>& tlay,
                 const Gas_concs& gas_desc,
-                std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                std::unique_ptr<Optical_props_arry>& optical_props,
                 Array<int,2>& jtemp, Array<int,2>& jpress,
                 Array<int,4>& jeta,
                 Array<BOOL_TYPE,2>& tropo,
@@ -275,7 +276,7 @@ class Gas_optics_rrtmgp : public Gas_optics<TF>
         void combine_abs_and_rayleigh(
                 const Array<TF,3>& tau,
                 const Array<TF,3>& tau_rayleigh,
-                std::unique_ptr<Optical_props_arry<TF>>& optical_props) const;
+                std::unique_ptr<Optical_props_arry>& optical_props) const;
 
         void source(
                 const int ncol, const int nlay, const int nband, const int ngpt,
@@ -397,7 +398,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 const Array_gpu<TF,2>& tlay,
                 const Array_gpu<TF,1>& tsfc,
                 const Gas_concs_gpu& gas_desc,
-                std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 Source_func_lw_gpu<TF>& sources,
                 const Array_gpu<TF,2>& col_dry,
                 const Array_gpu<TF,2>& tlev);
@@ -408,7 +409,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 const Array_gpu<TF,2>& plev,
                 const Array_gpu<TF,2>& tlay,
                 const Gas_concs_gpu& gas_desc,
-                std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 Array_gpu<TF,2>& toa_src,
                 const Array_gpu<TF,2>& col_dry);
 
@@ -534,7 +535,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
                 const Array_gpu<TF,2>& plev,
                 const Array_gpu<TF,2>& tlay,
                 const Gas_concs_gpu& gas_desc,
-                std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 Array_gpu<int,2>& jtemp, Array_gpu<int,2>& jpress,
                 Array_gpu<int,4>& jeta,
                 Array_gpu<BOOL_TYPE,2>& tropo,
@@ -544,7 +545,7 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu<TF>
         void combine_abs_and_rayleigh(
                 const Array_gpu<TF,3>& tau,
                 const Array_gpu<TF,3>& tau_rayleigh,
-                std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props);
+                std::unique_ptr<Optical_props_arry_gpu>& optical_props);
 
         void source(
                 const int ncol, const int nlay, const int nband, const int ngpt,

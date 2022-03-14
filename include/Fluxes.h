@@ -32,9 +32,9 @@
 
 // Forward declarations.
 template<typename TF, int> class Array;
-template<typename TF> class Optical_props_arry;
 template<typename TF, int> class Array_gpu;
-template<typename TF> class Optical_props_arry_gpu;
+class Optical_props_arry;
+class Optical_props_arry_gpu;
 
 template<typename TF>
 class Fluxes
@@ -43,14 +43,14 @@ class Fluxes
         virtual void reduce(
                 const Array<TF,3>& gpt_flux_up,
                 const Array<TF,3>& gpt_flux_dn,
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry>& optical_props,
                 const BOOL_TYPE top_at_1) = 0;
 
         virtual void reduce(
                 const Array<TF,3>& gpt_flux_up,
                 const Array<TF,3>& gpt_flux_dn,
                 const Array<TF,3>& gpt_flux_dn_dir,
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry>& optical_props,
                 const BOOL_TYPE top_at_1) = 0;
 };
 
@@ -64,14 +64,14 @@ class Fluxes_broadband : public Fluxes<TF>
         virtual void reduce(
                 const Array<TF,3>& gpt_flux_up,
                 const Array<TF,3>& gpt_flux_dn,
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry>& optical_props,
                 const BOOL_TYPE top_at_1);
 
         virtual void reduce(
                 const Array<TF,3>& gpt_flux_up,
                 const Array<TF,3>& gpt_flux_dn,
                 const Array<TF,3>& gpt_flux_dn_dir,
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry>& optical_props,
                 const BOOL_TYPE top_at_1);
 
         Array<TF,2>& get_flux_up    () { return flux_up;     }
@@ -101,14 +101,14 @@ class Fluxes_byband : public Fluxes_broadband<TF>
         virtual void reduce(
                 const Array<TF,3>& gpt_flux_up,
                 const Array<TF,3>& gpt_flux_dn,
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry>& optical_props,
                 const BOOL_TYPE top_at_1);
 
         virtual void reduce(
                 const Array<TF,3>& gpt_flux_up,
                 const Array<TF,3>& gpt_flux_dn,
                 const Array<TF,3>& gpt_flux_dn_dir,
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry>& optical_props,
                 const BOOL_TYPE top_at_1);
 
         Array<TF,3>& get_bnd_flux_up    () { return bnd_flux_up;     }
@@ -131,14 +131,14 @@ class Fluxes_gpu
         virtual void reduce(
                 const Array_gpu<TF,3>& gpt_flux_up,
                 const Array_gpu<TF,3>& gpt_flux_dn,
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 const BOOL_TYPE top_at_1) = 0;
 
         virtual void reduce(
                 const Array_gpu<TF,3>& gpt_flux_up,
                 const Array_gpu<TF,3>& gpt_flux_dn,
                 const Array_gpu<TF,3>& gpt_flux_dn_dir,
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 const BOOL_TYPE top_at_1) = 0;
 };
 
@@ -152,14 +152,14 @@ class Fluxes_broadband_gpu : public Fluxes_gpu<TF>
         virtual void reduce(
                 const Array_gpu<TF,3>& gpt_flux_up,
                 const Array_gpu<TF,3>& gpt_flux_dn,
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 const BOOL_TYPE top_at_1);
 
         virtual void reduce(
                 const Array_gpu<TF,3>& gpt_flux_up,
                 const Array_gpu<TF,3>& gpt_flux_dn,
                 const Array_gpu<TF,3>& gpt_flux_dn_dir,
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 const BOOL_TYPE top_at_1);
 
         Array_gpu<TF,2>& get_flux_up    () { return flux_up;     }
@@ -189,14 +189,14 @@ class Fluxes_byband_gpu : public Fluxes_broadband_gpu<TF>
         virtual void reduce(
                 const Array_gpu<TF,3>& gpt_flux_up,
                 const Array_gpu<TF,3>& gpt_flux_dn,
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 const BOOL_TYPE top_at_1);
 
         virtual void reduce(
                 const Array_gpu<TF,3>& gpt_flux_up,
                 const Array_gpu<TF,3>& gpt_flux_dn,
                 const Array_gpu<TF,3>& gpt_flux_dn_dir,
-                const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+                const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 const BOOL_TYPE top_at_1);
 
         Array_gpu<TF,3>& get_bnd_flux_up    () { return bnd_flux_up;     }
@@ -211,5 +211,4 @@ class Fluxes_byband_gpu : public Fluxes_broadband_gpu<TF>
         Array_gpu<TF,3> bnd_flux_net;
 };
 
-//#endif
 #endif

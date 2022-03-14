@@ -80,7 +80,7 @@ namespace
 
 template<typename TF>
 void Rte_lw_gpu<TF>::rte_lw(
-        const std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
+        const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
         const BOOL_TYPE top_at_1,
         const Source_func_lw_gpu<TF>& sources,
         const Array_gpu<TF,2>& sfc_emis,
@@ -152,7 +152,7 @@ void Rte_lw_gpu<TF>::rte_lw(
 
 template<typename TF>
 void Rte_lw_gpu<TF>::expand_and_transpose(
-        const std::unique_ptr<Optical_props_arry_gpu<TF>>& ops,
+        const std::unique_ptr<Optical_props_arry_gpu>& ops,
         const Array_gpu<TF,2> arr_in,
         Array_gpu<TF,2>& arr_out)
 {
