@@ -101,7 +101,7 @@ namespace
 
 
     Gas_optics_rrtmgp_gpu<Float> load_and_init_gas_optics(
-            const Gas_concs_gpu<Float>& gas_concs,
+            const Gas_concs_gpu& gas_concs,
             const std::string& coef_file)
     {
         // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
@@ -365,7 +365,7 @@ namespace
 
 
 Radiation_solver_longwave::Radiation_solver_longwave(
-        const Gas_concs_gpu<Float>& gas_concs,
+        const Gas_concs_gpu& gas_concs,
         const std::string& file_name_gas,
         const std::string& file_name_cloud)
 {
@@ -383,7 +383,7 @@ void Radiation_solver_longwave::solve_gpu(
         const bool switch_cloud_optics,
         const bool switch_output_optical,
         const bool switch_output_bnd_fluxes,
-        const Gas_concs_gpu<Float>& gas_concs,
+        const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
         const Array_gpu<Float,2>& col_dry,
@@ -438,7 +438,7 @@ void Radiation_solver_longwave::solve_gpu(
             Fluxes_broadband_gpu<Float>& bnd_fluxes)
     {
         const int n_col_in = col_e_in - col_s_in + 1;
-        Gas_concs_gpu<Float> gas_concs_subset(gas_concs, col_s_in, n_col_in);
+        Gas_concs_gpu gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
         auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});
 
@@ -621,7 +621,7 @@ void Radiation_solver_longwave::solve_gpu(
 
 
 Radiation_solver_shortwave::Radiation_solver_shortwave(
-        const Gas_concs_gpu<Float>& gas_concs,
+        const Gas_concs_gpu& gas_concs,
         const std::string& file_name_gas,
         const std::string& file_name_cloud)
 {
@@ -639,7 +639,7 @@ void Radiation_solver_shortwave::solve_gpu(
         const bool switch_cloud_optics,
         const bool switch_output_optical,
         const bool switch_output_bnd_fluxes,
-        const Gas_concs_gpu<Float>& gas_concs,
+        const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
         const Array_gpu<Float,2>& col_dry,
@@ -690,7 +690,7 @@ void Radiation_solver_shortwave::solve_gpu(
             Fluxes_broadband_gpu<Float>& bnd_fluxes)
     {
         const int n_col_in = col_e_in - col_s_in + 1;
-        Gas_concs_gpu<Float> gas_concs_subset(gas_concs, col_s_in, n_col_in);
+        Gas_concs_gpu gas_concs_subset(gas_concs, col_s_in, n_col_in);
 
         auto p_lev_subset = p_lev.subset({{ {col_s_in, col_e_in}, {1, n_lev} }});
 

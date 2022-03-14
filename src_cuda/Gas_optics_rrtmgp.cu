@@ -81,7 +81,7 @@ namespace
 
     template<typename TF>
     void reduce_minor_arrays(
-                const Gas_concs_gpu<TF>& available_gases,
+                const Gas_concs_gpu& available_gases,
                 const Array<std::string,1>& gas_names,
                 const Array<std::string,1>& gas_minor,
                 const Array<std::string,1>& identifier_minor,
@@ -427,7 +427,7 @@ namespace
 // Constructor of longwave variant.
 template<typename TF>
 Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
-        const Gas_concs_gpu<TF>& available_gases,
+        const Gas_concs_gpu& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
         const Array<int,2>& band2gpt,
@@ -503,7 +503,7 @@ Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
 // Constructor of the shortwave variant.
 template<typename TF>
 Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
-        const Gas_concs_gpu<TF>& available_gases,
+        const Gas_concs_gpu& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
         const Array<int,2>& band2gpt,
@@ -577,7 +577,7 @@ Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
 
 template<typename TF>
 void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
-        const Gas_concs_gpu<TF>& available_gases,
+        const Gas_concs_gpu& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
         const Array<int,2>& band2gpt,
@@ -918,7 +918,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
         const Array_gpu<TF,2>& plev,
         const Array_gpu<TF,2>& tlay,
         const Array_gpu<TF,1>& tsfc,
-        const Gas_concs_gpu<TF>& gas_desc,
+        const Gas_concs_gpu& gas_desc,
         std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
         Source_func_lw_gpu<TF>& sources,
         const Array_gpu<TF,2>& col_dry,
@@ -958,7 +958,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
         const Array_gpu<TF,2>& play,
         const Array_gpu<TF,2>& plev,
         const Array_gpu<TF,2>& tlay,
-        const Gas_concs_gpu<TF>& gas_desc,
+        const Gas_concs_gpu& gas_desc,
         std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
         Array_gpu<TF,2>& toa_src,
         const Array_gpu<TF,2>& col_dry)
@@ -993,7 +993,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
         const Array_gpu<TF,2>& play,
         const Array_gpu<TF,2>& plev,
         const Array_gpu<TF,2>& tlay,
-        const Gas_concs_gpu<TF>& gas_desc,
+        const Gas_concs_gpu& gas_desc,
         std::unique_ptr<Optical_props_arry_gpu<TF>>& optical_props,
         Array_gpu<int,2>& jtemp, Array_gpu<int,2>& jpress,
         Array_gpu<int,4>& jeta,

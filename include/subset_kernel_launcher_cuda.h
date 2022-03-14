@@ -27,7 +27,8 @@
 
 #include "Array.h"
 #include "Types.h"
-#include "Gas_concs.h"
+// #include "Gas_concs.h"
+
 
 namespace subset_kernel_launcher_cuda
 {

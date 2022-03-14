@@ -25,16 +25,16 @@
 #include "Gas_concs.h"
 #include "Array.h"
 
-template<typename TF>
-Gas_concs_gpu<TF>::Gas_concs_gpu(const Gas_concs<TF>& gas_concs_ref)
+
+Gas_concs_gpu::Gas_concs_gpu(const Gas_concs& gas_concs_ref)
 {
     // The emplace function should call the appropriate constructor of Array_gpu.
     for (auto& g : gas_concs_ref.gas_concs_map)
         this->gas_concs_map.emplace(g.first, g.second);
 }
 
-template<typename TF>
-Gas_concs_gpu<TF>::Gas_concs_gpu(const Gas_concs_gpu& gas_concs_ref, const int start, const int size)
+
+Gas_concs_gpu::Gas_concs_gpu(const Gas_concs_gpu& gas_concs_ref, const int start, const int size)
 {
     const int end = start + size - 1;
     for (auto& g : gas_concs_ref.gas_concs_map)
@@ -43,28 +43,22 @@ Gas_concs_gpu<TF>::Gas_concs_gpu(const Gas_concs_gpu& gas_concs_ref, const int s
             this->gas_concs_map.emplace(g.first, g.second);
         else
         {
-            Array_gpu<TF,2> gas_conc_subset = g.second.subset({{ {start, end}, {1, g.second.dim(2)} }});
+            Array_gpu<Float,2> gas_conc_subset = g.second.subset({{ {start, end}, {1, g.second.dim(2)} }});
             this->gas_concs_map.emplace(g.first, gas_conc_subset);
         }
     }
 }
 
+
 // Get gas from map.
-template<typename TF>
-const Array_gpu<TF,2>& Gas_concs_gpu<TF>::get_vmr(const std::string& name) const
+const Array_gpu<Float,2>& Gas_concs_gpu::get_vmr(const std::string& name) const
 {
     return this->gas_concs_map.at(name);
 }
 
+
 // Check if gas exists in map.
-template<typename TF>
-BOOL_TYPE Gas_concs_gpu<TF>::exists(const std::string& name) const
+Bool Gas_concs_gpu::exists(const std::string& name) const
 {
     return gas_concs_map.count(name) != 0;
 }
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template class Gas_concs_gpu<float>;
-#else
-template class Gas_concs_gpu<double>;
-#endif

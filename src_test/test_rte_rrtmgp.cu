@@ -33,7 +33,7 @@
 
 void read_and_set_vmr(
         const std::string& gas_name, const int n_col_x, const int n_col_y, const int n_lay,
-        const Netcdf_handle& input_nc, Gas_concs<Float>& gas_concs)
+        const Netcdf_handle& input_nc, Gas_concs& gas_concs)
 {
     const std::string vmr_gas_name = "vmr_" + gas_name;
 
@@ -215,7 +215,7 @@ void solve_radiation(int argc, char** argv)
     }
 
     // Create container for the gas concentrations and read gases.
-    Gas_concs<Float> gas_concs;
+    Gas_concs gas_concs;
 
     read_and_set_vmr("h2o", n_col_x, n_col_y, n_lay, input_nc, gas_concs);
     read_and_set_vmr("co2", n_col_x, n_col_y, n_lay, input_nc, gas_concs);
@@ -299,7 +299,7 @@ void solve_radiation(int argc, char** argv)
         // Initialize the solver.
         Status::print_message("Initializing the longwave solver.");
 
-        Gas_concs_gpu<Float> gas_concs_gpu(gas_concs);
+        Gas_concs_gpu gas_concs_gpu(gas_concs);
         
         Radiation_solver_longwave rad_lw(gas_concs_gpu, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
 
@@ -489,7 +489,7 @@ void solve_radiation(int argc, char** argv)
         Status::print_message("Initializing the shortwave solver.");
 
 
-        Gas_concs_gpu<Float> gas_concs_gpu(gas_concs);
+        Gas_concs_gpu gas_concs_gpu(gas_concs);
         Radiation_solver_shortwave rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
 
         // Read the boundary conditions.
