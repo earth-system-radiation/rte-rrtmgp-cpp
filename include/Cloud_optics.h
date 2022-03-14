@@ -30,11 +30,12 @@
 #include "Types.h"
 
 // Forward declarations.
-template<typename TF> class Optical_props;
-template<typename TF> class Optical_props_gpu;
+class Optical_props;
+class Optical_props_gpu;
+
 
 template<typename TF>
-class Cloud_optics : public Optical_props<TF>
+class Cloud_optics : public Optical_props
 {
     public:
         Cloud_optics(
@@ -47,12 +48,12 @@ class Cloud_optics : public Optical_props<TF>
         void cloud_optics(
                 const Array<TF,2>& clwp, const Array<TF,2>& ciwp,
                 const Array<TF,2>& reliq, const Array<TF,2>& reice,
-                Optical_props_1scl<TF>& optical_props);
+                Optical_props_1scl& optical_props);
 
         void cloud_optics(
                 const Array<TF,2>& clwp, const Array<TF,2>& ciwp,
                 const Array<TF,2>& reliq, const Array<TF,2>& reice,
-                Optical_props_2str<TF>& optical_props);
+                Optical_props_2str& optical_props);
 
     private:
         int liq_nsteps;
@@ -75,9 +76,10 @@ class Cloud_optics : public Optical_props<TF>
         Array<TF,2> lut_asyice;
 };
 
+
 #ifdef __CUDACC__
 template<typename TF>
-class Cloud_optics_gpu : public Optical_props_gpu<TF>
+class Cloud_optics_gpu : public Optical_props_gpu
 {
     public:
         Cloud_optics_gpu(
@@ -90,12 +92,12 @@ class Cloud_optics_gpu : public Optical_props_gpu<TF>
         void cloud_optics(
                 const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
                 const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
-                Optical_props_1scl_gpu<TF>& optical_props);
+                Optical_props_1scl_gpu& optical_props);
 
         void cloud_optics(
                 const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
                 const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
-                Optical_props_2str_gpu<TF>& optical_props);
+                Optical_props_2str_gpu& optical_props);
 
     private:
         int liq_nsteps;

@@ -31,16 +31,15 @@
 #include "Types.h"
 
 
-template<typename TF>
 class Optical_props
 {
     public:
         Optical_props(
-                const Array<TF,2>& band_lims_wvn,
+                const Array<Float,2>& band_lims_wvn,
                 const Array<int,2>& band_lims_gpt);
 
         Optical_props(
-                const Array<TF,2>& band_lims_wvn);
+                const Array<Float,2>& band_lims_wvn);
 
         virtual ~Optical_props() {};
 
@@ -50,143 +49,142 @@ class Optical_props
         int get_nband() const { return this->band2gpt.dim(2); }
         int get_ngpt() const { return this->band2gpt.max(); }
         const Array<int,2>& get_band_lims_gpoint() const { return this->band2gpt; }
-        const Array<TF,2>& get_band_lims_wavenumber() const { return this->band_lims_wvn; }
+        const Array<Float,2>& get_band_lims_wavenumber() const { return this->band_lims_wvn; }
 
     private:
         Array<int,2> band2gpt;     // (begin g-point, end g-point) = band2gpt(2,band)
         Array<int,1> gpt2band;     // band = gpt2band(g-point)
-        Array<TF,2> band_lims_wvn; // (upper and lower wavenumber by band) = band_lims_wvn(2,band)
+        Array<Float,2> band_lims_wvn; // (upper and lower wavenumber by band) = band_lims_wvn(2,band)
 };
 
+
 // Base class for 1scl and 2str solvers fully implemented in header.
-template<typename TF>
-class Optical_props_arry : public Optical_props<TF>
+class Optical_props_arry : public Optical_props
 {
     public:
-        Optical_props_arry(const Optical_props<TF>& optical_props) :
-            Optical_props<TF>(optical_props)
+        Optical_props_arry(const Optical_props& optical_props) :
+            Optical_props(optical_props)
         {}
 
         virtual ~Optical_props_arry() {};
 
-        virtual Array<TF,3>& get_tau() = 0;
-        virtual Array<TF,3>& get_ssa() = 0;
-        virtual Array<TF,3>& get_g  () = 0;
+        virtual Array<Float,3>& get_tau() = 0;
+        virtual Array<Float,3>& get_ssa() = 0;
+        virtual Array<Float,3>& get_g  () = 0;
 
-        virtual const Array<TF,3>& get_tau() const = 0;
-        virtual const Array<TF,3>& get_ssa() const = 0;
-        virtual const Array<TF,3>& get_g  () const = 0;
+        virtual const Array<Float,3>& get_tau() const = 0;
+        virtual const Array<Float,3>& get_ssa() const = 0;
+        virtual const Array<Float,3>& get_g  () const = 0;
 
         // Optional argument.
-        virtual void delta_scale(const Array<TF,3>& forward_frac=Array<TF,3>()) = 0;
+        virtual void delta_scale(const Array<Float,3>& forward_frac=Array<Float,3>()) = 0;
 
         virtual void set_subset(
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+                const std::unique_ptr<Optical_props_arry>& optical_props_sub,
                 const int col_s, const int col_e) = 0;
 
         virtual void get_subset(
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+                const std::unique_ptr<Optical_props_arry>& optical_props_sub,
                 const int col_s, const int col_e) = 0;
 
         virtual int get_ncol() const = 0;
         virtual int get_nlay() const = 0;
 };
 
-template<typename TF>
-class Optical_props_1scl : public Optical_props_arry<TF>
+
+class Optical_props_1scl : public Optical_props_arry
 {
     public:
         // Initializer constructor.
         Optical_props_1scl(
                 const int ncol,
                 const int nlay,
-                const Optical_props<TF>& optical_props);
+                const Optical_props& optical_props);
 
         void set_subset(
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+                const std::unique_ptr<Optical_props_arry>& optical_props_sub,
                 const int col_s, const int col_e);
 
         void get_subset(
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+                const std::unique_ptr<Optical_props_arry>& optical_props_sub,
                 const int col_s, const int col_e);
 
         int get_ncol() const { return tau.dim(1); }
         int get_nlay() const { return tau.dim(2); }
 
-        Array<TF,3>& get_tau() { return tau; }
-        Array<TF,3>& get_ssa() { throw std::runtime_error("ssa is not available in this class"); }
-        Array<TF,3>& get_g  () { throw std::runtime_error("g is available in this class"); }
+        Array<Float,3>& get_tau() { return tau; }
+        Array<Float,3>& get_ssa() { throw std::runtime_error("ssa is not available in this class"); }
+        Array<Float,3>& get_g  () { throw std::runtime_error("g is available in this class"); }
 
-        const Array<TF,3>& get_tau() const { return tau; }
-        const Array<TF,3>& get_ssa() const { throw std::runtime_error("ssa is not available in this class"); }
-        const Array<TF,3>& get_g  () const { throw std::runtime_error("g is not available in this class"); }
+        const Array<Float,3>& get_tau() const { return tau; }
+        const Array<Float,3>& get_ssa() const { throw std::runtime_error("ssa is not available in this class"); }
+        const Array<Float,3>& get_g  () const { throw std::runtime_error("g is not available in this class"); }
 
-        void delta_scale(const Array<TF,3>& forward_frac=Array<TF,3>()) {}
+        void delta_scale(const Array<Float,3>& forward_frac=Array<Float,3>()) {}
 
     private:
-        Array<TF,3> tau;
+        Array<Float,3> tau;
 };
 
-template<typename TF>
-class Optical_props_2str : public Optical_props_arry<TF>
+
+class Optical_props_2str : public Optical_props_arry
 {
     public:
         Optical_props_2str(
                 const int ncol,
                 const int nlay,
-                const Optical_props<TF>& optical_props);
+                const Optical_props& optical_props);
 
         void set_subset(
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+                const std::unique_ptr<Optical_props_arry>& optical_props_sub,
                 const int col_s, const int col_e);
 
         void get_subset(
-                const std::unique_ptr<Optical_props_arry<TF>>& optical_props_sub,
+                const std::unique_ptr<Optical_props_arry>& optical_props_sub,
                 const int col_s, const int col_e);
 
         int get_ncol() const { return tau.dim(1); }
         int get_nlay() const { return tau.dim(2); }
 
-        Array<TF,3>& get_tau() { return tau; }
-        Array<TF,3>& get_ssa() { return ssa; }
-        Array<TF,3>& get_g  () { return g; }
+        Array<Float,3>& get_tau() { return tau; }
+        Array<Float,3>& get_ssa() { return ssa; }
+        Array<Float,3>& get_g  () { return g; }
 
-        const Array<TF,3>& get_tau() const { return tau; }
-        const Array<TF,3>& get_ssa() const { return ssa; }
-        const Array<TF,3>& get_g  () const { return g; }
+        const Array<Float,3>& get_tau() const { return tau; }
+        const Array<Float,3>& get_ssa() const { return ssa; }
+        const Array<Float,3>& get_g  () const { return g; }
 
-        void delta_scale(const Array<TF,3>& forward_frac=Array<TF,3>());
+        void delta_scale(const Array<Float,3>& forward_frac=Array<Float,3>());
 
     private:
-        Array<TF,3> tau;
-        Array<TF,3> ssa;
-        Array<TF,3> g;
+        Array<Float,3> tau;
+        Array<Float,3> ssa;
+        Array<Float,3> g;
 };
 
-template<typename TF> void add_to(Optical_props_1scl<TF>& op_inout, const Optical_props_1scl<TF>& op_in);
-template<typename TF> void add_to(Optical_props_2str<TF>& op_inout, const Optical_props_2str<TF>& op_in);
+void add_to(Optical_props_1scl& op_inout, const Optical_props_1scl& op_in);
+void add_to(Optical_props_2str& op_inout, const Optical_props_2str& op_in);
 
 
 // GPU version of optical props class
 #ifdef __CUDACC__
 
 // Forward declare the classes in order to define add_to before the classes to enable friend function.
-template<typename TF> class Optical_props_1scl_gpu;
-template<typename TF> class Optical_props_2str_gpu;
-template<typename TF> void add_to(Optical_props_1scl_gpu<TF>& op_inout, const Optical_props_1scl_gpu<TF>& op_in);
-template<typename TF> void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<TF>& op_in);
+class Optical_props_1scl_gpu;
+class Optical_props_2str_gpu;
+void add_to(Optical_props_1scl_gpu& op_inout, const Optical_props_1scl_gpu& op_in);
+void add_to(Optical_props_2str_gpu& op_inout, const Optical_props_2str_gpu& op_in);
 
 
-template<typename TF>
 class Optical_props_gpu
 {
     public:
         Optical_props_gpu(
-                const Array<TF,2>& band_lims_wvn,
+                const Array<Float,2>& band_lims_wvn,
                 const Array<int,2>& band_lims_gpt);
 
         Optical_props_gpu(
-                const Array<TF,2>& band_lims_wvn);
+                const Array<Float,2>& band_lims_wvn);
 
         virtual ~Optical_props_gpu() {};
 
@@ -199,7 +197,7 @@ class Optical_props_gpu
         int get_nband() const { return this->band2gpt.dim(2); }
         int get_ngpt() const { return this->band2gpt.max(); }
         const Array<int,2>& get_band_lims_gpoint() const { return this->band2gpt;}
-        const Array<TF,2>& get_band_lims_wavenumber() const { return this->band_lims_wvn; }
+        const Array<Float,2>& get_band_lims_wavenumber() const { return this->band_lims_wvn; }
 
     private:
         Array<int,2> band2gpt;         // (begin g-point, end g-point) = band2gpt(2,band)
@@ -208,90 +206,90 @@ class Optical_props_gpu
         Array<int,1> gpt2band;         // band = gpt2band(g-point)
         Array_gpu<int,1> gpt2band_gpu; // band = gpt2band(g-point)
 
-        Array<TF,2> band_lims_wvn; // (upper and lower wavenumber by band) = band_lims_wvn(2,band)
+        Array<Float,2> band_lims_wvn; // (upper and lower wavenumber by band) = band_lims_wvn(2,band)
 };
 
+
 // Base class for 1scl and 2str solvers fully implemented in header.
-template<typename TF>
-class Optical_props_arry_gpu : public Optical_props_gpu<TF>
+class Optical_props_arry_gpu : public Optical_props_gpu
 {
     public:
-        Optical_props_arry_gpu(const Optical_props_gpu<TF>& optical_props_gpu) :
-            Optical_props_gpu<TF>(optical_props_gpu)
+        Optical_props_arry_gpu(const Optical_props_gpu& optical_props_gpu) :
+            Optical_props_gpu(optical_props_gpu)
         {}
 
         virtual ~Optical_props_arry_gpu() {};
 
-        virtual Array_gpu<TF,3>& get_tau() = 0;
-        virtual Array_gpu<TF,3>& get_ssa() = 0;
-        virtual Array_gpu<TF,3>& get_g  () = 0;
+        virtual Array_gpu<Float,3>& get_tau() = 0;
+        virtual Array_gpu<Float,3>& get_ssa() = 0;
+        virtual Array_gpu<Float,3>& get_g  () = 0;
 
-        virtual const Array_gpu<TF,3>& get_tau() const = 0;
-        virtual const Array_gpu<TF,3>& get_ssa() const = 0;
-        virtual const Array_gpu<TF,3>& get_g  () const = 0;
+        virtual const Array_gpu<Float,3>& get_tau() const = 0;
+        virtual const Array_gpu<Float,3>& get_ssa() const = 0;
+        virtual const Array_gpu<Float,3>& get_g  () const = 0;
 
         // Optional argument.
-        virtual void delta_scale(const Array_gpu<TF,3>& forward_frac=Array_gpu<TF,3>()) = 0;
+        virtual void delta_scale(const Array_gpu<Float,3>& forward_frac=Array_gpu<Float,3>()) = 0;
 
         virtual int get_ncol() const = 0;
         virtual int get_nlay() const = 0;
 };
 
-template<typename TF>
-class Optical_props_1scl_gpu : public Optical_props_arry_gpu<TF>
+
+class Optical_props_1scl_gpu : public Optical_props_arry_gpu
 {
     public:
         // Initializer constructor.
         Optical_props_1scl_gpu(
                 const int ncol,
                 const int nlay,
-                const Optical_props_gpu<TF>& optical_props_gpu);
+                const Optical_props_gpu& optical_props_gpu);
 
         int get_ncol() const { return tau.dim(1); }
         int get_nlay() const { return tau.dim(2); }
 
-        Array_gpu<TF,3>& get_tau() { return tau; }
-        Array_gpu<TF,3>& get_ssa() { throw std::runtime_error("ssa is not available in this class"); }
-        Array_gpu<TF,3>& get_g  () { throw std::runtime_error("g is available in this class"); }
+        Array_gpu<Float,3>& get_tau() { return tau; }
+        Array_gpu<Float,3>& get_ssa() { throw std::runtime_error("ssa is not available in this class"); }
+        Array_gpu<Float,3>& get_g  () { throw std::runtime_error("g is available in this class"); }
 
-        const Array_gpu<TF,3>& get_tau() const { return tau; }
-        const Array_gpu<TF,3>& get_ssa() const { throw std::runtime_error("ssa is not available in this class"); }
-        const Array_gpu<TF,3>& get_g  () const { throw std::runtime_error("g is available in this class"); }
+        const Array_gpu<Float,3>& get_tau() const { return tau; }
+        const Array_gpu<Float,3>& get_ssa() const { throw std::runtime_error("ssa is not available in this class"); }
+        const Array_gpu<Float,3>& get_g  () const { throw std::runtime_error("g is available in this class"); }
 
-        void delta_scale(const Array_gpu<TF,3>& forward_frac=Array_gpu<TF,3>()) {}
+        void delta_scale(const Array_gpu<Float,3>& forward_frac=Array_gpu<Float,3>()) {}
 
     private:
-        Array_gpu<TF,3> tau;
+        Array_gpu<Float,3> tau;
 };
 
-template<typename TF>
-class Optical_props_2str_gpu : public Optical_props_arry_gpu<TF>
+
+class Optical_props_2str_gpu : public Optical_props_arry_gpu<Float>
 {
     public:
         Optical_props_2str_gpu(
                 const int ncol,
                 const int nlay,
-                const Optical_props_gpu<TF>& optical_props_gpu);
+                const Optical_props_gpu<Float>& optical_props_gpu);
 
         int get_ncol() const { return tau.dim(1); }
         int get_nlay() const { return tau.dim(2); }
 
-        Array_gpu<TF,3>& get_tau() { return tau; }
-        Array_gpu<TF,3>& get_ssa() { return ssa; }
-        Array_gpu<TF,3>& get_g  () { return g; }
+        Array_gpu<Float,3>& get_tau() { return tau; }
+        Array_gpu<Float,3>& get_ssa() { return ssa; }
+        Array_gpu<Float,3>& get_g  () { return g; }
 
-        const Array_gpu<TF,3>& get_tau() const { return tau; }
-        const Array_gpu<TF,3>& get_ssa() const { return ssa; }
-        const Array_gpu<TF,3>& get_g  () const { return g; }
+        const Array_gpu<Float,3>& get_tau() const { return tau; }
+        const Array_gpu<Float,3>& get_ssa() const { return ssa; }
+        const Array_gpu<Float,3>& get_g  () const { return g; }
 
-        void delta_scale(const Array_gpu<TF,3>& forward_frac=Array_gpu<TF,3>());
+        void delta_scale(const Array_gpu<Float,3>& forward_frac=Array_gpu<Float,3>());
 
     private:
-        Array_gpu<TF,3> tau;
-        Array_gpu<TF,3> ssa;
-        Array_gpu<TF,3> g;
+        Array_gpu<Float,3> tau;
+        Array_gpu<Float,3> ssa;
+        Array_gpu<Float,3> g;
 
-        friend void add_to<TF>(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<TF>& op_in);
+        friend void add_to(Optical_props_2str_gpu<Float>& op_inout, const Optical_props_2str_gpu<Float>& op_in);
 };
 #endif
 

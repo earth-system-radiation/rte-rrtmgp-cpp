@@ -29,12 +29,8 @@
 #include "optical_props_kernel_launcher_cuda.h"
 
 
-
-
-
 // Optical properties per gpoint.
-template<typename TF>
-Optical_props_gpu<TF>::Optical_props_gpu(
+Optical_props_gpu::Optical_props_gpu(
         const Array<TF,2>& band_lims_wvn,
         const Array<int,2>& band_lims_gpt)
 {
@@ -57,8 +53,7 @@ Optical_props_gpu<TF>::Optical_props_gpu(
 
 
 // Optical properties per band.
-template<typename TF>
-Optical_props_gpu<TF>::Optical_props_gpu(
+Optical_props_gpu::Optical_props_gpu(
         const Array<TF,2>& band_lims_wvn)
 {
     Array<int,2> band_lims_gpt_lcl({2, band_lims_wvn.dim(2)});
@@ -84,22 +79,20 @@ Optical_props_gpu<TF>::Optical_props_gpu(
 }
 
 
-template<typename TF>
-Optical_props_1scl_gpu<TF>::Optical_props_1scl_gpu(
+Optical_props_1scl_gpu::Optical_props_1scl_gpu(
         const int ncol,
         const int nlay,
-        const Optical_props_gpu<TF>& optical_props_gpu) :
+        const Optical_props_gpu& optical_props_gpu) :
     Optical_props_arry_gpu<TF>(optical_props_gpu),
     tau({ncol, nlay, this->get_ngpt()})
 {}
 
 
 
-template<typename TF>
-Optical_props_2str_gpu<TF>::Optical_props_2str_gpu(
+Optical_props_2str_gpu::Optical_props_2str_gpu(
         const int ncol,
         const int nlay,
-        const Optical_props_gpu<TF>& optical_props_gpu) :
+        const Optical_props_gpu& optical_props_gpu) :
     Optical_props_arry_gpu<TF>(optical_props_gpu),
     tau({ncol, nlay, this->get_ngpt()}),
     ssa({ncol, nlay, this->get_ngpt()}),
@@ -108,8 +101,7 @@ Optical_props_2str_gpu<TF>::Optical_props_2str_gpu(
 
 
 
-template<typename TF>
-void Optical_props_2str_gpu<TF>::delta_scale(const Array_gpu<TF,3>& forward_frac)
+void Optical_props_2str_gpu::delta_scale(const Array_gpu<TF,3>& forward_frac)
 {
     const int ncol = this->get_ncol();
     const int nlay = this->get_nlay();
@@ -121,8 +113,7 @@ void Optical_props_2str_gpu<TF>::delta_scale(const Array_gpu<TF,3>& forward_frac
 }
 
 
-template<typename TF>
-void add_to(Optical_props_1scl_gpu<TF>& op_inout, const Optical_props_1scl_gpu<TF>& op_in)
+void add_to(Optical_props_1scl_gpu& op_inout, const Optical_props_1scl_gpu& op_in)
 {
     const int ncol = op_inout.get_ncol();
     const int nlay = op_inout.get_nlay();
@@ -147,8 +138,7 @@ void add_to(Optical_props_1scl_gpu<TF>& op_inout, const Optical_props_1scl_gpu<T
 }
 
 
-template<typename TF>
-void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<TF>& op_in)
+void add_to(Optical_props_2str_gpu& op_inout, const Optical_props_2str_gpu& op_in)
 {
     const int ncol = op_inout.get_ncol();
     const int nlay = op_inout.get_nlay();
@@ -174,18 +164,3 @@ void add_to(Optical_props_2str_gpu<TF>& op_inout, const Optical_props_2str_gpu<T
                 static_cast<void*>(&op_inout));
     }
 }
-
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template class Optical_props_gpu<float>;
-template class Optical_props_1scl_gpu<float>;
-template class Optical_props_2str_gpu<float>;
-template void add_to(Optical_props_2str_gpu<float>&, const Optical_props_2str_gpu<float>&);
-template void add_to(Optical_props_1scl_gpu<float>&, const Optical_props_1scl_gpu<float>&);
-#else
-template class Optical_props_gpu<double>;
-template class Optical_props_1scl_gpu<double>;
-template class Optical_props_2str_gpu<double>;
-template void add_to(Optical_props_2str_gpu<double>&, const Optical_props_2str_gpu<double>&);
-template void add_to(Optical_props_1scl_gpu<double>&, const Optical_props_1scl_gpu<double>&);
-#endif

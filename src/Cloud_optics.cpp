@@ -32,7 +32,7 @@ Cloud_optics<TF>::Cloud_optics(
         const TF radice_lwr, const TF radice_upr, const TF radice_fac,
         const Array<TF,2>& lut_extliq, const Array<TF,2>& lut_ssaliq, const Array<TF,2>& lut_asyliq,
         const Array<TF,3>& lut_extice, const Array<TF,3>& lut_ssaice, const Array<TF,3>& lut_asyice) :
-    Optical_props<TF>(band_lims_wvn)
+    Optical_props(band_lims_wvn)
 {
     const int nsize_liq = lut_extliq.dim(1);
     const int nsize_ice = lut_extice.dim(1);
@@ -111,14 +111,14 @@ template<typename TF>
 void Cloud_optics<TF>::cloud_optics(
         const Array<TF,2>& clwp, const Array<TF,2>& ciwp,
         const Array<TF,2>& reliq, const Array<TF,2>& reice,
-        Optical_props_2str<TF>& optical_props)
+        Optical_props_2str& optical_props)
 {
     const int ncol = clwp.dim(1);
     const int nlay = clwp.dim(2);
     const int nbnd = this->get_nband();
 
-    Optical_props_2str<TF> clouds_liq(ncol, nlay, optical_props);
-    Optical_props_2str<TF> clouds_ice(ncol, nlay, optical_props);
+    Optical_props_2str clouds_liq(ncol, nlay, optical_props);
+    Optical_props_2str clouds_ice(ncol, nlay, optical_props);
 
     // Set the mask.
     constexpr TF mask_min_value = TF(0.);
@@ -176,14 +176,14 @@ template<typename TF>
 void Cloud_optics<TF>::cloud_optics(
         const Array<TF,2>& clwp, const Array<TF,2>& ciwp,
         const Array<TF,2>& reliq, const Array<TF,2>& reice,
-        Optical_props_1scl<TF>& optical_props)
+        Optical_props_1scl& optical_props)
 {
     const int ncol = clwp.dim(1);
     const int nlay = clwp.dim(2);
     const int nbnd = this->get_nband();
 
-    Optical_props_1scl<TF> clouds_liq(ncol, nlay, optical_props);
-    Optical_props_1scl<TF> clouds_ice(ncol, nlay, optical_props);
+    Optical_props_1scl clouds_liq(ncol, nlay, optical_props);
+    Optical_props_1scl clouds_ice(ncol, nlay, optical_props);
 
     // Set the mask.
     constexpr TF mask_min_value = static_cast<TF>(0.);
