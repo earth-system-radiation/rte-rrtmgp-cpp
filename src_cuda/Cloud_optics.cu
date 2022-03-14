@@ -127,13 +127,12 @@ namespace
 }
 
 
-template<typename TF>
-Cloud_optics_gpu<TF>::Cloud_optics_gpu(
-        const Array<TF,2>& band_lims_wvn,
-        const TF radliq_lwr, const TF radliq_upr, const TF radliq_fac,
-        const TF radice_lwr, const TF radice_upr, const TF radice_fac,
-        const Array<TF,2>& lut_extliq, const Array<TF,2>& lut_ssaliq, const Array<TF,2>& lut_asyliq,
-        const Array<TF,3>& lut_extice, const Array<TF,3>& lut_ssaice, const Array<TF,3>& lut_asyice) :
+Cloud_optics_gpu::Cloud_optics_gpu(
+        const Array<Float,2>& band_lims_wvn,
+        const Float radliq_lwr, const Float radliq_upr, const Float radliq_fac,
+        const Float radice_lwr, const Float radice_upr, const Float radice_fac,
+        const Array<Float,2>& lut_extliq, const Array<Float,2>& lut_ssaliq, const Array<Float,2>& lut_asyliq,
+        const Array<Float,3>& lut_extice, const Array<Float,3>& lut_ssaice, const Array<Float,3>& lut_asyice) :
     Optical_props_gpu(band_lims_wvn)
 {
     const int nsize_liq = lut_extliq.dim(1);
@@ -141,8 +140,8 @@ Cloud_optics_gpu<TF>::Cloud_optics_gpu(
 
     this->liq_nsteps = nsize_liq;
     this->ice_nsteps = nsize_ice;
-    this->liq_step_size = (radliq_upr - radliq_lwr) / (nsize_liq - TF(1.));
-    this->ice_step_size = (radice_upr - radice_lwr) / (nsize_ice - TF(1.));
+    this->liq_step_size = (radliq_upr - radliq_lwr) / (nsize_liq - Float(1.));
+    this->ice_step_size = (radice_upr - radice_lwr) / (nsize_ice - Float(1.));
 
     // Load LUT constants.
     this->radliq_lwr = radliq_lwr;
@@ -179,10 +178,9 @@ Cloud_optics_gpu<TF>::Cloud_optics_gpu(
 
 
 // Two-stream variant of cloud optics.
-template<typename TF>
-void Cloud_optics_gpu<TF>::cloud_optics(
-        const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
-        const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
+void Cloud_optics_gpu::cloud_optics(
+        const Array_gpu<Float,2>& clwp, const Array_gpu<Float,2>& ciwp,
+        const Array_gpu<Float,2>& reliq, const Array_gpu<Float,2>& reice,
         Optical_props_2str_gpu& optical_props)
 {
     const int ncol = clwp.dim(1);
@@ -193,7 +191,7 @@ void Cloud_optics_gpu<TF>::cloud_optics(
     Optical_props_2str_gpu clouds_ice(ncol, nlay, optical_props);
 
     // Set the mask.
-    constexpr TF mask_min_value = TF(0.);
+    constexpr Float mask_min_value = Float(0.);
     const int block_col_m = 16;
     const int block_lay_m = 16;
 
@@ -212,13 +210,13 @@ void Cloud_optics_gpu<TF>::cloud_optics(
             ncol, nlay, mask_min_value, icemsk.ptr(), ciwp.ptr());
 
     // Temporary arrays for storage.
-    Array_gpu<TF,3> ltau    ({ncol, nlay, nbnd});
-    Array_gpu<TF,3> ltaussa ({ncol, nlay, nbnd});
-    Array_gpu<TF,3> ltaussag({ncol, nlay, nbnd});
+    Array_gpu<Float,3> ltau    ({ncol, nlay, nbnd});
+    Array_gpu<Float,3> ltaussa ({ncol, nlay, nbnd});
+    Array_gpu<Float,3> ltaussag({ncol, nlay, nbnd});
 
-    Array_gpu<TF,3> itau    ({ncol, nlay, nbnd});
-    Array_gpu<TF,3> itaussa ({ncol, nlay, nbnd});
-    Array_gpu<TF,3> itaussag({ncol, nlay, nbnd});
+    Array_gpu<Float,3> itau    ({ncol, nlay, nbnd});
+    Array_gpu<Float,3> itaussa ({ncol, nlay, nbnd});
+    Array_gpu<Float,3> itaussag({ncol, nlay, nbnd});
 
     const int block_bnd = 14;
     const int block_lay = 1;
@@ -245,7 +243,7 @@ void Cloud_optics_gpu<TF>::cloud_optics(
             this->lut_extice_gpu.ptr(), this->lut_ssaice_gpu.ptr(),
             this->lut_asyice_gpu.ptr(), itau.ptr(), itaussa.ptr(), itaussag.ptr());
 
-    constexpr TF eps = std::numeric_limits<TF>::epsilon();
+    constexpr Float eps = std::numeric_limits<Float>::epsilon();
 
     combine_and_store_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nlay, nbnd, eps,
@@ -254,11 +252,11 @@ void Cloud_optics_gpu<TF>::cloud_optics(
             itau.ptr(), itaussa.ptr(), itaussag.ptr());
 }
 
+
 // 1scl variant of cloud optics.
-template<typename TF>
-void Cloud_optics_gpu<TF>::cloud_optics(
-        const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
-        const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
+void Cloud_optics_gpu::cloud_optics(
+        const Array_gpu<Float,2>& clwp, const Array_gpu<Float,2>& ciwp,
+        const Array_gpu<Float,2>& reliq, const Array_gpu<Float,2>& reice,
         Optical_props_1scl_gpu& optical_props)
 {
     const int ncol = clwp.dim(1);
@@ -269,7 +267,7 @@ void Cloud_optics_gpu<TF>::cloud_optics(
     Optical_props_1scl_gpu clouds_ice(ncol, nlay, optical_props);
 
     // Set the mask.
-    constexpr TF mask_min_value = TF(0.);
+    constexpr Float mask_min_value = Float(0.);
     const int block_col_m = 16;
     const int block_lay_m = 16;
 
@@ -288,13 +286,13 @@ void Cloud_optics_gpu<TF>::cloud_optics(
             ncol, nlay, mask_min_value, icemsk.ptr(), ciwp.ptr());
 
     // Temporary arrays for storage.
-    Array_gpu<TF,3> ltau    ({ncol, nlay, nbnd});
-    Array_gpu<TF,3> ltaussa ({ncol, nlay, nbnd});
-    Array_gpu<TF,3> ltaussag({ncol, nlay, nbnd});
+    Array_gpu<Float,3> ltau    ({ncol, nlay, nbnd});
+    Array_gpu<Float,3> ltaussa ({ncol, nlay, nbnd});
+    Array_gpu<Float,3> ltaussag({ncol, nlay, nbnd});
 
-    Array_gpu<TF,3> itau    ({ncol, nlay, nbnd});
-    Array_gpu<TF,3> itaussa ({ncol, nlay, nbnd});
-    Array_gpu<TF,3> itaussag({ncol, nlay, nbnd});
+    Array_gpu<Float,3> itau    ({ncol, nlay, nbnd});
+    Array_gpu<Float,3> itaussa ({ncol, nlay, nbnd});
+    Array_gpu<Float,3> itaussag({ncol, nlay, nbnd});
 
     const int block_bnd = 14;
     const int block_lay = 1;
@@ -321,7 +319,7 @@ void Cloud_optics_gpu<TF>::cloud_optics(
             this->lut_extice_gpu.ptr(), this->lut_ssaice_gpu.ptr(),
             this->lut_asyice_gpu.ptr(), itau.ptr(), itaussa.ptr(), itaussag.ptr());
 
-    constexpr TF eps = std::numeric_limits<TF>::epsilon();
+    constexpr Float eps = std::numeric_limits<Float>::epsilon();
 
     combine_and_store_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nlay, nbnd, eps,
@@ -329,9 +327,3 @@ void Cloud_optics_gpu<TF>::cloud_optics(
             ltau.ptr(), ltaussa.ptr(),
             itau.ptr(), itaussa.ptr());
 }
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template class Cloud_optics_gpu<float>;
-#else
-template class Cloud_optics_gpu<double>;
-#endif

@@ -317,7 +317,7 @@ namespace
     }
 
 
-    Cloud_optics_gpu<Float> load_and_init_cloud_optics(
+    Cloud_optics_gpu load_and_init_cloud_optics(
             const std::string& coef_file)
     {
         // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
@@ -354,7 +354,7 @@ namespace
         Array<Float,3> lut_asyice(
                 coef_nc.get_variable<Float>("lut_asyice", {n_rghice, n_band, n_size_ice}), {n_size_ice, n_band, n_rghice});
 
-        return Cloud_optics_gpu<Float>(
+        return Cloud_optics_gpu(
                 band_lims_wvn,
                 radliq_lwr, radliq_upr, radliq_fac,
                 radice_lwr, radice_upr, radice_fac,
@@ -373,7 +373,7 @@ Radiation_solver_longwave::Radiation_solver_longwave(
     this->kdist_gpu = std::make_unique<Gas_optics_rrtmgp_gpu>(
             load_and_init_gas_optics(gas_concs, file_name_gas));
 
-    this->cloud_optics_gpu = std::make_unique<Cloud_optics_gpu<Float>>(
+    this->cloud_optics_gpu = std::make_unique<Cloud_optics_gpu>(
             load_and_init_cloud_optics(file_name_cloud));
 }
 
@@ -629,7 +629,7 @@ Radiation_solver_shortwave::Radiation_solver_shortwave(
     this->kdist_gpu = std::make_unique<Gas_optics_rrtmgp_gpu>(
             load_and_init_gas_optics(gas_concs, file_name_gas));
 
-    this->cloud_optics_gpu = std::make_unique<Cloud_optics_gpu<Float>>(
+    this->cloud_optics_gpu = std::make_unique<Cloud_optics_gpu>(
             load_and_init_cloud_optics(file_name_cloud));
 }
 

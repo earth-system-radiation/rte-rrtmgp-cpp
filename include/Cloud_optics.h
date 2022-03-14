@@ -29,103 +29,102 @@
 #include "Optical_props.h"
 #include "Types.h"
 
+
 // Forward declarations.
 class Optical_props;
 class Optical_props_gpu;
 
 
-template<typename TF>
 class Cloud_optics : public Optical_props
 {
     public:
         Cloud_optics(
-                const Array<TF,2>& band_lims_wvn,
-                const TF radliq_lwr, const TF radliq_upr, const TF radliq_fac,
-                const TF radice_lwr, const TF radice_upr, const TF radice_fac,
-                const Array<TF,2>& lut_extliq, const Array<TF,2>& lut_ssaliq, const Array<TF,2>& lut_asyliq,
-                const Array<TF,3>& lut_extice, const Array<TF,3>& lut_ssaice, const Array<TF,3>& lut_asyice);
+                const Array<Float,2>& band_lims_wvn,
+                const Float radliq_lwr, const Float radliq_upr, const Float radliq_fac,
+                const Float radice_lwr, const Float radice_upr, const Float radice_fac,
+                const Array<Float,2>& lut_extliq, const Array<Float,2>& lut_ssaliq, const Array<Float,2>& lut_asyliq,
+                const Array<Float,3>& lut_extice, const Array<Float,3>& lut_ssaice, const Array<Float,3>& lut_asyice);
 
         void cloud_optics(
-                const Array<TF,2>& clwp, const Array<TF,2>& ciwp,
-                const Array<TF,2>& reliq, const Array<TF,2>& reice,
+                const Array<Float,2>& clwp, const Array<Float,2>& ciwp,
+                const Array<Float,2>& reliq, const Array<Float,2>& reice,
                 Optical_props_1scl& optical_props);
 
         void cloud_optics(
-                const Array<TF,2>& clwp, const Array<TF,2>& ciwp,
-                const Array<TF,2>& reliq, const Array<TF,2>& reice,
+                const Array<Float,2>& clwp, const Array<Float,2>& ciwp,
+                const Array<Float,2>& reliq, const Array<Float,2>& reice,
                 Optical_props_2str& optical_props);
 
     private:
         int liq_nsteps;
         int ice_nsteps;
-        TF liq_step_size;
-        TF ice_step_size;
+        Float liq_step_size;
+        Float ice_step_size;
 
         // Lookup table constants.
-        TF radliq_lwr;
-        TF radliq_upr;
-        TF radice_lwr;
-        TF radice_upr;
+        Float radliq_lwr;
+        Float radliq_upr;
+        Float radice_lwr;
+        Float radice_upr;
 
         // Lookup table coefficients.
-        Array<TF,2> lut_extliq;
-        Array<TF,2> lut_ssaliq;
-        Array<TF,2> lut_asyliq;
-        Array<TF,2> lut_extice;
-        Array<TF,2> lut_ssaice;
-        Array<TF,2> lut_asyice;
+        Array<Float,2> lut_extliq;
+        Array<Float,2> lut_ssaliq;
+        Array<Float,2> lut_asyliq;
+        Array<Float,2> lut_extice;
+        Array<Float,2> lut_ssaice;
+        Array<Float,2> lut_asyice;
 };
 
 
 #ifdef __CUDACC__
-template<typename TF>
 class Cloud_optics_gpu : public Optical_props_gpu
 {
     public:
         Cloud_optics_gpu(
-                const Array<TF,2>& band_lims_wvn,
-                const TF radliq_lwr, const TF radliq_upr, const TF radliq_fac,
-                const TF radice_lwr, const TF radice_upr, const TF radice_fac,
-                const Array<TF,2>& lut_extliq, const Array<TF,2>& lut_ssaliq, const Array<TF,2>& lut_asyliq,
-                const Array<TF,3>& lut_extice, const Array<TF,3>& lut_ssaice, const Array<TF,3>& lut_asyice);
+                const Array<Float,2>& band_lims_wvn,
+                const Float radliq_lwr, const Float radliq_upr, const Float radliq_fac,
+                const Float radice_lwr, const Float radice_upr, const Float radice_fac,
+                const Array<Float,2>& lut_extliq, const Array<Float,2>& lut_ssaliq, const Array<Float,2>& lut_asyliq,
+                const Array<Float,3>& lut_extice, const Array<Float,3>& lut_ssaice, const Array<Float,3>& lut_asyice);
 
         void cloud_optics(
-                const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
-                const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
+                const Array_gpu<Float,2>& clwp, const Array_gpu<Float,2>& ciwp,
+                const Array_gpu<Float,2>& reliq, const Array_gpu<Float,2>& reice,
                 Optical_props_1scl_gpu& optical_props);
 
         void cloud_optics(
-                const Array_gpu<TF,2>& clwp, const Array_gpu<TF,2>& ciwp,
-                const Array_gpu<TF,2>& reliq, const Array_gpu<TF,2>& reice,
+                const Array_gpu<Float,2>& clwp, const Array_gpu<Float,2>& ciwp,
+                const Array_gpu<Float,2>& reliq, const Array_gpu<Float,2>& reice,
                 Optical_props_2str_gpu& optical_props);
 
     private:
         int liq_nsteps;
         int ice_nsteps;
-        TF liq_step_size;
-        TF ice_step_size;
+        Float liq_step_size;
+        Float ice_step_size;
 
         // Lookup table constants.
-        TF radliq_lwr;
-        TF radliq_upr;
-        TF radice_lwr;
-        TF radice_upr;
+        Float radliq_lwr;
+        Float radliq_upr;
+        Float radice_lwr;
+        Float radice_upr;
 
         // Lookup table coefficients.
-        Array<TF,2> lut_extliq;
-        Array<TF,2> lut_ssaliq;
-        Array<TF,2> lut_asyliq;
-        Array<TF,2> lut_extice;
-        Array<TF,2> lut_ssaice;
-        Array<TF,2> lut_asyice;
+        Array<Float,2> lut_extliq;
+        Array<Float,2> lut_ssaliq;
+        Array<Float,2> lut_asyliq;
+        Array<Float,2> lut_extice;
+        Array<Float,2> lut_ssaice;
+        Array<Float,2> lut_asyice;
 
         // gpu versions
-        Array_gpu<TF,2> lut_extliq_gpu;
-        Array_gpu<TF,2> lut_ssaliq_gpu;
-        Array_gpu<TF,2> lut_asyliq_gpu;
-        Array_gpu<TF,2> lut_extice_gpu;
-        Array_gpu<TF,2> lut_ssaice_gpu;
-        Array_gpu<TF,2> lut_asyice_gpu;
+        Array_gpu<Float,2> lut_extliq_gpu;
+        Array_gpu<Float,2> lut_ssaliq_gpu;
+        Array_gpu<Float,2> lut_asyliq_gpu;
+        Array_gpu<Float,2> lut_extice_gpu;
+        Array_gpu<Float,2> lut_ssaice_gpu;
+        Array_gpu<Float,2> lut_asyice_gpu;
 };
 #endif
 

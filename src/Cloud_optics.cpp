@@ -25,13 +25,13 @@
 #include <limits>
 #include "Cloud_optics.h"
 
-template<typename TF>
-Cloud_optics<TF>::Cloud_optics(
-        const Array<TF,2>& band_lims_wvn,
-        const TF radliq_lwr, const TF radliq_upr, const TF radliq_fac,
-        const TF radice_lwr, const TF radice_upr, const TF radice_fac,
-        const Array<TF,2>& lut_extliq, const Array<TF,2>& lut_ssaliq, const Array<TF,2>& lut_asyliq,
-        const Array<TF,3>& lut_extice, const Array<TF,3>& lut_ssaice, const Array<TF,3>& lut_asyice) :
+
+Cloud_optics::Cloud_optics(
+        const Array<Float,2>& band_lims_wvn,
+        const Float radliq_lwr, const Float radliq_upr, const Float radliq_fac,
+        const Float radice_lwr, const Float radice_upr, const Float radice_fac,
+        const Array<Float,2>& lut_extliq, const Array<Float,2>& lut_ssaliq, const Array<Float,2>& lut_asyliq,
+        const Array<Float,3>& lut_extice, const Array<Float,3>& lut_ssaice, const Array<Float,3>& lut_asyice) :
     Optical_props(band_lims_wvn)
 {
     const int nsize_liq = lut_extliq.dim(1);
@@ -39,8 +39,8 @@ Cloud_optics<TF>::Cloud_optics(
 
     this->liq_nsteps = nsize_liq;
     this->ice_nsteps = nsize_ice;
-    this->liq_step_size = (radliq_upr - radliq_lwr) / (nsize_liq - TF(1.));
-    this->ice_step_size = (radice_upr - radice_lwr) / (nsize_ice - TF(1.));
+    this->liq_step_size = (radliq_upr - radliq_lwr) / (nsize_liq - Float(1.));
+    this->ice_step_size = (radice_upr - radice_lwr) / (nsize_ice - Float(1.));
 
     // Load LUT constants.
     this->radliq_lwr = radliq_lwr;
@@ -68,13 +68,13 @@ Cloud_optics<TF>::Cloud_optics(
         }
 }
 
-template<typename TF>
+
 void compute_all_from_table(
         const int ncol, const int nlay, const int nbnd, const Array<BOOL_TYPE,2>& mask,
-        const Array<TF,2>& cwp, const Array<TF,2>& re,
-        const int nsteps, const TF step_size, const TF offset,
-        const Array<TF,2>& tau_table, const Array<TF,2>& ssa_table, const Array<TF,2>& asy_table,
-        Array<TF,3>& tau, Array<TF,3>& taussa, Array<TF,3>& taussag)
+        const Array<Float,2>& cwp, const Array<Float,2>& re,
+        const int nsteps, const Float step_size, const Float offset,
+        const Array<Float,2>& tau_table, const Array<Float,2>& ssa_table, const Array<Float,2>& asy_table,
+        Array<Float,3>& tau, Array<Float,3>& taussa, Array<Float,3>& taussag)
 {
     for (int ibnd=1; ibnd<=nbnd; ++ibnd)
         for (int ilay=1; ilay<=nlay; ++ilay)
@@ -84,13 +84,13 @@ void compute_all_from_table(
                 {
                     const int index = std::min(
                             static_cast<int>((re({icol, ilay}) - offset) / step_size)+1, nsteps-1);
-                    const TF fint = (re({icol, ilay}) - offset) / step_size - (index-1);
+                    const Float fint = (re({icol, ilay}) - offset) / step_size - (index-1);
 
-                    const TF tau_local = cwp({icol, ilay}) *
+                    const Float tau_local = cwp({icol, ilay}) *
                         (tau_table({index, ibnd}) + fint * (tau_table({index+1, ibnd}) - tau_table({index, ibnd})));
-                    const TF taussa_local = tau_local *
+                    const Float taussa_local = tau_local *
                         (ssa_table({index, ibnd}) + fint * (ssa_table({index+1, ibnd}) - ssa_table({index, ibnd})));
-                    const TF taussag_local = taussa_local *
+                    const Float taussag_local = taussa_local *
                         (asy_table({index, ibnd}) + fint * (asy_table({index+1, ibnd}) - asy_table({index, ibnd})));
 
                     tau    ({icol, ilay, ibnd}) = tau_local;
@@ -99,18 +99,18 @@ void compute_all_from_table(
                 }
                 else
                 {
-                    tau    ({icol, ilay, ibnd}) = TF(0.);
-                    taussa ({icol, ilay, ibnd}) = TF(0.);
-                    taussag({icol, ilay, ibnd}) = TF(0.);
+                    tau    ({icol, ilay, ibnd}) = Float(0.);
+                    taussa ({icol, ilay, ibnd}) = Float(0.);
+                    taussag({icol, ilay, ibnd}) = Float(0.);
                 }
             }
 }
 
+
 // Two-stream variant of cloud optics.
-template<typename TF>
-void Cloud_optics<TF>::cloud_optics(
-        const Array<TF,2>& clwp, const Array<TF,2>& ciwp,
-        const Array<TF,2>& reliq, const Array<TF,2>& reice,
+void Cloud_optics::cloud_optics(
+        const Array<Float,2>& clwp, const Array<Float,2>& ciwp,
+        const Array<Float,2>& reliq, const Array<Float,2>& reice,
         Optical_props_2str& optical_props)
 {
     const int ncol = clwp.dim(1);
@@ -121,7 +121,7 @@ void Cloud_optics<TF>::cloud_optics(
     Optical_props_2str clouds_ice(ncol, nlay, optical_props);
 
     // Set the mask.
-    constexpr TF mask_min_value = TF(0.);
+    constexpr Float mask_min_value = Float(0.);
     Array<BOOL_TYPE,2> liqmsk({ncol, nlay});
     for (int i=0; i<liqmsk.size(); ++i)
         liqmsk.v()[i] = clwp.v()[i] > mask_min_value;
@@ -131,13 +131,13 @@ void Cloud_optics<TF>::cloud_optics(
         icemsk.v()[i] = ciwp.v()[i] > mask_min_value;
 
     // Temporary arrays for storage.
-    Array<TF,3> ltau    ({ncol, nlay, nbnd});
-    Array<TF,3> ltaussa ({ncol, nlay, nbnd});
-    Array<TF,3> ltaussag({ncol, nlay, nbnd});
+    Array<Float,3> ltau    ({ncol, nlay, nbnd});
+    Array<Float,3> ltaussa ({ncol, nlay, nbnd});
+    Array<Float,3> ltaussag({ncol, nlay, nbnd});
 
-    Array<TF,3> itau    ({ncol, nlay, nbnd});
-    Array<TF,3> itaussa ({ncol, nlay, nbnd});
-    Array<TF,3> itaussag({ncol, nlay, nbnd});
+    Array<Float,3> itau    ({ncol, nlay, nbnd});
+    Array<Float,3> itaussa ({ncol, nlay, nbnd});
+    Array<Float,3> itaussag({ncol, nlay, nbnd});
 
     // Liquid water.
     compute_all_from_table(
@@ -153,7 +153,7 @@ void Cloud_optics<TF>::cloud_optics(
             this->lut_extice, this->lut_ssaice, this->lut_asyice,
             itau, itaussa, itaussag);
 
-    constexpr TF eps = std::numeric_limits<TF>::epsilon();
+    constexpr Float eps = std::numeric_limits<Float>::epsilon();
 
     // Process the calculated optical properties.
     for (int ibnd=1; ibnd<=nbnd; ++ibnd)
@@ -161,9 +161,9 @@ void Cloud_optics<TF>::cloud_optics(
             #pragma ivdep
             for (int icol=1; icol<=ncol; ++icol)
             {
-                const TF tau = ltau({icol, ilay, ibnd}) + itau({icol, ilay, ibnd});
-                const TF taussa = ltaussa({icol, ilay, ibnd}) + itaussa({icol, ilay, ibnd});
-                const TF taussag = ltaussag({icol, ilay, ibnd}) + itaussag({icol, ilay, ibnd});
+                const Float tau = ltau({icol, ilay, ibnd}) + itau({icol, ilay, ibnd});
+                const Float taussa = ltaussa({icol, ilay, ibnd}) + itaussa({icol, ilay, ibnd});
+                const Float taussag = ltaussag({icol, ilay, ibnd}) + itaussag({icol, ilay, ibnd});
 
                 optical_props.get_tau()({icol, ilay, ibnd}) = tau;
                 optical_props.get_ssa()({icol, ilay, ibnd}) = taussa / std::max(tau, eps);
@@ -171,11 +171,11 @@ void Cloud_optics<TF>::cloud_optics(
             }
 }
 
+
 // 1scl variant of cloud optics.
-template<typename TF>
-void Cloud_optics<TF>::cloud_optics(
-        const Array<TF,2>& clwp, const Array<TF,2>& ciwp,
-        const Array<TF,2>& reliq, const Array<TF,2>& reice,
+void Cloud_optics::cloud_optics(
+        const Array<Float,2>& clwp, const Array<Float,2>& ciwp,
+        const Array<Float,2>& reliq, const Array<Float,2>& reice,
         Optical_props_1scl& optical_props)
 {
     const int ncol = clwp.dim(1);
@@ -186,7 +186,7 @@ void Cloud_optics<TF>::cloud_optics(
     Optical_props_1scl clouds_ice(ncol, nlay, optical_props);
 
     // Set the mask.
-    constexpr TF mask_min_value = static_cast<TF>(0.);
+    constexpr Float mask_min_value = static_cast<Float>(0.);
     Array<BOOL_TYPE,2> liqmsk({ncol, nlay});
     for (int i=0; i<liqmsk.size(); ++i)
         liqmsk.v()[i] = clwp.v()[i] > mask_min_value;
@@ -196,13 +196,13 @@ void Cloud_optics<TF>::cloud_optics(
         icemsk.v()[i] = ciwp.v()[i] > mask_min_value;
 
     // Temporary arrays for storage.
-    Array<TF,3> ltau    ({ncol, nlay, nbnd});
-    Array<TF,3> ltaussa ({ncol, nlay, nbnd});
-    Array<TF,3> ltaussag({ncol, nlay, nbnd});
+    Array<Float,3> ltau    ({ncol, nlay, nbnd});
+    Array<Float,3> ltaussa ({ncol, nlay, nbnd});
+    Array<Float,3> ltaussag({ncol, nlay, nbnd});
 
-    Array<TF,3> itau    ({ncol, nlay, nbnd});
-    Array<TF,3> itaussa ({ncol, nlay, nbnd});
-    Array<TF,3> itaussag({ncol, nlay, nbnd});
+    Array<Float,3> itau    ({ncol, nlay, nbnd});
+    Array<Float,3> itaussa ({ncol, nlay, nbnd});
+    Array<Float,3> itaussag({ncol, nlay, nbnd});
 
     // Liquid water.
     compute_all_from_table(
@@ -224,15 +224,9 @@ void Cloud_optics<TF>::cloud_optics(
             #pragma ivdep
             for (int icol=1; icol<=ncol; ++icol)
             {
-                const TF tau = (ltau({icol, ilay, ibnd}) - ltaussa({icol, ilay, ibnd}))
+                const Float tau = (ltau({icol, ilay, ibnd}) - ltaussa({icol, ilay, ibnd}))
                              + (itau({icol, ilay, ibnd}) - itaussa({icol, ilay, ibnd}));
 
                 optical_props.get_tau()({icol, ilay, ibnd}) = tau;
             }
 }
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template class Cloud_optics<float>;
-#else
-template class Cloud_optics<double>;
-#endif
