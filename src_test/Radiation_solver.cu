@@ -100,7 +100,7 @@ namespace
     }
 
 
-    Gas_optics_rrtmgp_gpu<Float> load_and_init_gas_optics(
+    Gas_optics_rrtmgp_gpu load_and_init_gas_optics(
             const Gas_concs_gpu& gas_concs,
             const std::string& coef_file)
     {
@@ -228,7 +228,7 @@ namespace
                     {n_gpts, n_mixingfracs, n_press+1, n_temps});
 
             // Construct the k-distribution.
-            return Gas_optics_rrtmgp_gpu<Float>(
+            return Gas_optics_rrtmgp_gpu(
                     gas_concs,
                     gas_names,
                     key_species,
@@ -275,7 +275,7 @@ namespace
             Float mg_index = coef_nc.get_variable<Float>("mg_default");
             Float sb_index = coef_nc.get_variable<Float>("sb_default");
 
-            return Gas_optics_rrtmgp_gpu<Float>(
+            return Gas_optics_rrtmgp_gpu(
                     gas_concs,
                     gas_names,
                     key_species,
@@ -370,7 +370,7 @@ Radiation_solver_longwave::Radiation_solver_longwave(
         const std::string& file_name_cloud)
 {
     // Construct the gas optics classes for the solver.
-    this->kdist_gpu = std::make_unique<Gas_optics_rrtmgp_gpu<Float>>(
+    this->kdist_gpu = std::make_unique<Gas_optics_rrtmgp_gpu>(
             load_and_init_gas_optics(gas_concs, file_name_gas));
 
     this->cloud_optics_gpu = std::make_unique<Cloud_optics_gpu<Float>>(
@@ -444,7 +444,7 @@ void Radiation_solver_longwave::solve_gpu(
 
         Array_gpu<Float,2> col_dry_subset({n_col_in, n_lay});
         if (col_dry.size() == 0)
-            Gas_optics_rrtmgp_gpu<Float>::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
+            Gas_optics_rrtmgp_gpu::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
         else
             col_dry_subset = col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }});
 
@@ -626,7 +626,7 @@ Radiation_solver_shortwave::Radiation_solver_shortwave(
         const std::string& file_name_cloud)
 {
     // Construct the gas optics classes for the solver.
-    this->kdist_gpu = std::make_unique<Gas_optics_rrtmgp_gpu<Float>>(
+    this->kdist_gpu = std::make_unique<Gas_optics_rrtmgp_gpu>(
             load_and_init_gas_optics(gas_concs, file_name_gas));
 
     this->cloud_optics_gpu = std::make_unique<Cloud_optics_gpu<Float>>(
@@ -696,7 +696,7 @@ void Radiation_solver_shortwave::solve_gpu(
 
         Array_gpu<Float,2> col_dry_subset({n_col_in, n_lay});
         if (col_dry.size() == 0)
-            Gas_optics_rrtmgp_gpu<Float>::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
+            Gas_optics_rrtmgp_gpu::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
         else
             col_dry_subset = col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }});
 

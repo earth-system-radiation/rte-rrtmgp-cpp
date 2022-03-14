@@ -67,7 +67,7 @@ namespace
         return var;
     }
 
-    Gas_optics_rrtmgp<Float> load_and_init_gas_optics(
+    Gas_optics_rrtmgp load_and_init_gas_optics(
             const Gas_concs& gas_concs,
             const std::string& coef_file)
     {
@@ -195,7 +195,7 @@ namespace
                     {n_gpts, n_mixingfracs, n_press+1, n_temps});
 
             // Construct the k-distribution.
-            return Gas_optics_rrtmgp<Float>(
+            return Gas_optics_rrtmgp(
                     gas_concs,
                     gas_names,
                     key_species,
@@ -242,7 +242,7 @@ namespace
             Float mg_index = coef_nc.get_variable<Float>("mg_default");
             Float sb_index = coef_nc.get_variable<Float>("sb_default");
 
-            return Gas_optics_rrtmgp<Float>(
+            return Gas_optics_rrtmgp(
                     gas_concs,
                     gas_names,
                     key_species,
@@ -336,7 +336,7 @@ Radiation_solver_longwave::Radiation_solver_longwave(
         const std::string& file_name_cloud)
 {
     // Construct the gas optics classes for the solver.
-    this->kdist = std::make_unique<Gas_optics_rrtmgp<Float>>(
+    this->kdist = std::make_unique<Gas_optics_rrtmgp>(
             load_and_init_gas_optics(gas_concs, file_name_gas));
 
     this->cloud_optics = std::make_unique<Cloud_optics<Float>>(
@@ -418,7 +418,7 @@ void Radiation_solver_longwave::solve(
 
         Array<Float,2> col_dry_subset({n_col_in, n_lay});
         if (col_dry.size() == 0)
-            Gas_optics_rrtmgp<Float>::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
+            Gas_optics_rrtmgp::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
         else
             col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 
@@ -586,7 +586,7 @@ Radiation_solver_shortwave::Radiation_solver_shortwave(
         const std::string& file_name_cloud)
 {
     // Construct the gas optics classes for the solver.
-    this->kdist = std::make_unique<Gas_optics_rrtmgp<Float>>(
+    this->kdist = std::make_unique<Gas_optics_rrtmgp>(
             load_and_init_gas_optics(gas_concs, file_name_gas));
 
     this->cloud_optics = std::make_unique<Cloud_optics<Float>>(
@@ -660,7 +660,7 @@ void Radiation_solver_shortwave::solve(
 
         Array<Float,2> col_dry_subset({n_col_in, n_lay});
         if (col_dry.size() == 0)
-            Gas_optics_rrtmgp<Float>::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
+            Gas_optics_rrtmgp::get_col_dry(col_dry_subset, gas_concs_subset.get_vmr("h2o"), p_lev_subset);
         else
             col_dry_subset = std::move(col_dry.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}));
 

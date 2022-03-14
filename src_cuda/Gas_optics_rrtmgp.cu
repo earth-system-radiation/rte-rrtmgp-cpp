@@ -21,6 +21,7 @@
  * BSD 3-clause license, see http://opensource.org/licenses/BSD-3-Clause
  *
  */
+
 #include <chrono>
 #include <numeric>
 #include <iomanip>
@@ -37,11 +38,12 @@
 
 #include "rrtmgp_kernel_launcher_cuda.h"
 
+
 namespace
 {
-    template<typename TF>__global__
+    template<typename Float>__global__
     void spread_col_kernel(
-            const int ncol, const int ngpt, TF* __restrict__ src_out, const TF* __restrict__ src_in)
+            const int ncol, const int ngpt, Float* __restrict__ src_out, const Float* __restrict__ src_in)
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
@@ -53,9 +55,9 @@ namespace
         }
     }
 
-    template<typename TF>
+    template<typename Float>
     void spread_col(
-            const int ncol, const int ngpt, Array_gpu<TF,2>& src_out, const Array_gpu<TF,1>& src_in)
+            const int ncol, const int ngpt, Array_gpu<Float,2>& src_out, const Array_gpu<Float,1>& src_in)
     {
         const int block_col = 16;
         const int block_gpt = 16;
@@ -79,13 +81,13 @@ namespace
             return it - data.v().begin() + 1;
     }
 
-    template<typename TF>
+    template<typename Float>
     void reduce_minor_arrays(
                 const Gas_concs_gpu& available_gases,
                 const Array<std::string,1>& gas_names,
                 const Array<std::string,1>& gas_minor,
                 const Array<std::string,1>& identifier_minor,
-                const Array<TF,3>& kminor_atm,
+                const Array<Float,3>& kminor_atm,
                 const Array<std::string,1>& minor_gases_atm,
                 const Array<int,2>& minor_limits_gpt_atm,
                 const Array<BOOL_TYPE,1>& minor_scales_with_density_atm,
@@ -93,7 +95,7 @@ namespace
                 const Array<BOOL_TYPE,1>& scale_by_complement_atm,
                 const Array<int,1>& kminor_start_atm,
 
-                Array<TF,3>& kminor_atm_red,
+                Array<Float,3>& kminor_atm_red,
                 Array<std::string,1>& minor_gases_atm_red,
                 Array<int,2>& minor_limits_gpt_atm_red,
                 Array<BOOL_TYPE,1>& minor_scales_with_density_atm_red,
@@ -121,7 +123,7 @@ namespace
 
         const int red_nm = std::accumulate(gas_is_present.v().begin(), gas_is_present.v().end(), 0);
 
-        Array<TF,3> kminor_atm_red_t;
+        Array<Float,3> kminor_atm_red_t;
 
         if (red_nm == nm)
         {
@@ -391,11 +393,11 @@ namespace
             }
     }
 
-    template<typename TF> __global__
+    template<typename Float> __global__
     void fill_gases_kernel(
             const int ncol, const int nlay, const int dim1, const int dim2, const int ngas, const int igas,
-            TF* __restrict__ vmr_out, const TF* __restrict__ vmr_in,
-            TF* __restrict__ col_gas, const TF* __restrict__ col_dry)
+            Float* __restrict__ vmr_out, const Float* __restrict__ vmr_in,
+            Float* __restrict__ col_gas, const Float* __restrict__ col_dry)
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -424,23 +426,23 @@ namespace
     }
 }
 
+
 // Constructor of longwave variant.
-template<typename TF>
-Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
+Gas_optics_rrtmgp_gpu::Gas_optics_rrtmgp_gpu(
         const Gas_concs_gpu& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
         const Array<int,2>& band2gpt,
-        const Array<TF,2>& band_lims_wavenum,
-        const Array<TF,1>& press_ref,
-        const TF press_ref_trop,
-        const Array<TF,1>& temp_ref,
-        const TF temp_ref_p,
-        const TF temp_ref_t,
-        const Array<TF,3>& vmr_ref,
-        const Array<TF,4>& kmajor,
-        const Array<TF,3>& kminor_lower,
-        const Array<TF,3>& kminor_upper,
+        const Array<Float,2>& band_lims_wavenum,
+        const Array<Float,1>& press_ref,
+        const Float press_ref_trop,
+        const Array<Float,1>& temp_ref,
+        const Float temp_ref_p,
+        const Float temp_ref_t,
+        const Array<Float,3>& vmr_ref,
+        const Array<Float,4>& kmajor,
+        const Array<Float,3>& kminor_lower,
+        const Array<Float,3>& kminor_upper,
         const Array<std::string,1>& gas_minor,
         const Array<std::string,1>& identifier_minor,
         const Array<std::string,1>& minor_gases_lower,
@@ -455,11 +457,11 @@ Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
         const Array<BOOL_TYPE,1>& scale_by_complement_upper,
         const Array<int,1>& kminor_start_lower,
         const Array<int,1>& kminor_start_upper,
-        const Array<TF,2>& totplnk,
-        const Array<TF,4>& planck_frac,
-        const Array<TF,3>& rayl_lower,
-        const Array<TF,3>& rayl_upper) :
-            Gas_optics_gpu<TF>(band_lims_wavenum, band2gpt),
+        const Array<Float,2>& totplnk,
+        const Array<Float,4>& planck_frac,
+        const Array<Float,3>& rayl_lower,
+        const Array<Float,3>& rayl_upper) :
+            Gas_optics_gpu(band_lims_wavenum, band2gpt),
             totplnk(totplnk)
 {
     // Reshaping according to new dimension ordering since v1.5
@@ -501,22 +503,21 @@ Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
 
 
 // Constructor of the shortwave variant.
-template<typename TF>
-Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
+Gas_optics_rrtmgp_gpu::Gas_optics_rrtmgp_gpu(
         const Gas_concs_gpu& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
         const Array<int,2>& band2gpt,
-        const Array<TF,2>& band_lims_wavenum,
-        const Array<TF,1>& press_ref,
-        const TF press_ref_trop,
-        const Array<TF,1>& temp_ref,
-        const TF temp_ref_p,
-        const TF temp_ref_t,
-        const Array<TF,3>& vmr_ref,
-        const Array<TF,4>& kmajor,
-        const Array<TF,3>& kminor_lower,
-        const Array<TF,3>& kminor_upper,
+        const Array<Float,2>& band_lims_wavenum,
+        const Array<Float,1>& press_ref,
+        const Float press_ref_trop,
+        const Array<Float,1>& temp_ref,
+        const Float temp_ref_p,
+        const Float temp_ref_t,
+        const Array<Float,3>& vmr_ref,
+        const Array<Float,4>& kmajor,
+        const Array<Float,3>& kminor_lower,
+        const Array<Float,3>& kminor_upper,
         const Array<std::string,1>& gas_minor,
         const Array<std::string,1>& identifier_minor,
         const Array<std::string,1>& minor_gases_lower,
@@ -531,15 +532,15 @@ Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
         const Array<BOOL_TYPE,1>& scale_by_complement_upper,
         const Array<int,1>& kminor_start_lower,
         const Array<int,1>& kminor_start_upper,
-        const Array<TF,1>& solar_source_quiet,
-        const Array<TF,1>& solar_source_facular,
-        const Array<TF,1>& solar_source_sunspot,
-        const TF tsi_default,
-        const TF mg_default,
-        const TF sb_default,
-        const Array<TF,3>& rayl_lower,
-        const Array<TF,3>& rayl_upper) :
-            Gas_optics_gpu<TF>(band_lims_wavenum, band2gpt)
+        const Array<Float,1>& solar_source_quiet,
+        const Array<Float,1>& solar_source_facular,
+        const Array<Float,1>& solar_source_sunspot,
+        const Float tsi_default,
+        const Float mg_default,
+        const Float sb_default,
+        const Array<Float,3>& rayl_lower,
+        const Array<Float,3>& rayl_upper) :
+            Gas_optics_gpu(band_lims_wavenum, band2gpt)
 {
     // Initialize the absorption coefficient array, including Rayleigh scattering
     // tables if provided.
@@ -575,22 +576,21 @@ Gas_optics_rrtmgp_gpu<TF>::Gas_optics_rrtmgp_gpu(
 }
 
 
-template<typename TF>
-void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
+void Gas_optics_rrtmgp_gpu::init_abs_coeffs(
         const Gas_concs_gpu& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
         const Array<int,2>& band2gpt,
-        const Array<TF,2>& band_lims_wavenum,
-        const Array<TF,1>& press_ref,
-        const Array<TF,1>& temp_ref,
-        const TF press_ref_trop,
-        const TF temp_ref_p,
-        const TF temp_ref_t,
-        const Array<TF,3>& vmr_ref,
-        const Array<TF,4>& kmajor,
-        const Array<TF,3>& kminor_lower,
-        const Array<TF,3>& kminor_upper,
+        const Array<Float,2>& band_lims_wavenum,
+        const Array<Float,1>& press_ref,
+        const Array<Float,1>& temp_ref,
+        const Float press_ref_trop,
+        const Float temp_ref_p,
+        const Float temp_ref_t,
+        const Array<Float,3>& vmr_ref,
+        const Array<Float,4>& kmajor,
+        const Array<Float,3>& kminor_lower,
+        const Array<Float,3>& kminor_upper,
         const Array<std::string,1>& gas_minor,
         const Array<std::string,1>& identifier_minor,
         const Array<std::string,1>& minor_gases_lower,
@@ -605,8 +605,8 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
         const Array<BOOL_TYPE,1>& scale_by_complement_upper,
         const Array<int,1>& kminor_start_lower,
         const Array<int,1>& kminor_start_upper,
-        const Array<TF,3>& rayl_lower,
-        const Array<TF,3>& rayl_upper)
+        const Array<Float,3>& rayl_lower,
+        const Array<Float,3>& rayl_upper)
 {
     // Which gases known to the gas optics are present in the host model (available_gases)?
     std::vector<std::string> gas_names_to_use;
@@ -626,7 +626,7 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
     // Initialize the gas optics object, keeping only those gases known to the
     // gas optics and also present in the host model.
     // Add an offset to the indexing to interface the negative ranging of fortran.
-    Array<TF,3> vmr_ref_red({vmr_ref.dim(1), n_gas + 1, vmr_ref.dim(3)});
+    Array<Float,3> vmr_ref_red({vmr_ref.dim(1), n_gas + 1, vmr_ref.dim(3)});
     vmr_ref_red.set_offsets({0, -1, 0});
 
     // Gas 0 is used in single-key species method, set to 1.0 (col_dry)
@@ -807,14 +807,11 @@ void Gas_optics_rrtmgp_gpu<TF>::init_abs_coeffs(
 }
 
 
-
-
-
-template<typename TF> __global__
+template<typename Float> __global__
 void compute_delta_plev(
         const int ncol, const int nlay,
-        const TF* __restrict__ plev,
-        TF* __restrict__ delta_plev)
+        const Float* __restrict__ plev,
+        Float* __restrict__ delta_plev)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -830,57 +827,56 @@ void compute_delta_plev(
 }
 
 
-template<typename TF> __global__
+template<typename Float> __global__
 void compute_m_air(
         const int ncol, const int nlay,
-        const TF* __restrict__ vmr_h2o,
-        TF* __restrict__ m_air)
+        const Float* __restrict__ vmr_h2o,
+        Float* __restrict__ m_air)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
 
-    constexpr TF m_dry = 0.028964;
-    constexpr TF m_h2o = 0.018016;
+    constexpr Float m_dry = 0.028964;
+    constexpr Float m_h2o = 0.018016;
 
     if ( (icol < ncol) && (ilay < nlay) )
     {
         const int idx = icol + ilay*ncol;
 
-        m_air[idx] = (m_dry + m_h2o * vmr_h2o[idx]) / (TF(1.) + vmr_h2o[idx]);
+        m_air[idx] = (m_dry + m_h2o * vmr_h2o[idx]) / (Float(1.) + vmr_h2o[idx]);
     }
 }
 
 
-template<typename TF> __global__
+template<typename Float> __global__
 void compute_col_dry(
         const int ncol, const int nlay,
-        const TF* __restrict__ delta_plev, const TF* __restrict__ m_air, const TF* __restrict__ vmr_h2o,
-        TF* __restrict__ col_dry)
+        const Float* __restrict__ delta_plev, const Float* __restrict__ m_air, const Float* __restrict__ vmr_h2o,
+        Float* __restrict__ col_dry)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
 
-    constexpr TF g0 = 9.80665;
-    constexpr TF avogad = 6.02214076e23;
+    constexpr Float g0 = 9.80665;
+    constexpr Float avogad = 6.02214076e23;
 
     if ( (icol < ncol) && (ilay < nlay) )
     {
         const int idx = icol + ilay*ncol;
 
-        col_dry[idx] = TF(10.) * delta_plev[idx] * avogad / (TF(1000.)*m_air[idx]*TF(100.)*g0);
-        col_dry[idx] /= (TF(1.) + vmr_h2o[idx]);
+        col_dry[idx] = Float(10.) * delta_plev[idx] * avogad / (Float(1000.)*m_air[idx]*Float(100.)*g0);
+        col_dry[idx] /= (Float(1.) + vmr_h2o[idx]);
     }
 }
 
 
 // Calculate the molecules of dry air.
-template<typename TF>
-void Gas_optics_rrtmgp_gpu<TF>::get_col_dry(
-        Array_gpu<TF,2>& col_dry, const Array_gpu<TF,2>& vmr_h2o,
-        const Array_gpu<TF,2>& plev)
+void Gas_optics_rrtmgp_gpu::get_col_dry(
+        Array_gpu<Float,2>& col_dry, const Array_gpu<Float,2>& vmr_h2o,
+        const Array_gpu<Float,2>& plev)
 {
-    Array_gpu<TF,2> delta_plev({col_dry.dim(1), col_dry.dim(2)});
-    Array_gpu<TF,2> m_air     ({col_dry.dim(1), col_dry.dim(2)});
+    Array_gpu<Float,2> delta_plev({col_dry.dim(1), col_dry.dim(2)});
+    Array_gpu<Float,2> m_air     ({col_dry.dim(1), col_dry.dim(2)});
 
     const int block_lay = 16;
     const int block_col = 16;
@@ -912,17 +908,16 @@ void Gas_optics_rrtmgp_gpu<TF>::get_col_dry(
 
 
 // Gas optics solver longwave variant.
-template<typename TF>
-void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
-        const Array_gpu<TF,2>& play,
-        const Array_gpu<TF,2>& plev,
-        const Array_gpu<TF,2>& tlay,
-        const Array_gpu<TF,1>& tsfc,
+void Gas_optics_rrtmgp_gpu::gas_optics(
+        const Array_gpu<Float,2>& play,
+        const Array_gpu<Float,2>& plev,
+        const Array_gpu<Float,2>& tlay,
+        const Array_gpu<Float,1>& tsfc,
         const Gas_concs_gpu& gas_desc,
         std::unique_ptr<Optical_props_arry_gpu>& optical_props,
-        Source_func_lw_gpu<TF>& sources,
-        const Array_gpu<TF,2>& col_dry,
-        const Array_gpu<TF,2>& tlev)
+        Source_func_lw_gpu<Float>& sources,
+        const Array_gpu<Float,2>& col_dry,
+        const Array_gpu<Float,2>& tlev)
 {
     const int ncol = play.dim(1);
     const int nlay = play.dim(2);
@@ -932,7 +927,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
     Array_gpu<int,2> jtemp({play.dim(1), play.dim(2)});
     Array_gpu<int,2> jpress({play.dim(1), play.dim(2)});
     Array_gpu<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
-    Array_gpu<TF,6> fmajor({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
+    Array_gpu<Float,6> fmajor({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
     Array_gpu<int,4> jeta({2, play.dim(1), play.dim(2), this->get_nflav()});
 
     // Gas optics.
@@ -953,15 +948,14 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
 
 
 // Gas optics solver shortwave variant.
-template<typename TF>
-void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
-        const Array_gpu<TF,2>& play,
-        const Array_gpu<TF,2>& plev,
-        const Array_gpu<TF,2>& tlay,
+void Gas_optics_rrtmgp_gpu::gas_optics(
+        const Array_gpu<Float,2>& play,
+        const Array_gpu<Float,2>& plev,
+        const Array_gpu<Float,2>& tlay,
         const Gas_concs_gpu& gas_desc,
         std::unique_ptr<Optical_props_arry_gpu>& optical_props,
-        Array_gpu<TF,2>& toa_src,
-        const Array_gpu<TF,2>& col_dry)
+        Array_gpu<Float,2>& toa_src,
+        const Array_gpu<Float,2>& col_dry)
 {
     const int ncol = play.dim(1);
     const int nlay = play.dim(2);
@@ -971,7 +965,7 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
     Array_gpu<int,2> jtemp({play.dim(1), play.dim(2)});
     Array_gpu<int,2> jpress({play.dim(1), play.dim(2)});
     Array_gpu<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
-    Array_gpu<TF,6> fmajor({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
+    Array_gpu<Float,6> fmajor({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
     Array_gpu<int,4> jeta({2, play.dim(1), play.dim(2), this->get_nflav()});
 
     // Gas optics.
@@ -987,27 +981,26 @@ void Gas_optics_rrtmgp_gpu<TF>::gas_optics(
 }
 
 
-template<typename TF>
-void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
+void Gas_optics_rrtmgp_gpu::compute_gas_taus(
         const int ncol, const int nlay, const int ngpt, const int nband,
-        const Array_gpu<TF,2>& play,
-        const Array_gpu<TF,2>& plev,
-        const Array_gpu<TF,2>& tlay,
+        const Array_gpu<Float,2>& play,
+        const Array_gpu<Float,2>& plev,
+        const Array_gpu<Float,2>& tlay,
         const Gas_concs_gpu& gas_desc,
         std::unique_ptr<Optical_props_arry_gpu>& optical_props,
         Array_gpu<int,2>& jtemp, Array_gpu<int,2>& jpress,
         Array_gpu<int,4>& jeta,
         Array_gpu<BOOL_TYPE,2>& tropo,
-        Array_gpu<TF,6>& fmajor,
-        const Array_gpu<TF,2>& col_dry)
+        Array_gpu<Float,6>& fmajor,
+        const Array_gpu<Float,2>& col_dry)
 {
-    Array_gpu<TF,3> tau({ngpt, nlay, ncol});
-    Array_gpu<TF,3> tau_rayleigh({ngpt, nlay, ncol});
-    Array_gpu<TF,3> vmr({ncol, nlay, this->get_ngas()});
-    Array_gpu<TF,3> col_gas({ncol, nlay, this->get_ngas()+1});
+    Array_gpu<Float,3> tau({ngpt, nlay, ncol});
+    Array_gpu<Float,3> tau_rayleigh({ngpt, nlay, ncol});
+    Array_gpu<Float,3> vmr({ncol, nlay, this->get_ngas()});
+    Array_gpu<Float,3> col_gas({ncol, nlay, this->get_ngas()+1});
     col_gas.set_offsets({0, 0, -1});
-    Array_gpu<TF,4> col_mix({2, ncol, nlay, this->get_nflav()});
-    Array_gpu<TF,5> fminor({2, 2, ncol, nlay, this->get_nflav()});
+    Array_gpu<Float,4> col_mix({2, ncol, nlay, this->get_nflav()});
+    Array_gpu<Float,5> fminor({2, 2, ncol, nlay, this->get_nflav()});
 
 
     // CvH add all the checking...
@@ -1033,7 +1026,7 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
 
     for (int igas=0; igas<=ngas; ++igas)
     {
-        const Array_gpu<TF,2>& vmr_2d = igas > 0 ? gas_desc.get_vmr(this->gas_names({igas})) : gas_desc.get_vmr(this->gas_names({1}));
+        const Array_gpu<Float,2>& vmr_2d = igas > 0 ? gas_desc.get_vmr(this->gas_names({igas})) : gas_desc.get_vmr(this->gas_names({1}));
         fill_gases_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nlay, vmr_2d.dim(1), vmr_2d.dim(2), ngas, igas, vmr.ptr(), vmr_2d.ptr(), col_gas.ptr(), col_dry.ptr());
     }
@@ -1075,8 +1068,8 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
 
     if (has_rayleigh)
     {
-        Array_gpu<TF,3> tau({ncol, nlay, ngpt});
-        Array_gpu<TF,3> tau_rayleigh({ncol, nlay, ngpt});
+        Array_gpu<Float,3> tau({ncol, nlay, ngpt});
+        Array_gpu<Float,3> tau_rayleigh({ncol, nlay, ngpt});
         rrtmgp_kernel_launcher_cuda::zero_array(ngpt, nlay, ncol, tau);
 
         rrtmgp_kernel_launcher_cuda::zero_array(ncol, nlay, ngpt, tau);
@@ -1163,10 +1156,9 @@ void Gas_optics_rrtmgp_gpu<TF>::compute_gas_taus(
 }
 
 
-template<typename TF>
-void Gas_optics_rrtmgp_gpu<TF>::combine_abs_and_rayleigh(
-        const Array_gpu<TF,3>& tau,
-        const Array_gpu<TF,3>& tau_rayleigh,
+void Gas_optics_rrtmgp_gpu::combine_abs_and_rayleigh(
+        const Array_gpu<Float,3>& tau,
+        const Array_gpu<Float,3>& tau_rayleigh,
         std::unique_ptr<Optical_props_arry_gpu>& optical_props)
 {
     int ncol = tau.dim(1);
@@ -1181,16 +1173,15 @@ void Gas_optics_rrtmgp_gpu<TF>::combine_abs_and_rayleigh(
 }
 
 
-template<typename TF>
-void Gas_optics_rrtmgp_gpu<TF>::source(
+void Gas_optics_rrtmgp_gpu::source(
         const int ncol, const int nlay, const int nbnd, const int ngpt,
-        const Array_gpu<TF,2>& play, const Array_gpu<TF,2>& plev,
-        const Array_gpu<TF,2>& tlay, const Array_gpu<TF,1>& tsfc,
+        const Array_gpu<Float,2>& play, const Array_gpu<Float,2>& plev,
+        const Array_gpu<Float,2>& tlay, const Array_gpu<Float,1>& tsfc,
         const Array_gpu<int,2>& jtemp, const Array_gpu<int,2>& jpress,
         const Array_gpu<int,4>& jeta, const Array_gpu<BOOL_TYPE,2>& tropo,
-        const Array_gpu<TF,6>& fmajor,
-        Source_func_lw_gpu<TF>& sources,
-        const Array_gpu<TF,2>& tlev)
+        const Array_gpu<Float,6>& fmajor,
+        Source_func_lw_gpu<Float>& sources,
+        const Array_gpu<Float,2>& tlev)
 {
     const int nflav = this->get_nflav();
     const int neta = this->get_neta();
@@ -1200,11 +1191,11 @@ void Gas_optics_rrtmgp_gpu<TF>::source(
     auto gpoint_bands = this->get_gpoint_bands_gpu();
     auto band_lims_gpoint = this->get_band_lims_gpoint_gpu();
 
-    Array_gpu<TF,3> lay_source_t({ngpt, nlay, ncol});
-    Array_gpu<TF,3> lev_source_inc_t({ngpt, nlay, ncol});
-    Array_gpu<TF,3> lev_source_dec_t({ngpt, nlay, ncol});
-    Array_gpu<TF,2> sfc_source_t({ngpt, ncol});
-    Array_gpu<TF,2> sfc_source_jac({ngpt, ncol});
+    Array_gpu<Float,3> lay_source_t({ngpt, nlay, ncol});
+    Array_gpu<Float,3> lev_source_inc_t({ngpt, nlay, ncol});
+    Array_gpu<Float,3> lev_source_dec_t({ngpt, nlay, ncol});
+    Array_gpu<Float,2> sfc_source_t({ngpt, ncol});
+    Array_gpu<Float,2> sfc_source_jac({ngpt, ncol});
 
     int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
 
@@ -1221,12 +1212,11 @@ void Gas_optics_rrtmgp_gpu<TF>::source(
 }
 
 
-template<typename TF>
-void Gas_optics_rrtmgp_gpu<TF>::set_solar_variability(
-        const TF mg_index, const TF sb_index)
+void Gas_optics_rrtmgp_gpu::set_solar_variability(
+        const Float mg_index, const Float sb_index)
 {
-    constexpr TF a_offset = TF(0.1495954);
-    constexpr TF b_offset = TF(0.00066696);
+    constexpr Float a_offset = Float(0.1495954);
+    constexpr Float b_offset = Float(0.00066696);
 
     for (int igpt=1; igpt<=this->solar_source_quiet.dim(1); ++igpt)
     {
@@ -1238,21 +1228,13 @@ void Gas_optics_rrtmgp_gpu<TF>::set_solar_variability(
 }
 
 
-template<typename TF>
-TF Gas_optics_rrtmgp_gpu<TF>::get_tsi() const
+Float Gas_optics_rrtmgp_gpu::get_tsi() const
 {
     const int n_gpt = this->get_ngpt();
 
-    TF tsi = 0.;
+    Float tsi = 0.;
     for (int igpt=1; igpt<=n_gpt; ++igpt)
         tsi += this->solar_source({igpt});
 
     return tsi;
 }
-
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template class Gas_optics_rrtmgp_gpu<float>;
-#else
-template class Gas_optics_rrtmgp_gpu<double>;
-#endif
