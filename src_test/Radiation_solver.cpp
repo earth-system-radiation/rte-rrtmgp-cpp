@@ -488,7 +488,7 @@ void Radiation_solver_longwave::solve(
 
         constexpr int n_ang = 1;
 
-        Rte_lw<Float>::rte_lw(
+        Rte_lw::rte_lw(
                 optical_props_subset_in,
                 top_at_1,
                 sources_subset_in,
@@ -740,7 +740,7 @@ void Radiation_solver_shortwave::solve(
             gpt_flux_dn_dir.set_dims({n_col_in, n_lev, 1});
         }
 
-        Rte_sw<Float>::rte_sw(
+        Rte_sw::rte_sw(
                 optical_props_subset_in,
                 top_at_1,
                 mu0.subset({{ {col_s_in, col_e_in} }}),

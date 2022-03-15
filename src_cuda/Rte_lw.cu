@@ -33,10 +33,10 @@
 
 namespace
 {
-    template<typename TF>__global__
+    template<typename Float>__global__
     void expand_and_transpose_kernel(
         const int ncol, const int nbnd, const int* __restrict__ limits,
-        TF* __restrict__ arr_out, const TF* __restrict__ arr_in)
+        Float* __restrict__ arr_out, const Float* __restrict__ arr_in)
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ibnd = blockIdx.y*blockDim.y + threadIdx.y;
@@ -56,47 +56,47 @@ namespace
     }
 }
 
-//    template<typename TF>
+//    template<typename Float>
 //    void apply_BC(
 //            int ncol, int nlay, int ngpt,
-//            BOOL_TYPE top_at_1, Array<TF,3>& gpt_flux_dn)
+//            BOOL_TYPE top_at_1, Array<Float,3>& gpt_flux_dn)
 //    {
 //        rrtmgp_kernels::apply_BC_0(
 //                &ncol, &nlay, &ngpt,
 //                &top_at_1, gpt_flux_dn.ptr());
 //    }
 //
-//    template<typename TF>
+//    template<typename Float>
 //    void apply_BC(
 //            int ncol, int nlay, int ngpt,
-//            BOOL_TYPE top_at_1, const Array<TF,2>& inc_flux,
-//            Array<TF,3>& gpt_flux_dn)
+//            BOOL_TYPE top_at_1, const Array<Float,2>& inc_flux,
+//            Array<Float,3>& gpt_flux_dn)
 //    {
 //        rrtmgp_kernels::apply_BC_gpt(
 //                &ncol, &nlay, &ngpt,
-//                &top_at_1, const_cast<TF*>(inc_flux.ptr()), gpt_flux_dn.ptr());
+//                &top_at_1, const_cast<Float*>(inc_flux.ptr()), gpt_flux_dn.ptr());
 //    }
 
-template<typename TF>
-void Rte_lw_gpu<TF>::rte_lw(
+
+void Rte_lw_gpu::rte_lw(
         const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
         const BOOL_TYPE top_at_1,
-        const Source_func_lw_gpu<TF>& sources,
-        const Array_gpu<TF,2>& sfc_emis,
-        const Array_gpu<TF,2>& inc_flux,
-        Array_gpu<TF,3>& gpt_flux_up,
-        Array_gpu<TF,3>& gpt_flux_dn,
+        const Source_func_lw_gpu<Float>& sources,
+        const Array_gpu<Float,2>& sfc_emis,
+        const Array_gpu<Float,2>& inc_flux,
+        Array_gpu<Float,3>& gpt_flux_up,
+        Array_gpu<Float,3>& gpt_flux_dn,
         const int n_gauss_angles)
 {
     const int max_gauss_pts = 4;
-    const Array_gpu<TF,2> gauss_Ds(
-            Array<TF,2>({      1.66,         0.,         0.,         0.,
+    const Array_gpu<Float,2> gauss_Ds(
+            Array<Float,2>({      1.66,         0.,         0.,         0.,
              1.18350343, 2.81649655,         0.,         0.,
              1.09719858, 1.69338507, 4.70941630,         0.,
              1.06056257, 1.38282560, 2.40148179, 7.15513024},
             { max_gauss_pts, max_gauss_pts }));
 
-    const Array<TF,2> gauss_wts(
+    const Array<Float,2> gauss_wts(
             {         0.5,           0.,           0.,           0.,
              0.3180413817, 0.1819586183,           0.,           0.,
              0.2009319137, 0.2292411064, 0.0698269799,           0.,
@@ -107,23 +107,23 @@ void Rte_lw_gpu<TF>::rte_lw(
     const int nlay = optical_props->get_nlay();
     const int ngpt = optical_props->get_ngpt();
 
-    Array_gpu<TF,2> sfc_emis_gpt({ncol, ngpt});
+    Array_gpu<Float,2> sfc_emis_gpt({ncol, ngpt});
     expand_and_transpose(optical_props, sfc_emis, sfc_emis_gpt);
 
     // Run the radiative transfer solver.
     const int n_quad_angs = n_gauss_angles;
 
-    Array_gpu<TF,2> gauss_wts_subset = gauss_wts.subset(
+    Array_gpu<Float,2> gauss_wts_subset = gauss_wts.subset(
             {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
 
-    Array_gpu<TF,3> secants({ncol, ngpt, n_quad_angs});
+    Array_gpu<Float,3> secants({ncol, ngpt, n_quad_angs});
     rte_kernel_launcher_cuda::lw_secants_array(
             ncol, ngpt, n_quad_angs, max_gauss_pts,
             gauss_Ds, secants);
 
     // For now, just pass the arrays around.
-    Array_gpu<TF,2> sfc_src_jac(sources.get_sfc_source().get_dims());
-    Array_gpu<TF,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
+    Array_gpu<Float,2> sfc_src_jac(sources.get_sfc_source().get_dims());
+    Array_gpu<Float,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
 
     const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
@@ -149,11 +149,11 @@ void Rte_lw_gpu<TF>::rte_lw(
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);
 }
 
-template<typename TF>
-void Rte_lw_gpu<TF>::expand_and_transpose(
+
+void Rte_lw_gpu::expand_and_transpose(
         const std::unique_ptr<Optical_props_arry_gpu>& ops,
-        const Array_gpu<TF,2> arr_in,
-        Array_gpu<TF,2>& arr_out)
+        const Array_gpu<Float,2> arr_in,
+        Array_gpu<Float,2>& arr_out)
 {
     const int ncol = arr_in.dim(2);
     const int nbnd = ops->get_nband();
@@ -171,9 +171,3 @@ void Rte_lw_gpu<TF>::expand_and_transpose(
     expand_and_transpose_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nbnd, limits.ptr(), arr_out.ptr(), arr_in.ptr());
 }
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template class Rte_lw_gpu<float>;
-#else
-template class Rte_lw_gpu<double>;
-#endif

@@ -30,88 +30,88 @@
 
 namespace rrtmgp_kernel_launcher
 {
-    template<typename TF>
+    template<typename Float>
     void apply_BC(
             int ncol, int nlay, int ngpt,
-            BOOL_TYPE top_at_1, Array<TF,3>& gpt_flux_dn)
+            BOOL_TYPE top_at_1, Array<Float,3>& gpt_flux_dn)
     {
         rrtmgp_kernels::apply_BC_0(
                 &ncol, &nlay, &ngpt,
                 &top_at_1, gpt_flux_dn.ptr());
     }
 
-    template<typename TF>
+    template<typename Float>
     void apply_BC(
             int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1,
-            const Array<TF,2>& inc_flux, Array<TF,3>& gpt_flux_dn)
+            const Array<Float,2>& inc_flux, Array<Float,3>& gpt_flux_dn)
     {
         rrtmgp_kernels::apply_BC_gpt(
                 &ncol, &nlay, &ngpt, &top_at_1,
-                const_cast<TF*>(inc_flux.ptr()), gpt_flux_dn.ptr());
+                const_cast<Float*>(inc_flux.ptr()), gpt_flux_dn.ptr());
     }
 
-    template<typename TF>
+    template<typename Float>
     void apply_BC(
             int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1,
-            const Array<TF,2>& inc_flux,
-            const Array<TF,1>& factor,
-            Array<TF,3>& gpt_flux)
+            const Array<Float,2>& inc_flux,
+            const Array<Float,1>& factor,
+            Array<Float,3>& gpt_flux)
     {
         rrtmgp_kernels::apply_BC_factor(
                 &ncol, &nlay, &ngpt,
                 &top_at_1,
-                const_cast<TF*>(inc_flux.ptr()),
-                const_cast<TF*>(factor.ptr()),
+                const_cast<Float*>(inc_flux.ptr()),
+                const_cast<Float*>(factor.ptr()),
                 gpt_flux.ptr());
     }
 
-    template<typename TF>
+    template<typename Float>
     void sw_solver_2stream(
             int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1,
-            const Array<TF,3>& tau,
-            const Array<TF,3>& ssa,
-            const Array<TF,3>& g,
-            const Array<TF,1>& mu0,
-            const Array<TF,2>& sfc_alb_dir_gpt, const Array<TF,2>& sfc_alb_dif_gpt,
-            const Array<TF,2>& inc_flux,
-            Array<TF,3>& gpt_flux_up, Array<TF,3>& gpt_flux_dn, Array<TF,3>& gpt_flux_dir,
-            BOOL_TYPE has_dif_bc, const Array<TF,2>& inc_flux_dif,
-            BOOL_TYPE do_broadband, Array<TF,3>& flux_up_loc, Array<TF,3>& flux_dn_loc, Array<TF,3>& flux_dir_loc)
+            const Array<Float,3>& tau,
+            const Array<Float,3>& ssa,
+            const Array<Float,3>& g,
+            const Array<Float,1>& mu0,
+            const Array<Float,2>& sfc_alb_dir_gpt, const Array<Float,2>& sfc_alb_dif_gpt,
+            const Array<Float,2>& inc_flux,
+            Array<Float,3>& gpt_flux_up, Array<Float,3>& gpt_flux_dn, Array<Float,3>& gpt_flux_dir,
+            BOOL_TYPE has_dif_bc, const Array<Float,2>& inc_flux_dif,
+            BOOL_TYPE do_broadband, Array<Float,3>& flux_up_loc, Array<Float,3>& flux_dn_loc, Array<Float,3>& flux_dir_loc)
     {
         rrtmgp_kernels::sw_solver_2stream(
                 &ncol, &nlay, &ngpt, &top_at_1,
-                const_cast<TF*>(tau.ptr()),
-                const_cast<TF*>(ssa.ptr()),
-                const_cast<TF*>(g  .ptr()),
-                const_cast<TF*>(mu0.ptr()),
-                const_cast<TF*>(sfc_alb_dir_gpt.ptr()),
-                const_cast<TF*>(sfc_alb_dif_gpt.ptr()),
-                const_cast<TF*>(inc_flux.ptr()),
+                const_cast<Float*>(tau.ptr()),
+                const_cast<Float*>(ssa.ptr()),
+                const_cast<Float*>(g  .ptr()),
+                const_cast<Float*>(mu0.ptr()),
+                const_cast<Float*>(sfc_alb_dir_gpt.ptr()),
+                const_cast<Float*>(sfc_alb_dif_gpt.ptr()),
+                const_cast<Float*>(inc_flux.ptr()),
                 gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr(),
-                &has_dif_bc, const_cast<TF*>(inc_flux_dif.ptr()),
+                &has_dif_bc, const_cast<Float*>(inc_flux_dif.ptr()),
                 &do_broadband, flux_up_loc.ptr(), flux_dn_loc.ptr(), flux_dir_loc.ptr());
     }
 }
 
-template<typename TF>
-void Rte_sw<TF>::rte_sw(
+
+void Rte_sw::rte_sw(
         const std::unique_ptr<Optical_props_arry>& optical_props,
         const BOOL_TYPE top_at_1,
-        const Array<TF,1>& mu0,
-        const Array<TF,2>& inc_flux_dir,
-        const Array<TF,2>& sfc_alb_dir,
-        const Array<TF,2>& sfc_alb_dif,
-        const Array<TF,2>& inc_flux_dif,
-        Array<TF,3>& gpt_flux_up,
-        Array<TF,3>& gpt_flux_dn,
-        Array<TF,3>& gpt_flux_dir)
+        const Array<Float,1>& mu0,
+        const Array<Float,2>& inc_flux_dir,
+        const Array<Float,2>& sfc_alb_dir,
+        const Array<Float,2>& sfc_alb_dif,
+        const Array<Float,2>& inc_flux_dif,
+        Array<Float,3>& gpt_flux_up,
+        Array<Float,3>& gpt_flux_dn,
+        Array<Float,3>& gpt_flux_dir)
 {
     const int ncol = optical_props->get_ncol();
     const int nlay = optical_props->get_nlay();
     const int ngpt = optical_props->get_ngpt();
 
-    Array<TF,2> sfc_alb_dir_gpt({ncol, ngpt});
-    Array<TF,2> sfc_alb_dif_gpt({ncol, ngpt});
+    Array<Float,2> sfc_alb_dir_gpt({ncol, ngpt});
+    Array<Float,2> sfc_alb_dif_gpt({ncol, ngpt});
 
     expand_and_transpose(optical_props, sfc_alb_dir, sfc_alb_dir_gpt);
     expand_and_transpose(optical_props, sfc_alb_dif, sfc_alb_dif_gpt);
@@ -137,11 +137,11 @@ void Rte_sw<TF>::rte_sw(
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);
 }
 
-template<typename TF>
-void Rte_sw<TF>::expand_and_transpose(
+
+void Rte_sw::expand_and_transpose(
         const std::unique_ptr<Optical_props_arry>& ops,
-        const Array<TF,2> arr_in,
-        Array<TF,2>& arr_out)
+        const Array<Float,2> arr_in,
+        Array<Float,2>& arr_out)
 {
     const int ncol = arr_in.dim(2);
     const int nband = ops->get_nband();
@@ -152,9 +152,3 @@ void Rte_sw<TF>::expand_and_transpose(
             for (int igpt=limits({1, iband}); igpt<=limits({2, iband}); ++igpt)
                 arr_out({icol, igpt}) = arr_in({iband, icol});
 }
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template class Rte_sw<float>;
-#else
-template class Rte_sw<double>;
-#endif

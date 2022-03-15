@@ -39,45 +39,43 @@ template<typename> class Source_func_lw;
 template<typename> class Source_func_lw_gpu;
 
 
-template<typename TF>
 class Rte_lw
 {
     public:
         static void rte_lw(
                 const std::unique_ptr<Optical_props_arry>& optical_props,
                 const BOOL_TYPE top_at_1,
-                const Source_func_lw<TF>& sources,
-                const Array<TF,2>& sfc_emis,
-                const Array<TF,2>& inc_flux,
-                Array<TF,3>& gpt_flux_up,
-                Array<TF,3>& gpt_flux_dn,
+                const Source_func_lw<Float>& sources,
+                const Array<Float,2>& sfc_emis,
+                const Array<Float,2>& inc_flux,
+                Array<Float,3>& gpt_flux_up,
+                Array<Float,3>& gpt_flux_dn,
                 const int n_gauss_angles);
 
         static void expand_and_transpose(
                 const std::unique_ptr<Optical_props_arry>& ops,
-                const Array<TF,2> arr_in,
-                Array<TF,2>& arr_out);
+                const Array<Float,2> arr_in,
+                Array<Float,2>& arr_out);
 };
 
 #ifdef __CUDACC__
-template<typename TF>
 class Rte_lw_gpu
 {
     public:
         void rte_lw(
                 const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 const BOOL_TYPE top_at_1,
-                const Source_func_lw_gpu<TF>& sources,
-                const Array_gpu<TF,2>& sfc_emis,
-                const Array_gpu<TF,2>& inc_flux,
-                Array_gpu<TF,3>& gpt_flux_up,
-                Array_gpu<TF,3>& gpt_flux_dn,
+                const Source_func_lw_gpu<Float>& sources,
+                const Array_gpu<Float,2>& sfc_emis,
+                const Array_gpu<Float,2>& inc_flux,
+                Array_gpu<Float,3>& gpt_flux_up,
+                Array_gpu<Float,3>& gpt_flux_dn,
                 const int n_gauss_angles);
 
         void expand_and_transpose(
                 const std::unique_ptr<Optical_props_arry_gpu>& ops,
-                const Array_gpu<TF,2> arr_in,
-                Array_gpu<TF,2>& arr_out);
+                const Array_gpu<Float,2> arr_in,
+                Array_gpu<Float,2>& arr_out);
 
 };
 #endif

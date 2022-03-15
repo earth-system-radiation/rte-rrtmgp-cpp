@@ -103,7 +103,7 @@ class Radiation_solver_longwave
         #ifdef __CUDACC__
         std::unique_ptr<Gas_optics_rrtmgp_gpu> kdist_gpu;
         std::unique_ptr<Cloud_optics_gpu> cloud_optics_gpu;
-        Rte_lw_gpu<Float> rte_lw;
+        Rte_lw_gpu rte_lw;
 
         std::unique_ptr<Optical_props_arry_gpu> optical_props_subset;
         std::unique_ptr<Optical_props_arry_gpu> optical_props_residual;
@@ -200,7 +200,7 @@ class Radiation_solver_shortwave
         #ifdef __CUDACC__
         std::unique_ptr<Gas_optics_gpu> kdist_gpu;
         std::unique_ptr<Cloud_optics_gpu> cloud_optics_gpu;
-        Rte_sw_gpu<Float> rte_sw;
+        Rte_sw_gpu rte_sw;
 
         std::unique_ptr<Optical_props_arry_gpu> optical_props_subset;
         std::unique_ptr<Optical_props_arry_gpu> optical_props_residual;
