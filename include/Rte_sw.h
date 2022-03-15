@@ -34,7 +34,6 @@ template<typename, int> class Array;
 template<typename, int> class Array_gpu;
 class Optical_props_arry;
 class Optical_props_arry_gpu;
-template<typename> class Fluxes_broadband;
 
 
 template<typename TF>

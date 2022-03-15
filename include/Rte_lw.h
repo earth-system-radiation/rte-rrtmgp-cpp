@@ -37,7 +37,7 @@ class Optical_props_arry;
 class Optical_props_arry_gpu;
 template<typename> class Source_func_lw;
 template<typename> class Source_func_lw_gpu;
-template<typename> class Fluxes_broadband;
+
 
 template<typename TF>
 class Rte_lw

@@ -26,11 +26,8 @@
 #include "Array.h"
 #include "Optical_props.h"
 #include "Source_functions.h"
-#include "Fluxes.h"
-#include <iomanip>
-#include <chrono>
-
 #include "rrtmgp_kernels.h"
+
 
 namespace rrtmgp_kernel_launcher
 {

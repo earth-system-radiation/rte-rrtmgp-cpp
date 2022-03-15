@@ -25,7 +25,6 @@
 #include "Rte_sw.h"
 #include "Array.h"
 #include "Optical_props.h"
-#include "Fluxes.h"
 
 // #include "rrtmgp_kernels.h"
 #include "rte_kernel_launcher_cuda.h"
