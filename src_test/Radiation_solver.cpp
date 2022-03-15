@@ -380,15 +380,15 @@ void Radiation_solver_longwave::solve(
 
     optical_props_subset = std::make_unique<Optical_props_1scl>(n_col_block, n_lay, *kdist);
 
-    std::unique_ptr<Source_func_lw<Float>> sources_subset;
-    std::unique_ptr<Source_func_lw<Float>> sources_residual;
+    std::unique_ptr<Source_func_lw> sources_subset;
+    std::unique_ptr<Source_func_lw> sources_residual;
 
-    sources_subset = std::make_unique<Source_func_lw<Float>>(n_col_block, n_lay, *kdist);
+    sources_subset = std::make_unique<Source_func_lw>(n_col_block, n_lay, *kdist);
 
     if (n_col_block_residual > 0)
     {
         optical_props_residual = std::make_unique<Optical_props_1scl>(n_col_block_residual, n_lay, *kdist);
-        sources_residual = std::make_unique<Source_func_lw<Float>>(n_col_block_residual, n_lay, *kdist);
+        sources_residual = std::make_unique<Source_func_lw>(n_col_block_residual, n_lay, *kdist);
     }
 
     std::unique_ptr<Optical_props_1scl> cloud_optical_props_subset;
@@ -406,7 +406,7 @@ void Radiation_solver_longwave::solve(
             const int col_s_in, const int col_e_in,
             std::unique_ptr<Optical_props_arry>& optical_props_subset_in,
             std::unique_ptr<Optical_props_1scl>& cloud_optical_props_subset_in,
-            Source_func_lw<Float>& sources_subset_in,
+            Source_func_lw& sources_subset_in,
             const Array<Float,2>& emis_sfc_subset_in,
             Fluxes_broadband& fluxes,
             Fluxes_broadband& bnd_fluxes)

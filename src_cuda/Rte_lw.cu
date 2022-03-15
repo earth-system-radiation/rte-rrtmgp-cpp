@@ -81,7 +81,7 @@ namespace
 void Rte_lw_gpu::rte_lw(
         const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
         const BOOL_TYPE top_at_1,
-        const Source_func_lw_gpu<Float>& sources,
+        const Source_func_lw_gpu& sources,
         const Array_gpu<Float,2>& sfc_emis,
         const Array_gpu<Float,2>& inc_flux,
         Array_gpu<Float,3>& gpt_flux_up,

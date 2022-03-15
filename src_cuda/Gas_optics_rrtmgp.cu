@@ -915,7 +915,7 @@ void Gas_optics_rrtmgp_gpu::gas_optics(
         const Array_gpu<Float,1>& tsfc,
         const Gas_concs_gpu& gas_desc,
         std::unique_ptr<Optical_props_arry_gpu>& optical_props,
-        Source_func_lw_gpu<Float>& sources,
+        Source_func_lw_gpu& sources,
         const Array_gpu<Float,2>& col_dry,
         const Array_gpu<Float,2>& tlev)
 {
@@ -1180,7 +1180,7 @@ void Gas_optics_rrtmgp_gpu::source(
         const Array_gpu<int,2>& jtemp, const Array_gpu<int,2>& jpress,
         const Array_gpu<int,4>& jeta, const Array_gpu<BOOL_TYPE,2>& tropo,
         const Array_gpu<Float,6>& fmajor,
-        Source_func_lw_gpu<Float>& sources,
+        Source_func_lw_gpu& sources,
         const Array_gpu<Float,2>& tlev)
 {
     const int nflav = this->get_nflav();

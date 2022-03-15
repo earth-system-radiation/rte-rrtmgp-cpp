@@ -27,8 +27,7 @@
 #include "Optical_props.h"
 
 
-template<typename TF>
-Source_func_lw_gpu<TF>::Source_func_lw_gpu(
+Source_func_lw_gpu::Source_func_lw_gpu(
         const int n_col,
         const int n_lay,
         const Optical_props_gpu& optical_props) :
@@ -39,10 +38,3 @@ Source_func_lw_gpu<TF>::Source_func_lw_gpu(
     lev_source_inc({n_col, n_lay, optical_props.get_ngpt()}),
     lev_source_dec({n_col, n_lay, optical_props.get_ngpt()})
 {}
-
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template class Source_func_lw_gpu<float>;
-#else
-template class Source_func_lw_gpu<double>;
-#endif

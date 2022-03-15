@@ -35,8 +35,8 @@ template<typename, int> class Array;
 template<typename, int> class Array_gpu;
 class Optical_props_arry;
 class Optical_props_arry_gpu;
-template<typename> class Source_func_lw;
-template<typename> class Source_func_lw_gpu;
+class Source_func_lw;
+class Source_func_lw_gpu;
 
 
 class Rte_lw
@@ -45,7 +45,7 @@ class Rte_lw
         static void rte_lw(
                 const std::unique_ptr<Optical_props_arry>& optical_props,
                 const BOOL_TYPE top_at_1,
-                const Source_func_lw<Float>& sources,
+                const Source_func_lw& sources,
                 const Array<Float,2>& sfc_emis,
                 const Array<Float,2>& inc_flux,
                 Array<Float,3>& gpt_flux_up,
@@ -65,7 +65,7 @@ class Rte_lw_gpu
         void rte_lw(
                 const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
                 const BOOL_TYPE top_at_1,
-                const Source_func_lw_gpu<Float>& sources,
+                const Source_func_lw_gpu& sources,
                 const Array_gpu<Float,2>& sfc_emis,
                 const Array_gpu<Float,2>& inc_flux,
                 Array_gpu<Float,3>& gpt_flux_up,

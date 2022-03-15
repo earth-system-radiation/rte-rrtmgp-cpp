@@ -26,8 +26,8 @@
 #include "Array.h"
 #include "Optical_props.h"
 
-template<typename TF>
-Source_func_lw<TF>::Source_func_lw(
+
+Source_func_lw::Source_func_lw(
         const int n_col,
         const int n_lay,
         const Optical_props& optical_props) :
@@ -39,9 +39,9 @@ Source_func_lw<TF>::Source_func_lw(
     lev_source_dec({n_col, n_lay, optical_props.get_ngpt()})
 {}
 
-template<typename TF>
-void Source_func_lw<TF>::set_subset(
-        const Source_func_lw<TF>& sources_sub,
+
+void Source_func_lw::set_subset(
+        const Source_func_lw& sources_sub,
         const int col_s, const int col_e)
 {
     for (int igpt=1; igpt<=lay_source.dim(3); ++igpt)
@@ -58,9 +58,9 @@ void Source_func_lw<TF>::set_subset(
             }
 }
 
-template<typename TF>
-void Source_func_lw<TF>::get_subset(
-        const Source_func_lw<TF>& sources_sub,
+
+void Source_func_lw::get_subset(
+        const Source_func_lw& sources_sub,
         const int col_s, const int col_e)
 {
     for (int igpt=1; igpt<=lay_source.dim(3); ++igpt)
@@ -76,9 +76,3 @@ void Source_func_lw<TF>::get_subset(
                 lev_source_dec({icol-col_s+1, ilay, igpt}) = sources_sub.get_lev_source_dec()({icol, ilay, igpt});
             }
 }
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template class Source_func_lw<float>;
-#else
-template class Source_func_lw<double>;
-#endif

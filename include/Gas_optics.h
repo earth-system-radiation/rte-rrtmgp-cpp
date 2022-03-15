@@ -33,8 +33,8 @@
 // Forward declarations.
 class Gas_concs_gpu;
 class Gas_concs;
-template<typename Float> class Source_func_lw;
-template<typename Float> class Source_func_lw_gpu;
+class Source_func_lw;
+class Source_func_lw_gpu;
 
 
 class Gas_optics : public Optical_props
@@ -65,7 +65,7 @@ class Gas_optics : public Optical_props
                 const Array<Float,1>& tsfc,
                 const Gas_concs& gas_desc,
                 std::unique_ptr<Optical_props_arry>& optical_props,
-                Source_func_lw<Float>& sources,
+                Source_func_lw& sources,
                 const Array<Float,2>& col_dry,
                 const Array<Float,2>& tlev) const = 0;
 
@@ -112,7 +112,7 @@ class Gas_optics_gpu : public Optical_props_gpu
                 const Array_gpu<Float,1>& tsfc,
                 const Gas_concs_gpu& gas_desc,
                 std::unique_ptr<Optical_props_arry_gpu>& optical_props,
-                Source_func_lw_gpu<Float>& sources,
+                Source_func_lw_gpu& sources,
                 const Array_gpu<Float,2>& col_dry,
                 const Array_gpu<Float,2>& tlev) = 0;
 

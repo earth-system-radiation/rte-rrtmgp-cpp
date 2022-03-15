@@ -412,12 +412,12 @@ void Radiation_solver_longwave::solve_gpu(
     if (!optical_props_subset)
         optical_props_subset = std::make_unique<Optical_props_1scl_gpu>(n_col_block, n_lay, *kdist_gpu);
     if (!sources_subset)
-        sources_subset = std::make_unique<Source_func_lw_gpu<Float>>(n_col_block, n_lay, *kdist_gpu);
+        sources_subset = std::make_unique<Source_func_lw_gpu>(n_col_block, n_lay, *kdist_gpu);
 
     if (n_col_block_residual > 0 && !optical_props_residual)
         optical_props_residual = std::make_unique<Optical_props_1scl_gpu>(n_col_block_residual, n_lay, *kdist_gpu);
     if (n_col_block_residual > 0 && !sources_residual)
-        sources_residual = std::make_unique<Source_func_lw_gpu<Float>>(n_col_block_residual, n_lay, *kdist_gpu);
+        sources_residual = std::make_unique<Source_func_lw_gpu>(n_col_block_residual, n_lay, *kdist_gpu);
 
     if (switch_cloud_optics)
     {
@@ -432,7 +432,7 @@ void Radiation_solver_longwave::solve_gpu(
             const int col_s_in, const int col_e_in,
             std::unique_ptr<Optical_props_arry_gpu>& optical_props_subset_in,
             std::unique_ptr<Optical_props_1scl_gpu>& cloud_optical_props_subset_in,
-            Source_func_lw_gpu<Float>& sources_subset_in,
+            Source_func_lw_gpu& sources_subset_in,
             const Array_gpu<Float,2>& emis_sfc_subset_in,
             Fluxes_broadband_gpu& fluxes,
             Fluxes_broadband_gpu& bnd_fluxes)

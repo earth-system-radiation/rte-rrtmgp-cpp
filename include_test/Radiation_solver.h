@@ -108,8 +108,8 @@ class Radiation_solver_longwave
         std::unique_ptr<Optical_props_arry_gpu> optical_props_subset;
         std::unique_ptr<Optical_props_arry_gpu> optical_props_residual;
 
-        std::unique_ptr<Source_func_lw_gpu<Float>> sources_subset;
-        std::unique_ptr<Source_func_lw_gpu<Float>> sources_residual;
+        std::unique_ptr<Source_func_lw_gpu> sources_subset;
+        std::unique_ptr<Source_func_lw_gpu> sources_residual;
 
         std::unique_ptr<Optical_props_1scl_gpu> cloud_optical_props_subset;
         std::unique_ptr<Optical_props_1scl_gpu> cloud_optical_props_residual;

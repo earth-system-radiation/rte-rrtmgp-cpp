@@ -90,7 +90,7 @@ namespace rrtmgp_kernel_launcher
 void Rte_lw::rte_lw(
         const std::unique_ptr<Optical_props_arry>& optical_props,
         const BOOL_TYPE top_at_1,
-        const Source_func_lw<Float>& sources,
+        const Source_func_lw& sources,
         const Array<Float,2>& sfc_emis,
         const Array<Float,2>& inc_flux,
         Array<Float,3>& gpt_flux_up,
