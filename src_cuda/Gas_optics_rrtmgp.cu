@@ -1036,22 +1036,22 @@ void Gas_optics_rrtmgp_gpu::compute_gas_taus(
     rrtmgp_kernel_launcher_cuda::interpolation(
             ncol, nlay,
             ngas, nflav, neta, npres, ntemp,
-            flavor_gpu,
-            press_ref_log_gpu,
-            temp_ref_gpu,
+            flavor_gpu.ptr(),
+            press_ref_log_gpu.ptr(),
+            temp_ref_gpu.ptr(),
             this->press_ref_log_delta,
             this->temp_ref_min,
             this->temp_ref_delta,
             this->press_ref_trop_log,
-            vmr_ref_gpu,
-            play,
-            tlay,
-            col_gas,
-            jtemp,
-            fmajor, fminor,
-            col_mix,
-            tropo,
-            jeta, jpress);
+            vmr_ref_gpu.ptr(),
+            play.ptr(),
+            tlay.ptr(),
+            col_gas.ptr(),
+            jtemp.ptr(),
+            fmajor.ptr(), fminor.ptr(),
+            col_mix.ptr(),
+            tropo.ptr(),
+            jeta.ptr(), jpress.ptr());
 
     int idx_h2o = -1;
     for  (int i=1; i<=this->gas_names.dim(1); ++i)

@@ -91,23 +91,23 @@ namespace rrtmgp_kernel_launcher_cuda
     void interpolation(
             const int ncol, const int nlay,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
-            const Array_gpu<int,2>& flavor,
-            const Array_gpu<Float,1>& press_ref_log,
-            const Array_gpu<Float,1>& temp_ref,
+            const int* flavor,
+            const Float* press_ref_log,
+            const Float* temp_ref,
             Float press_ref_log_delta,
             Float temp_ref_min,
             Float temp_ref_delta,
             Float press_ref_trop_log,
-            const Array_gpu<Float,3>& vmr_ref,
-            const Array_gpu<Float,2>& play,
-            const Array_gpu<Float,2>& tlay,
-            Array_gpu<Float,3>& col_gas,
-            Array_gpu<int,2>& jtemp,
-            Array_gpu<Float,6>& fmajor, Array_gpu<Float,5>& fminor,
-            Array_gpu<Float,4>& col_mix,
-            Array_gpu<Bool,2>& tropo,
-            Array_gpu<int,4>& jeta,
-            Array_gpu<int,2>& jpress)
+            const Float* vmr_ref,
+            const Float* play,
+            const Float* tlay,
+            Float* col_gas,
+            int* jtemp,
+            Float* fmajor, Float* fminor,
+            Float* col_mix,
+            Bool* tropo,
+            int* jeta,
+            int* jpress)
     {
         const int block_col  = 4;
         const int block_lay  = 2;
@@ -123,13 +123,13 @@ namespace rrtmgp_kernel_launcher_cuda
         Float tmin = std::numeric_limits<Float>::min();
         interpolation_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngas, nflav, neta, npres, ntemp, tmin,
-                flavor.ptr(), press_ref_log.ptr(), temp_ref.ptr(),
+                flavor, press_ref_log, temp_ref,
                 press_ref_log_delta, temp_ref_min,
                 temp_ref_delta, press_ref_trop_log,
-                vmr_ref.ptr(), play.ptr(), tlay.ptr(),
-                col_gas.ptr(), jtemp.ptr(), fmajor.ptr(),
-                fminor.ptr(), col_mix.ptr(), tropo.ptr(),
-                jeta.ptr(), jpress.ptr());
+                vmr_ref, play, tlay,
+                col_gas, jtemp, fmajor,
+                fminor, col_mix, tropo,
+                jeta, jpress);
     }
 
 
