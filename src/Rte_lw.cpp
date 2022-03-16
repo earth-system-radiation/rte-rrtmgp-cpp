@@ -34,7 +34,7 @@ namespace rrtmgp_kernel_launcher
     template<typename Float>
     void apply_BC(
             int ncol, int nlay, int ngpt,
-            BOOL_TYPE top_at_1, Array<Float,3>& gpt_flux_dn)
+            Bool top_at_1, Array<Float,3>& gpt_flux_dn)
     {
         rrtmgp_kernels::apply_BC_0(
                 &ncol, &nlay, &ngpt,
@@ -44,7 +44,7 @@ namespace rrtmgp_kernel_launcher
     template<typename Float>
     void apply_BC(
             int ncol, int nlay, int ngpt,
-            BOOL_TYPE top_at_1, const Array<Float,2>& inc_flux,
+            Bool top_at_1, const Array<Float,2>& inc_flux,
             Array<Float,3>& gpt_flux_dn)
     {
         rrtmgp_kernels::apply_BC_gpt(
@@ -54,7 +54,7 @@ namespace rrtmgp_kernel_launcher
 
     template<typename Float>
     void lw_solver_noscat_GaussQuad(
-            int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1, int n_quad_angs,
+            int ncol, int nlay, int ngpt, Bool top_at_1, int n_quad_angs,
             const Array<Float,3>& secants,
             const Array<Float,2>& gauss_wts_subset,
             const Array<Float,3>& tau,
@@ -63,9 +63,9 @@ namespace rrtmgp_kernel_launcher
             const Array<Float,2>& sfc_emis_gpt, const Array<Float,2>& sfc_source,
             const Array<Float,2>& inc_flux_diffuse,
             Array<Float,3>& gpt_flux_up, Array<Float,3>& gpt_flux_dn,
-            BOOL_TYPE do_broadband, Array<Float,3>& flux_up_loc, Array<Float,3>& flux_dn_loc,
-            BOOL_TYPE do_jacobians, const Array<Float,2>& sfc_source_jac, Array<Float,3>& gpt_flux_up_jac,
-            BOOL_TYPE do_rescaling, const Array<Float,3>& ssa, const Array<Float,3>& g)
+            Bool do_broadband, Array<Float,3>& flux_up_loc, Array<Float,3>& flux_dn_loc,
+            Bool do_jacobians, const Array<Float,2>& sfc_source_jac, Array<Float,3>& gpt_flux_up_jac,
+            Bool do_rescaling, const Array<Float,3>& ssa, const Array<Float,3>& g)
     {
         rrtmgp_kernels::lw_solver_noscat_GaussQuad(
                 &ncol, &nlay, &ngpt, &top_at_1, &n_quad_angs,
@@ -89,7 +89,7 @@ namespace rrtmgp_kernel_launcher
 
 void Rte_lw::rte_lw(
         const std::unique_ptr<Optical_props_arry>& optical_props,
-        const BOOL_TYPE top_at_1,
+        const Bool top_at_1,
         const Source_func_lw& sources,
         const Array<Float,2>& sfc_emis,
         const Array<Float,2>& inc_flux,
@@ -136,15 +136,15 @@ void Rte_lw::rte_lw(
 
     Array<Float,2> inc_flux_diffuse({ncol, ngpt});
 
-    const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
+    const Bool do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
     // CvH: For now, just pass the arrays around. Could we reduce the array size?
-    const BOOL_TYPE do_jacobians = false;
+    const Bool do_jacobians = false;
     Array<Float,2> sfc_src_jac(sources.get_sfc_source().get_dims());
     Array<Float,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
 
     // Do not rescale and pass tau in twice in the last line to not trigger an exception.
-    const BOOL_TYPE do_rescaling = false;
+    const Bool do_rescaling = false;
 
     rrtmgp_kernel_launcher::lw_solver_noscat_GaussQuad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,

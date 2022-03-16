@@ -59,7 +59,7 @@ namespace
 //    template<typename Float>
 //    void apply_BC(
 //            int ncol, int nlay, int ngpt,
-//            BOOL_TYPE top_at_1, Array<Float,3>& gpt_flux_dn)
+//            Bool top_at_1, Array<Float,3>& gpt_flux_dn)
 //    {
 //        rrtmgp_kernels::apply_BC_0(
 //                &ncol, &nlay, &ngpt,
@@ -69,7 +69,7 @@ namespace
 //    template<typename Float>
 //    void apply_BC(
 //            int ncol, int nlay, int ngpt,
-//            BOOL_TYPE top_at_1, const Array<Float,2>& inc_flux,
+//            Bool top_at_1, const Array<Float,2>& inc_flux,
 //            Array<Float,3>& gpt_flux_dn)
 //    {
 //        rrtmgp_kernels::apply_BC_gpt(
@@ -80,7 +80,7 @@ namespace
 
 void Rte_lw_gpu::rte_lw(
         const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
-        const BOOL_TYPE top_at_1,
+        const Bool top_at_1,
         const Source_func_lw_gpu& sources,
         const Array_gpu<Float,2>& sfc_emis,
         const Array_gpu<Float,2>& inc_flux,
@@ -125,12 +125,12 @@ void Rte_lw_gpu::rte_lw(
     Array_gpu<Float,2> sfc_src_jac(sources.get_sfc_source().get_dims());
     Array_gpu<Float,3> gpt_flux_up_jac(gpt_flux_up.get_dims());
 
-    const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
+    const Bool do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
     if (do_broadband)
         throw std::runtime_error("Broadband fluxes not implemented, performance gain on GPU is negligible");
 
-    const BOOL_TYPE do_jacobians = false;
+    const Bool do_jacobians = false;
 
     rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,

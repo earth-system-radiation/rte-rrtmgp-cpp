@@ -180,7 +180,7 @@ Fluxes_broadband_gpu::Fluxes_broadband_gpu(const int ncol, const int nlev) :
 void Fluxes_broadband_gpu::reduce(
     const Array_gpu<Float,3>& gpt_flux_up, const Array_gpu<Float,3>& gpt_flux_dn,
     const std::unique_ptr<Optical_props_arry_gpu>& spectral_disc,
-    const BOOL_TYPE top_at_1)
+    const Bool top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
@@ -210,7 +210,7 @@ void Fluxes_broadband_gpu::reduce(
 void Fluxes_broadband_gpu::reduce(
     const Array_gpu<Float,3>& gpt_flux_up, const Array_gpu<Float,3>& gpt_flux_dn, const Array_gpu<Float,3>& gpt_flux_dn_dir,
     const std::unique_ptr<Optical_props_arry_gpu>& spectral_disc,
-    const BOOL_TYPE top_at_1)
+    const Bool top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
@@ -245,7 +245,7 @@ void Fluxes_byband_gpu::reduce(
     const Array_gpu<Float,3>& gpt_flux_up,
     const Array_gpu<Float,3>& gpt_flux_dn,
     const std::unique_ptr<Optical_props_arry_gpu>& spectral_disc,
-    const BOOL_TYPE top_at_1)
+    const Bool top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
@@ -288,7 +288,7 @@ void Fluxes_byband_gpu::reduce(
     const Array_gpu<Float,3>& gpt_flux_dn,
     const Array_gpu<Float,3>& gpt_flux_dn_dir,
     const std::unique_ptr<Optical_props_arry_gpu>& spectral_disc,
-    const BOOL_TYPE top_at_1)
+    const Bool top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);

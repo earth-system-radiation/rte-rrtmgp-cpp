@@ -33,48 +33,48 @@ namespace rrtmgp_kernels
 {
     extern "C" void sum_broadband(
             int* ncol, int* nlev, int* ngpt,
-            FLOAT_TYPE* spectral_flux, FLOAT_TYPE* broadband_flux);
+            Float* spectral_flux, Float* broadband_flux);
 
     extern "C" void net_broadband_precalc(
             int* ncol, int* nlev,
-            FLOAT_TYPE* broadband_flux_dn, FLOAT_TYPE* broadband_flux_up,
-            FLOAT_TYPE* broadband_flux_net);
+            Float* broadband_flux_dn, Float* broadband_flux_up,
+            Float* broadband_flux_net);
 
     extern "C" void sum_byband(
             int* ncol, int* nlev, int* ngpt, int* nbnd,
             int* band_lims,
-            FLOAT_TYPE* spectral_flux,
-            FLOAT_TYPE* byband_flux);
+            Float* spectral_flux,
+            Float* byband_flux);
 
     extern "C" void net_byband_precalc(
             int* ncol, int* nlev, int* nbnd,
-            FLOAT_TYPE* byband_flux_dn, FLOAT_TYPE* byband_flux_up,
-            FLOAT_TYPE* byband_flux_net);
+            Float* byband_flux_dn, Float* byband_flux_up,
+            Float* byband_flux_net);
 
     extern "C" void zero_array_3D(
-            int* ni, int* nj, int* nk, FLOAT_TYPE* array);
+            int* ni, int* nj, int* nk, Float* array);
 
     extern "C" void zero_array_4D(
-             int* ni, int* nj, int* nk, int* nl, FLOAT_TYPE* array);
+             int* ni, int* nj, int* nk, int* nl, Float* array);
 
     extern "C" void interpolation(
                 int* ncol, int* nlay,
                 int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
                 int* flavor,
-                FLOAT_TYPE* press_ref_log,
-                FLOAT_TYPE* temp_ref,
-                FLOAT_TYPE* press_ref_log_delta,
-                FLOAT_TYPE* temp_ref_min,
-                FLOAT_TYPE* temp_ref_delta,
-                FLOAT_TYPE* press_ref_trop_log,
-                FLOAT_TYPE* vmr_ref,
-                FLOAT_TYPE* play,
-                FLOAT_TYPE* tlay,
-                FLOAT_TYPE* col_gas,
+                Float* press_ref_log,
+                Float* temp_ref,
+                Float* press_ref_log_delta,
+                Float* temp_ref_min,
+                Float* temp_ref_delta,
+                Float* press_ref_trop_log,
+                Float* vmr_ref,
+                Float* play,
+                Float* tlay,
+                Float* col_gas,
                 int* jtemp,
-                FLOAT_TYPE* fmajor, FLOAT_TYPE* fminor,
-                FLOAT_TYPE* col_mix,
-                BOOL_TYPE* tropo,
+                Float* fmajor, Float* fminor,
+                Float* col_mix,
+                Bool* tropo,
                 int* jeta,
                 int* jpress);
 
@@ -86,116 +86,116 @@ namespace rrtmgp_kernels
             int* idx_h2o,
             int* gpoint_flavor,
             int* band_lims_gpt,
-            FLOAT_TYPE* kmajor,
-            FLOAT_TYPE* kminor_lower,
-            FLOAT_TYPE* kminor_upper,
+            Float* kmajor,
+            Float* kminor_lower,
+            Float* kminor_upper,
             int* minor_limits_gpt_lower,
             int* minor_limits_gpt_upper,
-            BOOL_TYPE* minor_scales_with_density_lower,
-            BOOL_TYPE* minor_scales_with_density_upper,
-            BOOL_TYPE* scale_by_complement_lower,
-            BOOL_TYPE* scale_by_complement_upper,
+            Bool* minor_scales_with_density_lower,
+            Bool* minor_scales_with_density_upper,
+            Bool* scale_by_complement_lower,
+            Bool* scale_by_complement_upper,
             int* idx_minor_lower,
             int* idx_minor_upper,
             int* idx_minor_scaling_lower,
             int* idx_minor_scaling_upper,
             int* kminor_start_lower,
             int* kminor_start_upper,
-            BOOL_TYPE* tropo,
-            FLOAT_TYPE* col_mix, FLOAT_TYPE* fmajor, FLOAT_TYPE* fminor,
-            FLOAT_TYPE* play, FLOAT_TYPE* tlay, FLOAT_TYPE* col_gas,
+            Bool* tropo,
+            Float* col_mix, Float* fmajor, Float* fminor,
+            Float* play, Float* tlay, Float* col_gas,
             int* jeta, int* jtemp, int* jpress,
-            FLOAT_TYPE* tau);
+            Float* tau);
 
     extern "C" void reorder_123x321_kernel(
             int* dim1, int* dim2, int* dim3,
-            FLOAT_TYPE* array, FLOAT_TYPE* array_out);
+            Float* array, Float* array_out);
 
     extern "C" void combine_and_reorder_2str(
             int* ncol, int* nlay, int* ngpt,
-            FLOAT_TYPE* tau_local, FLOAT_TYPE* tau_rayleigh,
-            FLOAT_TYPE* tau, FLOAT_TYPE* ssa, FLOAT_TYPE* g);
+            Float* tau_local, Float* tau_rayleigh,
+            Float* tau, Float* ssa, Float* g);
 
     extern "C" void compute_Planck_source(
             int* ncol, int* nlay, int* nbnd, int* ngpt,
             int* nflav, int* neta, int* npres, int* ntemp, int* nPlanckTemp,
-            FLOAT_TYPE* tlay, FLOAT_TYPE* tlev, FLOAT_TYPE* tsfc, int* sfc_lay,
-            FLOAT_TYPE* fmajor, int* jeta, BOOL_TYPE* tropo, int* jtemp, int* jpress,
-            int* gpoint_bands, int* band_lims_gpt, FLOAT_TYPE* pfracin, FLOAT_TYPE* temp_ref_min,
-            FLOAT_TYPE* totplnk_delta, FLOAT_TYPE* totplnk, int* gpoint_flavor,
-            FLOAT_TYPE* sfc_src, FLOAT_TYPE* lay_src, FLOAT_TYPE* lev_src, FLOAT_TYPE* lev_source_dec,
-            FLOAT_TYPE* sfc_src_jac);
+            Float* tlay, Float* tlev, Float* tsfc, int* sfc_lay,
+            Float* fmajor, int* jeta, Bool* tropo, int* jtemp, int* jpress,
+            int* gpoint_bands, int* band_lims_gpt, Float* pfracin, Float* temp_ref_min,
+            Float* totplnk_delta, Float* totplnk, int* gpoint_flavor,
+            Float* sfc_src, Float* lay_src, Float* lev_src, Float* lev_source_dec,
+            Float* sfc_src_jac);
 
     extern "C" void compute_tau_rayleigh(
             int* ncol, int* nlay, int* nband, int* ngpt,
             int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
             int* gpoint_flavor,
             int* band_lims_gpt,
-            FLOAT_TYPE* krayl,
-            int* idx_h2o, FLOAT_TYPE* col_dry, FLOAT_TYPE* col_gas,
-            FLOAT_TYPE* fminor, int* eta,
-            BOOL_TYPE* tropo, int* jtemp,
-            FLOAT_TYPE* tau_rayleigh);
+            Float* krayl,
+            int* idx_h2o, Float* col_dry, Float* col_gas,
+            Float* fminor, int* eta,
+            Bool* tropo, int* jtemp,
+            Float* tau_rayleigh);
 
     extern "C" void apply_BC_0(
             int* ncol, int* nlay, int* ngpt,
-            BOOL_TYPE* top_at_1, FLOAT_TYPE* gpt_flux_dn);
+            Bool* top_at_1, Float* gpt_flux_dn);
 
     extern "C" void apply_BC_gpt(
             int* ncol, int* nlay, int* ngpt,
-            BOOL_TYPE* top_at_1, FLOAT_TYPE* inc_flux, FLOAT_TYPE* gpt_flux_dn);
+            Bool* top_at_1, Float* inc_flux, Float* gpt_flux_dn);
 
     extern "C" void lw_solver_noscat_GaussQuad(
-            int* ncol, int* nlay, int* ngpt, BOOL_TYPE* top_at_1, int* n_quad_angs,
-            FLOAT_TYPE* secants, FLOAT_TYPE* gauss_wts_subset,
-            FLOAT_TYPE* tau,
-            FLOAT_TYPE* lay_source, FLOAT_TYPE* lev_source_inc, FLOAT_TYPE* lev_source_dec,
-            FLOAT_TYPE* sfc_emis_gpt, FLOAT_TYPE* sfc_source,
-            FLOAT_TYPE* inc_flux_diffuse,
-            FLOAT_TYPE* gpt_flux_up, FLOAT_TYPE* gpt_flux_dn,
-            BOOL_TYPE* do_broadband, FLOAT_TYPE* flux_up_loc, FLOAT_TYPE* flux_dn_loc,
-            BOOL_TYPE* do_jacobians, FLOAT_TYPE* sfc_source_jac, FLOAT_TYPE* gpt_flux_up_jac,
-            BOOL_TYPE* do_rescaling, FLOAT_TYPE* ssa, FLOAT_TYPE* g);
+            int* ncol, int* nlay, int* ngpt, Bool* top_at_1, int* n_quad_angs,
+            Float* secants, Float* gauss_wts_subset,
+            Float* tau,
+            Float* lay_source, Float* lev_source_inc, Float* lev_source_dec,
+            Float* sfc_emis_gpt, Float* sfc_source,
+            Float* inc_flux_diffuse,
+            Float* gpt_flux_up, Float* gpt_flux_dn,
+            Bool* do_broadband, Float* flux_up_loc, Float* flux_dn_loc,
+            Bool* do_jacobians, Float* sfc_source_jac, Float* gpt_flux_up_jac,
+            Bool* do_rescaling, Float* ssa, Float* g);
 
     extern "C" void apply_BC_factor(
             int* ncol, int* nlay, int* ngpt,
-            BOOL_TYPE* top_at_1, FLOAT_TYPE* inc_flux,
-            FLOAT_TYPE* factor, FLOAT_TYPE* flux_dn);
+            Bool* top_at_1, Float* inc_flux,
+            Float* factor, Float* flux_dn);
 
     extern "C" void sw_solver_2stream(
-            int* ncol, int* nlay, int* ngpt, BOOL_TYPE* top_at_1,
-            FLOAT_TYPE* tau,
-            FLOAT_TYPE* ssa,
-            FLOAT_TYPE* g,
-            FLOAT_TYPE* mu0,
-            FLOAT_TYPE* sfc_alb_dir_gpt, FLOAT_TYPE* sfc_alb_dif_gpt,
-            FLOAT_TYPE* inc_flux_dir,
-            FLOAT_TYPE* gpt_flux_up, FLOAT_TYPE* gpt_flux_dn, FLOAT_TYPE* gpt_flux_dir,
-            BOOL_TYPE* has_dif_bc, FLOAT_TYPE* inc_flux_dif,
-            BOOL_TYPE* do_broadband, FLOAT_TYPE* flux_up_loc, FLOAT_TYPE* flux_dn_loc, FLOAT_TYPE* flux_dir_loc);
+            int* ncol, int* nlay, int* ngpt, Bool* top_at_1,
+            Float* tau,
+            Float* ssa,
+            Float* g,
+            Float* mu0,
+            Float* sfc_alb_dir_gpt, Float* sfc_alb_dif_gpt,
+            Float* inc_flux_dir,
+            Float* gpt_flux_up, Float* gpt_flux_dn, Float* gpt_flux_dir,
+            Bool* has_dif_bc, Float* inc_flux_dif,
+            Bool* do_broadband, Float* flux_up_loc, Float* flux_dn_loc, Float* flux_dir_loc);
 
     extern "C" void increment_2stream_by_2stream(
             int* ncol, int* nlev, int* ngpt,
-            FLOAT_TYPE* tau_inout, FLOAT_TYPE* ssa_inout, FLOAT_TYPE* g_inout,
-            FLOAT_TYPE* tau_in, FLOAT_TYPE* ssa_in, FLOAT_TYPE* g_in);
+            Float* tau_inout, Float* ssa_inout, Float* g_inout,
+            Float* tau_in, Float* ssa_in, Float* g_in);
 
     extern "C" void increment_1scalar_by_1scalar(
             int* ncol, int* nlev, int* ngpt,
-            FLOAT_TYPE* tau_inout, FLOAT_TYPE* tau_in);
+            Float* tau_inout, Float* tau_in);
 
     extern "C" void inc_2stream_by_2stream_bybnd(
             int* ncol, int* nlev, int* ngpt,
-            FLOAT_TYPE* tau_inout, FLOAT_TYPE* ssa_inout, FLOAT_TYPE* g_inout,
-            FLOAT_TYPE* tau_in, FLOAT_TYPE* ssa_in, FLOAT_TYPE* g_in,
+            Float* tau_inout, Float* ssa_inout, Float* g_inout,
+            Float* tau_in, Float* ssa_in, Float* g_in,
             int* nbnd, int* band_lims_gpoint);
 
     extern "C" void inc_1scalar_by_1scalar_bybnd(
             int* ncol, int* nlev, int* ngpt,
-            FLOAT_TYPE* tau_inout, FLOAT_TYPE* tau_in,
+            Float* tau_inout, Float* tau_in,
             int* nbnd, int* band_lims_gpoint);
 
     extern "C" void delta_scale_2str_k(
             int* ncol, int* nlev, int* ngpt,
-            FLOAT_TYPE* tau_inout, FLOAT_TYPE* ssa_inout, FLOAT_TYPE* g_inout);
+            Float* tau_inout, Float* ssa_inout, Float* g_inout);
 }
 #endif

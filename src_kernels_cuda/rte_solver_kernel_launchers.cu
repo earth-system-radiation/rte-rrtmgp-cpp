@@ -16,7 +16,7 @@ namespace
 
 namespace rte_kernel_launcher_cuda
 {
-    void apply_BC(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
+    void apply_BC(const int ncol, const int nlay, const int ngpt, const Bool top_at_1,
                   const Array_gpu<Float,2>& inc_flux_dir, const Array_gpu<Float,1>& mu0, Array_gpu<Float,3>& gpt_flux_dir)
     {
         const int block_col = 32;
@@ -32,7 +32,7 @@ namespace rte_kernel_launcher_cuda
     }
 
 
-    void apply_BC(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, Array_gpu<Float,3>& gpt_flux_dn)
+    void apply_BC(const int ncol, const int nlay, const int ngpt, const Bool top_at_1, Array_gpu<Float,3>& gpt_flux_dn)
     {
         const int block_col = 32;
         const int block_gpt = 32;
@@ -46,7 +46,7 @@ namespace rte_kernel_launcher_cuda
     }
 
 
-    void apply_BC(const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const Array_gpu<Float,2>& inc_flux_dif, Array_gpu<Float,3>& gpt_flux_dn)
+    void apply_BC(const int ncol, const int nlay, const int ngpt, const Bool top_at_1, const Array_gpu<Float,2>& inc_flux_dif, Array_gpu<Float,3>& gpt_flux_dn)
     {
         const int block_col = 32;
         const int block_gpt = 32;
@@ -81,15 +81,15 @@ namespace rte_kernel_launcher_cuda
 
 
     void lw_solver_noscat_gaussquad(
-            const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1, const int nmus,
+            const int ncol, const int nlay, const int ngpt, const Bool top_at_1, const int nmus,
             const Array_gpu<Float,3>& secants, const Array_gpu<Float,2>& weights,
             const Array_gpu<Float,3>& tau, const Array_gpu<Float,3> lay_source,
             const Array_gpu<Float,3>& lev_source_inc, const Array_gpu<Float,3>& lev_source_dec,
             const Array_gpu<Float,2>& sfc_emis, const Array_gpu<Float,2>& sfc_src,
             const Array_gpu<Float,2>& inc_flux,
             Array_gpu<Float,3>& flux_up, Array_gpu<Float,3>& flux_dn,
-            const BOOL_TYPE do_broadband, Array_gpu<Float,3>& flux_up_loc, Array_gpu<Float,3>& flux_dn_loc,
-            const BOOL_TYPE do_jacobians, const Array_gpu<Float,2>& sfc_src_jac, Array_gpu<Float,3>& flux_up_jac,
+            const Bool do_broadband, Array_gpu<Float,3>& flux_up_loc, Array_gpu<Float,3>& flux_dn_loc,
+            const Bool do_jacobians, const Array_gpu<Float,2>& sfc_src_jac, Array_gpu<Float,3>& flux_up_jac,
             void* calling_class_ptr)
     {
         Float eps = std::numeric_limits<Float>::epsilon();
@@ -289,14 +289,14 @@ namespace rte_kernel_launcher_cuda
 
 
     void sw_solver_2stream(
-            const int ncol, const int nlay, const int ngpt, const BOOL_TYPE top_at_1,
+            const int ncol, const int nlay, const int ngpt, const Bool top_at_1,
             const Array_gpu<Float,3>& tau, const Array_gpu<Float,3>& ssa, const Array_gpu<Float,3>& g,
             const Array_gpu<Float,1>& mu0,
             const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
             const Array_gpu<Float,2>& inc_flux_dir,
             Array_gpu<Float,3>& flux_up, Array_gpu<Float,3>& flux_dn, Array_gpu<Float,3>& flux_dir,
-            const BOOL_TYPE has_dif_bc, const Array_gpu<Float,2>& inc_flux_dif,
-            const BOOL_TYPE do_broadband, Array_gpu<Float,3>& flux_up_loc, Array_gpu<Float,3>& flux_dn_loc, Array_gpu<Float,3>& flux_dir_loc,
+            const Bool has_dif_bc, const Array_gpu<Float,2>& inc_flux_dif,
+            const Bool do_broadband, Array_gpu<Float,3>& flux_up_loc, Array_gpu<Float,3>& flux_dn_loc, Array_gpu<Float,3>& flux_dir_loc,
             void* calling_class_ptr)
     {
         const int opt_size = tau.size();

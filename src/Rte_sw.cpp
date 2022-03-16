@@ -33,7 +33,7 @@ namespace rrtmgp_kernel_launcher
     template<typename Float>
     void apply_BC(
             int ncol, int nlay, int ngpt,
-            BOOL_TYPE top_at_1, Array<Float,3>& gpt_flux_dn)
+            Bool top_at_1, Array<Float,3>& gpt_flux_dn)
     {
         rrtmgp_kernels::apply_BC_0(
                 &ncol, &nlay, &ngpt,
@@ -42,7 +42,7 @@ namespace rrtmgp_kernel_launcher
 
     template<typename Float>
     void apply_BC(
-            int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1,
+            int ncol, int nlay, int ngpt, Bool top_at_1,
             const Array<Float,2>& inc_flux, Array<Float,3>& gpt_flux_dn)
     {
         rrtmgp_kernels::apply_BC_gpt(
@@ -52,7 +52,7 @@ namespace rrtmgp_kernel_launcher
 
     template<typename Float>
     void apply_BC(
-            int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1,
+            int ncol, int nlay, int ngpt, Bool top_at_1,
             const Array<Float,2>& inc_flux,
             const Array<Float,1>& factor,
             Array<Float,3>& gpt_flux)
@@ -67,7 +67,7 @@ namespace rrtmgp_kernel_launcher
 
     template<typename Float>
     void sw_solver_2stream(
-            int ncol, int nlay, int ngpt, BOOL_TYPE top_at_1,
+            int ncol, int nlay, int ngpt, Bool top_at_1,
             const Array<Float,3>& tau,
             const Array<Float,3>& ssa,
             const Array<Float,3>& g,
@@ -75,8 +75,8 @@ namespace rrtmgp_kernel_launcher
             const Array<Float,2>& sfc_alb_dir_gpt, const Array<Float,2>& sfc_alb_dif_gpt,
             const Array<Float,2>& inc_flux,
             Array<Float,3>& gpt_flux_up, Array<Float,3>& gpt_flux_dn, Array<Float,3>& gpt_flux_dir,
-            BOOL_TYPE has_dif_bc, const Array<Float,2>& inc_flux_dif,
-            BOOL_TYPE do_broadband, Array<Float,3>& flux_up_loc, Array<Float,3>& flux_dn_loc, Array<Float,3>& flux_dir_loc)
+            Bool has_dif_bc, const Array<Float,2>& inc_flux_dif,
+            Bool do_broadband, Array<Float,3>& flux_up_loc, Array<Float,3>& flux_dn_loc, Array<Float,3>& flux_dir_loc)
     {
         rrtmgp_kernels::sw_solver_2stream(
                 &ncol, &nlay, &ngpt, &top_at_1,
@@ -96,7 +96,7 @@ namespace rrtmgp_kernel_launcher
 
 void Rte_sw::rte_sw(
         const std::unique_ptr<Optical_props_arry>& optical_props,
-        const BOOL_TYPE top_at_1,
+        const Bool top_at_1,
         const Array<Float,1>& mu0,
         const Array<Float,2>& inc_flux_dir,
         const Array<Float,2>& sfc_alb_dir,
@@ -118,8 +118,8 @@ void Rte_sw::rte_sw(
 
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat
-    const BOOL_TYPE has_dif_bc = false;
-    const BOOL_TYPE do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
+    const Bool has_dif_bc = false;
+    const Bool do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
     rrtmgp_kernel_launcher::sw_solver_2stream(
             ncol, nlay, ngpt, top_at_1,

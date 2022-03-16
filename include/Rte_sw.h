@@ -41,7 +41,7 @@ class Rte_sw
     public:
         static void rte_sw(
                 const std::unique_ptr<Optical_props_arry>& optical_props,
-                const BOOL_TYPE top_at_1,
+                const Bool top_at_1,
                 const Array<Float,1>& mu0,
                 const Array<Float,2>& inc_flux_dir,
                 const Array<Float,2>& sfc_alb_dir,
@@ -64,7 +64,7 @@ class Rte_sw_gpu
     public:
         void rte_sw(
                 const std::unique_ptr<Optical_props_arry_gpu>& optical_props,
-                const BOOL_TYPE top_at_1,
+                const Bool top_at_1,
                 const Array_gpu<Float,1>& mu0,
                 const Array_gpu<Float,2>& inc_flux_dir,
                 const Array_gpu<Float,2>& sfc_alb_dir,

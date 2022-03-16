@@ -137,7 +137,7 @@ void Planck_source_kernel(
         const Float* __restrict__ tsfc,
         const int sfc_lay,
         const Float* __restrict__ fmajor, const int* __restrict__ jeta,
-        const BOOL_TYPE* __restrict__ tropo, const int* __restrict__ jtemp,
+        const Bool* __restrict__ tropo, const int* __restrict__ jtemp,
         const int* __restrict__ jpress, const int* __restrict__ gpoint_bands,
         const int* __restrict__ band_lims_gpt, const Float* __restrict__ pfracin,
         const Float temp_ref_min, const Float totplnk_delta,
@@ -232,7 +232,7 @@ void interpolation_kernel(
         int* __restrict__ jtemp,
         Float* __restrict__ fmajor, Float* __restrict__ fminor,
         Float* __restrict__ col_mix,
-        BOOL_TYPE* __restrict__ tropo,
+        Bool* __restrict__ tropo,
         int* __restrict__ jeta,
         int* __restrict__ jpress)
 {
@@ -308,7 +308,7 @@ void gas_optical_depths_major_kernel(
         const int* __restrict__ band_lims_gpt,
         const Float* __restrict__ kmajor,
         const Float* __restrict__ col_mix, const Float* __restrict__ fmajor,
-        const int* __restrict__ jeta, const BOOL_TYPE* __restrict__ tropo,
+        const int* __restrict__ jeta, const Bool* __restrict__ tropo,
         const int* __restrict__ jtemp, const int* __restrict__ jpress,
         Float* __restrict__ tau)
 {
@@ -368,8 +368,8 @@ void compute_tau_minor_absorption_kernel(
         const int* __restrict__ gpoint_flavor,
         const Float* __restrict__ kminor,
         const int* __restrict__ minor_limits_gpt,
-        const BOOL_TYPE* __restrict__ minor_scales_with_density,
-        const BOOL_TYPE* __restrict__ scale_by_complement,
+        const Bool* __restrict__ minor_scales_with_density,
+        const Bool* __restrict__ scale_by_complement,
         const int* __restrict__ idx_minor,
         const int* __restrict__ idx_minor_scaling,
         const int* __restrict__ kminor_start,
@@ -379,7 +379,7 @@ void compute_tau_minor_absorption_kernel(
         const Float* __restrict__ fminor,
         const int* __restrict__ jeta,
         const int* __restrict__ jtemp,
-        const BOOL_TYPE* __restrict__ tropo,
+        const Bool* __restrict__ tropo,
         Float* __restrict__ tau,
         Float* __restrict__ tau_minor)
 {
@@ -392,8 +392,8 @@ void compute_tau_minor_absorption_kernel(
     //const int ilay = blockIdx.x * blockDim.x + threadIdx.x;
 
     __shared__ Float sh_tau[max_gpt][block_size_y][block_size_x];
-    __shared__ BOOL_TYPE sh_active[block_size_y];
-    BOOL_TYPE active = 0;
+    __shared__ Bool sh_active[block_size_y];
+    Bool active = 0;
     if (threadIdx.x == 0)
         sh_active[threadIdx.y] = 0;
 
@@ -532,8 +532,8 @@ void gas_optical_depths_minor_kernel(
         const int* __restrict__ gpoint_flavor,
         const Float* __restrict__ kminor,
         const int* __restrict__ minor_limits_gpt,
-        const BOOL_TYPE* __restrict__ minor_scales_with_density,
-        const BOOL_TYPE* __restrict__ scale_by_complement,
+        const Bool* __restrict__ minor_scales_with_density,
+        const Bool* __restrict__ scale_by_complement,
         const int* __restrict__ idx_minor,
         const int* __restrict__ idx_minor_scaling,
         const int* __restrict__ kminor_start,
@@ -543,7 +543,7 @@ void gas_optical_depths_minor_kernel(
         const Float* __restrict__ fminor,
         const int* __restrict__ jeta,
         const int* __restrict__ jtemp,
-        const BOOL_TYPE* __restrict__ tropo,
+        const Bool* __restrict__ tropo,
         Float* __restrict__ tau,
         Float* __restrict__ tau_minor)
 {
@@ -655,8 +655,8 @@ void gas_optical_depths_minor_reference_kernel(
         const int* __restrict__ gpoint_flavor,
         const Float* __restrict__ kminor,
         const int* __restrict__ minor_limits_gpt,
-        const BOOL_TYPE* __restrict__ minor_scales_with_density,
-        const BOOL_TYPE* __restrict__ scale_by_complement,
+        const Bool* __restrict__ minor_scales_with_density,
+        const Bool* __restrict__ scale_by_complement,
         const int* __restrict__ idx_minor,
         const int* __restrict__ idx_minor_scaling,
         const int* __restrict__ kminor_start,
@@ -666,7 +666,7 @@ void gas_optical_depths_minor_reference_kernel(
         const Float* __restrict__ fminor,
         const int* __restrict__ jeta,
         const int* __restrict__ jtemp,
-        const BOOL_TYPE* __restrict__ tropo,
+        const Bool* __restrict__ tropo,
         Float* __restrict__ tau,
         Float* __restrict__ tau_minor)
 {
@@ -745,7 +745,7 @@ void compute_tau_rayleigh_kernel(
         const Float* __restrict__ krayl,
         int idx_h2o, const Float* __restrict__ col_dry, const Float* __restrict__ col_gas,
         const Float* __restrict__ fminor, const int* __restrict__ jeta,
-        const BOOL_TYPE* __restrict__ tropo, const int* __restrict__ jtemp,
+        const Bool* __restrict__ tropo, const int* __restrict__ jtemp,
         Float* __restrict__ tau_rayleigh)
 {
     // Fetch the three coordinates.

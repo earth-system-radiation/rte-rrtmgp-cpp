@@ -29,7 +29,7 @@ namespace
 {
     template<typename TF>__global__
     void compute_from_table_kernel(
-            const int ncol, const int nlay, const int nbnd, const BOOL_TYPE* mask,
+            const int ncol, const int nlay, const int nbnd, const Bool* mask,
             const TF* cwp, const TF* re,
             const int nsteps, const TF step_size, const TF offset,
             const TF* tau_table, const TF* ssa_table, const TF* asy_table,
@@ -113,7 +113,7 @@ namespace
 
     template<typename TF>__global__
     void set_mask(const int ncol, const int nlay, const TF min_value,
-                  BOOL_TYPE* __restrict__ mask, const TF* __restrict__ values)
+                  Bool* __restrict__ mask, const TF* __restrict__ values)
     {
         const int icol = blockIdx.x*blockDim.x + threadIdx.x;
         const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -201,11 +201,11 @@ void Cloud_optics_gpu::cloud_optics(
     dim3 grid_m_gpu(grid_col_m, grid_lay_m);
     dim3 block_m_gpu(block_col_m, block_lay_m);
 
-    Array_gpu<BOOL_TYPE,2> liqmsk({ncol, nlay});
+    Array_gpu<Bool,2> liqmsk({ncol, nlay});
     set_mask<<<grid_m_gpu, block_m_gpu>>>(
             ncol, nlay, mask_min_value, liqmsk.ptr(), clwp.ptr());
 
-    Array_gpu<BOOL_TYPE,2> icemsk({ncol, nlay});
+    Array_gpu<Bool,2> icemsk({ncol, nlay});
     set_mask<<<grid_m_gpu, block_m_gpu>>>(
             ncol, nlay, mask_min_value, icemsk.ptr(), ciwp.ptr());
 
@@ -277,11 +277,11 @@ void Cloud_optics_gpu::cloud_optics(
     dim3 grid_m_gpu(grid_col_m, grid_lay_m);
     dim3 block_m_gpu(block_col_m, block_lay_m);
 
-    Array_gpu<BOOL_TYPE,2> liqmsk({ncol, nlay});
+    Array_gpu<Bool,2> liqmsk({ncol, nlay});
     set_mask<<<grid_m_gpu, block_m_gpu>>>(
             ncol, nlay, mask_min_value, liqmsk.ptr(), clwp.ptr());
 
-    Array_gpu<BOOL_TYPE,2> icemsk({ncol, nlay});
+    Array_gpu<Bool,2> icemsk({ncol, nlay});
     set_mask<<<grid_m_gpu, block_m_gpu>>>(
             ncol, nlay, mask_min_value, icemsk.ptr(), ciwp.ptr());
 

@@ -90,23 +90,23 @@ namespace
                 const Array<Float,3>& kminor_atm,
                 const Array<std::string,1>& minor_gases_atm,
                 const Array<int,2>& minor_limits_gpt_atm,
-                const Array<BOOL_TYPE,1>& minor_scales_with_density_atm,
+                const Array<Bool,1>& minor_scales_with_density_atm,
                 const Array<std::string,1>& scaling_gas_atm,
-                const Array<BOOL_TYPE,1>& scale_by_complement_atm,
+                const Array<Bool,1>& scale_by_complement_atm,
                 const Array<int,1>& kminor_start_atm,
 
                 Array<Float,3>& kminor_atm_red,
                 Array<std::string,1>& minor_gases_atm_red,
                 Array<int,2>& minor_limits_gpt_atm_red,
-                Array<BOOL_TYPE,1>& minor_scales_with_density_atm_red,
+                Array<Bool,1>& minor_scales_with_density_atm_red,
                 Array<std::string,1>& scaling_gas_atm_red,
-                Array<BOOL_TYPE,1>& scale_by_complement_atm_red,
+                Array<Bool,1>& scale_by_complement_atm_red,
                 Array<int,1>& kminor_start_atm_red)
     {
         int nm = minor_gases_atm.dim(1);
         int tot_g = 0;
 
-        Array<BOOL_TYPE,1> gas_is_present({nm});
+        Array<Bool,1> gas_is_present({nm});
 
         for (int i=1; i<=nm; ++i)
         {
@@ -231,7 +231,7 @@ namespace
             const Array<std::string,1>& gas_names_red,
             const Array<int,3>& key_species,
             Array<int,3>& key_species_red,
-            Array<BOOL_TYPE,1>& key_species_present_init)
+            Array<Bool,1>& key_species_present_init)
     {
         const int np = key_species.dim(1);
         const int na = key_species.dim(2);
@@ -262,7 +262,7 @@ namespace
 
     void check_key_species_present_init(
             const Array<std::string,1>& gas_names,
-            const Array<BOOL_TYPE,1>& key_species_present_init
+            const Array<Bool,1>& key_species_present_init
             )
     {
         for (int i=1; i<=key_species_present_init.dim(1); ++i)
@@ -449,12 +449,12 @@ Gas_optics_rrtmgp_gpu::Gas_optics_rrtmgp_gpu(
         const Array<std::string,1>& minor_gases_upper,
         const Array<int,2>& minor_limits_gpt_lower,
         const Array<int,2>& minor_limits_gpt_upper,
-        const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
-        const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
+        const Array<Bool,1>& minor_scales_with_density_lower,
+        const Array<Bool,1>& minor_scales_with_density_upper,
         const Array<std::string,1>& scaling_gas_lower,
         const Array<std::string,1>& scaling_gas_upper,
-        const Array<BOOL_TYPE,1>& scale_by_complement_lower,
-        const Array<BOOL_TYPE,1>& scale_by_complement_upper,
+        const Array<Bool,1>& scale_by_complement_lower,
+        const Array<Bool,1>& scale_by_complement_upper,
         const Array<int,1>& kminor_start_lower,
         const Array<int,1>& kminor_start_upper,
         const Array<Float,2>& totplnk,
@@ -524,12 +524,12 @@ Gas_optics_rrtmgp_gpu::Gas_optics_rrtmgp_gpu(
         const Array<std::string,1>& minor_gases_upper,
         const Array<int,2>& minor_limits_gpt_lower,
         const Array<int,2>& minor_limits_gpt_upper,
-        const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
-        const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
+        const Array<Bool,1>& minor_scales_with_density_lower,
+        const Array<Bool,1>& minor_scales_with_density_upper,
         const Array<std::string,1>& scaling_gas_lower,
         const Array<std::string,1>& scaling_gas_upper,
-        const Array<BOOL_TYPE,1>& scale_by_complement_lower,
-        const Array<BOOL_TYPE,1>& scale_by_complement_upper,
+        const Array<Bool,1>& scale_by_complement_lower,
+        const Array<Bool,1>& scale_by_complement_upper,
         const Array<int,1>& kminor_start_lower,
         const Array<int,1>& kminor_start_upper,
         const Array<Float,1>& solar_source_quiet,
@@ -597,12 +597,12 @@ void Gas_optics_rrtmgp_gpu::init_abs_coeffs(
         const Array<std::string,1>& minor_gases_upper,
         const Array<int,2>& minor_limits_gpt_lower,
         const Array<int,2>& minor_limits_gpt_upper,
-        const Array<BOOL_TYPE,1>& minor_scales_with_density_lower,
-        const Array<BOOL_TYPE,1>& minor_scales_with_density_upper,
+        const Array<Bool,1>& minor_scales_with_density_lower,
+        const Array<Bool,1>& minor_scales_with_density_upper,
         const Array<std::string,1>& scaling_gas_lower,
         const Array<std::string,1>& scaling_gas_upper,
-        const Array<BOOL_TYPE,1>& scale_by_complement_lower,
-        const Array<BOOL_TYPE,1>& scale_by_complement_upper,
+        const Array<Bool,1>& scale_by_complement_lower,
+        const Array<Bool,1>& scale_by_complement_upper,
         const Array<int,1>& kminor_start_lower,
         const Array<int,1>& kminor_start_upper,
         const Array<Float,3>& rayl_lower,
@@ -740,7 +740,7 @@ void Gas_optics_rrtmgp_gpu::init_abs_coeffs(
     // Create flavor list.
     // Reduce (remap) key_species list; checks that all key gases are present in incoming
     Array<int,3> key_species_red;
-    Array<BOOL_TYPE,1> key_species_present_init;
+    Array<Bool,1> key_species_present_init;
 
     create_key_species_reduce(
             gas_names, this->gas_names, key_species, key_species_red, key_species_present_init);
@@ -926,7 +926,7 @@ void Gas_optics_rrtmgp_gpu::gas_optics(
 
     Array_gpu<int,2> jtemp({play.dim(1), play.dim(2)});
     Array_gpu<int,2> jpress({play.dim(1), play.dim(2)});
-    Array_gpu<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
+    Array_gpu<Bool,2> tropo({play.dim(1), play.dim(2)});
     Array_gpu<Float,6> fmajor({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
     Array_gpu<int,4> jeta({2, play.dim(1), play.dim(2), this->get_nflav()});
 
@@ -964,7 +964,7 @@ void Gas_optics_rrtmgp_gpu::gas_optics(
 
     Array_gpu<int,2> jtemp({play.dim(1), play.dim(2)});
     Array_gpu<int,2> jpress({play.dim(1), play.dim(2)});
-    Array_gpu<BOOL_TYPE,2> tropo({play.dim(1), play.dim(2)});
+    Array_gpu<Bool,2> tropo({play.dim(1), play.dim(2)});
     Array_gpu<Float,6> fmajor({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
     Array_gpu<int,4> jeta({2, play.dim(1), play.dim(2), this->get_nflav()});
 
@@ -990,7 +990,7 @@ void Gas_optics_rrtmgp_gpu::compute_gas_taus(
         std::unique_ptr<Optical_props_arry_gpu>& optical_props,
         Array_gpu<int,2>& jtemp, Array_gpu<int,2>& jpress,
         Array_gpu<int,4>& jeta,
-        Array_gpu<BOOL_TYPE,2>& tropo,
+        Array_gpu<Bool,2>& tropo,
         Array_gpu<Float,6>& fmajor,
         const Array_gpu<Float,2>& col_dry)
 {
@@ -1178,7 +1178,7 @@ void Gas_optics_rrtmgp_gpu::source(
         const Array_gpu<Float,2>& play, const Array_gpu<Float,2>& plev,
         const Array_gpu<Float,2>& tlay, const Array_gpu<Float,1>& tsfc,
         const Array_gpu<int,2>& jtemp, const Array_gpu<int,2>& jpress,
-        const Array_gpu<int,4>& jeta, const Array_gpu<BOOL_TYPE,2>& tropo,
+        const Array_gpu<int,4>& jeta, const Array_gpu<Bool,2>& tropo,
         const Array_gpu<Float,6>& fmajor,
         Source_func_lw_gpu& sources,
         const Array_gpu<Float,2>& tlev)

@@ -95,7 +95,7 @@ Fluxes_broadband::Fluxes_broadband(const int ncol, const int nlev) :
 void Fluxes_broadband::reduce(
     const Array<Float,3>& gpt_flux_up, const Array<Float,3>& gpt_flux_dn,
     const std::unique_ptr<Optical_props_arry>& spectral_disc,
-    const BOOL_TYPE top_at_1)
+    const Bool top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
@@ -116,7 +116,7 @@ void Fluxes_broadband::reduce(
 void Fluxes_broadband::reduce(
     const Array<Float,3>& gpt_flux_up, const Array<Float,3>& gpt_flux_dn, const Array<Float,3>& gpt_flux_dn_dir,
     const std::unique_ptr<Optical_props_arry>& spectral_disc,
-    const BOOL_TYPE top_at_1)
+    const Bool top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
@@ -143,7 +143,7 @@ void Fluxes_byband::reduce(
     const Array<Float,3>& gpt_flux_up,
     const Array<Float,3>& gpt_flux_dn,
     const std::unique_ptr<Optical_props_arry>& spectral_disc,
-    const BOOL_TYPE top_at_1)
+    const Bool top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
@@ -176,7 +176,7 @@ void Fluxes_byband::reduce(
     const Array<Float,3>& gpt_flux_dn,
     const Array<Float,3>& gpt_flux_dn_dir,
     const std::unique_ptr<Optical_props_arry>& spectral_disc,
-    const BOOL_TYPE top_at_1)
+    const Bool top_at_1)
 {
     const int ncol = gpt_flux_up.dim(1);
     const int nlev = gpt_flux_up.dim(2);
