@@ -7,11 +7,11 @@
 #include <tuple>
 #include <iostream>
 
+
 // Multi-queue memory pool for device pointers. 
 class Memory_pool_gpu
 {
     public:
-
         typedef std::map<std::size_t, std::list<void*>> memory_storage_type;
 
         static Memory_pool_gpu& get_instance()
@@ -35,7 +35,6 @@ class Memory_pool_gpu
         void release(void* ptr_);
 
     private:
-
         void* allocate(std::size_t nbytes);
 
         memory_storage_type blocks;
@@ -45,5 +44,4 @@ class Memory_pool_gpu
         std::size_t alloc_counter;
         std::size_t alloc_bytes;
 };
-
 #endif

@@ -1,6 +1,7 @@
 #include "Mem_pool_gpu.h"
 
-Memory_pool_gpu::Memory_pool_gpu(const std::map<std::size_t, std::size_t>& block_sizes_):alloc_counter(0), alloc_bytes(0)
+
+Memory_pool_gpu::Memory_pool_gpu(const std::map<std::size_t, std::size_t>& block_sizes_) : alloc_counter(0), alloc_bytes(0)
 {
     float min_queue_split = 0.25;
     
@@ -36,7 +37,7 @@ Memory_pool_gpu::Memory_pool_gpu(const std::map<std::size_t, std::size_t>& block
 
     auto block = (char*)allocate(tot_size);
     
-    //Second pass: split block into sub-block pointers
+    // Second pass: split block into sub-block pointers
     char* ptr = block;
     for (auto it = split_block_sizes.begin(); it != split_block_sizes.end(); ++it)
     {
@@ -47,11 +48,11 @@ Memory_pool_gpu::Memory_pool_gpu(const std::map<std::size_t, std::size_t>& block
             pointers.push_back((void*)ptr);
             size_registry[(void*)ptr] = block_size;
             ptr = &(*(ptr + block_size));
-//            std::cerr<<"ptr: "<<ptr<<", block size:"<<block_size<<std::endl;
         }
         blocks[block_size] = pointers;
     }
 }
+
 
 Memory_pool_gpu::~Memory_pool_gpu()
 {
@@ -64,6 +65,7 @@ Memory_pool_gpu::~Memory_pool_gpu()
     blocks.clear();
     size_registry.clear();
 }
+
 
 void* Memory_pool_gpu::allocate(std::size_t nbytes_)
 {
@@ -97,7 +99,6 @@ void* Memory_pool_gpu::acquire(std::size_t nbytes_)
     // If the requested block size is too large, add it
     if (it == blocks.end())
     {
-//        std::cerr<<"append allocation of size "<<nbytes_<<std::endl;
         ptr = allocate(nbytes_);
         size_registry[ptr] = nbytes_;
         blocks[nbytes_] = std::list<void*>();
@@ -114,26 +115,24 @@ void* Memory_pool_gpu::acquire(std::size_t nbytes_)
             }
             if (it2 == blocks.end())
             {
-//                std::cerr<<"insert allocation of size "<<it->first<<", "<<nbytes_<<" requested"<<std::endl;
                 ptr = allocate(it->first);
                 size_registry[ptr] = it->first;
             }
             else
             {
-//                std::cerr<<"retrieved block of size "<<it->first<<", "<<nbytes_<<" requested"<<std::endl;
                 ptr = it2->second.back();
                 it2->second.pop_back();
             }
         }
         else
         {
-//            std::cerr<<"retrieved block of size "<<it->first<<", "<<nbytes_<<" requested"<<std::endl;
             ptr = it->second.back();
             it->second.pop_back();
         }
     }
     return ptr;
 }
+
 
 void Memory_pool_gpu::release(void* ptr_)
 {
