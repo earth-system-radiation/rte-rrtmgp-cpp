@@ -292,6 +292,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
         if (tunings.count("gas_optical_depths_major_kernel") == 0)
         {
+            Float* tau_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
             std::tie(grid_gpu_maj, block_gpu_maj) =
                 tune_kernel_compile_time<Gas_optical_depths_major_kernel>(
                     "gas_optical_depths_major_kernel",
@@ -304,7 +305,9 @@ namespace rrtmgp_kernel_launcher_cuda
                     gpoint_flavor, band_lims_gpt,
                     kmajor, col_mix, fmajor, jeta,
                     tropo, jtemp, jpress,
-                    tau); // CvH: this goes wrong!
+                    tau_tmp);
+
+            Tools_gpu::free_gpu<Float>(tau_tmp);
 
             tunings["gas_optical_depths_major_kernel"].first = grid_gpu_maj;
             tunings["gas_optical_depths_major_kernel"].second = block_gpu_maj;
