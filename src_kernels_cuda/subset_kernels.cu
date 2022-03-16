@@ -1,6 +1,7 @@
-template<typename TF>__global__
-void get_from_subset_kernel(const int ncol, const int nbnd, const int ncol_in, const int col_s_in,
-              TF* __restrict__ var_full, const TF* __restrict__ var_sub)
+__global__
+void get_from_subset_kernel(
+        const int ncol, const int nbnd, const int ncol_in, const int col_s_in,
+        Float* __restrict__ var_full, const Float* __restrict__ var_sub)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ibnd = blockIdx.y*blockDim.y + threadIdx.y;
@@ -12,10 +13,12 @@ void get_from_subset_kernel(const int ncol, const int nbnd, const int ncol_in, c
     }
 }
 
-template<typename TF>__global__
-void get_from_subset_kernel(const int ncol, const int nlay, const int ncol_in, const int col_s_in,
-              TF* __restrict__ var1_full, TF* __restrict__ var2_full, TF* __restrict__ var3_full,  TF* __restrict__ var4_full,
-              const TF* __restrict__ var1_sub, const TF* __restrict__ var2_sub, const TF* __restrict__ var3_sub, const TF* __restrict__ var4_sub)
+
+__global__
+void get_from_subset_kernel(
+        const int ncol, const int nlay, const int ncol_in, const int col_s_in,
+        Float* __restrict__ var1_full, Float* __restrict__ var2_full, Float* __restrict__ var3_full,  Float* __restrict__ var4_full,
+        const Float* __restrict__ var1_sub, const Float* __restrict__ var2_sub, const Float* __restrict__ var3_sub, const Float* __restrict__ var4_sub)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -31,10 +34,12 @@ void get_from_subset_kernel(const int ncol, const int nlay, const int ncol_in, c
     }
 }
 
-template<typename TF>__global__
-void get_from_subset_kernel(const int ncol, const int nlay, const int ncol_in, const int col_s_in,
-              TF* __restrict__ var1_full, TF* __restrict__ var2_full, TF* __restrict__ var3_full,
-              const TF* __restrict__ var1_sub, const TF* __restrict__ var2_sub, const TF* __restrict__ var3_sub)
+
+__global__
+void get_from_subset_kernel(
+        const int ncol, const int nlay, const int ncol_in, const int col_s_in,
+        Float* __restrict__ var1_full, Float* __restrict__ var2_full, Float* __restrict__ var3_full,
+        const Float* __restrict__ var1_sub, const Float* __restrict__ var2_sub, const Float* __restrict__ var3_sub)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -49,10 +54,12 @@ void get_from_subset_kernel(const int ncol, const int nlay, const int ncol_in, c
     }
 }
 
-template<typename TF>__global__
-void get_from_subset_kernel(const int ncol, const int nlay, const int nbnd, const int ncol_in, const int col_s_in,
-              TF* __restrict__ var1_full, TF* __restrict__ var2_full, TF* __restrict__ var3_full,  TF* __restrict__ var4_full,
-              const TF* __restrict__ var1_sub, const TF* __restrict__ var2_sub, const TF* __restrict__ var3_sub, const TF* __restrict__ var4_sub)
+
+__global__
+void get_from_subset_kernel(
+        const int ncol, const int nlay, const int nbnd, const int ncol_in, const int col_s_in,
+        Float* __restrict__ var1_full, Float* __restrict__ var2_full, Float* __restrict__ var3_full,  Float* __restrict__ var4_full,
+        const Float* __restrict__ var1_sub, const Float* __restrict__ var2_sub, const Float* __restrict__ var3_sub, const Float* __restrict__ var4_sub)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -69,10 +76,12 @@ void get_from_subset_kernel(const int ncol, const int nlay, const int nbnd, cons
     }
 }
 
-template<typename TF>__global__
-void get_from_subset_kernel(const int ncol, const int nlay, const int nbnd, const int ncol_in, const int col_s_in,
-              TF* __restrict__ var1_full, TF* __restrict__ var2_full, TF* __restrict__ var3_full,
-              const TF* __restrict__ var1_sub, const TF* __restrict__ var2_sub, const TF* __restrict__ var3_sub)
+
+__global__
+void get_from_subset_kernel(
+        const int ncol, const int nlay, const int nbnd, const int ncol_in, const int col_s_in,
+        Float* __restrict__ var1_full, Float* __restrict__ var2_full, Float* __restrict__ var3_full,
+        const Float* __restrict__ var1_sub, const Float* __restrict__ var2_sub, const Float* __restrict__ var3_sub)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
