@@ -33,12 +33,12 @@
 namespace rrtmgp_kernel_launcher_cuda
 {
     void reorder123x321(const int ni, const int nj, const int nk,
-            const Array_gpu<Float,3>& arr_in, Array_gpu<Float,3>& arr_out,
+            const Float* arr_in,  Float* arr_out,
             void*);
 
-    void reorder12x21(const int ni, const int nj, const Array_gpu<Float,2>& arr_in, Array_gpu<Float,2>& arr_out);
+    void reorder12x21(const int ni, const int nj, const Float* arr_in, Float* arr_out);
 
-    void zero_array(const int ni, const int nj, const int nk, Array_gpu<Float,3>& arr);
+    void zero_array(const int ni, const int nj, const int nk, Float* arr);
 
     void interpolation(
             const int ncol, const int nlay,

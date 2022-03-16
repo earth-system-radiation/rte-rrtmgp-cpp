@@ -19,7 +19,7 @@ namespace rrtmgp_kernel_launcher_cuda
 {
     void reorder123x321(
             const int ni, const int nj, const int nk,
-            const Array_gpu<Float,3>& arr_in, Array_gpu<Float,3>& arr_out,
+            const Float* arr_in, Float* arr_out,
             void* calling_class_ptr)
     {
         Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
@@ -36,7 +36,7 @@ namespace rrtmgp_kernel_launcher_cuda
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
                 reorder123x321_kernel,
-                ni, nj, nk, arr_in.ptr(), arr_out.ptr());
+                ni, nj, nk, arr_in, arr_out);
 
             tunings["reorder123x321_kernel"].first = grid;
             tunings["reorder123x321_kernel"].second = block;
@@ -48,12 +48,13 @@ namespace rrtmgp_kernel_launcher_cuda
         }
 
         reorder123x321_kernel<<<grid, block>>>(
-                ni, nj, nk, arr_in.ptr(), arr_out.ptr());
+                ni, nj, nk, arr_in, arr_out);
     }
 
 
-    void reorder12x21(const int ni, const int nj,
-                      const Array_gpu<Float,2>& arr_in, Array_gpu<Float,2>& arr_out)
+    void reorder12x21(
+            const int ni, const int nj,
+            const Float* arr_in, Float* arr_out)
     {
         const int block_i = 32;
         const int block_j = 16;
@@ -65,11 +66,11 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 block_gpu(block_i, block_j);
 
         reorder12x21_kernel<<<grid_gpu, block_gpu>>>(
-                ni, nj, arr_in.ptr(), arr_out.ptr());
+                ni, nj, arr_in, arr_out);
     }
 
 
-    void zero_array(const int ni, const int nj, const int nk, Array_gpu<Float,3>& arr)
+    void zero_array(const int ni, const int nj, const int nk, Float* arr)
     {
         const int block_i = 32;
         const int block_j = 16;
@@ -83,7 +84,7 @@ namespace rrtmgp_kernel_launcher_cuda
         dim3 block_gpu(block_i, block_j, block_k);
 
         zero_array_kernel<<<grid_gpu, block_gpu>>>(
-                ni, nj, nk, arr.ptr());
+                ni, nj, nk, arr);
 
     }
 
