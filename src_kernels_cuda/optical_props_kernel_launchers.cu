@@ -35,9 +35,9 @@ namespace
 
 namespace optical_props_kernel_launcher_cuda
 {
-    template<typename TF> void increment_1scalar_by_1scalar(
+    void increment_1scalar_by_1scalar(
             int ncol, int nlay, int ngpt,
-            Array_gpu<TF,3>& tau_inout, const Array_gpu<TF,3>& tau_in)
+            Array_gpu<Float,3>& tau_inout, const Array_gpu<Float,3>& tau_in)
 
     {
         const int block_gpt = 32;
@@ -57,10 +57,10 @@ namespace optical_props_kernel_launcher_cuda
     }
 
 
-    template<typename TF> void increment_2stream_by_2stream(
+    void increment_2stream_by_2stream(
             int ncol, int nlay, int ngpt,
-            Array_gpu<TF,3>& tau_inout, Array_gpu<TF,3>& ssa_inout, Array_gpu<TF,3>& g_inout,
-            const Array_gpu<TF,3>& tau_in, const Array_gpu<TF,3>& ssa_in, const Array_gpu<TF,3>& g_in)
+            Array_gpu<Float,3>& tau_inout, Array_gpu<Float,3>& ssa_inout, Array_gpu<Float,3>& g_inout,
+            const Array_gpu<Float,3>& tau_in, const Array_gpu<Float,3>& ssa_in, const Array_gpu<Float,3>& g_in)
     {
         const int block_gpt = 32;
         const int block_lay = 16;
@@ -73,7 +73,7 @@ namespace optical_props_kernel_launcher_cuda
         dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
         dim3 block_gpu(block_col, block_lay, block_gpt);
 
-        TF eps = std::numeric_limits<TF>::min() * TF(3.);
+        Float eps = std::numeric_limits<Float>::min() * Float(3.);
 
         increment_2stream_by_2stream_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, eps,
@@ -82,9 +82,9 @@ namespace optical_props_kernel_launcher_cuda
     }
 
 
-    template<typename TF> void inc_1scalar_by_1scalar_bybnd(
+    void inc_1scalar_by_1scalar_bybnd(
             int ncol, int nlay, int ngpt,
-            Array_gpu<TF,3>& tau_inout, const Array_gpu<TF,3>& tau_in,
+            Array_gpu<Float,3>& tau_inout, const Array_gpu<Float,3>& tau_in,
             int nbnd, const Array_gpu<int,2>& band_lims_gpoint)
 
     {
@@ -106,10 +106,10 @@ namespace optical_props_kernel_launcher_cuda
     }
 
 
-    template<typename TF> void inc_2stream_by_2stream_bybnd(
+    void inc_2stream_by_2stream_bybnd(
             int ncol, int nlay, int ngpt,
-            Array_gpu<TF,3>& tau_inout, Array_gpu<TF,3>& ssa_inout, Array_gpu<TF,3>& g_inout,
-            const Array_gpu<TF,3>& tau_in, const Array_gpu<TF,3>& ssa_in, const Array_gpu<TF,3>& g_in,
+            Array_gpu<Float,3>& tau_inout, Array_gpu<Float,3>& ssa_inout, Array_gpu<Float,3>& g_inout,
+            const Array_gpu<Float,3>& tau_in, const Array_gpu<Float,3>& ssa_in, const Array_gpu<Float,3>& g_in,
             int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
             void* calling_class_ptr)
     {
@@ -117,7 +117,7 @@ namespace optical_props_kernel_launcher_cuda
 
         dim3 grid(ncol, nlay, ngpt), block;
 
-        TF eps = std::numeric_limits<TF>::min() * TF(3.);
+        Float eps = std::numeric_limits<Float>::min() * Float(3.);
 
         if (tunings.count("inc_2stream_by_2stream_bybnd_kernel") == 0)
         {
@@ -127,7 +127,7 @@ namespace optical_props_kernel_launcher_cuda
                     {1, 2, 3, 4, 8, 12, 16, 24},
                     {1, 2, 3, 4, 8, 12, 16, 24},
                     {1, 2, 3, 4, 8, 12, 16, 24},
-                    inc_2stream_by_2stream_bybnd_kernel<TF>,
+                    inc_2stream_by_2stream_bybnd_kernel,
                     ncol, nlay, ngpt, eps,
                     tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr(),
                     tau_in.ptr(), ssa_in.ptr(), g_in.ptr(),
@@ -150,9 +150,9 @@ namespace optical_props_kernel_launcher_cuda
     }
 
 
-    template<typename TF> void delta_scale_2str_k(
+    void delta_scale_2str_k(
             int ncol, int nlay, int ngpt,
-            Array_gpu<TF,3>& tau_inout, Array_gpu<TF,3>& ssa_inout, Array_gpu<TF,3>& g_inout)
+            Array_gpu<Float,3>& tau_inout, Array_gpu<Float,3>& ssa_inout, Array_gpu<Float,3>& g_inout)
     {
         const int block_gpt = 32;
         const int block_lay = 16;
@@ -165,64 +165,10 @@ namespace optical_props_kernel_launcher_cuda
         dim3 grid_gpu(grid_col, grid_lay, grid_gpt);
         dim3 block_gpu(block_col, block_lay, block_gpt);
 
-        TF eps = std::numeric_limits<TF>::min()*TF(3.);
+        Float eps = std::numeric_limits<Float>::min()*Float(3.);
 
         delta_scale_2str_k_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, eps,
                 tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr());
     }
 }
-
-
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
-template void optical_props_kernel_launcher_cuda::increment_1scalar_by_1scalar(
-        int ncol, int nlay, int ngpt,
-        Array_gpu<float,3>& tau_inout, const Array_gpu<float,3>& tau_in);
-
-template void optical_props_kernel_launcher_cuda::increment_2stream_by_2stream(
-        int ncol, int nlay, int ngpt,
-        Array_gpu<float,3>& tau_inout, Array_gpu<float,3>& ssa_inout, Array_gpu<float,3>& g_inout,
-        const Array_gpu<float,3>& tau_in, const Array_gpu<float,3>& ssa_in, const Array_gpu<float,3>& g_in);
-
-template void optical_props_kernel_launcher_cuda::inc_1scalar_by_1scalar_bybnd(
-        int ncol, int nlay, int ngpt,
-        Array_gpu<float,3>& tau_inout, const Array_gpu<float,3>& tau_in,
-        int nbnd, const Array_gpu<int,2>& band_lims_gpoint);
-
-template void optical_props_kernel_launcher_cuda::inc_2stream_by_2stream_bybnd(
-        int ncol, int nlay, int ngpt,
-        Array_gpu<float,3>& tau_inout, Array_gpu<float,3>& ssa_inout, Array_gpu<float,3>& g_inout,
-        const Array_gpu<float,3>& tau_in, const Array_gpu<float,3>& ssa_in, const Array_gpu<float,3>& g_in,
-        int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
-        void* calling_class_ptr);
-
-
-template void optical_props_kernel_launcher_cuda::delta_scale_2str_k(
-        int ncol, int nlay, int ngpt,
-        Array_gpu<float,3>& tau_inout, Array_gpu<float,3>& ssa_inout, Array_gpu<float,3>& g_inout);
-#else
-template void optical_props_kernel_launcher_cuda::increment_1scalar_by_1scalar(
-        int ncol, int nlay, int ngpt,
-        Array_gpu<double,3>& tau_inout, const Array_gpu<double,3>& tau_in);
-
-template void optical_props_kernel_launcher_cuda::increment_2stream_by_2stream(
-        int ncol, int nlay, int ngpt,
-        Array_gpu<double,3>& tau_inout, Array_gpu<double,3>& ssa_inout, Array_gpu<double,3>& g_inout,
-        const Array_gpu<double,3>& tau_in, const Array_gpu<double,3>& ssa_in, const Array_gpu<double,3>& g_in);
-
-template void optical_props_kernel_launcher_cuda::inc_1scalar_by_1scalar_bybnd(
-        int ncol, int nlay, int ngpt,
-        Array_gpu<double,3>& tau_inout, const Array_gpu<double,3>& tau_in,
-        int nbnd, const Array_gpu<int,2>& band_lims_gpoint);
-
-template void optical_props_kernel_launcher_cuda::inc_2stream_by_2stream_bybnd(
-        int ncol, int nlay, int ngpt,
-        Array_gpu<double,3>& tau_inout, Array_gpu<double,3>& ssa_inout, Array_gpu<double,3>& g_inout,
-        const Array_gpu<double,3>& tau_in, const Array_gpu<double,3>& ssa_in, const Array_gpu<double,3>& g_in,
-        int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
-        void* calling_class_ptr);
-
-template void optical_props_kernel_launcher_cuda::delta_scale_2str_k(
-        int ncol, int nlay, int ngpt,
-        Array_gpu<double,3>& tau_inout, Array_gpu<double,3>& ssa_inout, Array_gpu<double,3>& g_inout);
-#endif

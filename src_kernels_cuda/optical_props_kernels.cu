@@ -27,10 +27,10 @@ const int loop_unroll_factor_nbnd = 2;
 #endif
 
 
-template<typename TF> __global__
+__global__
 void increment_1scalar_by_1scalar_kernel(
             const int ncol, const int nlay, const int ngpt,
-            TF* __restrict__ tau1, const TF* __restrict__ tau2)
+            Float* __restrict__ tau1, const Float* __restrict__ tau2)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -44,11 +44,11 @@ void increment_1scalar_by_1scalar_kernel(
 }
 
 
-template<typename TF> __global__
+__global__
 void increment_2stream_by_2stream_kernel(
-            const int ncol, const int nlay, const int ngpt, const TF eps,
-            TF* __restrict__ tau1, TF* __restrict__ ssa1, TF* __restrict__ g1,
-            const TF* __restrict__ tau2, const TF* __restrict__ ssa2, const TF* __restrict__ g2)
+            const int ncol, const int nlay, const int ngpt, const Float eps,
+            Float* __restrict__ tau1, Float* __restrict__ ssa1, Float* __restrict__ g1,
+            const Float* __restrict__ tau2, const Float* __restrict__ ssa2, const Float* __restrict__ g2)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -57,12 +57,12 @@ void increment_2stream_by_2stream_kernel(
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
         const int idx = icol + ilay*ncol + igpt*ncol*nlay;
-        const TF tau1_value = tau1[idx];
-        const TF tau2_value = tau2[idx];
-        const TF tau12 = tau1_value + tau2_value;
-        const TF ssa1_value = ssa1[idx];
-        const TF ssa2_value = ssa2[idx];
-        const TF tauscat12 = (tau1_value * ssa1_value) + (tau2_value * ssa2_value);
+        const Float tau1_value = tau1[idx];
+        const Float tau2_value = tau2[idx];
+        const Float tau12 = tau1_value + tau2_value;
+        const Float ssa1_value = ssa1[idx];
+        const Float ssa2_value = ssa2[idx];
+        const Float tauscat12 = (tau1_value * ssa1_value) + (tau2_value * ssa2_value);
 
         g1[idx] = ((tau1_value * ssa1_value * g1[idx]) + (tau2_value * ssa2[idx] * g2[idx])) / max(tauscat12, eps);
         ssa1[idx] = tauscat12 / max(eps, tau12);
@@ -71,10 +71,10 @@ void increment_2stream_by_2stream_kernel(
 }
 
 
-template<typename TF> __global__
+__global__
 void inc_1scalar_by_1scalar_bybnd_kernel(
             const int ncol, const int nlay, const int ngpt,
-            TF* __restrict__ tau1, const TF* __restrict__ tau2,
+            Float* __restrict__ tau1, const Float* __restrict__ tau2,
             const int nbnd, const int* __restrict__ band_lims_gpt)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
@@ -99,11 +99,11 @@ void inc_1scalar_by_1scalar_bybnd_kernel(
 }
 
 
-template<typename TF> __global__
+__global__
 void inc_2stream_by_2stream_bybnd_kernel(
-            const int ncol, const int nlay, const int ngpt, const TF eps,
-            TF* __restrict__ tau1, TF* __restrict__ ssa1, TF* __restrict__ g1,
-            const TF* __restrict__ tau2, const TF* __restrict__ ssa2, const TF* __restrict__ g2,
+            const int ncol, const int nlay, const int ngpt, const Float eps,
+            Float* __restrict__ tau1, Float* __restrict__ ssa1, Float* __restrict__ g1,
+            const Float* __restrict__ tau2, const Float* __restrict__ ssa2, const Float* __restrict__ g2,
             const int nbnd, const int* __restrict__ band_lims_gpt)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
@@ -120,12 +120,12 @@ void inc_2stream_by_2stream_bybnd_kernel(
             if ( ((igpt+1) >= band_lims_gpt[ibnd*2]) && ((igpt+1) <= band_lims_gpt[ibnd*2+1]) )
             {
                 const int idx_bnd = icol + ilay*ncol + ibnd*nlay*ncol;
-                const TF tau1_value = tau1[idx_gpt];
-                const TF tau2_value = tau2[idx_bnd];
-                const TF ssa1_value = ssa1[idx_gpt];
-                const TF ssa2_value = ssa2[idx_bnd];
-                const TF tau12 = tau1_value + tau2_value;
-                const TF tauscat12 = (tau1_value * ssa1_value) + (tau2_value * ssa2_value);
+                const Float tau1_value = tau1[idx_gpt];
+                const Float tau2_value = tau2[idx_bnd];
+                const Float ssa1_value = ssa1[idx_gpt];
+                const Float ssa2_value = ssa2[idx_bnd];
+                const Float tau12 = tau1_value + tau2_value;
+                const Float tauscat12 = (tau1_value * ssa1_value) + (tau2_value * ssa2_value);
 
                 g1[idx_gpt] = ((tau1_value * ssa1_value * g1[idx_gpt]) + (tau2_value * ssa2_value * g2[idx_bnd])) / max(tauscat12, eps);
                 ssa1[idx_gpt] = tauscat12 / max(eps, tau12);
@@ -136,10 +136,10 @@ void inc_2stream_by_2stream_bybnd_kernel(
 }
 
 
-template<typename TF> __global__
+__global__
 void delta_scale_2str_k_kernel(
-            const int ncol, const int nlay, const int ngpt, const TF eps,
-            TF* __restrict__ tau, TF* __restrict__ ssa, TF* __restrict__ g)
+            const int ncol, const int nlay, const int ngpt, const Float eps,
+            Float* __restrict__ tau, Float* __restrict__ ssa, Float* __restrict__ g)
 {
     const int icol = blockIdx.x*blockDim.x + threadIdx.x;
     const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
@@ -148,14 +148,14 @@ void delta_scale_2str_k_kernel(
     if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
     {
         const int idx = icol + ilay*ncol + igpt*nlay*ncol;
-        const TF g_value = g[idx];
-        const TF ssa_value = ssa[idx];
-        const TF f = g_value * g_value;
-        const TF wf = ssa_value * f;
+        const Float g_value = g[idx];
+        const Float ssa_value = ssa[idx];
+        const Float f = g_value * g_value;
+        const Float wf = ssa_value * f;
 
-        tau[idx] *= (TF(1.) - wf);
-        ssa[idx] = (ssa_value - wf) / max(eps,(TF(1.)-wf));
-        g[idx] = (g_value - f) / max(eps,(TF(1.)-f));
+        tau[idx] *= (Float(1.) - wf);
+        ssa[idx] = (ssa_value - wf) / max(eps,(Float(1.)-wf));
+        g[idx] = (g_value - f) / max(eps,(Float(1.)-f));
 
     }
 }

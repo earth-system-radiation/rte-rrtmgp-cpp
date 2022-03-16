@@ -28,31 +28,32 @@
 #include "Array.h"
 #include "Types.h"
 
+
 namespace optical_props_kernel_launcher_cuda
 {
-    template<typename TF> void increment_1scalar_by_1scalar(
+    void increment_1scalar_by_1scalar(
             int ncol, int nlay, int ngpt,
-            Array_gpu<TF,3>& tau_inout, const Array_gpu<TF,3>& tau_in);
+            Array_gpu<Float,3>& tau_inout, const Array_gpu<Float,3>& tau_in);
 
-    template<typename TF> void increment_2stream_by_2stream(
+    void increment_2stream_by_2stream(
             int ncol, int nlay, int ngpt,
-            Array_gpu<TF,3>& tau_inout, Array_gpu<TF,3>& ssa_inout, Array_gpu<TF,3>& g_inout,
-            const Array_gpu<TF,3>& tau_in, const Array_gpu<TF,3>& ssa_in, const Array_gpu<TF,3>& g_in);
+            Array_gpu<Float,3>& tau_inout, Array_gpu<Float,3>& ssa_inout, Array_gpu<Float,3>& g_inout,
+            const Array_gpu<Float,3>& tau_in, const Array_gpu<Float,3>& ssa_in, const Array_gpu<Float,3>& g_in);
 
-    template<typename TF> void inc_1scalar_by_1scalar_bybnd(
+    void inc_1scalar_by_1scalar_bybnd(
             int ncol, int nlay, int ngpt,
-            Array_gpu<TF,3>& tau_inout, const Array_gpu<TF,3>& tau_in,
+            Array_gpu<Float,3>& tau_inout, const Array_gpu<Float,3>& tau_in,
             int nbnd, const Array_gpu<int,2>& band_lims_gpoint);
 
-    template<typename TF> void inc_2stream_by_2stream_bybnd(
+    void inc_2stream_by_2stream_bybnd(
             int ncol, int nlay, int ngpt,
-            Array_gpu<TF,3>& tau_inout, Array_gpu<TF,3>& ssa_inout, Array_gpu<TF,3>& g_inout,
-            const Array_gpu<TF,3>& tau_in, const Array_gpu<TF,3>& ssa_in, const Array_gpu<TF,3>& g_in,
+            Array_gpu<Float,3>& tau_inout, Array_gpu<Float,3>& ssa_inout, Array_gpu<Float,3>& g_inout,
+            const Array_gpu<Float,3>& tau_in, const Array_gpu<Float,3>& ssa_in, const Array_gpu<Float,3>& g_in,
             int nbnd, const Array_gpu<int,2>& band_lims_gpoint,
             void* calling_class_ptr);
 
-    template<typename TF> void delta_scale_2str_k(
+    void delta_scale_2str_k(
             int ncol, int nlay, int ngpt,
-            Array_gpu<TF,3>& tau_inout, Array_gpu<TF,3>& ssa_inout, Array_gpu<TF,3>& g_inout);
+            Array_gpu<Float,3>& tau_inout, Array_gpu<Float,3>& ssa_inout, Array_gpu<Float,3>& g_inout);
 }
 #endif
