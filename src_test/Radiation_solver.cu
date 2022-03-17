@@ -480,12 +480,12 @@ void Radiation_solver_longwave::solve_gpu(
         if (switch_output_optical)
         {
             subset_kernel_launcher_cuda::get_from_subset(
-                    n_col, n_lay, n_gpt, n_col_in, col_s_in, tau, lay_source, lev_source_inc, lev_source_dec,
-                    optical_props_subset_in->get_tau(), sources_subset_in.get_lay_source(),
-                    sources_subset_in.get_lev_source_inc(), sources_subset_in.get_lev_source_dec());
+                    n_col, n_lay, n_gpt, n_col_in, col_s_in, tau.ptr(), lay_source.ptr(), lev_source_inc.ptr(), lev_source_dec.ptr(),
+                    optical_props_subset_in->get_tau().ptr(), sources_subset_in.get_lay_source().ptr(),
+                    sources_subset_in.get_lev_source_inc().ptr(), sources_subset_in.get_lev_source_dec().ptr());
 
             subset_kernel_launcher_cuda::get_from_subset(
-                    n_col, n_gpt, n_col_in, col_s_in, sfc_source, sources_subset_in.get_sfc_source());
+                    n_col, n_gpt, n_col_in, col_s_in, sfc_source.ptr(), sources_subset_in.get_sfc_source().ptr());
         }
 
         if (!switch_fluxes)
@@ -528,8 +528,8 @@ void Radiation_solver_longwave::solve_gpu(
 
         // Copy the data to the output.
         subset_kernel_launcher_cuda::get_from_subset(
-                n_col, n_lev, n_col_in, col_s_in, lw_flux_up, lw_flux_dn, lw_flux_net,
-                fluxes.get_flux_up(), fluxes.get_flux_dn(), fluxes.get_flux_net());
+                n_col, n_lev, n_col_in, col_s_in, lw_flux_up.ptr(), lw_flux_dn.ptr(), lw_flux_net.ptr(),
+                fluxes.get_flux_up().ptr(), fluxes.get_flux_dn().ptr(), fluxes.get_flux_net().ptr());
 
 
         if (switch_output_bnd_fluxes)
@@ -537,8 +537,8 @@ void Radiation_solver_longwave::solve_gpu(
             bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
 
             subset_kernel_launcher_cuda::get_from_subset(
-                    n_col, n_lev, n_bnd, n_col_in, col_s_in, lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net,
-                    bnd_fluxes.get_bnd_flux_up(), bnd_fluxes.get_bnd_flux_dn(), bnd_fluxes.get_bnd_flux_net());
+                    n_col, n_lev, n_bnd, n_col_in, col_s_in, lw_bnd_flux_up.ptr(), lw_bnd_flux_dn.ptr(), lw_bnd_flux_net.ptr(),
+                    bnd_fluxes.get_bnd_flux_up().ptr(), bnd_fluxes.get_bnd_flux_dn().ptr(), bnd_fluxes.get_bnd_flux_net().ptr());
 
         }
 
@@ -551,15 +551,15 @@ void Radiation_solver_longwave::solve_gpu(
 
             // Copy the data to the output.
             subset_kernel_launcher_cuda::get_from_subset(
-                    n_col, n_lev, n_col_in, col_s_in, lw_flux_up, lw_flux_dn, lw_flux_net,
-                    fluxes.get_flux_up(), fluxes.get_flux_dn(), fluxes.get_flux_net());
+                    n_col, n_lev, n_col_in, col_s_in, lw_flux_up.ptr(), lw_flux_dn.ptr(), lw_flux_net.ptr(),
+                    fluxes.get_flux_up().ptr(), fluxes.get_flux_dn().ptr(), fluxes.get_flux_net().ptr());
 
             // Aggegated fluxes per band
             bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
 
             subset_kernel_launcher_cuda::get_from_subset(
-                    n_col, n_lev, n_bnd, n_col_in, col_s_in, lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net,
-                    bnd_fluxes.get_bnd_flux_up(), bnd_fluxes.get_bnd_flux_dn(), bnd_fluxes.get_bnd_flux_net());
+                    n_col, n_lev, n_bnd, n_col_in, col_s_in, lw_bnd_flux_up.ptr(), lw_bnd_flux_dn.ptr(), lw_bnd_flux_net.ptr(),
+                    bnd_fluxes.get_bnd_flux_up().ptr(), bnd_fluxes.get_bnd_flux_dn().ptr(), bnd_fluxes.get_bnd_flux_net().ptr());
         }
         else
         {
@@ -735,11 +735,11 @@ void Radiation_solver_shortwave::solve_gpu(
         if (switch_output_optical)
         {
             subset_kernel_launcher_cuda::get_from_subset(
-                    n_col, n_lay, n_gpt, n_col_in, col_s_in, tau, ssa, g, optical_props_subset_in->get_tau(),
-                     optical_props_subset_in->get_ssa(),  optical_props_subset_in->get_g());
+                    n_col, n_lay, n_gpt, n_col_in, col_s_in, tau.ptr(), ssa.ptr(), g.ptr(), optical_props_subset_in->get_tau().ptr(),
+                     optical_props_subset_in->get_ssa().ptr(),  optical_props_subset_in->get_g().ptr());
 
             subset_kernel_launcher_cuda::get_from_subset(
-                    n_col, n_gpt, n_col_in, col_s_in, toa_src, toa_src_subset);
+                    n_col, n_gpt, n_col_in, col_s_in, toa_src.ptr(), toa_src_subset.ptr());
         }
         if (!switch_fluxes)
             return;
@@ -785,16 +785,16 @@ void Radiation_solver_shortwave::solve_gpu(
 
         // Copy the data to the output.
         subset_kernel_launcher_cuda::get_from_subset(
-                n_col, n_lev, n_col_in, col_s_in, sw_flux_up, sw_flux_dn, sw_flux_dn_dir, sw_flux_net,
-                fluxes.get_flux_up(), fluxes.get_flux_dn(), fluxes.get_flux_dn_dir(), fluxes.get_flux_net());
+                n_col, n_lev, n_col_in, col_s_in, sw_flux_up.ptr(), sw_flux_dn.ptr(), sw_flux_dn_dir.ptr(), sw_flux_net.ptr(),
+                fluxes.get_flux_up().ptr(), fluxes.get_flux_dn().ptr(), fluxes.get_flux_dn_dir().ptr(), fluxes.get_flux_net().ptr());
 
         if (switch_output_bnd_fluxes)
         {
             bnd_fluxes.reduce(gpt_flux_up, gpt_flux_dn, optical_props_subset_in, top_at_1);
 
             subset_kernel_launcher_cuda::get_from_subset(
-                    n_col, n_lev, n_bnd, n_col_in, col_s_in, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dn_dir, sw_bnd_flux_net,
-                    bnd_fluxes.get_bnd_flux_up(), bnd_fluxes.get_bnd_flux_dn(), bnd_fluxes.get_bnd_flux_dn_dir(), bnd_fluxes.get_bnd_flux_net());
+                    n_col, n_lev, n_bnd, n_col_in, col_s_in, sw_bnd_flux_up.ptr(), sw_bnd_flux_dn.ptr(), sw_bnd_flux_dn_dir.ptr(), sw_bnd_flux_net.ptr(),
+                    bnd_fluxes.get_bnd_flux_up().ptr(), bnd_fluxes.get_bnd_flux_dn().ptr(), bnd_fluxes.get_bnd_flux_dn_dir().ptr(), bnd_fluxes.get_bnd_flux_net().ptr());
         }
 
         // CvH The structure below is valid if broadband flux solvers are implemented
