@@ -119,7 +119,7 @@ void Rte_lw_gpu::rte_lw(
     Array_gpu<Float,3> secants({ncol, ngpt, n_quad_angs});
     rte_kernel_launcher_cuda::lw_secants_array(
             ncol, ngpt, n_quad_angs, max_gauss_pts,
-            gauss_Ds, secants);
+            gauss_Ds.ptr(), secants.ptr());
 
     // For now, just pass the arrays around.
     Array_gpu<Float,2> sfc_src_jac(sources.get_sfc_source().get_dims());
@@ -132,17 +132,20 @@ void Rte_lw_gpu::rte_lw(
 
     const Bool do_jacobians = false;
 
+    // pass null ptr if size of inc_flux is zero
+    const Float* inc_flux_ptr = (inc_flux.size() == 0) ? nullptr : inc_flux.ptr();
+    
     rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,
-            secants, gauss_wts_subset,
-            optical_props->get_tau(),
-            sources.get_lay_source(),
-            sources.get_lev_source_inc(), sources.get_lev_source_dec(),
-            sfc_emis_gpt, sources.get_sfc_source(),
-            inc_flux,
-            gpt_flux_up, gpt_flux_dn,
-            do_broadband, gpt_flux_up, gpt_flux_dn,
-            do_jacobians, sfc_src_jac, gpt_flux_up_jac,
+            secants.ptr(), gauss_wts_subset.ptr(),
+            optical_props->get_tau().ptr(),
+            sources.get_lay_source().ptr(),
+            sources.get_lev_source_inc().ptr(), sources.get_lev_source_dec().ptr(),
+            sfc_emis_gpt.ptr(), sources.get_sfc_source().ptr(),
+            inc_flux_ptr,
+            gpt_flux_up.ptr(), gpt_flux_dn.ptr(),
+            do_broadband, gpt_flux_up.ptr(), gpt_flux_dn.ptr(),
+            do_jacobians, sfc_src_jac.ptr(), gpt_flux_up_jac.ptr(),
             static_cast<void*>(this));
 
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.

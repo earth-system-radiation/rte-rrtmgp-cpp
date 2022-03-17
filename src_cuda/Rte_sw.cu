@@ -141,19 +141,21 @@ void Rte_sw_gpu::rte_sw(
 
     if (do_broadband)
         throw std::runtime_error("Broadband fluxes not implemented, performance gain on GPU is negligible");
-
+    
+    // pass null ptr if size of inc_flux is zero
+    const Float* inc_flux_dif_ptr = (inc_flux_dif.size() == 0) ? nullptr : inc_flux_dif.ptr();
 
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat.
     rte_kernel_launcher_cuda::sw_solver_2stream(
             ncol, nlay, ngpt, top_at_1,
-            optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g(),
-            mu0,
-            sfc_alb_dir_gpt, sfc_alb_dif_gpt,
-            inc_flux_dir,
-            gpt_flux_up, gpt_flux_dn, gpt_flux_dir,
-            has_dif_bc, inc_flux_dif,
-            do_broadband, gpt_flux_up, gpt_flux_dn, gpt_flux_dir,
+            optical_props->get_tau().ptr(), optical_props->get_ssa().ptr(), optical_props->get_g().ptr(),
+            mu0.ptr(),
+            sfc_alb_dir_gpt.ptr(), sfc_alb_dif_gpt.ptr(),
+            inc_flux_dir.ptr(),
+            gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr(),
+            has_dif_bc, inc_flux_dif_ptr,
+            do_broadband, gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr(),
             static_cast<void*>(this));
 
     // CvH: The original fortran code had a call to the reduce here.
