@@ -897,6 +897,7 @@ void Gas_optics_rrtmgp::gas_optics(
             toa_src({icol, igpt}) = this->solar_source({igpt});
 }
 
+
 namespace rrtmgp_kernel_launcher
 {
     template<typename Float> void zero_array(
