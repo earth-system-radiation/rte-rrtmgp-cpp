@@ -97,7 +97,7 @@ namespace rte_kernel_launcher_cuda
         const int flx_size = ncol*(nlay+1)*ngpt;
         const int opt_size = ncol*nlay*ngpt;
         const int sfc_size = ncol*ngpt;;
-        
+
         Float* source_sfc = Tools_gpu::allocate_gpu<Float>(sfc_size);
         Float* source_sfc_jac = Tools_gpu::allocate_gpu<Float>(sfc_size);
         Float* sfc_albedo = Tools_gpu::allocate_gpu<Float>(sfc_size);
@@ -285,6 +285,17 @@ namespace rte_kernel_launcher_cuda
                         */
             }
         }
+
+        Tools_gpu::free_gpu(source_sfc);
+        Tools_gpu::free_gpu(source_sfc_jac);
+        Tools_gpu::free_gpu(sfc_albedo);
+        Tools_gpu::free_gpu(tau_loc);
+        Tools_gpu::free_gpu(trans);
+        Tools_gpu::free_gpu(source_dn);
+        Tools_gpu::free_gpu(source_up);
+        Tools_gpu::free_gpu(radn_dn);
+        Tools_gpu::free_gpu(radn_up);
+        Tools_gpu::free_gpu(radn_up_jac);
     }
 
 
