@@ -18,8 +18,20 @@ class Tuner
     public:
         static Tuner& get()
         {
-            static Tuner tuner;
+            static Tuner tuner("rte_rrtmgp_kernel_tuning.txt");
             return tuner;
+        }
+
+        ~Tuner()
+        {
+            std::ofstream outfile("rte_rrtmgp_kernel_tuning.txt");
+            for (const auto& i : tuner_map)
+            {
+                const std::string del(" ");
+                outfile << i.first << del << i.second.first.x << del << i.second.first.y << del << i.second.first.z
+                                   << del << i.second.second.x << del << i.second.second.y << del << i.second.second.z << std::endl;
+            }
+            outfile.close();
         }
 
         static Tuner_map& get_map()
@@ -33,8 +45,18 @@ class Tuner
         }
 
     private:
-        Tuner() = default;
-        ~Tuner() = default;
+        Tuner(const std::string& filename)
+        {
+            std::ifstream infile("rte_rrtmgp_kernel_tuning.txt");
+            std::string name;
+            std::array<unsigned int, 6> vals;
+            while (infile >> name >> vals[0] >> vals[1] >> vals[2] >> vals[3] >> vals[4] >> vals[5])
+            {
+                tuner_map[name] = std::make_pair(dim3(vals[0], vals[1], vals[2]), dim3(vals[3], vals[4], vals[5]));
+            }
+            infile.close();
+        }
+
         Tuner(const Tuner&) = delete;
         Tuner& operator=(const Tuner&) = delete;
 
