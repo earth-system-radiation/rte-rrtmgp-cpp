@@ -19,10 +19,9 @@ namespace rrtmgp_kernel_launcher_cuda
 {
     void reorder123x321(
             const int ni, const int nj, const int nk,
-            const Float* arr_in, Float* arr_out,
-            void* calling_class_ptr)
+            const Float* arr_in, Float* arr_out)
     {
-        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+        Tuner_map& tunings = Tuner::get_map();
 
         dim3 grid(ni, nj, nk);
         dim3 block;
@@ -137,10 +136,9 @@ namespace rrtmgp_kernel_launcher_cuda
     void combine_abs_and_rayleigh(
             const int ncol, const int nlay, const int ngpt,
             const Float* tau_abs, const Float* tau_rayleigh,
-            Float* tau, Float* ssa, Float* g,
-            void* calling_class_ptr)
+            Float* tau, Float* ssa, Float* g)
     {
-        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+        Tuner_map& tunings = Tuner::get_map();
 
         Float tmin = std::numeric_limits<Float>::min();
 
@@ -184,10 +182,9 @@ namespace rrtmgp_kernel_launcher_cuda
             int idx_h2o, const Float* col_dry, const Float* col_gas,
             const Float* fminor, const int* jeta,
             const Bool* tropo, const int* jtemp,
-            Float* tau_rayleigh,
-            void* calling_class_ptr)
+            Float* tau_rayleigh)
     {
-        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+        Tuner_map& tunings = Tuner::get_map();
 
         dim3 grid(ncol, nlay, ngpt);
         dim3 block;
@@ -282,10 +279,9 @@ namespace rrtmgp_kernel_launcher_cuda
             const Float* tlay, const Float* col_gas,
             const int* jeta, const int* jtemp,
             const int* jpress,
-            Float* tau,
-            void* calling_class_ptr)
+            Float* tau)
     {
-        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+        Tuner_map& tunings = Tuner::get_map();
 
         dim3 grid_gpu_maj(ngpt, nlay, ncol);
         dim3 block_gpu_maj;
@@ -482,10 +478,9 @@ namespace rrtmgp_kernel_launcher_cuda
             Float* lay_src,
             Float* lev_src_inc,
             Float* lev_src_dec,
-            Float* sfc_src_jac,
-            void* calling_class_ptr)
+            Float* sfc_src_jac)
     {
-        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+        Tuner_map& tunings = Tuner::get_map();
 
         const Float delta_Tsurf = Float(1.);
 

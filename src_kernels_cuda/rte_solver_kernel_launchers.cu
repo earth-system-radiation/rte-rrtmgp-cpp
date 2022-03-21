@@ -89,8 +89,7 @@ namespace rte_kernel_launcher_cuda
             const Float* inc_flux,
             Float* flux_up, Float* flux_dn,
             const Bool do_broadband, Float* flux_up_loc, Float* flux_dn_loc,
-            const Bool do_jacobians, const Float* sfc_src_jac, Float* flux_up_jac,
-            void* calling_class_ptr)
+            const Bool do_jacobians, const Float* sfc_src_jac, Float* flux_up_jac)
     {
         Float eps = std::numeric_limits<Float>::epsilon();
 
@@ -140,7 +139,7 @@ namespace rte_kernel_launcher_cuda
 
 
         // Step 1.
-        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+        Tuner_map& tunings = Tuner::get_map();
 
         dim3 grid_1, block_1;
 
@@ -307,8 +306,7 @@ namespace rte_kernel_launcher_cuda
             const Float* inc_flux_dir,
             Float* flux_up, Float* flux_dn, Float* flux_dir,
             const Bool has_dif_bc, const Float* inc_flux_dif,
-            const Bool do_broadband, Float* flux_up_loc, Float* flux_dn_loc, Float* flux_dir_loc,
-            void* calling_class_ptr)
+            const Bool do_broadband, Float* flux_up_loc, Float* flux_dn_loc, Float* flux_dir_loc)
     {
         const int opt_size = ncol*nlay*ngpt;
         const int alb_size = ncol*ngpt;
@@ -337,7 +335,7 @@ namespace rte_kernel_launcher_cuda
 
 
         // Step 1.
-        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+        Tuner_map& tunings = Tuner::get_map();
 
         if (tunings.count("sw_source_2stream_kernel") == 0)
         {

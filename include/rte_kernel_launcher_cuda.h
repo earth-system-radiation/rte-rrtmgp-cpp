@@ -45,8 +45,7 @@ namespace rte_kernel_launcher_cuda
             const Float* inc_flux_dir,
             Float* flux_up, Float* flux_dn, Float* flux_dir,
             const Bool has_dif_bc, const Float* inc_flux_dif,
-            const Bool do_broadband, Float* flux_up_loc, Float* flux_dn_loc, Float* flux_dir_loc,
-            void* calling_class_ptr);
+            const Bool do_broadband, Float* flux_up_loc, Float* flux_dn_loc, Float* flux_dir_loc);
 
 
     void lw_solver_noscat_gaussquad(
@@ -58,8 +57,7 @@ namespace rte_kernel_launcher_cuda
             const Float* inc_flux,
             Float* flux_up, Float* flux_dn,
             const Bool do_broadband, Float* flux_up_loc, Float* flux_dn_loc,
-            const Bool do_jacobians, const Float* sfc_src_jac, Float* flux_up_jac,
-            void* calling_class_ptr);
+            const Bool do_jacobians, const Float* sfc_src_jac, Float* flux_up_jac);
 
 
     void lw_secants_array(

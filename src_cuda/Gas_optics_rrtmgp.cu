@@ -1102,8 +1102,7 @@ void Gas_optics_rrtmgp_gpu::compute_gas_taus(
                 col_mix.ptr(), fmajor.ptr(), fminor.ptr(),
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 jeta.ptr(), jtemp.ptr(), jpress.ptr(),
-                tau.ptr(),
-                static_cast<void*>(this));
+                tau.ptr());
 
         rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
@@ -1114,8 +1113,7 @@ void Gas_optics_rrtmgp_gpu::compute_gas_taus(
                 krayl_gpu.ptr(),
                 idx_h2o, col_dry.ptr(), col_gas.ptr(),
                 fminor.ptr(), jeta.ptr(), tropo.ptr(), jtemp.ptr(),
-                tau_rayleigh.ptr(),
-                static_cast<void*>(this));
+                tau_rayleigh.ptr());
 
         combine_abs_and_rayleigh(tau, tau_rayleigh, optical_props);
     }
@@ -1150,8 +1148,7 @@ void Gas_optics_rrtmgp_gpu::compute_gas_taus(
                 col_mix.ptr(), fmajor.ptr(), fminor.ptr(),
                 play.ptr(), tlay.ptr(), col_gas.ptr(),
                 jeta.ptr(), jtemp.ptr(), jpress.ptr(),
-                optical_props->get_tau().ptr(),
-                static_cast<void*>(this));
+                optical_props->get_tau().ptr());
     }
 }
 
@@ -1168,8 +1165,7 @@ void Gas_optics_rrtmgp_gpu::combine_abs_and_rayleigh(
     rrtmgp_kernel_launcher_cuda::combine_abs_and_rayleigh(
             ncol, nlay, ngpt,
             tau.ptr(), tau_rayleigh.ptr(),
-            optical_props->get_tau().ptr(), optical_props->get_ssa().ptr(), optical_props->get_g().ptr(),
-            static_cast<void*>(this));
+            optical_props->get_tau().ptr(), optical_props->get_ssa().ptr(), optical_props->get_g().ptr());
 }
 
 
@@ -1207,8 +1203,7 @@ void Gas_optics_rrtmgp_gpu::source(
             gpoint_bands.ptr(), band_lims_gpoint.ptr(), this->planck_frac_gpu.ptr(), this->temp_ref_min,
             this->totplnk_delta, this->totplnk_gpu.ptr(), this->gpoint_flavor_gpu.ptr(),
             sources.get_sfc_source().ptr(), sources.get_lay_source().ptr(), sources.get_lev_source_inc().ptr(), 
-            sources.get_lev_source_dec().ptr(), sources.get_sfc_source_jac().ptr(),
-            static_cast<void*>(this));
+            sources.get_lev_source_dec().ptr(), sources.get_sfc_source_jac().ptr());
 }
 
 

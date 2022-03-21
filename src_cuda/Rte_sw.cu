@@ -155,8 +155,7 @@ void Rte_sw_gpu::rte_sw(
             inc_flux_dir.ptr(),
             gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr(),
             has_dif_bc, inc_flux_dif_ptr,
-            do_broadband, gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr(),
-            static_cast<void*>(this));
+            do_broadband, gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr());
 
     // CvH: The original fortran code had a call to the reduce here.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);

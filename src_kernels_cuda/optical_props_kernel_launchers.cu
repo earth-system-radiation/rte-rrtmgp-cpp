@@ -110,10 +110,9 @@ namespace optical_props_kernel_launcher_cuda
             int ncol, int nlay, int ngpt,
             Float* tau_inout, Float* ssa_inout, Float* g_inout,
             const Float* tau_in, const Float* ssa_in, const Float* g_in,
-            int nbnd, const int* band_lims_gpoint,
-            void* calling_class_ptr)
+            int nbnd, const int* band_lims_gpoint)
     {
-        Tuner_map& tunings = Tuner::get().get_map(calling_class_ptr);
+        Tuner_map& tunings = Tuner::get_map();
 
         dim3 grid(ncol, nlay, ngpt), block;
 

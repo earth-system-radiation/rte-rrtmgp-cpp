@@ -22,9 +22,14 @@ class Tuner
             return tuner;
         }
 
-        Tuner_map& get_map(void* ptr)
+        static Tuner_map& get_map()
         {
-            return tuner_maps[ptr];
+            return Tuner::get().tuner_map;
+        }
+
+        std::pair<dim3, dim3> operator[](const std::string& name)
+        {
+            return tuner_map.at(name);
         }
 
     private:
@@ -33,7 +38,7 @@ class Tuner
         Tuner(const Tuner&) = delete;
         Tuner& operator=(const Tuner&) = delete;
 
-        std::map<void*, Tuner_map> tuner_maps;
+        Tuner_map tuner_map;
 };
 
 
@@ -42,6 +47,7 @@ inline bool file_exists(const std::string& name)
     std::ifstream f(name.c_str());
     return f.good();
 }
+
 
 ////  RUNTIME TUNER ////
 template<class Func, class... Args>

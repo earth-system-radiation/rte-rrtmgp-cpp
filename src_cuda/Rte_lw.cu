@@ -145,8 +145,7 @@ void Rte_lw_gpu::rte_lw(
             inc_flux_ptr,
             gpt_flux_up.ptr(), gpt_flux_dn.ptr(),
             do_broadband, gpt_flux_up.ptr(), gpt_flux_dn.ptr(),
-            do_jacobians, sfc_src_jac.ptr(), gpt_flux_up_jac.ptr(),
-            static_cast<void*>(this));
+            do_jacobians, sfc_src_jac.ptr(), gpt_flux_up_jac.ptr());
 
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);

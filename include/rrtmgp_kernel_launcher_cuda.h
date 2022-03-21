@@ -33,8 +33,7 @@
 namespace rrtmgp_kernel_launcher_cuda
 {
     void reorder123x321(const int ni, const int nj, const int nk,
-            const Float* arr_in,  Float* arr_out,
-            void*);
+            const Float* arr_in,  Float* arr_out);
 
     void reorder12x21(const int ni, const int nj, const Float* arr_in, Float* arr_out);
 
@@ -64,8 +63,7 @@ namespace rrtmgp_kernel_launcher_cuda
     void combine_abs_and_rayleigh(
             const int ncol, const int nlay, const int ngpt,
             const Float* tau_local, const Float* tau_rayleigh,
-            Float* tau, Float* ssa, Float* g,
-            void*);
+            Float* tau, Float* ssa, Float* g);
 
     void compute_tau_rayleigh(
             const int ncol, const int nlay, const int nband, const int ngpt,
@@ -77,8 +75,7 @@ namespace rrtmgp_kernel_launcher_cuda
             int idx_h2o, const Float* col_dry, const Float* col_gas,
             const Float* fminor, const int* jeta,
             const Bool* tropo, const int* jtemp,
-            Float* tau_rayleigh,
-            void* calling_class_ptr);
+            Float* tau_rayleigh);
 
     void compute_tau_absorption(
             const int ncol, const int nlay, const int nband, const int ngpt,
@@ -108,8 +105,7 @@ namespace rrtmgp_kernel_launcher_cuda
             const Float* fminor, const Float* play,
             const Float* tlay, const Float* col_gas,
             const int* jeta, const int* jtemp,
-            const int* jpress, Float* tau,
-            void* calling_class_ptr);
+            const int* jpress, Float* tau);
 
     void Planck_source(
             const int ncol, const int nlay, const int nbnd, const int ngpt,
@@ -134,7 +130,6 @@ namespace rrtmgp_kernel_launcher_cuda
             Float* lay_src,
             Float* lev_src_inc,
             Float* lev_src_dec,
-            Float* sfc_src_jac,
-            void* calling_class_ptr);
+            Float* sfc_src_jac);
 }
 #endif
