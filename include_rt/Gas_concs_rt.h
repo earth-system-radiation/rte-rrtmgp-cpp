@@ -22,58 +22,58 @@
  *
  */
 
-#ifndef GAS_CONCS_H
-#define GAS_CONCS_H
+#ifndef GAS_CONCS_RT_H
+#define GAS_CONCS_RT_H
 
 #include <map>
 #include <string>
 
+#include "Gas_concs.h" 
 #include "Types.h"
 
 template<typename, int> class Array;
 
 #ifdef __CUDACC__
-class Gas_concs_gpu;
+class Gas_concs_rt;
 #endif
 
 
-class Gas_concs
-{
-    public:
-        Gas_concs() {}
-        Gas_concs(const Gas_concs& gas_concs_ref, const int start, const int size);
-
-        // Insert new gas into the map.
-        void set_vmr(const std::string& name, const Float data);
-        void set_vmr(const std::string& name, const Array<Float,1>& data);
-        void set_vmr(const std::string& name, const Array<Float,2>& data);
-
-        // Retrieve gas from the map.
-        // void get_vmr(const std::string& name, Array<Float,2>& data) const;
-        const Array<Float,2>& get_vmr(const std::string& name) const;
-
-        // Check if gas exists in map.
-        Bool exists(const std::string& name) const;
-
-    private:
-        std::map<std::string, Array<Float,2>> gas_concs_map;
-
-        #ifdef __CUDACC__
-        friend class Gas_concs_gpu;
-        friend class Gas_concs_rt;
-        #endif
-};
+//class Gas_concs
+//{
+//    public:
+//        Gas_concs() {}
+//        Gas_concs(const Gas_concs& gas_concs_ref, const int start, const int size);
+//
+//        // Insert new gas into the map.
+//        void set_vmr(const std::string& name, const Float data);
+//        void set_vmr(const std::string& name, const Array<Float,1>& data);
+//        void set_vmr(const std::string& name, const Array<Float,2>& data);
+//
+//        // Retrieve gas from the map.
+//        // void get_vmr(const std::string& name, Array<Float,2>& data) const;
+//        const Array<Float,2>& get_vmr(const std::string& name) const;
+//
+//        // Check if gas exists in map.
+//        Bool exists(const std::string& name) const;
+//
+//    private:
+//        std::map<std::string, Array<Float,2>> gas_concs_map;
+//
+//        #ifdef __CUDACC__
+//        friend class Gas_concs_rt;
+//        #endif
+//};
 
 
 #ifdef __CUDACC__
 template<typename, int> class Array_gpu;
 
 
-class Gas_concs_gpu
+class Gas_concs_rt
 {
     public:
-        Gas_concs_gpu(const Gas_concs& gas_concs_ref);
-        Gas_concs_gpu(const Gas_concs_gpu& gas_concs_ref, const int start, const int size);
+        Gas_concs_rt(const Gas_concs& gas_concs_ref);
+        Gas_concs_rt(const Gas_concs_rt& gas_concs_ref, const int start, const int size);
 
         const Array_gpu<Float,2>& get_vmr(const std::string& name) const;
 

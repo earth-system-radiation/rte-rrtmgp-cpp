@@ -1,7 +1,7 @@
 #
 # This file is part of a C++ interface to the Radiative Transfer for Energetics (RTE)
 #
-include_directories(${INCLUDE_DIRS} "../include" "../include_test")
+include_directories(${INCLUDE_DIRS} "../include" "../include_test" "../include_rt")
 
 # retrieve the git hash from the current commit
 find_package(Git)
@@ -22,6 +22,9 @@ add_definitions(-DGITHASH="${GITHASH}")
 if(USECUDA)
   add_executable(test_rte_rrtmgp_gpu Radiation_solver.cu test_rte_rrtmgp.cu)
   target_link_libraries(test_rte_rrtmgp_gpu rte_rrtmgp rte_rrtmgp_cuda ${LIBS} m)
+  
+  add_executable(test_rte_rrtmgp_rt_gpu Radiation_solver_rt.cu test_rte_rrtmgp_rt.cu)
+  target_link_libraries(test_rte_rrtmgp_rt_gpu rte_rrtmgp rte_rrtmgp_cuda_rt curand ${LIBS} m)
 endif()
 
 add_executable(test_rte_rrtmgp Radiation_solver.cpp test_rte_rrtmgp.cpp)
