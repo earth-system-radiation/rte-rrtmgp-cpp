@@ -28,7 +28,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         {
             std::tie(grid, block) = tune_kernel(
                 "reorder123x321_kernel",
-                {ni, nj, nk},
+                dim3{ni, nj, nk},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
@@ -137,19 +137,20 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             Array_gpu<int,2>& jtemp,
             Array_gpu<Float,6>& fmajor, Array_gpu<Float,5>& fminor,
             Array_gpu<Float,4>& col_mix,
-            Array_gpu<BOOL,2>& tropo,
+            Array_gpu<Bool,2>& tropo,
             Array_gpu<int,4>& jeta,
             Array_gpu<int,2>& jpress)
     {
-        Tuner_map& tunings)
-        Float tmin = std::numeric_limits::min();
+        Tuner_map& tunings = Tuner::get_map();
+        Float tmin = std::numeric_limits<Float>::min();
         
         dim3 grid(ncol, nlay, nflav), block;
         if (tunings.count("interpolation_kernel") == 0)
         {
             std::tie(grid, block) = tune_kernel(
                     "interpolation_kernel",
-                    {ncol, nlay, nflav}, {1, 2, 4, 8, 16, 32, 64, 128, 256}, {1}, {1, 2, 4, 8, 16, 32, 64, 128, 256},
+                    dim3{ncol, nlay, nflav}, 
+                    {1, 2, 4, 8, 16, 32, 64, 128, 256}, {1}, {1, 2, 4, 8, 16, 32, 64, 128, 256},
                     interpolation_kernel,
                     ncol, nlay, ngas, nflav, neta, npres, ntemp, tmin,
                     flavor.ptr(), press_ref_log.ptr(), temp_ref.ptr(),
@@ -188,10 +189,10 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             const Array_gpu<int,2>& gpoint_flavor,
             const Array_gpu<int,2>& minor_limits_gpt_lower,
             const Array_gpu<int,2>& minor_limits_gpt_upper,
-            const Array_gpu<BOOL,1>& minor_scales_with_density_lower,
-            const Array_gpu<BOOL,1>& minor_scales_with_density_upper,
-            const Array_gpu<BOOL,1>& scale_by_complement_lower,
-            const Array_gpu<BOOL,1>& scale_by_complement_upper,
+            const Array_gpu<Bool,1>& minor_scales_with_density_lower,
+            const Array_gpu<Bool,1>& minor_scales_with_density_upper,
+            const Array_gpu<Bool,1>& scale_by_complement_lower,
+            const Array_gpu<Bool,1>& scale_by_complement_upper,
             const Array_gpu<int,1>& idx_minor_lower,
             const Array_gpu<int,1>& idx_minor_upper,
             const Array_gpu<int,1>& idx_minor_scaling_lower,
@@ -199,7 +200,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             const Array_gpu<Float,2>& play,
             const Array_gpu<Float,2>& tlay,
             const Array_gpu<Float,3>& col_gas,
-            const Array_gpu<BOOL,2>& tropo,
+            const Array_gpu<Bool,2>& tropo,
             Array_gpu<Float,3>& scalings_lower,
             Array_gpu<Float,3>& scalings_upper)
     {
@@ -213,7 +214,8 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         {
             std::tie(grid_1, block_1) = tune_kernel(
                     "minor_scalings_lower_kernel",
-                    {ncol, nlay, nminorlower}, {8, 16, 24, 32, 48, 64, 128}, {1}, {1, 2, 4, 8, 16, 32},
+                    dim3{ncol, nlay, nminorlower}, 
+                    {8, 16, 24, 32, 48, 64, 128}, {1}, {1, 2, 4, 8, 16, 32},
                     scaling_kernel,
                     ncol, nlay, nflav, nminorlower,
                     idx_h2o, idx_tropo,
@@ -255,7 +257,8 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         {
             std::tie(grid_2, block_2) = tune_kernel(
                     "minor_scalings_upper_kernel",
-                    {ncol, nlay, nminorupper}, {8, 16, 24, 32, 48, 64, 128}, {1}, {1, 2, 4, 8, 16, 32},
+                    dim3{ncol, nlay, nminorupper}, 
+                    {8, 16, 24, 32, 48, 64, 128}, {1}, {1, 2, 4, 8, 16, 32},
                     scaling_kernel,
                     ncol, nlay, nflav, nminorupper,
                     idx_h2o, idx_tropo,
@@ -298,14 +301,14 @@ namespace rrtmgp_kernel_launcher_cuda_rt
     {
         Tuner_map& tunings = Tuner::get_map();
         
-        Float tmin = std::numeric_limits::epsilon();
+        Float tmin = std::numeric_limits<Float>::epsilon();
 
         dim3 grid{ncol, nlay, 1}, block;
         if (tunings.count("combine_abs_and_rayleigh_kernel") == 0)
         {
             std::tie(grid, block) = tune_kernel(
                 "combine_abs_and_rayleigh_kernel",
-                {ncol, nlay, 1},
+                dim3{ncol, nlay, 1},
                 {24, 32, 48, 64, 96, 128, 256, 512}, {1, 2, 4}, {1},
                 combine_abs_and_rayleigh_kernel,
                 ncol, nlay, tmin,
@@ -337,7 +340,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             const Array_gpu<Float,4>& krayl,
             int idx_h2o, const Array_gpu<Float,2>& col_dry, const Array_gpu<Float,3>& col_gas,
             const Array_gpu<Float,5>& fminor, const Array_gpu<int,4>& jeta,
-            const Array_gpu<BOOL,2>& tropo, const Array_gpu<int,2>& jtemp,
+            const Array_gpu<Bool,2>& tropo, const Array_gpu<int,2>& jtemp,
             Array_gpu<Float,2>& tau_rayleigh)
     {
         Tuner_map& tunings = Tuner::get_map();
@@ -347,7 +350,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         {
             std::tie(grid, block) = tune_kernel(
                 "compute_tau_rayleigh_kernel",
-                {ncol, nlay, 1},
+                dim3{ncol, nlay, 1},
                 {24, 32, 64, 128, 256, 512}, {1, 2}, {1},
                 compute_tau_rayleigh_kernel,
                 ncol, nlay, nbnd, ngpt,
@@ -401,17 +404,17 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             const Array_gpu<int,2>& minor_limits_gpt_upper,
             const Array_gpu<int,2>& first_last_minor_lower,
             const Array_gpu<int,2>& first_last_minor_upper,
-            const Array_gpu<BOOL,1>& minor_scales_with_density_lower,
-            const Array_gpu<BOOL,1>& minor_scales_with_density_upper,
-            const Array_gpu<BOOL,1>& scale_by_complement_lower,
-            const Array_gpu<BOOL,1>& scale_by_complement_upper,
+            const Array_gpu<Bool,1>& minor_scales_with_density_lower,
+            const Array_gpu<Bool,1>& minor_scales_with_density_upper,
+            const Array_gpu<Bool,1>& scale_by_complement_lower,
+            const Array_gpu<Bool,1>& scale_by_complement_upper,
             const Array_gpu<int,1>& idx_minor_lower,
             const Array_gpu<int,1>& idx_minor_upper,
             const Array_gpu<int,1>& idx_minor_scaling_lower,
             const Array_gpu<int,1>& idx_minor_scaling_upper,
             const Array_gpu<int,1>& kminor_start_lower,
             const Array_gpu<int,1>& kminor_start_upper,
-            const Array_gpu<BOOL,2>& tropo,
+            const Array_gpu<Bool,2>& tropo,
             const Array_gpu<Float,4>& col_mix, const Array_gpu<Float,6>& fmajor,
             const Array_gpu<Float,5>& fminor, const Array_gpu<Float,2>& play,
             const Array_gpu<Float,2>& tlay, const Array_gpu<Float,3>& col_gas,
@@ -428,7 +431,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         {
             std::tie(grid_maj, block_maj) = tune_kernel(
                     "gas_optical_depths_major_kernel",
-                    {nlay, ncol, 1}, {1, 2}, {64, 96, 128, 256, 512, 768, 1024}, {1, 2},
+                    dim3{nlay, ncol, 1}, {1, 2}, {64, 96, 128, 256, 512, 768, 1024}, {1, 2},
                     gas_optical_depths_major_kernel,
                     ncol, nlay, nband, ngpt,
                     nflav, neta, npres, ntemp,
@@ -468,7 +471,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         {
             std::tie(grid_min_1, block_min_1) = tune_kernel(
                         "gas_optical_depths_minor_kernel_lower",
-                        {nlay, ncol, 1},
+                        dim3{nlay, ncol, 1},
                         {1}, {32, 48, 64, 96, 128, 256, 384, 512}, {1},
                         gas_optical_depths_minor_kernel,
                         ncol, nlay, ngpt, igpt,
@@ -528,7 +531,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         {
             std::tie(grid_min_2, block_min_2) = tune_kernel(
                    "gas_optical_depths_minor_kernel_upper",
-                   {nlay, ncol, 1},
+                   dim3{nlay, ncol, 1},
                    {1}, {32, 48, 64, 96, 128, 256, 384, 512}, {1},
                    gas_optical_depths_minor_kernel,
                    ncol, nlay, ngpt, igpt,
@@ -593,7 +596,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             const int sfc_lay,
             const Array_gpu<Float,6>& fmajor,
             const Array_gpu<int,4>& jeta,
-            const Array_gpu<BOOL,2>& tropo,
+            const Array_gpu<Bool,2>& tropo,
             const Array_gpu<int,2>& jtemp,
             const Array_gpu<int,2>& jpress,
             const Array_gpu<int,1>& gpoint_bands,
@@ -617,7 +620,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         {
             std::tie(grid, block) = tune_kernel(
                     "Planck_source_kernel",
-                    {ncol, nlay, 1},
+                    dim3{ncol, nlay, 1},
                     {16, 32, 48, 64, 96, 128, 256, 512}, {1, 2, 4, 8}, {1},
                     Planck_source_kernel,
                     ncol, nlay, nbnd, ngpt,

@@ -11,17 +11,17 @@ namespace
     //using Int = unsigned int;
     //const Int Atomic_reduce_const = (Int)(-1);
     
-//    #ifdef RTE_RRTMGP_SINGLE_PRECISION
+    #ifdef RTE_RRTMGP_SINGLE_PRECISION
     // using Float = float;
-//    const Float Float_epsilon = FLT_EPSILON;
+    const Float Float_epsilon = FLT_EPSILON;
     // constexpr int block_size = 512;
     // constexpr int grid_size = 64;
-//    #else
+    #else
     // using Float = double;
-//    const Float Float_epsilon = DBL_EPSILON;
+    const Float Float_epsilon = DBL_EPSILON;
     // constexpr int block_size = 512;
     // constexpr int grid_size = 64;
-//    #endif
+    #endif
     
     constexpr Float w_thres = 0.5;
     
@@ -154,7 +154,7 @@ namespace
             const Float x_size, const Float y_size, const Float z_top,
             const Float dx_grid, const Float dy_grid, const Float dz_grid,
             const Float dir_x, const Float dir_y, const Float dir_z,
-            const BOOL generation_completed, Float& weight, int& bg_idx,
+            const Bool generation_completed, Float& weight, int& bg_idx,
             const int itot, const int jtot, const int kbg)
     {
         ++photons_shot;
@@ -196,7 +196,7 @@ namespace
     
         curandStateScrambledSobol32_t state_x;
         curandStateScrambledSobol32_t state_y;
-    ;
+    };
     
     
     __device__
@@ -237,7 +237,7 @@ void ray_tracer_kernel(
     // Check background tranmissivity, if this is too ow don't bother starting the raytracer
     Float bg_tau = 0;
     for (int k=0; k<kbg; ++k)
-        bg_tau += k_ext_bg[i].gas * abs(z_lev_bg[i+1]-z_lev_bg[i]);
+        bg_tau += k_ext_bg[k].gas * abs( (z_lev_bg[k+1] - z_lev_bg[k]) / dir_z );
     const Float bg_transmissivity = exp(-bg_tau);
     
     if (bg_transmissivity < Float(1.e-4)) return;
@@ -252,7 +252,7 @@ void ray_tracer_kernel(
     const Float s_min_bg = z_top * Float_epsilon;
 
     // Set up the initial photons.
-    const BOOL completed = false;
+    const Bool completed = false;
     Int photons_shot = Atomic_reduce_const;
     Float weight;
     int bg_idx;
@@ -269,12 +269,12 @@ void ray_tracer_kernel(
     Float tau = Float(0.);
     Float d_max = Float(0.);
     Float k_ext_null;
-    BOOL transition = false;
+    Bool transition = false;
     int i_n, j_n, k_n;
     
     while (photons_shot < photons_to_shoot)
     {
-        const BOOL photon_generation_completed = (photons_shot == photons_to_shoot - 1);
+        const Bool photon_generation_completed = (photons_shot == photons_to_shoot - 1);
 
         // 1D raytracing between TOD and TOA?        
         if (photon.position.z > z_size)
@@ -549,7 +549,7 @@ void ray_tracer_kernel(
                     else
                     {
                         d_max = Float(0.);
-                        const BOOL cloud_scatter = rng() < (k_ext[ijk].cloud / k_ext_tot);
+                        const Bool cloud_scatter = rng() < (k_ext[ijk].cloud / k_ext_tot);
 
                         const Float cos_scat = cloud_scatter ? henyey(ssa_asy[ijk].asy, rng()) : rayleigh(rng());
                         const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));

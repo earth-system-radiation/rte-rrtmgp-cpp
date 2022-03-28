@@ -168,7 +168,7 @@ void Planck_source_kernel(
         const Float* __restrict__ tsfc,
         const int sfc_lay,
         const Float* __restrict__ fmajor, const int* __restrict__ jeta,
-        const BOOL* __restrict__ tropo, const int* __restrict__ jtemp,
+        const Bool* __restrict__ tropo, const int* __restrict__ jtemp,
         const int* __restrict__ jpress, const int* __restrict__ gpoint_bands,
         const int* __restrict__ band_lims_gpt, const Float* __restrict__ pfracin,
         const Float temp_ref_min, const Float totplnk_delta,
@@ -262,7 +262,7 @@ void interpolation_kernel(
         int* __restrict__ jtemp,
         Float* __restrict__ fmajor, Float* __restrict__ fminor,
         Float* __restrict__ col_mix,
-        BOOL* __restrict__ tropo,
+        Bool* __restrict__ tropo,
         int* __restrict__ jeta,
         int* __restrict__ jpress)
 {
@@ -333,7 +333,7 @@ void gas_optical_depths_major_kernel(
         const int* __restrict__ band_lims_gpt,
         const Float* __restrict__ kmajor,
         const Float* __restrict__ col_mix, const Float* __restrict__ fmajor,
-        const int* __restrict__ jeta, const BOOL* __restrict__ tropo,
+        const int* __restrict__ jeta, const Bool* __restrict__ tropo,
         const int* __restrict__ jtemp, const int* __restrict__ jpress,
         Float* __restrict__ tau)
 {
@@ -377,14 +377,14 @@ void scaling_kernel(
         const int idx_h2o, const int idx_tropo,
         const int* __restrict__ gpoint_flavor,
         const int* __restrict__ minor_limits_gpt,
-        const BOOL* __restrict__ minor_scales_with_density,
-        const BOOL* __restrict__ scale_by_complement,
+        const Bool* __restrict__ minor_scales_with_density,
+        const Bool* __restrict__ scale_by_complement,
         const int* __restrict__ idx_minor,
         const int* __restrict__ idx_minor_scaling,
         const Float* __restrict__ play,
         const Float* __restrict__ tlay,
         const Float* __restrict__ col_gas,
-        const BOOL* __restrict__ tropo,
+        const Bool* __restrict__ tropo,
         Float* __restrict__ scalings)
 {
     const int icol = blockIdx.x * blockDim.x + threadIdx.x;
@@ -437,8 +437,8 @@ void gas_optical_depths_minor_kernel(
         const Float* __restrict__ kminor,
         const int* __restrict__ minor_limits_gpt,
         const int* __restrict__ first_last_minor,
-        const BOOL* __restrict__ minor_scales_with_density,
-        const BOOL* __restrict__ scale_by_complement,
+        const Bool* __restrict__ minor_scales_with_density,
+        const Bool* __restrict__ scale_by_complement,
         const int* __restrict__ idx_minor,
         const int* __restrict__ idx_minor_scaling,
         const int* __restrict__ kminor_start,
@@ -448,7 +448,7 @@ void gas_optical_depths_minor_kernel(
         const Float* __restrict__ fminor,
         const int* __restrict__ jeta,
         const int* __restrict__ jtemp,
-        const BOOL* __restrict__ tropo,
+        const Bool* __restrict__ tropo,
         const Float* __restrict__ scalings,
         Float* __restrict__ tau)
 {
@@ -507,7 +507,7 @@ void compute_tau_rayleigh_kernel(
         const Float* __restrict__ krayl,
         int idx_h2o, const Float* __restrict__ col_dry, const Float* __restrict__ col_gas,
         const Float* __restrict__ fminor, const int* __restrict__ jeta,
-        const BOOL* __restrict__ tropo, const int* __restrict__ jtemp,
+        const Bool* __restrict__ tropo, const int* __restrict__ jtemp,
         Float* __restrict__ tau_rayleigh)
 {
     // Fetch the three coordinates.
