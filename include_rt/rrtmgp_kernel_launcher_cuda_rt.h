@@ -54,6 +54,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
     
     void zero_array(const int ni, const int nj, Array_gpu<Float,2>& arr);
 
+    void zero_array(const int ni, Array_gpu<int,1>& arr);
     
     void interpolation(
             const int ncol, const int nlay,

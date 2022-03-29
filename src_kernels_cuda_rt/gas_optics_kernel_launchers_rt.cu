@@ -119,6 +119,18 @@ namespace rrtmgp_kernel_launcher_cuda_rt
 
     }
 
+    void zero_array(const int ni, Array_gpu<int, 1>& arr)
+    {
+        const int block_i = 32;
+
+        const int grid_i = ni/block_i + (ni%block_i > 0);
+
+        dim3 grid_gpu(grid_i);
+        dim3 block_gpu(block_i);
+
+        zero_array_kernel<<<grid_gpu, block_gpu>>>(
+                ni, arr.ptr());
+    }
     
     void interpolation(
             const int ncol, const int nlay,

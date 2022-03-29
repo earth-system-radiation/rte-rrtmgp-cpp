@@ -141,6 +141,7 @@ class Gas_optics_rrtmgp_rt : public Gas_optics_rt
         int get_nPlanckTemp() const { return totplnk.dim(1); }
 
         Float get_tsi() const;
+        Float band_source(const int gpt_start, const int gpt_end) const;
 
         // Longwave variant.
         void gas_optics(

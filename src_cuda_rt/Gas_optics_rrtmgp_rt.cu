@@ -1299,3 +1299,13 @@ Float Gas_optics_rrtmgp_rt::get_tsi() const
     return tsi;
 }
 
+Float Gas_optics_rrtmgp_rt::band_source(const int gpt_start, const int gpt_end) const
+{
+    Float bnd_src = 0.;
+    for (int igpt=gpt_start; igpt<=gpt_end; ++igpt)
+        bnd_src += this->solar_source({igpt});
+
+    return bnd_src;
+}
+
+
