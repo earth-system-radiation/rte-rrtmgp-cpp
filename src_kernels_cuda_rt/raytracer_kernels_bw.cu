@@ -39,8 +39,8 @@ namespace
     // angle w.r.t. vertical: 0 degrees is looking up, 180 degrees down
     constexpr Float zenith_cam = 90./180.*M_PI; //60./180.*M_PI; 
     // angle w.r.t. north,: 0 degrees is looking north
-    constexpr Float azimuth_cam = 0./180*M_PI;
-    constexpr Vector upward_cam = {0, 1, 0};
+    //constexpr Float azimuth_cam = 0./180*M_PI;
+    constexpr Vector upward_cam = {0, 0, 1};
     
     constexpr Float half_angle = .26656288/180. * M_PI; // sun has a half angle of .266 degrees 
     constexpr Float cos_half_angle = Float(0.9999891776066407); // cos(half_angle); 
@@ -334,7 +334,7 @@ namespace
             const Float dx_grid, const Float dy_grid, const Float dz_grid,
             const Float dir_x, const Float dir_y, const Float dir_z,
             const bool generation_completed, Float& weight, int& bg_idx,
-            const int cam_nx, const int cam_ny,
+            const int cam_nx, const int cam_ny, const Float* __restrict__ cam_data,
             const Vector axis_h, const Vector axis_v, const Vector axis_z,
             const int itot, const int jtot, const int ktot, const int kbg,
             const Float* __restrict__ bg_tau_cum,
@@ -349,7 +349,7 @@ namespace
              
             photon.position.x = Float(0.) + s_min;
             photon.position.y = Float(0.) + s_min;
-            photon.position.z = Float(500.)+ s_min; 
+            photon.position.z = cam_data[1] + s_min; //Float(500.)+ s_min; 
               
             photon.direction = normalize(i*axis_h + j*axis_v + axis_z);
             
@@ -413,7 +413,7 @@ void ray_tracer_kernel_bw(
         Float* __restrict__ camera_count,
         Float* __restrict__ camera_shot,
         int* __restrict__ counter,
-        const int cam_nx, const int cam_ny,
+        const int cam_nx, const int cam_ny, const Float* __restrict__ cam_data,
         const Optics_ext* __restrict__ k_ext, const Optics_scat* __restrict__ ssa_asy,
         const Optics_ext* __restrict__ k_ext_bg, const Optics_scat* __restrict__ ssa_asy_bg,
         const Float* __restrict__ z_lev_bg,
@@ -430,7 +430,7 @@ void ray_tracer_kernel_bw(
     sun_direction.x = -dir_x;
     sun_direction.y = -dir_y;
     sun_direction.z = -dir_z;
-
+    const Float azimuth_cam = cam_data[0];
     const Vector cam = {sin(zenith_cam) * sin(azimuth_cam), sin(zenith_cam) * cos(azimuth_cam), cos(zenith_cam) };
     const Vector axis_h = normalize(cross(cam, upward_cam));
     const Vector axis_v = normalize(cross(cam, axis_h));
@@ -481,7 +481,7 @@ void ray_tracer_kernel_bw(
                 dx_grid, dy_grid, dz_grid,
                 dir_x, dir_y, dir_z,
                 completed, weight, bg_idx,
-                cam_nx, cam_ny, axis_h, axis_v, axis_z,
+                cam_nx, cam_ny, cam_data, axis_h, axis_v, axis_z,
                 itot, jtot, ktot, kbg, bg_tau_cum, z_lev_bg, s_min, s_min_bg);
         Float tau;
         Float d_max = Float(0.);
@@ -530,7 +530,7 @@ void ray_tracer_kernel_bw(
                                 dx_grid, dy_grid, dz_grid,
                                 dir_x, dir_y, dir_z,
                                 photon_generation_completed, weight, bg_idx,
-                                cam_nx, cam_ny, axis_h, axis_v, axis_z,
+                                cam_nx, cam_ny, cam_data, axis_h, axis_v, axis_z,
                                 itot, jtot, ktot, kbg, bg_tau_cum, z_lev_bg, s_min, s_min_bg);
                     }
                     else 
@@ -615,7 +615,7 @@ void ray_tracer_kernel_bw(
                                 dx_grid, dy_grid, dz_grid,
                                 dir_x, dir_y, dir_z,
                                 photon_generation_completed, weight, bg_idx,
-                                cam_nx, cam_ny, axis_h, axis_v, axis_z,
+                                cam_nx, cam_ny, cam_data, axis_h, axis_v, axis_z,
                                 itot, jtot, ktot, kbg, bg_tau_cum, z_lev_bg, s_min, s_min_bg);
                     }
                 }
@@ -706,7 +706,7 @@ void ray_tracer_kernel_bw(
                                     dx_grid, dy_grid, dz_grid,
                                     dir_x, dir_y, dir_z,
                                     photon_generation_completed, weight, bg_idx,
-                                    cam_nx, cam_ny, axis_h, axis_v, axis_z,
+                                    cam_nx, cam_ny, cam_data, axis_h, axis_v, axis_z,
                                     itot, jtot, ktot, kbg, bg_tau_cum, z_lev_bg, s_min, s_min_bg);
                         }
                     }
@@ -843,7 +843,7 @@ void ray_tracer_kernel_bw(
                                 dx_grid, dy_grid, dz_grid,
                                 dir_x, dir_y, dir_z,
                                 photon_generation_completed, weight, bg_idx,
-                                cam_nx, cam_ny, axis_h, axis_v, axis_z,
+                                cam_nx, cam_ny, cam_data, axis_h, axis_v, axis_z,
                                 itot, jtot, ktot, kbg, bg_tau_cum, z_lev_bg, s_min, s_min_bg);
                     }
                 }

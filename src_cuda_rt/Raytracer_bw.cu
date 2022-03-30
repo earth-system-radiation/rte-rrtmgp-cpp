@@ -295,6 +295,7 @@ void Raytracer_bw::trace_rays(
         const Float rayleigh,
         const Array_gpu<Float,2>& col_dry,
         const Array_gpu<Float,2>& vmr_h2o,
+        const Array_gpu<Float,1>& cam_data,
         Array_gpu<Float,2>& flux_camera)
 {
     // set of block and grid dimensions used in data processing kernels - requires some proper tuning later
@@ -388,7 +389,7 @@ void Raytracer_bw::trace_rays(
             camera_count.ptr(),
             shot_count.ptr(),
             counter.ptr(),
-            cam_nx, cam_ny,
+            cam_nx, cam_ny, cam_data.ptr(),
             k_ext.ptr(), ssa_asy.ptr(),
             k_ext_bg.ptr(), ssa_asy_bg.ptr(),
             z_lev_bg.ptr(),

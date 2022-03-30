@@ -674,6 +674,7 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,1>& tsi_scaling, const Array_gpu<Float,1>& mu0,
         const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
+        const Array_gpu<Float,1>& cam_data,
         Array_gpu<Float,3>& XYZ)
 
 {
@@ -826,6 +827,7 @@ void Radiation_solver_shortwave::solve_gpu(
                     rayleigh,
                     col_dry,
                     gas_concs.get_vmr("h2o"),
+                    cam_data,
                     flux_camera); 
             
             //return; 

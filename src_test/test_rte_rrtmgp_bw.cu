@@ -242,6 +242,12 @@ void solve_radiation(int argc, char** argv)
     Array<Float,1> grid_z({n_z});
     Array<Float,1> z_lev({n_lev});
     
+    // Reading camera data
+    Array<Float,1> cam_data({2});
+    cam_data({1}) = input_nc.get_variable<Float>("cam_azi");
+    cam_data({2}) = input_nc.get_variable<Float>("cam_z");
+    Array_gpu<Float,1> cam_data_gpu(cam_data);
+
     grid_x = std::move(input_nc.get_variable<Float>("x", {n_col_x}));
     grid_y = std::move(input_nc.get_variable<Float>("y", {n_col_y}));
     grid_z = std::move(input_nc.get_variable<Float>("z", {n_z}));
@@ -262,6 +268,7 @@ void solve_radiation(int argc, char** argv)
     Array<Float,2> p_lev(input_nc.get_variable<Float>("p_lev", {n_lev, n_col_y, n_col_x}), {n_col, n_lev});
     Array<Float,2> t_lev(input_nc.get_variable<Float>("t_lev", {n_lev, n_col_y, n_col_x}), {n_col, n_lev});
 
+    
     // Fetch the col_dry in case present.
     Array<Float,2> col_dry;
     if (input_nc.variable_exists("col_dry"))
@@ -606,7 +613,7 @@ void solve_radiation(int argc, char** argv)
                     tsi_scaling_gpu, mu0_gpu,
                     lwp_gpu, iwp_gpu,
                     rel_gpu, rei_gpu,
-                    XYZ);
+                    cam_data_gpu, XYZ);
 
             cudaEventRecord(stop, 0);
             cudaEventSynchronize(stop);

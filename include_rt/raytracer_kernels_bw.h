@@ -7,7 +7,7 @@
 
 #ifdef RTE_RRTMGP_SINGLE_PRECISION
 //using Float = float;
-constexpr int block_size= 256;
+constexpr int block_size= 512;
 constexpr int grid_size = 512;
 #else
 //using Float = double;
@@ -46,7 +46,7 @@ void ray_tracer_kernel_bw(
         Float* __restrict__ camera_count,
         Float* __restrict__ camera_shot,
         int* __restrict__ counter,
-        const int cam_nx, const int cam_ny,
+        const int cam_nx, const int cam_ny, const Float* __restrict__ cam_data,
         const Optics_ext* __restrict__ k_ext, const Optics_scat* __restrict__ ssa_asy,
         const Optics_ext* __restrict__ k_ext_bg, const Optics_scat* __restrict__ ssa_asy_bg,
         const Float* __restrict__ z_lev_bg,

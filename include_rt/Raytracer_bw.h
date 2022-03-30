@@ -33,6 +33,7 @@ class Raytracer_bw
                 const Float rayleigh,
                 const Array_gpu<Float,2>& col_dry,
                 const Array_gpu<Float,2>& vmr_h2o,
+                const Array_gpu<Float,1>& cam_data,
                 Array_gpu<Float,2>& flux_camera);
 
         void add_xyz_camera(
