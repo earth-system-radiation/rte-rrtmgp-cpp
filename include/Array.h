@@ -328,11 +328,18 @@ class Array_gpu
         Array_gpu() :
             dims({}),
             ncells(0),
-            data_ptr(nullptr)
+            data_ptr(nullptr),
+            is_view(false)
         {}
 
         #ifdef __CUDACC__
-        ~Array_gpu() { Tools_gpu::free_gpu(data_ptr); }
+        ~Array_gpu()
+        {
+            if (is_view)
+                Tools_gpu::free_gpu(data_ptr);
+            else
+                data_ptr = nullptr;
+        }
         #endif
 
         #ifdef __CUDACC__
@@ -345,6 +352,7 @@ class Array_gpu
             ncells = array.ncells;
             strides = array.strides;
             offsets = array.offsets;
+            is_view = false;
 
             data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
@@ -364,6 +372,7 @@ class Array_gpu
             data_ptr = std::exchange(array.data_ptr, nullptr);
             strides = std::exchange(array.strides, {});
             offsets = std::exchange(array.offsets, {});
+            is_view = false;
 
             return (*this);
         }
@@ -375,7 +384,8 @@ class Array_gpu
             ncells(array.ncells),
             data_ptr(nullptr),
             strides(array.strides),
-            offsets(array.offsets)
+            offsets(array.offsets),
+            is_view(false)
         {
             data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
@@ -388,7 +398,8 @@ class Array_gpu
             ncells(std::exchange(array.ncells, 0)),
             data_ptr(std::exchange(array.data_ptr, nullptr)),
             strides(std::exchange(array.strides, {})),
-            offsets(std::exchange(array.offsets, {}))
+            offsets(std::exchange(array.offsets, {})),
+            is_view(false)
         {}
         #endif
 
@@ -399,12 +410,26 @@ class Array_gpu
             ncells(product<N>(dims)),
             data_ptr(nullptr),
             strides(calc_strides<N>(dims)),
-            offsets({})
+            offsets({}),
+            is_view(false)
         {
             data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
         }
         #endif
 
+        #ifdef __CUDACC__
+        // Create an array that is a view.
+        Array_gpu(T* ptr, const std::array<int, N>& dims) :
+            dims(dims),
+            ncells(product<N>(dims)),
+            data_ptr(ptr),
+            strides(calc_strides<N>(dims)),
+            offsets({}),
+            is_view(true)
+        {
+            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
+        }
+        #endif
 
         #ifdef __CUDACC__
         Array_gpu(const Array<T, N>& array) :
@@ -412,7 +437,8 @@ class Array_gpu
             ncells(array.ncells),
             data_ptr(nullptr),
             strides(array.strides),
-            offsets(array.offsets)
+            offsets(array.offsets),
+            is_view(false)
         {
             data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
             cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyHostToDevice));
@@ -551,6 +577,7 @@ class Array_gpu
         T* data_ptr;
         std::array<int, N> strides;
         std::array<int, N> offsets;
+        bool is_view;
 
         friend class Array<T, N>;
 };
