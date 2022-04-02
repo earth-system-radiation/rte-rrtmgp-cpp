@@ -31,10 +31,6 @@
 #include "Gas_optics.h"
 #include "Types.h"
 
-// #ifdef __CUDACC__
-// #include "tools_gpu.h"
-// #endif
-
 
 // Forward declarations.
 class Optical_props;
