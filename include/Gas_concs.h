@@ -32,7 +32,7 @@
 
 template<typename, int> class Array;
 
-#ifdef __CUDACC__
+#ifdef USECUDA
 class Gas_concs_gpu;
 #endif
 
@@ -58,13 +58,13 @@ class Gas_concs
     private:
         std::map<std::string, Array<Float,2>> gas_concs_map;
 
-        #ifdef __CUDACC__
+        #ifdef USECUDA
         friend class Gas_concs_gpu;
         #endif
 };
 
 
-#ifdef __CUDACC__
+#ifdef USECUDA
 template<typename, int> class Array_gpu;
 
 

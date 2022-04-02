@@ -58,7 +58,7 @@ class Rte_sw
 };
 
 
-#ifdef __CUDACC__
+#ifdef USECUDA
 class Rte_sw_gpu
 {
     public:

@@ -167,7 +167,7 @@ void add_to(Optical_props_2str& op_inout, const Optical_props_2str& op_in);
 
 
 // GPU version of optical props class
-#ifdef __CUDACC__
+#ifdef USECUDA
 
 // Forward declare the classes in order to define add_to before the classes to enable friend function.
 class Optical_props_1scl_gpu;
