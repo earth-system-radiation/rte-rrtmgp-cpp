@@ -336,9 +336,9 @@ class Array_gpu
         ~Array_gpu()
         {
             if (is_view)
-                Tools_gpu::free_gpu(data_ptr);
-            else
                 data_ptr = nullptr;
+            else
+                Tools_gpu::free_gpu(data_ptr);
         }
         #endif
 
