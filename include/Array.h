@@ -317,6 +317,21 @@ void subset_kernel(
         a_sub[idx_out] = a[idx_in];
     }
 }
+
+template<typename T> __global__
+void fill_kernel(
+        T* __restrict__ a,
+        const T v,
+        const int ncells)
+{
+    const int idx = blockIdx.x*blockDim.x + threadIdx.x;
+    
+    if (idx < ncells)
+    {
+        a[idx] = v;
+    }
+}
+
 #endif
 
 
@@ -451,6 +466,19 @@ class Array_gpu
         }
 
         inline std::array<int, N> get_dims() const { return dims; }
+
+        #ifdef __CUDACC__
+        inline void fill(const T value)
+        {
+            constexpr int block_ncells = 64;
+            const int grid_ncells = this->ncells/block_ncells + (this->ncells%block_ncells > 0);
+
+            dim3 block_gpu(block_ncells);
+            dim3 grid_gpu(grid_ncells);
+
+            fill_kernel<<<grid_gpu, block_gpu>>>(data_ptr, value, ncells);
+        }
+        #endif
 
         #ifdef __CUDACC__
         inline void set_data(const Array<T, N>& array)
