@@ -40,7 +40,7 @@ class Gas_concs_gpu;
 class Gas_concs
 {
     public:
-        Gas_concs() {}
+        Gas_concs() = default;
         Gas_concs(const Gas_concs& gas_concs_ref, const int start, const int size);
 
         // Insert new gas into the map.
@@ -71,10 +71,14 @@ template<typename, int> class Array_gpu;
 class Gas_concs_gpu
 {
     public:
+        Gas_concs_gpu() = default;
         Gas_concs_gpu(const Gas_concs& gas_concs_ref);
         Gas_concs_gpu(const Gas_concs_gpu& gas_concs_ref, const int start, const int size);
 
         const Array_gpu<Float,2>& get_vmr(const std::string& name) const;
+ 
+        void set_vmr(const std::string& name, const Array<Float,2>& data);
+        void set_vmr(const std::string& name, const Array_gpu<Float,2>& data);
 
         // Check if gas exists in map.
         Bool exists(const std::string& name) const;
