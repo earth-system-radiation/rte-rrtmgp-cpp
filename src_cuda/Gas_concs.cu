@@ -56,6 +56,17 @@ const Array_gpu<Float,2>& Gas_concs_gpu::get_vmr(const std::string& name) const
     return this->gas_concs_map.at(name);
 }
 
+void Gas_concs_gpu::set_vmr(const std::string& name, const Array_gpu<Float,2>& data)
+{
+    gas_concs_map.erase(name);
+    gas_concs_map.emplace(name, data);
+}
+
+void Gas_concs_gpu::set_vmr(const std::string& name, const Array<Float,2>& data)
+{
+    Array_gpu<Float,2> tmp(data);
+    gas_concs_map.at(name) = tmp;
+}
 
 // Check if gas exists in map.
 Bool Gas_concs_gpu::exists(const std::string& name) const

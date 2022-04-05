@@ -317,6 +317,21 @@ void subset_kernel(
         a_sub[idx_out] = a[idx_in];
     }
 }
+
+template<typename T> __global__
+void fill_kernel(
+        T* __restrict__ a,
+        const T v,
+        const int ncells)
+{
+    const int idx = blockIdx.x*blockDim.x + threadIdx.x;
+    
+    if (idx < ncells)
+    {
+        a[idx] = v;
+    }
+}
+
 #endif
 
 
@@ -352,10 +367,18 @@ class Array_gpu
             ncells = array.ncells;
             strides = array.strides;
             offsets = array.offsets;
-            is_view = false;
 
-            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
-            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
+            if (array.is_view)
+            {
+                is_view = true;
+                data_ptr = array.data_ptr;
+            }
+            else
+            {
+                is_view = false;
+                data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
+                cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
+            }
 
             return (*this);
         }
@@ -372,7 +395,7 @@ class Array_gpu
             data_ptr = std::exchange(array.data_ptr, nullptr);
             strides = std::exchange(array.strides, {});
             offsets = std::exchange(array.offsets, {});
-            is_view = false;
+            is_view = std::exchange(array.is_view, false);
 
             return (*this);
         }
@@ -387,8 +410,16 @@ class Array_gpu
             offsets(array.offsets),
             is_view(false)
         {
-            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
-            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
+            if (array.is_view)
+            {
+                is_view = true;
+                data_ptr = array.data_ptr;
+            }
+            else
+            {
+                data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
+                cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
+            }
         }
         #endif
 
@@ -399,8 +430,9 @@ class Array_gpu
             data_ptr(std::exchange(array.data_ptr, nullptr)),
             strides(std::exchange(array.strides, {})),
             offsets(std::exchange(array.offsets, {})),
-            is_view(false)
-        {}
+            is_view(std::exchange(array.is_view, false))
+        {
+        }
         #endif
 
         #ifdef __CUDACC__
@@ -450,6 +482,19 @@ class Array_gpu
         }
 
         inline std::array<int, N> get_dims() const { return dims; }
+
+        #ifdef __CUDACC__
+        inline void fill(const T value)
+        {
+            constexpr int block_ncells = 64;
+            const int grid_ncells = this->ncells/block_ncells + (this->ncells%block_ncells > 0);
+
+            dim3 block_gpu(block_ncells);
+            dim3 grid_gpu(grid_ncells);
+
+            fill_kernel<<<grid_gpu, block_gpu>>>(data_ptr, value, ncells);
+        }
+        #endif
 
         #ifdef __CUDACC__
         inline void set_data(const Array<T, N>& array)
