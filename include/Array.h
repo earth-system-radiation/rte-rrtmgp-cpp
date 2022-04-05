@@ -427,7 +427,6 @@ class Array_gpu
             offsets({}),
             is_view(true)
         {
-            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
         }
         #endif
 
