@@ -367,10 +367,18 @@ class Array_gpu
             ncells = array.ncells;
             strides = array.strides;
             offsets = array.offsets;
-            is_view = false;
 
-            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
-            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
+            if (array.is_view)
+            {
+                is_view = true;
+                data_ptr = array.data_ptr;
+            }
+            else
+            {
+                is_view = false;
+                data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
+                cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
+            }
 
             return (*this);
         }
@@ -402,8 +410,16 @@ class Array_gpu
             offsets(array.offsets),
             is_view(false)
         {
-            data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
-            cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
+            if (array.is_view)
+            {
+                is_view = true;
+                data_ptr = array.ptr;
+            }
+            else
+            {
+                data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
+                cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
+            }
         }
         #endif
 
