@@ -395,7 +395,7 @@ class Array_gpu
             data_ptr = std::exchange(array.data_ptr, nullptr);
             strides = std::exchange(array.strides, {});
             offsets = std::exchange(array.offsets, {});
-            is_view = false;
+            is_view = std::exchange(array.is_view, false);
 
             return (*this);
         }
@@ -430,8 +430,9 @@ class Array_gpu
             data_ptr(std::exchange(array.data_ptr, nullptr)),
             strides(std::exchange(array.strides, {})),
             offsets(std::exchange(array.offsets, {})),
-            is_view(false)
-        {}
+            is_view(std::exchange(array.is_view, false))
+        {
+        }
         #endif
 
         #ifdef __CUDACC__
