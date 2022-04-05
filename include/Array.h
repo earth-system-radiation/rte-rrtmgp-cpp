@@ -413,7 +413,7 @@ class Array_gpu
             if (array.is_view)
             {
                 is_view = true;
-                data_ptr = array.ptr;
+                data_ptr = array.data_ptr;
             }
             else
             {
