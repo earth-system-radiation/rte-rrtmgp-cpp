@@ -145,9 +145,9 @@ namespace rte_kernel_launcher_cuda
 
         if (tunings.count("lw_step_1") == 0)
         {
-                   Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
-                   Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
-                   Float* flux_up_jac_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
+                   Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
+                   Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
+                   Float* flux_up_jac_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
 
             std::tie(grid_1, block_1) = tune_kernel(
                     "lw_step_1",
@@ -188,9 +188,9 @@ namespace rte_kernel_launcher_cuda
 
         if (tunings.count("lw_step_2") == 0)
         {
-            Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
-            Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
-            Float* flux_up_jac_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
+            Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
+            Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
+            Float* flux_up_jac_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
             
             std::tie(grid_2, block_2) = tune_kernel(
                     "lw_step_2",
@@ -231,9 +231,9 @@ namespace rte_kernel_launcher_cuda
 
         if (tunings.count("lw_step_3") == 0)
         {
-            Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
-            Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
-            Float* flux_up_jac_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
+            Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
+            Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
+            Float* flux_up_jac_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
             
             std::tie(grid_3, block_3) = tune_kernel(
                     "lw_step_3",
@@ -412,9 +412,9 @@ namespace rte_kernel_launcher_cuda
 
         if (tunings.count("sw_adding") == 0)
         {
-            Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
-            Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
-            Float* flux_dir_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
+            Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
+            Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
+            Float* flux_dir_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*(nlay+1)*ncol);
                 
             if (top_at_1)
             {
