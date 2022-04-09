@@ -50,6 +50,11 @@ Gas_concs_gpu::Gas_concs_gpu(const Gas_concs_gpu& gas_concs_ref, const int start
 }
 
 
+Gas_concs_gpu::~Gas_concs_gpu()
+{
+}
+
+
 // Get gas from map.
 const Array_gpu<Float,2>& Gas_concs_gpu::get_vmr(const std::string& name) const
 {

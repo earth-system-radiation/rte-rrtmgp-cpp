@@ -42,6 +42,7 @@ class Gas_concs
     public:
         Gas_concs() = default;
         Gas_concs(const Gas_concs& gas_concs_ref, const int start, const int size);
+        ~Gas_concs();
 
         // Insert new gas into the map.
         void set_vmr(const std::string& name, const Float data);
@@ -74,6 +75,7 @@ class Gas_concs_gpu
         Gas_concs_gpu() = default;
         Gas_concs_gpu(const Gas_concs& gas_concs_ref);
         Gas_concs_gpu(const Gas_concs_gpu& gas_concs_ref, const int start, const int size);
+        ~Gas_concs_gpu();
 
         const Array_gpu<Float,2>& get_vmr(const std::string& name) const;
  

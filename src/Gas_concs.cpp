@@ -42,6 +42,11 @@ Gas_concs::Gas_concs(const Gas_concs& gas_concs_ref, const int start, const int 
 }
 
 
+Gas_concs::~Gas_concs()
+{
+}
+
+
 // Insert new gas into the map or update the value.
 void Gas_concs::set_vmr(const std::string& name, const Float data)
 {
@@ -107,6 +112,6 @@ const Array<Float,2>& Gas_concs::get_vmr(const std::string& name) const
 
 // Check if gas exists in map.
 Bool Gas_concs::exists(const std::string& name) const
-{ 
+{
     return gas_concs_map.count(name) != 0;
 }
