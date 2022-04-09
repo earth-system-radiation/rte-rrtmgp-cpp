@@ -334,6 +334,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
         if (tunings.count("gas_optical_depths_minor_kernel_lower") == 0)
         {
+            Float* tau_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
             std::tie(grid_gpu_min_1, block_gpu_min_1) =
                 tune_kernel_compile_time<Gas_optical_depths_minor_kernel>(
                         "gas_optical_depths_minor_kernel_lower",
@@ -356,7 +357,8 @@ namespace rrtmgp_kernel_launcher_cuda
                         kminor_start_lower,
                         play, tlay, col_gas,
                         fminor, jeta, jtemp,
-                        tropo, tau, nullptr);
+                        tropo, tau_tmp, nullptr);
+            Tools_gpu::free_gpu<Float>(tau_tmp);
 
             tunings["gas_optical_depths_minor_kernel_lower"].first = grid_gpu_min_1;
             tunings["gas_optical_depths_minor_kernel_lower"].second = block_gpu_min_1;
@@ -398,6 +400,7 @@ namespace rrtmgp_kernel_launcher_cuda
 
         if (tunings.count("gas_optical_depths_minor_kernel_upper") == 0)
         {
+            Float* tau_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
             std::tie(grid_gpu_min_2, block_gpu_min_2) =
                 tune_kernel_compile_time<Gas_optical_depths_minor_kernel>(
                         "gas_optical_depths_minor_kernel_upper",
@@ -420,7 +423,8 @@ namespace rrtmgp_kernel_launcher_cuda
                         kminor_start_upper,
                         play, tlay, col_gas,
                         fminor, jeta, jtemp,
-                        tropo, tau, nullptr);
+                        tropo, tau_tmp, nullptr);
+            Tools_gpu::free_gpu<Float>(tau_tmp);
 
             tunings["gas_optical_depths_minor_kernel_upper"].first = grid_gpu_min_2;
             tunings["gas_optical_depths_minor_kernel_upper"].second = block_gpu_min_2;
@@ -514,7 +518,7 @@ namespace rrtmgp_kernel_launcher_cuda
                     delta_Tsurf, sfc_src, lay_src,
                     lev_src_inc, lev_src_dec,
                     sfc_src_jac);
-
+            
             tunings["Planck_source_kernel"].first = grid_gpu;
             tunings["Planck_source_kernel"].second = block_gpu;
         }
