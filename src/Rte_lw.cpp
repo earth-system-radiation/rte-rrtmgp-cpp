@@ -134,8 +134,6 @@ void Rte_lw::rte_lw(
             for (int icol=1; icol<=ncol; ++icol)
                 secants({icol, igpt, imu}) = gauss_Ds({imu, n_quad_angs});
 
-    if (inc_flux.size() = 0) inc_flux.set_dims({ncol, ngpt});
-
     const Bool do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
     // CvH: For now, just pass the arrays around. Could we reduce the array size?
