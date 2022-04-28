@@ -118,7 +118,7 @@ void Rte_sw::rte_sw(
 
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat
-    const Bool has_dif_bc = false;
+    const Bool has_dif_bc = (inc_flux_dif.size() > 0);
     const Bool do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
     rrtmgp_kernel_launcher::sw_solver_2stream(

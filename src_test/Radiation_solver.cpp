@@ -493,7 +493,7 @@ void Radiation_solver_longwave::solve(
                 top_at_1,
                 sources_subset_in,
                 emis_sfc_subset_in,
-                Array<Float,2>(), // Add an empty array, no inc_flux.
+                Array<Float,2>({n_col_in, n_gpt}), // Add an empty array, no inc_flux.
                 gpt_flux_up, gpt_flux_dn,
                 n_ang);
 

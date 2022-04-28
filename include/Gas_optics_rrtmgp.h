@@ -31,10 +31,6 @@
 #include "Gas_optics.h"
 #include "Types.h"
 
-#ifdef __CUDACC__
-#include "tools_gpu.h"
-#endif
-
 
 // Forward declarations.
 class Optical_props;
@@ -289,7 +285,7 @@ class Gas_optics_rrtmgp : public Gas_optics
 
 };
 
-#ifdef __CUDACC__
+#ifdef USECUDA
 class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu
 {
     public:
@@ -463,7 +459,6 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu
 
         Array<Float,4> krayl;
 
-        #ifdef USECUDA
         Array_gpu<Float,1> solar_source_g;
         Array_gpu<Float,2> totplnk_gpu;
         Array_gpu<Float,4> planck_frac_gpu;
@@ -488,7 +483,6 @@ class Gas_optics_rrtmgp_gpu : public Gas_optics_gpu
         Array_gpu<int,1> idx_minor_scaling_upper_gpu;
         Array_gpu<Float,1> solar_source_gpu;
         Array_gpu<Float,4> krayl_gpu;
-        #endif
 
         int get_ngas() const { return this->gas_names.dim(1); }
 

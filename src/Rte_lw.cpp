@@ -134,8 +134,6 @@ void Rte_lw::rte_lw(
             for (int icol=1; icol<=ncol; ++icol)
                 secants({icol, igpt, imu}) = gauss_Ds({imu, n_quad_angs});
 
-    Array<Float,2> inc_flux_diffuse({ncol, ngpt});
-
     const Bool do_broadband = (gpt_flux_up.dim(3) == 1) ? true : false;
 
     // CvH: For now, just pass the arrays around. Could we reduce the array size?
@@ -153,7 +151,7 @@ void Rte_lw::rte_lw(
             sources.get_lay_source(),
             sources.get_lev_source_inc(), sources.get_lev_source_dec(),
             sfc_emis_gpt, sources.get_sfc_source(),
-            inc_flux_diffuse,
+            inc_flux,
             gpt_flux_up, gpt_flux_dn,
             do_broadband, gpt_flux_up, gpt_flux_dn,
             do_jacobians, sfc_src_jac, gpt_flux_up_jac,
