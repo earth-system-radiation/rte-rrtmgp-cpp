@@ -80,8 +80,8 @@ namespace
                 flx_tot += flux_dn[idx];
             }
         }
-        tod_dir_diff[0] = flx_dir;
-        tod_dir_diff[1] = flx_tot - flx_dir;
+        atomicAdd(&tod_dir_diff[0], flx_dir);
+        atomicAdd(&tod_dir_diff[1], flx_tot - flx_dir);
     }
     
     void compute_tod_flux(
@@ -713,11 +713,11 @@ void Radiation_solver_shortwave::solve_gpu(
                 Float azimuth_angle = 3.14; // sun approximately from south
                 
                 Array<Float,1> tod_dir_diff({2});
-                compute_tod_flux(n_col, n_lay, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
-                printf("-> %f %f \n",tod_dir_diff({1}),tod_dir_diff({2}) );
+                compute_tod_flux(n_col, n_z, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
+                
                 raytracer.trace_rays(
                         ray_count,
-                        n_col_x, n_col_y, n_lay,
+                        n_col_x, n_col_y, n_z,
                         dx_grid, dy_grid, dz_grid,
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props),
                         dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props),

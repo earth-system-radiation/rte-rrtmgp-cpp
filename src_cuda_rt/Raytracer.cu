@@ -99,7 +99,7 @@ namespace
 
     __global__
     void count_to_flux_2d(
-            const int ncol_x, const int ncol_y, const Float photons_per_col, const Float toa_src, const Float mu,
+            const int ncol_x, const int ncol_y, const Float photons_per_col, const Float toa_src,
             const Float* __restrict__ count_1, const Float* __restrict__ count_2, const Float* __restrict__ count_3, const Float* __restrict__ count_4,
             Float* __restrict__ flux_1, Float* __restrict__ flux_2, Float* __restrict__ flux_3, Float* __restrict__ flux_4)
     {
@@ -109,7 +109,7 @@ namespace
         if ( ( icol_x < ncol_x) && ( icol_y < ncol_y) )
         {
             const int idx = icol_x + icol_y*ncol_x;
-            const Float flux_per_ray = toa_src * mu / photons_per_col;
+            const Float flux_per_ray = toa_src / photons_per_col;
             flux_1[idx] = count_1[idx] * flux_per_ray;
             flux_2[idx] = count_2[idx] * flux_per_ray;
             flux_3[idx] = count_3[idx] * flux_per_ray;
@@ -119,7 +119,7 @@ namespace
 
     __global__
     void count_to_flux_3d(
-            const int ncol_x, const int ncol_y, const int nlay, const Float photons_per_col, const Float toa_src, const Float mu, 
+            const int ncol_x, const int ncol_y, const int nlay, const Float photons_per_col, const Float toa_src,
             const Float* __restrict__ count_1, const Float* __restrict__ count_2,
             Float* __restrict__ flux_1, Float* __restrict__ flux_2)
     {
@@ -130,7 +130,7 @@ namespace
         if ( ( icol_x < ncol_x) && ( icol_y < ncol_y) && ( iz < nlay))
         {
             const int idx = icol_x + icol_y*ncol_x + iz*ncol_x*ncol_y;
-            const Float flux_per_ray = toa_src * mu/ photons_per_col;
+            const Float flux_per_ray = toa_src / photons_per_col;
             flux_1[idx] = count_1[idx] * flux_per_ray;
             flux_2[idx] = count_2[idx] * flux_per_ray;
         }
@@ -268,13 +268,11 @@ void Raytracer::trace_rays(
     
     // convert counts to fluxes
     const Float photons_per_col = Float(photons_to_shoot) / (ncol_x * ncol_y);
-    const Float mu = cos(zenith_angle);
     
     const Float toa_src = tod_inc_direct + tod_inc_diffuse;
     count_to_flux_2d<<<grid_2d, block_2d>>>(
             ncol_x, ncol_y, photons_per_col,
             toa_src,
-            mu,
             tod_up_count.ptr(), 
             surface_down_direct_count.ptr(),
             surface_down_diffuse_count.ptr(),
@@ -287,7 +285,6 @@ void Raytracer::trace_rays(
     count_to_flux_3d<<<grid_3d, block_3d>>>(
             ncol_x, ncol_y, nlay, photons_per_col,
             toa_src,
-            mu,
             atmos_direct_count.ptr(),
             atmos_diffuse_count.ptr(),
             flux_abs_dir.ptr(),
