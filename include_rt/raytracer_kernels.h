@@ -43,12 +43,12 @@ void ray_tracer_kernel(
         Float* __restrict__ atmos_direct_count,
         Float* __restrict__ atmos_diffuse_count,
         const Optics_ext* __restrict__ k_ext, const Optics_scat* __restrict__ ssa_asy,
-        const Optics_ext* __restrict__ k_ext_bg, const Optics_scat* __restrict__ ssa_asy_bg,
-        const Float* __restrict__ z_lev_bg,
+        const Float tod_inc_direct,
+        const Float tod_inc_diffuse,
         const Float* __restrict__ surface_albedo,
         const Float x_size, const Float y_size, const Float z_size,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
         const Float dir_x, const Float dir_y, const Float dir_z,
-        const int itot, const int jtot, const int ktot, const int kbg,
+        const int itot, const int jtot, const int ktot,
         curandDirectionVectors32_t* qrng_vectors, unsigned int* qrng_constants);
 #endif

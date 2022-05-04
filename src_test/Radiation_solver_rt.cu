@@ -64,6 +64,45 @@ namespace
             ncol, ngpt, toa_src.ptr(), tsi_scaling.ptr());
     }
 
+    __global__
+    void compute_tod_flux_kernel(
+            const int ncol, const int nlay, const int col_per_thread, const Float* __restrict__ flux_dn, const Float* __restrict__ flux_dn_dir, Float* __restrict__ tod_dir_diff)
+    {
+        const int i = blockIdx.x*blockDim.x + threadIdx.x;
+        Float flx_dir = 0;
+        Float flx_tot = 0;
+        for (int icol = i*col_per_thread; icol < (i+1)*col_per_thread; ++icol)
+        {
+            if ( ( icol < ncol)  )
+            {
+                const int idx = icol + nlay*ncol;
+                flx_dir += flux_dn_dir[idx];
+                flx_tot += flux_dn[idx];
+            }
+        }
+        tod_dir_diff[0] = flx_dir;
+        tod_dir_diff[1] = flx_tot - flx_dir;
+    }
+    
+    void compute_tod_flux(
+            const int ncol, const int nlay, const Array_gpu<Float,2>& flux_dn, const Array_gpu<Float,2>& flux_dn_dir, Array<Float,1>& tod_dir_diff)
+    {
+        const int col_per_thread = 32;
+        const int nthread = int(ncol/col_per_thread) + 1;
+        const int block_col = 16;
+        const int grid_col  = nthread/block_col + (nthread%block_col > 0);
+        
+        dim3 grid_gpu(grid_col, 1);
+        dim3 block_gpu(block_col, 1);
+
+        Array_gpu<Float,1> tod_dir_diff_g({2});
+        compute_tod_flux_kernel<<<grid_gpu, block_gpu>>>(
+            ncol, nlay, col_per_thread, flux_dn.ptr(), flux_dn_dir.ptr(), tod_dir_diff_g.ptr());
+        Array<Float,1> tod_dir_diff_c(tod_dir_diff_g);
+    
+        tod_dir_diff({1}) = tod_dir_diff_c({1}) / Float(ncol);
+        tod_dir_diff({2}) = tod_dir_diff_c({2}) / Float(ncol);
+    }
 
     std::vector<std::string> get_variable_string(
             const std::string& var_name,
@@ -673,16 +712,19 @@ void Radiation_solver_shortwave::solve_gpu(
                 Float zenith_angle = std::acos(mu0({1}));
                 Float azimuth_angle = 3.14; // sun approximately from south
                 
+                Array<Float,1> tod_dir_diff({2});
+                compute_tod_flux(n_col, n_lay, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
+                printf("-> %f %f \n",tod_dir_diff({1}),tod_dir_diff({2}) );
                 raytracer.trace_rays(
                         ray_count,
-                        n_col_x, n_col_y, n_z, n_lay,
+                        n_col_x, n_col_y, n_lay,
                         dx_grid, dy_grid, dz_grid,
-                        z_lev,
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props),
                         dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props),
                         sfc_alb_dir, zenith_angle, 
                         azimuth_angle,
-                        toa_src,
+                        tod_dir_diff({1}),
+                        tod_dir_diff({2}),
                         (*fluxes).get_flux_tod_up(),
                         (*fluxes).get_flux_sfc_dir(),
                         (*fluxes).get_flux_sfc_dif(),

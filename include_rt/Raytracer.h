@@ -20,15 +20,15 @@ class Raytracer
 
         void trace_rays(
                 const Int photons_to_shoot,
-                const int n_col_x, const int n_col_y, const int n_z, const int n_lay,
+                const int n_col_x, const int n_col_y, const int n_lay,
                 const Float dx_grid, const Float dy_grid, const Float dz_grid,
-                const Array_gpu<Float,1>& z_lev,
                 const Optical_props_2str_rt& optical_props,
                 const Optical_props_2str_rt& cloud_optical_props,
                 const Array_gpu<Float,2>& surface_albedo,
                 const Float zenith_angle,
                 const Float azimuth_angle,
-                const Array_gpu<Float,1>& toa_src,
+                const Float tod_inc_direct,
+                const Float tod_inc_diffuse,
                 Array_gpu<Float,2>& flux_tod_up,
                 Array_gpu<Float,2>& flux_sfc_dir,
                 Array_gpu<Float,2>& flux_sfc_dif,
