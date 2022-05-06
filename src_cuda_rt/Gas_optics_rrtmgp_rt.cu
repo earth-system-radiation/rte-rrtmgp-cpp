@@ -1075,22 +1075,22 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
         rrtmgp_kernel_launcher_cuda_rt::interpolation(
                 ncol, nlay,
                 ngas, nflav, neta, npres, ntemp,
-                flavor_gpu,
-                press_ref_log_gpu,
-                temp_ref_gpu,
+                flavor_gpu.ptr(),
+                press_ref_log_gpu.ptr(),
+                temp_ref_gpu.ptr(),
                 this->press_ref_log_delta,
                 this->temp_ref_min,
                 this->temp_ref_delta,
                 this->press_ref_trop_log,
-                vmr_ref_gpu,
-                play,
-                tlay,
-                col_gas,
-                jtemp,
-                fmajor, fminor,
-                col_mix,
-                tropo,
-                jeta, jpress);
+                vmr_ref_gpu.ptr(),
+                play.ptr(),
+                tlay.ptr(),
+                col_gas.ptr(),
+                jtemp.ptr(),
+                fmajor.ptr(), fminor.ptr(),
+                col_mix.ptr(),
+                tropo.ptr(),
+                jeta.ptr(), jpress.ptr());
 
         this->idx_h2o=-1;
         for (int i=1; i<=this->gas_names.dim(1); ++i)
@@ -1107,23 +1107,23 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
                 ncol, nlay, nflav, ngpt,
                 nminorlower, nminorupper,
                 idx_h2o,
-                gpoint_flavor,
-                minor_limits_gpt_lower,
-                minor_limits_gpt_upper,
-                minor_scales_with_density_lower,
-                minor_scales_with_density_upper,
-                scale_by_complement_lower,
-                scale_by_complement_upper,
-                idx_minor_lower,
-                idx_minor_upper,
-                idx_minor_scaling_lower,
-                idx_minor_scaling_upper,
-                play,
-                tlay,
-                col_gas,
-                tropo,
-                scalings_lower,
-                scalings_upper);
+                gpoint_flavor.ptr(),
+                minor_limits_gpt_lower.ptr(),
+                minor_limits_gpt_upper.ptr(),
+                minor_scales_with_density_lower.ptr(),
+                minor_scales_with_density_upper.ptr(),
+                scale_by_complement_lower.ptr(),
+                scale_by_complement_upper.ptr(),
+                idx_minor_lower.ptr(),
+                idx_minor_upper.ptr(),
+                idx_minor_scaling_lower.ptr(),
+                idx_minor_scaling_upper.ptr(),
+                play.ptr(),
+                tlay.ptr(),
+                col_gas.ptr(),
+                tropo.ptr(),
+                scalings_lower.ptr(),
+                scalings_upper.ptr());
     }
     
     bool has_rayleigh = (this->krayl.size() > 0);
@@ -1132,8 +1132,8 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
     {
         Array_gpu<Float,2> tau({ncol, nlay});
         Array_gpu<Float,2> tau_rayleigh({ncol, nlay});
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(nlay, ncol, tau);
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol, nlay, tau_rayleigh);
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(nlay, ncol, tau.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol, nlay, tau_rayleigh.ptr());
 
         rrtmgp_kernel_launcher_cuda_rt::compute_tau_absorption(
                 ncol, nlay, nband, ngpt, igpt,
@@ -1141,49 +1141,52 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
                 nminorlower, nminorklower,
                 nminorupper, nminorkupper,
                 idx_h2o,
-                gpoint_flavor_gpu,
-                this->get_band_lims_gpoint(),
-                kmajor_gpu,
-                kminor_lower_gpu,
-                kminor_upper_gpu,
-                minor_limits_gpt_lower_gpu,
-                minor_limits_gpt_upper_gpu,
-                first_last_minor_lower_gpu,
-                first_last_minor_upper_gpu,
-                minor_scales_with_density_lower_gpu,
-                minor_scales_with_density_upper_gpu,
-                scale_by_complement_lower_gpu,
-                scale_by_complement_upper_gpu,
-                idx_minor_lower_gpu,
-                idx_minor_upper_gpu,
-                idx_minor_scaling_lower_gpu,
-                idx_minor_scaling_upper_gpu,
-                kminor_start_lower_gpu,
-                kminor_start_upper_gpu,
-                tropo,
-                col_mix, fmajor, fminor,
-                play, tlay, col_gas,
-                jeta, jtemp, jpress,
-                scalings_lower,
-                scalings_upper,
-                tau);
+                gpoint_flavor_gpu.ptr(),
+                this->get_band_lims_gpoint().ptr(),
+                kmajor_gpu.ptr(),
+                kminor_lower_gpu.ptr(),
+                kminor_upper_gpu.ptr(),
+                minor_limits_gpt_lower_gpu.ptr(),
+                minor_limits_gpt_upper_gpu.ptr(),
+                first_last_minor_lower_gpu.ptr(),
+                first_last_minor_upper_gpu.ptr(),
+                minor_scales_with_density_lower_gpu.ptr(),
+                minor_scales_with_density_upper_gpu.ptr(),
+                scale_by_complement_lower_gpu.ptr(),
+                scale_by_complement_upper_gpu.ptr(),
+                idx_minor_lower_gpu.ptr(),
+                idx_minor_upper_gpu.ptr(),
+                idx_minor_scaling_lower_gpu.ptr(),
+                idx_minor_scaling_upper_gpu.ptr(),
+                kminor_start_lower_gpu.ptr(),
+                kminor_start_upper_gpu.ptr(),
+                tropo.ptr(),
+                col_mix.ptr(), fmajor.ptr(), fminor.ptr(),
+                play.ptr(), tlay.ptr(), col_gas.ptr(),
+                jeta.ptr(), jtemp.ptr(), jpress.ptr(),
+                scalings_lower.ptr(),
+                scalings_upper.ptr(),
+                tau.ptr());
 
         rrtmgp_kernel_launcher_cuda_rt::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt, igpt,
                 ngas, nflav, neta, npres, ntemp,
-                gpoint_flavor_gpu,
-                this->get_gpoint_bands_gpu(),
-                this->get_band_lims_gpoint(),
-                krayl_gpu,
-                idx_h2o, col_dry, col_gas,
-                fminor, jeta, tropo, jtemp,
-                tau_rayleigh);
+                gpoint_flavor_gpu.ptr(),
+                this->get_gpoint_bands_gpu().ptr(),
+                this->get_band_lims_gpoint().ptr(),
+                krayl_gpu.ptr(),
+                idx_h2o, col_dry.ptr(), col_gas.ptr(),
+                fminor.ptr(), jeta.ptr(), tropo.ptr(), jtemp.ptr(),
+                tau_rayleigh.ptr());
 
-        combine_abs_and_rayleigh(tau, tau_rayleigh, optical_props);
+        rrtmgp_kernel_launcher_cuda_rt::combine_abs_and_rayleigh(
+                ncol, nlay,
+                tau.ptr(), tau_rayleigh.ptr(),
+                optical_props->get_tau().ptr(), optical_props->get_ssa().ptr(), optical_props->get_g().ptr());
     }
     else
     {
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol, nlay, optical_props->get_tau());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol, nlay, optical_props->get_tau().ptr());
 
         rrtmgp_kernel_launcher_cuda_rt::compute_tau_absorption(
                 ncol, nlay, nband, ngpt, igpt,
@@ -1191,51 +1194,51 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
                 nminorlower, nminorklower,
                 nminorupper, nminorkupper,
                 idx_h2o,
-                gpoint_flavor_gpu,
-                this->get_band_lims_gpoint(),
-                kmajor_gpu,
-                kminor_lower_gpu,
-                kminor_upper_gpu,
-                minor_limits_gpt_lower_gpu,
-                minor_limits_gpt_upper_gpu,
-                first_last_minor_lower_gpu,
-                first_last_minor_upper_gpu,
-                minor_scales_with_density_lower_gpu,
-                minor_scales_with_density_upper_gpu,
-                scale_by_complement_lower_gpu,
-                scale_by_complement_upper_gpu,
-                idx_minor_lower_gpu,
-                idx_minor_upper_gpu,
-                idx_minor_scaling_lower_gpu,
-                idx_minor_scaling_upper_gpu,
-                kminor_start_lower_gpu,
-                kminor_start_upper_gpu,
-                tropo,
-                col_mix, fmajor, fminor,
-                play, tlay, col_gas,
-                jeta, jtemp, jpress,
-                scalings_lower,
-                scalings_upper,
-                optical_props->get_tau());
+                gpoint_flavor_gpu.ptr(),
+                this->get_band_lims_gpoint().ptr(),
+                kmajor_gpu.ptr(),
+                kminor_lower_gpu.ptr(),
+                kminor_upper_gpu.ptr(),
+                minor_limits_gpt_lower_gpu.ptr(),
+                minor_limits_gpt_upper_gpu.ptr(),
+                first_last_minor_lower_gpu.ptr(),
+                first_last_minor_upper_gpu.ptr(),
+                minor_scales_with_density_lower_gpu.ptr(),
+                minor_scales_with_density_upper_gpu.ptr(),
+                scale_by_complement_lower_gpu.ptr(),
+                scale_by_complement_upper_gpu.ptr(),
+                idx_minor_lower_gpu.ptr(),
+                idx_minor_upper_gpu.ptr(),
+                idx_minor_scaling_lower_gpu.ptr(),
+                idx_minor_scaling_upper_gpu.ptr(),
+                kminor_start_lower_gpu.ptr(),
+                kminor_start_upper_gpu.ptr(),
+                tropo.ptr(),
+                col_mix.ptr(), fmajor.ptr(), fminor.ptr(),
+                play.ptr(), tlay.ptr(), col_gas.ptr(),
+                jeta.ptr(), jtemp.ptr(), jpress.ptr(),
+                scalings_lower.ptr(),
+                scalings_upper.ptr(),
+                optical_props->get_tau().ptr());
     }
 }
 
 
-
-void Gas_optics_rrtmgp_rt::combine_abs_and_rayleigh(
-        const Array_gpu<Float,2>& tau,
-        const Array_gpu<Float,2>& tau_rayleigh,
-        std::unique_ptr<Optical_props_arry_rt>& optical_props)
-{
-    int ncol = tau.dim(1);
-    int nlay = tau.dim(2);
-
-    rrtmgp_kernel_launcher_cuda_rt::combine_abs_and_rayleigh(
-            ncol, nlay,
-            tau, tau_rayleigh,
-            optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
-}
-
+// 
+// void Gas_optics_rrtmgp_rt::combine_abs_and_rayleigh(
+//         const Array_gpu<Float,2>& tau,
+//         const Array_gpu<Float,2>& tau_rayleigh,
+//         std::unique_ptr<Optical_props_arry_rt>& optical_props)
+// {
+//     int ncol = tau.dim(1);
+//     int nlay = tau.dim(2);
+// 
+//     rrtmgp_kernel_launcher_cuda_rt::combine_abs_and_rayleigh(
+//             ncol, nlay,
+//             tau, tau_rayleigh,
+//             optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
+// }
+// 
 
 
 void Gas_optics_rrtmgp_rt::source(
@@ -1261,12 +1264,12 @@ void Gas_optics_rrtmgp_rt::source(
     rrtmgp_kernel_launcher_cuda_rt::Planck_source(
             ncol, nlay, nbnd, ngpt, igpt,
             nflav, neta, npres, ntemp, nPlanckTemp,
-            tlay, tlev, tsfc, sfc_lay,
-            fmajor, jeta, tropo, jtemp, jpress,
-            gpoint_bands, band_lims_gpoint, this->planck_frac_gpu, this->temp_ref_min,
-            this->totplnk_delta, this->totplnk_gpu, this->gpoint_flavor_gpu,
-            sources.get_sfc_source(), sources.get_lay_source(), sources.get_lev_source_inc(),
-            sources.get_lev_source_dec(), sources.get_sfc_source_jac());
+            tlay.ptr(), tlev.ptr(), tsfc.ptr(), sfc_lay,
+            fmajor.ptr(), jeta.ptr(), tropo.ptr(), jtemp.ptr(), jpress.ptr(),
+            gpoint_bands.ptr(), band_lims_gpoint.ptr(), this->planck_frac_gpu.ptr(), this->temp_ref_min,
+            this->totplnk_delta, this->totplnk_gpu.ptr(), this->gpoint_flavor_gpu.ptr(),
+            sources.get_sfc_source().ptr(), sources.get_lay_source().ptr(), sources.get_lev_source_inc().ptr(),
+            sources.get_lev_source_dec().ptr(), sources.get_sfc_source_jac().ptr());
 }
 
 

@@ -33,7 +33,7 @@
 
 template<typename, int> class Array;
 
-#ifdef __CUDACC__
+#ifdef USECUDA
 class Gas_concs_rt;
 #endif
 
@@ -65,18 +65,23 @@ class Gas_concs_rt;
 //};
 
 
-#ifdef __CUDACC__
+#ifdef USECUDA
 template<typename, int> class Array_gpu;
 
 
 class Gas_concs_rt
 {
     public:
+        Gas_concs_rt() = default;
         Gas_concs_rt(const Gas_concs& gas_concs_ref);
         Gas_concs_rt(const Gas_concs_rt& gas_concs_ref, const int start, const int size);
+        ~Gas_concs_rt();
 
         const Array_gpu<Float,2>& get_vmr(const std::string& name) const;
 
+        void set_vmr(const std::string& name, const Array<Float,2>& data);
+        void set_vmr(const std::string& name, const Array_gpu<Float,2>& data);
+        
         // Check if gas exists in map.
         Bool exists(const std::string& name) const;
 

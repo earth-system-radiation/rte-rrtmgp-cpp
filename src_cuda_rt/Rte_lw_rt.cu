@@ -110,9 +110,9 @@ void Rte_lw_rt::rte_lw(
 
     // Upper boundary condition.
     if (inc_flux.size() == 0)
-        rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
+        rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn.ptr());
     else
-        rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux, gpt_flux_dn);
+        rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux.ptr(), gpt_flux_dn.ptr());
 
     // Run the radiative transfer solver.
     const int n_quad_angs = n_gauss_angles;
@@ -128,13 +128,13 @@ void Rte_lw_rt::rte_lw(
 
     rte_kernel_launcher_cuda_rt::lw_solver_noscat_gaussquad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,
-            gauss_Ds_subset, gauss_wts_subset,
-            optical_props->get_tau(),
-            sources.get_lay_source(),
-            sources.get_lev_source_inc(), sources.get_lev_source_dec(),
-            sfc_emis, sources.get_sfc_source(),
-            gpt_flux_up, gpt_flux_dn,
-            sfc_src_jac, gpt_flux_up_jac);
+            gauss_Ds_subset.ptr(), gauss_wts_subset.ptr(),
+            optical_props->get_tau().ptr(),
+            sources.get_lay_source().ptr(),
+            sources.get_lev_source_inc().ptr(), sources.get_lev_source_dec().ptr(),
+            sfc_emis.ptr(), sources.get_sfc_source().ptr(),
+            gpt_flux_up.ptr(), gpt_flux_dn.ptr(),
+            sfc_src_jac.ptr(), gpt_flux_up_jac.ptr());
 
     // CvH: In the fortran code this call is here, I removed it for performance and flexibility.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1);

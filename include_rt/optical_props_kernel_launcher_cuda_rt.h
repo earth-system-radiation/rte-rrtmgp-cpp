@@ -32,15 +32,15 @@ namespace optical_props_kernel_launcher_cuda_rt
 {
     void increment_1scalar_by_1scalar(
             int ncol, int nlay,
-            Array_gpu<Float,2>& tau_inout, const Array_gpu<Float,2>& tau_in);
+            Float* tau_inout, const Float* tau_in);
 
     void increment_2stream_by_2stream(
             int ncol, int nlay,
-            Array_gpu<Float,2>& tau_inout, Array_gpu<Float,2>& ssa_inout, Array_gpu<Float,2>& g_inout,
-            const Array_gpu<Float,2>& tau_in, const Array_gpu<Float,2>& ssa_in, const Array_gpu<Float,2>& g_in);
+            Float* tau_inout, Float* ssa_inout, Float* g_inout,
+            const Float* tau_in, const Float* ssa_in, const Float* g_in);
 
     void delta_scale_2str_k(
             int ncol, int nlay, int ngpt,
-            Array_gpu<Float,2>& tau_inout, Array_gpu<Float,2>& ssa_inout, Array_gpu<Float,2>& g_inout);
+            Float* tau_inout, Float* ssa_inout, Float* g_inout);
 }
 #endif

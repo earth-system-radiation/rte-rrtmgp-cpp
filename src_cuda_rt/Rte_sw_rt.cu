@@ -136,22 +136,22 @@ void Rte_sw_rt::rte_sw(
  //   expand_and_transpose(optical_props, sfc_alb_dif, sfc_alb_dif_gpt);
 
     // Upper boundary condition. At this stage, flux_dn contains the diffuse radiation only.
-    rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dir, mu0, gpt_flux_dir);
+    rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dir.ptr(), mu0.ptr(), gpt_flux_dir.ptr());
     if (inc_flux_dif.size() == 0)
-        rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn);
+        rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn.ptr());
     else
-        rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif, gpt_flux_dn);
+        rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux_dif.ptr(), gpt_flux_dn.ptr());
 
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat.
     rte_kernel_launcher_cuda_rt::sw_solver_2stream(
             ncol, nlay, ngpt, top_at_1,
-            optical_props->get_tau(),
-            optical_props->get_ssa(),
-            optical_props->get_g  (),
-            mu0,
-            sfc_alb_dir, sfc_alb_dif,
-            gpt_flux_up, gpt_flux_dn, gpt_flux_dir);
+            optical_props->get_tau().ptr(),
+            optical_props->get_ssa().ptr(),
+            optical_props->get_g  ().ptr(),
+            mu0.ptr(),
+            sfc_alb_dir.ptr(), sfc_alb_dif.ptr(),
+            gpt_flux_up.ptr(), gpt_flux_dn.ptr(), gpt_flux_dir.ptr());
 
     // CvH: The original fortran code had a call to the reduce here.
     // fluxes->reduce(gpt_flux_up, gpt_flux_dn, gpt_flux_dir, optical_props, top_at_1);

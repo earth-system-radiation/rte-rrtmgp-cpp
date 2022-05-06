@@ -32,7 +32,7 @@
 // Forward declarations.
 class Optical_props_rt;
 
-#ifdef __CUDACC__
+#ifdef USECUDA 
 class Cloud_optics_rt : public Optical_props_rt
 {
     public:

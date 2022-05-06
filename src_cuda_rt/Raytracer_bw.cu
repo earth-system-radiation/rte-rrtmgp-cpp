@@ -366,9 +366,9 @@ void Raytracer_bw::trace_rays(
     Array_gpu<Float,2> shot_count({cam_nx, cam_ny});
     Array_gpu<int,1> counter({1});
     
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, camera_count);
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, shot_count);
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(1, counter);
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, camera_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, shot_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(1, counter.ptr());
     
     // domain sizes
     const Float x_size = ncol_x * dx_grid;

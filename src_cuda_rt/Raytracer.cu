@@ -225,13 +225,13 @@ void Raytracer::trace_rays(
     Array_gpu<Float,3> atmos_direct_count({ncol_x, ncol_y, nlay});
     Array_gpu<Float,3> atmos_diffuse_count({ncol_x, ncol_y, nlay});
     
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, toa_down_count);
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, tod_up_count);
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, surface_down_direct_count);
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, surface_down_diffuse_count);
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, surface_up_count);
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, nlay, atmos_direct_count);
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, nlay, atmos_diffuse_count);
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, toa_down_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, tod_up_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, surface_down_direct_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, surface_down_diffuse_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, surface_up_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, nlay, atmos_direct_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, nlay, atmos_diffuse_count.ptr());
     
     // domain sizes
     const Float x_size = ncol_x * dx_grid;

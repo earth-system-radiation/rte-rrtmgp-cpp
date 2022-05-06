@@ -456,9 +456,9 @@ void Radiation_solver_longwave::solve_gpu(
 
     if (switch_fluxes)
     {
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_up);
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_dn);
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_net);
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_up.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_dn.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_net.ptr());
     }
     
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
@@ -507,12 +507,12 @@ void Radiation_solver_longwave::solve_gpu(
         if (switch_output_optical)
         {
             gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                    n_col, n_lay, igpt-1, tau, lay_source, lev_source_inc, lev_source_dec,
-                    optical_props->get_tau(), (*sources).get_lay_source(),
-                    (*sources).get_lev_source_inc(), (*sources).get_lev_source_dec());
+                    n_col, n_lay, igpt-1, tau.ptr(), lay_source.ptr(), lev_source_inc.ptr(), lev_source_dec.ptr(),
+                    optical_props->get_tau().ptr(), (*sources).get_lay_source().ptr(),
+                    (*sources).get_lev_source_inc().ptr(), (*sources).get_lev_source_dec().ptr());
 
             gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                    n_col, igpt-1, sfc_source, (*sources).get_sfc_source());
+                    n_col, igpt-1, sfc_source.ptr(), (*sources).get_sfc_source().ptr());
         }
 
 
@@ -537,15 +537,15 @@ void Radiation_solver_longwave::solve_gpu(
             
             // Copy the data to the output.
             gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-                    n_col, n_lev, lw_flux_up, lw_flux_dn, lw_flux_net,
-                    (*fluxes).get_flux_up(), (*fluxes).get_flux_dn(), (*fluxes).get_flux_net());
+                    n_col, n_lev, lw_flux_up.ptr(), lw_flux_dn.ptr(), lw_flux_net.ptr(),
+                    (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
 
 
             if (switch_output_bnd_fluxes)
             {
                 gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                        n_col, n_lev, igpt-1, lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net,
-                        (*fluxes).get_flux_up(), (*fluxes).get_flux_dn(), (*fluxes).get_flux_net());
+                        n_col, n_lev, igpt-1, lw_bnd_flux_up.ptr(), lw_bnd_flux_dn.ptr(), lw_bnd_flux_net.ptr(),
+                        (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
 
             }
         }
@@ -711,7 +711,7 @@ void Radiation_solver_shortwave::solve_gpu(
     Array<int,2> cld_mask_liq({n_col, n_lay});
     Array<int,2> cld_mask_ice({n_col, n_lay});
     
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_ns, cam_nx, cam_ny, XYZ);
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_ns, cam_nx, cam_ny, XYZ.ptr());
 
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
     Float total_source = 0.;
@@ -804,8 +804,8 @@ void Radiation_solver_shortwave::solve_gpu(
             Array_gpu<Float,1> xyz_factor_gpu(xyz_factor);
             if (!switch_cloud_optics) 
             {
-                rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau());
-                rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa());
+                rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
+                rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
             }
 
             Float zenith_angle = Float(0.)/Float(180.) * M_PI;//std::acos(mu0({1}));

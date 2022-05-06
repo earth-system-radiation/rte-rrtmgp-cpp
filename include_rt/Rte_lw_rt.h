@@ -34,7 +34,7 @@ template<typename, int> class Array_gpu;
 class Optical_props_arry_rt;
 class Source_func_lw_rt;
 
-#ifdef __CUDACC__
+#ifdef USECUDA
 class Rte_lw_rt
 {
     public:

@@ -27,97 +27,88 @@
 
 #include "Array.h"
 #include "Types.h"
-#include "Gas_concs_rt.h"
 
 namespace rrtmgp_kernel_launcher_cuda_rt
 {
-    
-    void fill_gases(
-            const int ncol, const int nlay, const int ngas,
-            Array<Float,3>& vmr_out,
-            Array<Float,3>& col_gas, const Array<Float,2>& col_dry,
-            const Gas_concs& gas_desc, const Array<std::string,1>& gas_names);
-
-    
     void reorder123x321(const int ni, const int nj, const int nk,
-            const Array_gpu<Float,3>& arr_in, Array_gpu<Float,3>& arr_out);
+            const Float* arr_in, Float* arr_out);
 
     
-    void reorder12x21(const int ni, const int nj, const Array_gpu<Float,2>& arr_in, Array_gpu<Float,2>& arr_out);
+    void reorder12x21(const int ni, const int nj, const Float* arr_in, Float* arr_out);
 
     
-    void zero_array(const int ni, const int nj, const int nk, const int nn, Array_gpu<Float,4>& arr);
+    void zero_array(const int ni, const int nj, const int nk, const int nn, Float* arr);
 
     
-    void zero_array(const int ni, const int nj, const int nk, Array_gpu<Float,3>& arr);
+    void zero_array(const int ni, const int nj, const int nk, Float* arr);
     
     
-    void zero_array(const int ni, const int nj, Array_gpu<Float,2>& arr);
+    void zero_array(const int ni, const int nj, Float* arr);
 
-    void zero_array(const int ni, Array_gpu<int,1>& arr);
+    void zero_array(const int ni, int* arr);
     
     void interpolation(
             const int ncol, const int nlay,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
-            const Array_gpu<int,2>& flavor,
-            const Array_gpu<Float,1>& press_ref_log,
-            const Array_gpu<Float,1>& temp_ref,
+            const int* flavor,
+            const Float* press_ref_log,
+            const Float* temp_ref,
             Float press_ref_log_delta,
             Float temp_ref_min,
             Float temp_ref_delta,
             Float press_ref_trop_log,
-            const Array_gpu<Float,3>& vmr_ref,
-            const Array_gpu<Float,2>& play,
-            const Array_gpu<Float,2>& tlay,
-            Array_gpu<Float,3>& col_gas,
-            Array_gpu<int,2>& jtemp,
-            Array_gpu<Float,6>& fmajor, Array_gpu<Float,5>& fminor,
-            Array_gpu<Float,4>& col_mix,
-            Array_gpu<Bool,2>& tropo,
-            Array_gpu<int,4>& jeta,
-            Array_gpu<int,2>& jpress);
+            const Float* vmr_ref,
+            const Float* play,
+            const Float* tlay,
+            Float* col_gas,
+            int* jtemp,
+            Float* fmajor, Float* fminor,
+            Float* col_mix,
+            Bool* tropo,
+            int* jeta,
+            int* jpress);
 
     
     void minor_scalings(
             const int ncol, const int nlay, const int nflav, const int ngpt, 
             const int nminorlower, const int nminorupper,
             const int idx_h2o,  
-            const Array_gpu<int,2>& gpoint_flavor,
-            const Array_gpu<int,2>& minor_limits_gpt_lower,
-            const Array_gpu<int,2>& minor_limits_gpt_upper,
-            const Array_gpu<Bool,1>& minor_scales_with_density_lower,
-            const Array_gpu<Bool,1>& minor_scales_with_density_upper,
-            const Array_gpu<Bool,1>& scale_by_complement_lower,
-            const Array_gpu<Bool,1>& scale_by_complement_upper,
-            const Array_gpu<int,1>& idx_minor_lower,
-            const Array_gpu<int,1>& idx_minor_upper,
-            const Array_gpu<int,1>& idx_minor_scaling_lower,
-            const Array_gpu<int,1>& idx_minor_scaling_upper,
-            const Array_gpu<Float,2>& play,
-            const Array_gpu<Float,2>& tlay,
-            const Array_gpu<Float,3>& col_gas,
-            const Array_gpu<Bool,2>& tropo,
-            Array_gpu<Float,3>& scalings_lower,
-            Array_gpu<Float,3>& scalings_upper);
+            const int* gpoint_flavor,
+            const int* minor_limits_gpt_lower,
+            const int* minor_limits_gpt_upper,
+            const Bool* minor_scales_with_density_lower,
+            const Bool* minor_scales_with_density_upper,
+            const Bool* scale_by_complement_lower,
+            const Bool* scale_by_complement_upper,
+            const int* idx_minor_lower,
+            const int* idx_minor_upper,
+            const int* idx_minor_scaling_lower,
+            const int* idx_minor_scaling_upper,
+            const Float* play,
+            const Float* tlay,
+            const Float* col_gas,
+            const Bool* tropo,
+            Float* scalings_lower,
+            Float* scalings_upper);
     
     
     void combine_abs_and_rayleigh(
             const int ncol, const int nlay,
-            const Array_gpu<Float,2>& tau_local, const Array_gpu<Float,2>& tau_rayleigh,
-            Array_gpu<Float,2>& tau, Array_gpu<Float,2>& ssa, Array_gpu<Float,2>& g);
+            const Float* tau_local, const Float* tau_rayleigh,
+            Float* tau, Float* ssa, Float* g);
 
     
     void compute_tau_rayleigh(
             const int ncol, const int nlay, const int nband, const int ngpt, const int igpt,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
-            const Array_gpu<int, 2>& gpoint_flavor,
-            const Array_gpu<int, 1>& gpoint_bands,
-            const Array_gpu<int, 2>& band_lims_gpt,
-            const Array_gpu<Float,4>& krayl,
-            int idx_h2o, const Array_gpu<Float,2>& col_dry, const Array_gpu<Float,3>& col_gas,
-            const Array_gpu<Float,5>& fminor, const Array_gpu<int,4>& jeta,
-            const Array_gpu<Bool,2>& tropo, const Array_gpu<int,2>& jtemp,
-            Array_gpu<Float,2>& tau_rayleigh);
+            const int* gpoint_flavor,
+            const int* gpoint_bands,
+            const int* band_lims_gpt,
+            const Float* krayl,
+            int idx_h2o, const Float* col_dry, const Float* col_gas,
+            const Float* fminor, const int* jeta,
+            const Bool* tropo, const int* jtemp,
+            Float* tau_rayleigh);
 
     
     void compute_tau_absorption(
@@ -126,59 +117,59 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             const int nminorlower, const int nminorklower,
             const int nminorupper, const int nminorkupper,
             const int idx_h2o,
-            const Array_gpu<int,2>& gpoint_flavor,
-            const Array_gpu<int,2>& band_lims_gpt,
-            const Array_gpu<Float,4>& kmajor,
-            const Array_gpu<Float,3>& kminor_lower,
-            const Array_gpu<Float,3>& kminor_upper,
-            const Array_gpu<int,2>& minor_limits_gpt_lower,
-            const Array_gpu<int,2>& minor_limits_gpt_upper,
-            const Array_gpu<int,2>& first_last_minor_lower,
-            const Array_gpu<int,2>& first_last_minor_upper,
-            const Array_gpu<Bool,1>& minor_scales_with_density_lower,
-            const Array_gpu<Bool,1>& minor_scales_with_density_upper,
-            const Array_gpu<Bool,1>& scale_by_complement_lower,
-            const Array_gpu<Bool,1>& scale_by_complement_upper,
-            const Array_gpu<int,1>& idx_minor_lower,
-            const Array_gpu<int,1>& idx_minor_upper,
-            const Array_gpu<int,1>& idx_minor_scaling_lower,
-            const Array_gpu<int,1>& idx_minor_scaling_upper,
-            const Array_gpu<int,1>& kminor_start_lower,
-            const Array_gpu<int,1>& kminor_start_upper,
-            const Array_gpu<Bool,2>& tropo,
-            const Array_gpu<Float,4>& col_mix, const Array_gpu<Float,6>& fmajor,
-            const Array_gpu<Float,5>& fminor, const Array_gpu<Float,2>& play,
-            const Array_gpu<Float,2>& tlay, const Array_gpu<Float,3>& col_gas,
-            const Array_gpu<int,4>& jeta, const Array_gpu<int,2>& jtemp,
-            const Array_gpu<int,2>& jpress, 
-            const Array_gpu<Float,3>& scalings_lower,
-            const Array_gpu<Float,3>& scalings_upper,
-            Array_gpu<Float,2>& tau);
+            const int* gpoint_flavor,
+            const int* band_lims_gpt,
+            const Float* kmajor,
+            const Float* kminor_lower,
+            const Float* kminor_upper,
+            const int* minor_limits_gpt_lower,
+            const int* minor_limits_gpt_upper,
+            const int* first_last_minor_lower,
+            const int* first_last_minor_upper,
+            const Bool* minor_scales_with_density_lower,
+            const Bool* minor_scales_with_density_upper,
+            const Bool* scale_by_complement_lower,
+            const Bool* scale_by_complement_upper,
+            const int* idx_minor_lower,
+            const int* idx_minor_upper,
+            const int* idx_minor_scaling_lower,
+            const int* idx_minor_scaling_upper,
+            const int* kminor_start_lower,
+            const int* kminor_start_upper,
+            const Bool* tropo,
+            const Float* col_mix, const Float* fmajor,
+            const Float* fminor, const Float* play,
+            const Float* tlay, const Float* col_gas,
+            const int* jeta, const int* jtemp,
+            const int* jpress, 
+            const Float* scalings_lower,
+            const Float* scalings_upper,
+            Float* tau);
 
     
     void Planck_source(
             const int ncol, const int nlay, const int nbnd, const int ngpt, const int igpt,
             const int nflav, const int neta, const int npres, const int ntemp,
             const int nPlanckTemp,
-            const Array_gpu<Float,2>& tlay,
-            const Array_gpu<Float,2>& tlev,
-            const Array_gpu<Float,1>& tsfc,
+            const Float* tlay,
+            const Float* tlev,
+            const Float* tsfc,
             const int sfc_lay,
-            const Array_gpu<Float,6>& fmajor,
-            const Array_gpu<int,4>& jeta,
-            const Array_gpu<Bool,2>& tropo,
-            const Array_gpu<int,2>& jtemp,
-            const Array_gpu<int,2>& jpress,
-            const Array_gpu<int,1>& gpoint_bands,
-            const Array_gpu<int,2>& band_lims_gpt,
-            const Array_gpu<Float,4>& pfracin,
+            const Float* fmajor,
+            const int* jeta,
+            const Bool* tropo,
+            const int* jtemp,
+            const int* jpress,
+            const int* gpoint_bands,
+            const int* band_lims_gpt,
+            const Float* pfracin,
             const Float temp_ref_min, const Float totplnk_delta,
-            const Array_gpu<Float,2>& totplnk,
-            const Array_gpu<int,2>& gpoint_flavor,
-            Array_gpu<Float,1>& sfc_src,
-            Array_gpu<Float,2>& lay_src,
-            Array_gpu<Float,2>& lev_src_inc,
-            Array_gpu<Float,2>& lev_src_dec,
-            Array_gpu<Float,1>& sfc_src_jac);
+            const Float* totplnk,
+            const int* gpoint_flavor,
+            Float* sfc_src,
+            Float* lay_src,
+            Float* lev_src_inc,
+            Float* lev_src_dec,
+            Float* sfc_src_jac);
 }
 #endif

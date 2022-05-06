@@ -34,7 +34,7 @@
 class Gas_concs_rt;
 class Source_func_lw_rt;
 
-#ifdef __CUDACC__
+#ifdef USECUDA
 class Gas_optics_rt : public Optical_props_rt
 {
     public:

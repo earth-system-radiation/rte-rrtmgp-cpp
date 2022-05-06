@@ -38,7 +38,7 @@ namespace optical_props_kernel_launcher_cuda_rt
 {
     void increment_1scalar_by_1scalar(
             int ncol, int nlay,
-            Array_gpu<Float,2>& tau_inout, const Array_gpu<Float,2>& tau_in)
+            Float* tau_inout, const Float* tau_in)
 
     {
         const int block_lay = 16;
@@ -52,14 +52,14 @@ namespace optical_props_kernel_launcher_cuda_rt
 
         increment_1scalar_by_1scalar_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay,
-                tau_inout.ptr(), tau_in.ptr());
+                tau_inout, tau_in);
     }
 
 
     void increment_2stream_by_2stream(
             int ncol, int nlay,
-            Array_gpu<Float,2>& tau_inout, Array_gpu<Float,2>& ssa_inout, Array_gpu<Float,2>& g_inout,
-            const Array_gpu<Float,2>& tau_in, const Array_gpu<Float,2>& ssa_in, const Array_gpu<Float,2>& g_in)
+            Float* tau_inout, Float* ssa_inout, Float* g_inout,
+            const Float* tau_in, const Float* ssa_in, const Float* g_in)
     {
         const int block_lay = 16;
         const int block_col = 16;
@@ -74,13 +74,13 @@ namespace optical_props_kernel_launcher_cuda_rt
 
         increment_2stream_by_2stream_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, eps,
-                tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr(),
-                tau_in.ptr(), ssa_in.ptr(), g_in.ptr());
+                tau_inout, ssa_inout, g_inout,
+                tau_in, ssa_in, g_in);
     }
 
     void delta_scale_2str_k(
             int ncol, int nlay, int ngpt,
-            Array_gpu<Float,2>& tau_inout, Array_gpu<Float,2>& ssa_inout, Array_gpu<Float,2>& g_inout)
+            Float* tau_inout, Float* ssa_inout, Float* g_inout)
     {
         const int block_lay = 16;
         const int block_col = 16;
@@ -95,7 +95,7 @@ namespace optical_props_kernel_launcher_cuda_rt
 
         delta_scale_2str_k_kernel<<<grid_gpu, block_gpu>>>(
                 ncol, nlay, ngpt, eps,
-                tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr());
+                tau_inout, ssa_inout, g_inout);
     }
 }
 

@@ -448,9 +448,9 @@ void Radiation_solver_longwave::solve_gpu(
 
     if (switch_fluxes)
     {
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_up);
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_dn);
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_net);
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_up.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_dn.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_net.ptr());
     }
     
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
@@ -499,12 +499,12 @@ void Radiation_solver_longwave::solve_gpu(
         if (switch_output_optical)
         {
             gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                    n_col, n_lay, igpt-1, tau, lay_source, lev_source_inc, lev_source_dec,
-                    optical_props->get_tau(), (*sources).get_lay_source(),
-                    (*sources).get_lev_source_inc(), (*sources).get_lev_source_dec());
+                    n_col, n_lay, igpt-1, tau.ptr(), lay_source.ptr(), lev_source_inc.ptr(), lev_source_dec.ptr(),
+                    optical_props->get_tau().ptr(), (*sources).get_lay_source().ptr(),
+                    (*sources).get_lev_source_inc().ptr(), (*sources).get_lev_source_dec().ptr());
 
             gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                    n_col, igpt-1, sfc_source, (*sources).get_sfc_source());
+                    n_col, igpt-1, sfc_source.ptr(), (*sources).get_sfc_source().ptr());
         }
 
 
@@ -529,15 +529,14 @@ void Radiation_solver_longwave::solve_gpu(
             
             // Copy the data to the output.
             gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-                    n_col, n_lev, lw_flux_up, lw_flux_dn, lw_flux_net,
-                    (*fluxes).get_flux_up(), (*fluxes).get_flux_dn(), (*fluxes).get_flux_net());
-
+                    n_col, n_lev, lw_flux_up.ptr(), lw_flux_dn.ptr(), lw_flux_net.ptr(),
+                    (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
 
             if (switch_output_bnd_fluxes)
             {
                 gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                        n_col, n_lev, igpt-1, lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net,
-                        (*fluxes).get_flux_up(), (*fluxes).get_flux_dn(), (*fluxes).get_flux_net());
+                        n_col, n_lev, igpt-1, lw_bnd_flux_up.ptr(), lw_bnd_flux_dn.ptr(), lw_bnd_flux_net.ptr(),
+                        (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
 
             }
         }
@@ -620,18 +619,18 @@ void Radiation_solver_shortwave::solve_gpu(
     
     if (switch_fluxes)
     {
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_up);
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_dn);
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_dn_dir);
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_net);
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_up.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_dn.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_dn_dir.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_net.ptr());
         if (switch_raytracing)
         {
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_tod_up);
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_sfc_dir);
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_sfc_dif);
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_sfc_up);
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_z, n_col_y, n_col_x, rt_flux_abs_dir);
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_z, n_col_y, n_col_x, rt_flux_abs_dif);
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_tod_up.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_sfc_dir.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_sfc_dif.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_sfc_up.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_z, n_col_y, n_col_x, rt_flux_abs_dir.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_z, n_col_y, n_col_x, rt_flux_abs_dif.ptr());
         }
     }
 
@@ -682,11 +681,11 @@ void Radiation_solver_shortwave::solve_gpu(
         if (switch_output_optical)
         {
             gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                    n_col, n_lay, igpt-1, tau, ssa, g, optical_props->get_tau(),
-                     optical_props->get_ssa(),  optical_props->get_g());
+                    n_col, n_lay, igpt-1, tau.ptr(), ssa.ptr(), g.ptr(), optical_props->get_tau().ptr(),
+                     optical_props->get_ssa().ptr(),  optical_props->get_g().ptr());
 
             gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                    n_col, igpt-1, toa_source, toa_src);
+                    n_col, igpt-1, toa_source.ptr(), toa_src.ptr());
         }
         if (switch_fluxes)
         {  
@@ -707,7 +706,7 @@ void Radiation_solver_shortwave::solve_gpu(
 
             if (switch_raytracing)
             {
-                if (!switch_cloud_optics) rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau());
+                if (!switch_cloud_optics) rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
 
                 Float zenith_angle = std::acos(mu0({1}));
                 Float azimuth_angle = 3.14; // sun approximately from south
@@ -736,25 +735,25 @@ void Radiation_solver_shortwave::solve_gpu(
             (*fluxes).net_flux();
 
             gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-                    n_col, n_lev, sw_flux_up, sw_flux_dn, sw_flux_dn_dir, sw_flux_net,
-                    (*fluxes).get_flux_up(), (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), (*fluxes).get_flux_net());
+                    n_col, n_lev, sw_flux_up.ptr(), sw_flux_dn.ptr(), sw_flux_dn_dir.ptr(), sw_flux_net.ptr(),
+                    (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
             
             if (switch_raytracing)
             {
                 gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-                        n_col_x, n_col_y, rt_flux_tod_up, rt_flux_sfc_dir, rt_flux_sfc_dif, rt_flux_sfc_up,
-                        (*fluxes).get_flux_tod_up(), (*fluxes).get_flux_sfc_dir(), (*fluxes).get_flux_sfc_dif(), (*fluxes).get_flux_sfc_up());
+                        n_col_x, n_col_y, rt_flux_tod_up.ptr(), rt_flux_sfc_dir.ptr(), rt_flux_sfc_dif.ptr(), rt_flux_sfc_up.ptr(),
+                        (*fluxes).get_flux_tod_up().ptr(), (*fluxes).get_flux_sfc_dir().ptr(), (*fluxes).get_flux_sfc_dif().ptr(), (*fluxes).get_flux_sfc_up().ptr());
 
                 gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-                        n_col, n_z, rt_flux_abs_dir, rt_flux_abs_dif,
-                        (*fluxes).get_flux_abs_dir(), (*fluxes).get_flux_abs_dif());
+                        n_col, n_z, rt_flux_abs_dir.ptr(), rt_flux_abs_dif.ptr(),
+                        (*fluxes).get_flux_abs_dir().ptr(), (*fluxes).get_flux_abs_dif().ptr());
             }
 
             if (switch_output_bnd_fluxes)
             {
                 gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                        n_col, n_lev, igpt-1, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dn_dir, sw_bnd_flux_net,
-                        (*fluxes).get_flux_up(), (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), (*fluxes).get_flux_net());
+                        n_col, n_lev, igpt-1, sw_bnd_flux_up.ptr(), sw_bnd_flux_dn.ptr(), sw_bnd_flux_dn_dir.ptr(), sw_bnd_flux_net.ptr(),
+                        (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
             }
         }
     }
