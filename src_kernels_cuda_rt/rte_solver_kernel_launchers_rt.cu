@@ -209,6 +209,8 @@ namespace rte_kernel_launcher_cuda_rt
         {
             for (int imu=1; imu<nmus; ++imu)
             {
+                throw std::runtime_error("Not implemented due to lacking test case");
+                /*
                 lw_solver_noscat_step_1_kernel<<<grid_1, block_1>>>(
                         ncol, nlay, ngpt, eps, top_at_1, ds+imu, weights+imu, tau, lay_source,
                         lev_source_inc, lev_source_dec, sfc_emis, sfc_src, radn_up, radn_dn, sfc_src_jac,
@@ -228,8 +230,20 @@ namespace rte_kernel_launcher_cuda_rt
                         ncol, nlay+1, ngpt,
                         radn_up, radn_dn, radn_up_jac,
                         flux_up, flux_dn, flux_up_jac);
+                */
             }
         }
+    
+        Tools_gpu::free_gpu(source_sfc);
+        Tools_gpu::free_gpu(source_sfc_jac);
+        Tools_gpu::free_gpu(sfc_albedo);
+        Tools_gpu::free_gpu(tau_loc);
+        Tools_gpu::free_gpu(trans);
+        Tools_gpu::free_gpu(source_dn);
+        Tools_gpu::free_gpu(source_up);
+        Tools_gpu::free_gpu(radn_dn);
+        Tools_gpu::free_gpu(radn_up);
+        Tools_gpu::free_gpu(radn_up_jac);
     }
 
 

@@ -235,7 +235,7 @@ void solve_radiation(int argc, char** argv)
     const int n_col = n_col_x * n_col_y;
     const int n_lay = input_nc.get_dimension_size("lay");
     const int n_lev = input_nc.get_dimension_size("lev");
-    const int n_z = input_nc.get_dimension_size("z");
+    int n_z;
 
     // Read the x,y,z dimensions if raytracing is enabled
     Array<Float,1> grid_dims({4});
@@ -245,6 +245,7 @@ void solve_radiation(int argc, char** argv)
     Array<Float,1> z_lev;
     if (switch_raytracing)
     {
+        n_z = input_nc.get_dimension_size("z");
         grid_x.set_dims({n_col_x});
         grid_y.set_dims({n_col_y});
         grid_z.set_dims({n_z});
