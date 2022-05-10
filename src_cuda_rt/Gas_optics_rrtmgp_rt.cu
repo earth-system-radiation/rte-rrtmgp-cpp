@@ -30,7 +30,7 @@
 #include "Optical_props_rt.h"
 #include "Source_functions_rt.h"
 
-#include "Gas_concs_rt.h"
+#include "Gas_concs.h"
 #include "Gas_optics_rrtmgp_rt.h"
 #include "Array.h"
 #include "iostream"
@@ -77,7 +77,7 @@ namespace
 
     
     void reduce_minor_arrays(
-                const Gas_concs_rt& available_gases,
+                const Gas_concs_gpu& available_gases,
                 const Array<std::string,1>& gas_names,
                 const Array<std::string,1>& gas_minor,
                 const Array<std::string,1>& identifier_minor,
@@ -412,7 +412,7 @@ namespace
 // Constructor of longwave variant.
 
 Gas_optics_rrtmgp_rt::Gas_optics_rrtmgp_rt(
-        const Gas_concs_rt& available_gases,
+        const Gas_concs_gpu& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
         const Array<int,2>& band2gpt,
@@ -488,7 +488,7 @@ Gas_optics_rrtmgp_rt::Gas_optics_rrtmgp_rt(
 // Constructor of the shortwave variant.
 
 Gas_optics_rrtmgp_rt::Gas_optics_rrtmgp_rt(
-        const Gas_concs_rt& available_gases,
+        const Gas_concs_gpu& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
         const Array<int,2>& band2gpt,
@@ -562,7 +562,7 @@ Gas_optics_rrtmgp_rt::Gas_optics_rrtmgp_rt(
 
 
 void Gas_optics_rrtmgp_rt::init_abs_coeffs(
-        const Gas_concs_rt& available_gases,
+        const Gas_concs_gpu& available_gases,
         const Array<std::string,1>& gas_names,
         const Array<int,3>& key_species,
         const Array<int,2>& band2gpt,
@@ -945,7 +945,7 @@ void Gas_optics_rrtmgp_rt::gas_optics(
         const Array_gpu<Float,2>& plev,
         const Array_gpu<Float,2>& tlay,
         const Array_gpu<Float,1>& tsfc,
-        const Gas_concs_rt& gas_desc,
+        const Gas_concs_gpu& gas_desc,
         std::unique_ptr<Optical_props_arry_rt>& optical_props,
         Source_func_lw_rt& sources,
         const Array_gpu<Float,2>& col_dry,
@@ -989,7 +989,7 @@ void Gas_optics_rrtmgp_rt::gas_optics(
         const Array_gpu<Float,2>& play,
         const Array_gpu<Float,2>& plev,
         const Array_gpu<Float,2>& tlay,
-        const Gas_concs_rt& gas_desc,
+        const Gas_concs_gpu& gas_desc,
         std::unique_ptr<Optical_props_arry_rt>& optical_props,
         Array_gpu<Float,1>& toa_src,
         const Array_gpu<Float,2>& col_dry)
@@ -1026,7 +1026,7 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
         const Array_gpu<Float,2>& play,
         const Array_gpu<Float,2>& plev,
         const Array_gpu<Float,2>& tlay,
-        const Gas_concs_rt& gas_desc,
+        const Gas_concs_gpu& gas_desc,
         std::unique_ptr<Optical_props_arry_rt>& optical_props,
         Array_gpu<int,2>& jtemp, Array_gpu<int,2>& jpress,
         Array_gpu<int,4>& jeta,

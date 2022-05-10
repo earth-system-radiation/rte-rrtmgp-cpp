@@ -31,7 +31,7 @@
 #include "Optical_props_rt.h"
 
 // Forward declarations.
-class Gas_concs_rt;
+class Gas_concs_gpu;
 class Source_func_lw_rt;
 
 #ifdef USECUDA
@@ -62,7 +62,7 @@ class Gas_optics_rt : public Optical_props_rt
                 const Array_gpu<Float,2>& plev,
                 const Array_gpu<Float,2>& tlay,
                 const Array_gpu<Float,1>& tsfc,
-                const Gas_concs_rt& gas_desc,
+                const Gas_concs_gpu& gas_desc,
                 std::unique_ptr<Optical_props_arry_rt>& optical_props,
                 Source_func_lw_rt& sources,
                 const Array_gpu<Float,2>& col_dry,
@@ -74,7 +74,7 @@ class Gas_optics_rt : public Optical_props_rt
                 const Array_gpu<Float,2>& play,
                 const Array_gpu<Float,2>& plev,
                 const Array_gpu<Float,2>& tlay,
-                const Gas_concs_rt& gas_desc,
+                const Gas_concs_gpu& gas_desc,
                 std::unique_ptr<Optical_props_arry_rt>& optical_props,
                 Array_gpu<Float,1>& toa_src,
                 const Array_gpu<Float,2>& col_dry) = 0;

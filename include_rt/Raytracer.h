@@ -12,7 +12,7 @@ template<typename, int> class Array_gpu;
 class Optical_props_rt;
 class Optical_props_arry_rt;
 
-#ifdef __CUDACC__
+#ifdef USECUDA
 class Raytracer
 {
     public:

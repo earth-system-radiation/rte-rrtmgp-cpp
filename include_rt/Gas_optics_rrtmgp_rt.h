@@ -35,7 +35,7 @@
 // template<typename Float> class Gas_optics;
 class Optical_props_rt;
 class Optical_props_arry_rt;
-class Gas_concs_rt;
+class Gas_concs_gpu;
 class Source_func_lw_rt;
 
 #ifdef USECUDA
@@ -44,7 +44,7 @@ class Gas_optics_rrtmgp_rt : public Gas_optics_rt
     public:
         // Constructor for longwave variant.
         Gas_optics_rrtmgp_rt(
-                const Gas_concs_rt& available_gases,
+                const Gas_concs_gpu& available_gases,
                 const Array<std::string,1>& gas_names,
                 const Array<int,3>& key_species,
                 const Array<int,2>& band2gpt,
@@ -79,7 +79,7 @@ class Gas_optics_rrtmgp_rt : public Gas_optics_rt
 
         // Constructor for shortwave variant.
         Gas_optics_rrtmgp_rt(
-                const Gas_concs_rt& available_gases,
+                const Gas_concs_gpu& available_gases,
                 const Array<std::string,1>& gas_names,
                 const Array<int,3>& key_species,
                 const Array<int,2>& band2gpt,
@@ -146,7 +146,7 @@ class Gas_optics_rrtmgp_rt : public Gas_optics_rt
                 const Array_gpu<Float,2>& plev,
                 const Array_gpu<Float,2>& tlay,
                 const Array_gpu<Float,1>& tsfc,
-                const Gas_concs_rt& gas_desc,
+                const Gas_concs_gpu& gas_desc,
                 std::unique_ptr<Optical_props_arry_rt>& optical_props,
                 Source_func_lw_rt& sources,
                 const Array_gpu<Float,2>& col_dry,
@@ -158,7 +158,7 @@ class Gas_optics_rrtmgp_rt : public Gas_optics_rt
                 const Array_gpu<Float,2>& play,
                 const Array_gpu<Float,2>& plev,
                 const Array_gpu<Float,2>& tlay,
-                const Gas_concs_rt& gas_desc,
+                const Gas_concs_gpu& gas_desc,
                 std::unique_ptr<Optical_props_arry_rt>& optical_props,
                 Array_gpu<Float,1>& toa_src,
                 const Array_gpu<Float,2>& col_dry);
@@ -261,7 +261,7 @@ class Gas_optics_rrtmgp_rt : public Gas_optics_rt
         int get_ngas() const { return this->gas_names.dim(1); }
 
         void init_abs_coeffs(
-                const Gas_concs_rt& available_gases,
+                const Gas_concs_gpu& available_gases,
                 const Array<std::string,1>& gas_names,
                 const Array<int,3>& key_species,
                 const Array<int,2>& band2gpt,
@@ -300,7 +300,7 @@ class Gas_optics_rrtmgp_rt : public Gas_optics_rt
                 const Array_gpu<Float,2>& play,
                 const Array_gpu<Float,2>& plev,
                 const Array_gpu<Float,2>& tlay,
-                const Gas_concs_rt& gas_desc,
+                const Gas_concs_gpu& gas_desc,
                 std::unique_ptr<Optical_props_arry_rt>& optical_props,
                 Array_gpu<int,2>& jtemp, Array_gpu<int,2>& jpress,
                 Array_gpu<int,4>& jeta,
