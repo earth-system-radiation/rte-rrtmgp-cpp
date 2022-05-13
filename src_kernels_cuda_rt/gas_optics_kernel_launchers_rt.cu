@@ -26,10 +26,10 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         dim3 grid{ni, nj, nk};
         dim3 block;
 
-        if (tunings.count("reorder123x321_kernel") == 0)
+        if (tunings.count("reorder123x321_kernel_rt") == 0)
         {
             std::tie(grid, block) = tune_kernel(
-                "reorder123x321_kernel",
+                "reorder123x321_kernel_rt",
                 dim3{ni, nj, nk},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
@@ -37,13 +37,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 reorder123x321_kernel,
                 ni, nj, nk, arr_in, arr_out);
 
-            tunings["reorder123x321_kernel"].first = grid;
-            tunings["reorder123x321_kernel"].second = block;
+            tunings["reorder123x321_kernel_rt"].first = grid;
+            tunings["reorder123x321_kernel_rt"].second = block;
         }
         else
         {
-            grid = tunings["reorder123x321_kernel"].first;
-            block = tunings["reorder123x321_kernel"].second;
+            grid = tunings["reorder123x321_kernel_rt"].first;
+            block = tunings["reorder123x321_kernel_rt"].second;
         }
 
         reorder123x321_kernel<<<grid, block>>>(
@@ -159,10 +159,10 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         Float tmin = std::numeric_limits<Float>::min();
         
         dim3 grid(ncol, nlay, nflav), block;
-        if (tunings.count("interpolation_kernel") == 0)
+        if (tunings.count("interpolation_kernel_rt") == 0)
         {
             std::tie(grid, block) = tune_kernel(
-                    "interpolation_kernel",
+                    "interpolation_kernel_rt",
                     dim3{ncol, nlay, nflav}, 
                     {1, 2, 4, 8, 16, 32, 64, 128, 256}, {1}, {1, 2, 4, 8, 16, 32, 64, 128, 256},
                     interpolation_kernel,
@@ -174,13 +174,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                     col_gas, jtemp, fmajor,
                     fminor, col_mix, tropo,
                     jeta, jpress);
-            tunings["interpolation_kernel"].first = grid;
-            tunings["interpolation_kernel"].second = block;
+            tunings["interpolation_kernel_rt"].first = grid;
+            tunings["interpolation_kernel_rt"].second = block;
         }
         else
         {
-            grid = tunings["interpolation_kernel"].first;
-            block = tunings["interpolation_kernel"].second;
+            grid = tunings["interpolation_kernel_rt"].first;
+            block = tunings["interpolation_kernel_rt"].second;
         }
 
         interpolation_kernel<<<grid, block>>>(
@@ -224,10 +224,10 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         int idx_tropo=1;
 
         dim3 grid_1(ncol, nlay, nminorlower), block_1;
-        if (tunings.count("minor_scalings_lower_kernel") == 0)
+        if (tunings.count("minor_scalings_lower_kernel_rt") == 0)
         {
             std::tie(grid_1, block_1) = tune_kernel(
-                    "minor_scalings_lower_kernel",
+                    "minor_scalings_lower_kernel_rt",
                     dim3{ncol, nlay, nminorlower}, 
                     {8, 16, 24, 32, 48, 64, 128}, {1}, {1, 2, 4, 8, 16, 32},
                     scaling_kernel,
@@ -242,13 +242,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                     play, tlay, col_gas,
                     tropo, scalings_lower);
 
-            tunings["minor_scalings_lower_kernel"].first = grid_1;
-            tunings["minor_scalings_lower_kernel"].second = block_1;
+            tunings["minor_scalings_lower_kernel_rt"].first = grid_1;
+            tunings["minor_scalings_lower_kernel_rt"].second = block_1;
         }
         else
         {
-            grid_1 =  tunings["minor_scalings_lower_kernel"].first;
-            block_1 = tunings["minor_scalings_lower_kernel"].second;
+            grid_1 =  tunings["minor_scalings_lower_kernel_rt"].first;
+            block_1 = tunings["minor_scalings_lower_kernel_rt"].second;
         }
 
         scaling_kernel<<<grid_1, block_1>>>(
@@ -267,10 +267,10 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         idx_tropo=0;
 
         dim3 grid_2(ncol, nlay, nminorupper), block_2;
-        if (tunings.count("minor_scalings_upper_kernel") == 0)
+        if (tunings.count("minor_scalings_upper_kernel_rt") == 0)
         {
             std::tie(grid_2, block_2) = tune_kernel(
-                    "minor_scalings_upper_kernel",
+                    "minor_scalings_upper_kernel_rt",
                     dim3{ncol, nlay, nminorupper}, 
                     {8, 16, 24, 32, 48, 64, 128}, {1}, {1, 2, 4, 8, 16, 32},
                     scaling_kernel,
@@ -285,13 +285,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                     play, tlay, col_gas,
                     tropo, scalings_upper);
 
-            tunings["minor_scalings_upper_kernel"].first = grid_2;
-            tunings["minor_scalings_upper_kernel"].second = block_2;
+            tunings["minor_scalings_upper_kernel_rt"].first = grid_2;
+            tunings["minor_scalings_upper_kernel_rt"].second = block_2;
         }
         else
         {
-            grid_2 =  tunings["minor_scalings_upper_kernel"].first;
-            block_2 = tunings["minor_scalings_upper_kernel"].second;
+            grid_2 =  tunings["minor_scalings_upper_kernel_rt"].first;
+            block_2 = tunings["minor_scalings_upper_kernel_rt"].second;
         }
 
         scaling_kernel<<<grid_2, block_2>>>(
@@ -318,10 +318,10 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         Float tmin = std::numeric_limits<Float>::epsilon();
 
         dim3 grid{ncol, nlay, 1}, block;
-        if (tunings.count("combine_abs_and_rayleigh_kernel") == 0)
+        if (tunings.count("combine_abs_and_rayleigh_kernel_rt") == 0)
         {
             std::tie(grid, block) = tune_kernel(
-                "combine_abs_and_rayleigh_kernel",
+                "combine_abs_and_rayleigh_kernel_rt",
                 dim3{ncol, nlay, 1},
                 {24, 32, 48, 64, 96, 128, 256, 512}, {1, 2, 4}, {1},
                 combine_abs_and_rayleigh_kernel,
@@ -329,13 +329,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 tau_abs, tau_rayleigh,
                 tau, ssa, g);
 
-            tunings["combine_abs_and_rayleigh_kernel"].first = grid;
-            tunings["combine_abs_and_rayleigh_kernel"].second = block;
+            tunings["combine_abs_and_rayleigh_kernel_rt"].first = grid;
+            tunings["combine_abs_and_rayleigh_kernel_rt"].second = block;
         }
         else
         {
-            grid = tunings["combine_abs_and_rayleigh_kernel"].first;
-            block = tunings["combine_abs_and_rayleigh_kernel"].second;
+            grid = tunings["combine_abs_and_rayleigh_kernel_rt"].first;
+            block = tunings["combine_abs_and_rayleigh_kernel_rt"].second;
         }
 
         combine_abs_and_rayleigh_kernel<<<grid, block>>>(
@@ -360,10 +360,10 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         Tuner_map& tunings = Tuner::get_map();
 
         dim3 grid{ncol, nlay, 1}, block;
-        if (tunings.count("compute_tau_rayleigh_kernel") == 0)
+        if (tunings.count("compute_tau_rayleigh_kernel_rt") == 0)
         {
             std::tie(grid, block) = tune_kernel(
-                "compute_tau_rayleigh_kernel",
+                "compute_tau_rayleigh_kernel_rt",
                 dim3{ncol, nlay, 1},
                 {24, 32, 64, 128, 256, 512}, {1, 2}, {1},
                 compute_tau_rayleigh_kernel,
@@ -379,13 +379,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 tropo, jtemp,
                 tau_rayleigh);
 
-            tunings["compute_tau_rayleigh_kernel"].first = grid;
-            tunings["compute_tau_rayleigh_kernel"].second = block;
+            tunings["compute_tau_rayleigh_kernel_rt"].first = grid;
+            tunings["compute_tau_rayleigh_kernel_rt"].second = block;
         }
         else
         {
-            grid = tunings["compute_tau_rayleigh_kernel"].first;
-            block = tunings["compute_tau_rayleigh_kernel"].second;
+            grid = tunings["compute_tau_rayleigh_kernel_rt"].first;
+            block = tunings["compute_tau_rayleigh_kernel_rt"].second;
         }
         
         compute_tau_rayleigh_kernel<<<grid, block>>>(
@@ -443,12 +443,12 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         dim3 grid_maj{nlay, ncol, 1};
         dim3 block_maj;
 
-        if (tunings.count("gas_optical_depths_major_kernel") == 0)
+        if (tunings.count("gas_optical_depths_major_kernel_rt") == 0)
         {
             Float* tau_tmp = Tools_gpu::allocate_gpu<Float>(nlay*ncol);
             
             std::tie(grid_maj, block_maj) = tune_kernel(
-                    "gas_optical_depths_major_kernel",
+                    "gas_optical_depths_major_kernel_rt",
                     dim3{nlay, ncol, 1}, 
                     {1, 2}, {64, 96, 128, 256, 512, 768, 1024}, {1},
                     gas_optical_depths_major_kernel,
@@ -462,13 +462,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                     
             Tools_gpu::free_gpu<Float>(tau_tmp);
             
-            tunings["gas_optical_depths_major_kernel"].first = grid_maj;
-            tunings["gas_optical_depths_major_kernel"].second = block_maj;
+            tunings["gas_optical_depths_major_kernel_rt"].first = grid_maj;
+            tunings["gas_optical_depths_major_kernel_rt"].second = block_maj;
         }
         else
         {
-            grid_maj = tunings["gas_optical_depths_major_kernel"].first;
-            block_maj = tunings["gas_optical_depths_major_kernel"].second;
+            grid_maj = tunings["gas_optical_depths_major_kernel_rt"].first;
+            block_maj = tunings["gas_optical_depths_major_kernel_rt"].second;
         }
         
         gas_optical_depths_major_kernel<<<grid_maj, block_maj>>>(
@@ -488,12 +488,12 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         int idx_tropo = 1;
 
         dim3 grid_min_1(nlay, ncol, 1), block_min_1;
-        if (tunings.count("gas_optical_depths_minor_kernel_lower") == 0)
+        if (tunings.count("gas_optical_depths_minor_kernel_lower_rt") == 0)
         {
             Float* tau_tmp = Tools_gpu::allocate_gpu<Float>(nlay*ncol);
             
             std::tie(grid_min_1, block_min_1) = tune_kernel(
-                        "gas_optical_depths_minor_kernel_lower",
+                        "gas_optical_depths_minor_kernel_lower_rt",
                         dim3{nlay, ncol, 1},
                         {1}, {32, 48, 64, 96, 128, 256, 384, 512}, {1},
                         gas_optical_depths_minor_kernel,
@@ -518,13 +518,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                         tau_tmp);
             Tools_gpu::free_gpu<Float>(tau_tmp);
 
-            tunings["gas_optical_depths_minor_kernel_lower"].first = grid_min_1;
-            tunings["gas_optical_depths_minor_kernel_lower"].second = block_min_1;
+            tunings["gas_optical_depths_minor_kernel_lower_rt"].first = grid_min_1;
+            tunings["gas_optical_depths_minor_kernel_lower_rt"].second = block_min_1;
         }
         else
         {
-            grid_min_1 = tunings["gas_optical_depths_minor_kernel_lower"].first;
-            block_min_1 = tunings["gas_optical_depths_minor_kernel_lower"].second;
+            grid_min_1 = tunings["gas_optical_depths_minor_kernel_lower_rt"].first;
+            block_min_1 = tunings["gas_optical_depths_minor_kernel_lower_rt"].second;
         }
         
         gas_optical_depths_minor_kernel<<<grid_min_1, block_min_1>>>(
@@ -551,11 +551,11 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         idx_tropo = 0;
 
         dim3 grid_min_2(nlay, ncol, 1), block_min_2;
-        if (tunings.count("gas_optical_depths_minor_kernel_upper") == 0)
+        if (tunings.count("gas_optical_depths_minor_kernel_upper_rt") == 0)
         {
             Float* tau_tmp = Tools_gpu::allocate_gpu<Float>(nlay*ncol);
             std::tie(grid_min_2, block_min_2) = tune_kernel(
-                   "gas_optical_depths_minor_kernel_upper",
+                   "gas_optical_depths_minor_kernel_upper_rt",
                    dim3{nlay, ncol, 1},
                    {1}, {32, 48, 64, 96, 128, 256, 384, 512}, {1},
                    gas_optical_depths_minor_kernel,
@@ -580,13 +580,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                    tau_tmp);
             Tools_gpu::free_gpu<Float>(tau_tmp);
             
-            tunings["gas_optical_depths_minor_kernel_upper"].first = grid_min_2;
-            tunings["gas_optical_depths_minor_kernel_upper"].second = block_min_2;
+            tunings["gas_optical_depths_minor_kernel_upper_rt"].first = grid_min_2;
+            tunings["gas_optical_depths_minor_kernel_upper_rt"].second = block_min_2;
         }
         else
         {
-            grid_min_2 = tunings["gas_optical_depths_minor_kernel_upper"].first;
-            block_min_2 = tunings["gas_optical_depths_minor_kernel_upper"].second;
+            grid_min_2 = tunings["gas_optical_depths_minor_kernel_upper_rt"].first;
+            block_min_2 = tunings["gas_optical_depths_minor_kernel_upper_rt"].second;
         }
 
         gas_optical_depths_minor_kernel<<<grid_min_2, block_min_2>>>(
@@ -643,10 +643,10 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         const Float delta_Tsurf = Float(1.);
         
         dim3 grid(ncol, nlay, 1), block;
-        if (tunings.count("Planck_source_kernel") == 0)
+        if (tunings.count("Planck_source_kernel_rt") == 0)
         {
             std::tie(grid, block) = tune_kernel(
-                    "Planck_source_kernel",
+                    "Planck_source_kernel_rt",
                     dim3{ncol, nlay, 1},
                     {16, 32, 48, 64, 96, 128, 256, 512}, {1, 2, 4, 8}, {1},
                     Planck_source_kernel,
@@ -661,13 +661,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                     lev_src_inc, lev_src_dec,
                     sfc_src_jac);
 
-            tunings["Planck_source_kernel"].first = grid;
-            tunings["Planck_source_kernel"].second = block;
+            tunings["Planck_source_kernel_rt"].first = grid;
+            tunings["Planck_source_kernel_rt"].second = block;
         }
         else
         {
-            grid = tunings["Planck_source_kernel"].first;
-            block = tunings["Planck_source_kernel"].second;
+            grid = tunings["Planck_source_kernel_rt"].first;
+            block = tunings["Planck_source_kernel_rt"].second;
         }
 
         Planck_source_kernel<<<grid, block>>>(

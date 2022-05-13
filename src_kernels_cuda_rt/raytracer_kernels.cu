@@ -188,6 +188,7 @@ namespace
             }
 
             const int ij = i + j*itot;
+            if (ij < 0 || ij >=itot*jtot) printf("outofbounds 3");
             atomicAdd(&toa_down_count[ij], Float(1.));
             weight = 1;
     
@@ -316,6 +317,7 @@ void ray_tracer_kernel(
                 const int j = float_to_int(photon.position.y, dy_grid, jtot);
                 const int ij = i + j*itot;
                 d_max = Float(0.);
+            if (ij < 0 || ij >=itot*jtot) printf("outofbounds 1");
         
                 // Add surface irradiance
                 if (photon.kind == Photon_kind::Direct)
@@ -364,6 +366,7 @@ void ray_tracer_kernel(
                 const int i = float_to_int(photon.position.x, dx_grid, itot);
                 const int j = float_to_int(photon.position.y, dy_grid, jtot);
                 const int ij = i + j*itot;
+            if (ij < 0 || ij >=itot*jtot) printf("outofbounds 2");
                 write_photon_out(&tod_up_count[ij], weight);
                 
                 reset_photon(
@@ -421,6 +424,8 @@ void ray_tracer_kernel(
             
             // Compute probability not being absorbed and store weighted absorption probability
             const Float f_no_abs = Float(1.) - (Float(1.) - ssa_asy[ijk].ssa) * (k_ext_tot/k_ext_null);
+            if (ijk < 0) printf("writing hr lower \n");
+            if (ijk >= itot*jtot*ktot) printf("writing hr upper \n");
             if (photon.kind == Photon_kind::Direct)
                 write_photon_out(&atmos_direct_count[ijk], weight*(1-f_no_abs));
             else

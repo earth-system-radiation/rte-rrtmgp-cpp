@@ -149,7 +149,7 @@ Raytracer::Raytracer()
 
     this->qrng_vectors_gpu = allocate_gpu<curandDirectionVectors32_t>(2);
     this->qrng_constants_gpu = allocate_gpu<unsigned int>(2);
-    
+
     copy_to_gpu(qrng_vectors_gpu, qrng_vectors, 2);
     copy_to_gpu(qrng_constants_gpu, qrng_constants, 2);
 }
@@ -174,8 +174,8 @@ void Raytracer::trace_rays(
         Array_gpu<Float,3>& flux_abs_dif)
 {
     // set of block and grid dimensions used in data processing kernels - requires some proper tuning later
-    const int block_col_x = 8;
-    const int block_col_y = 8;
+    const int block_col_x = 2;
+    const int block_col_y = 2;
     const int block_z = 4;
 
     const int grid_col_x  = ncol_x/block_col_x + (ncol_x%block_col_x > 0);
@@ -198,8 +198,8 @@ void Raytracer::trace_rays(
             k_ext.ptr(), ssa_asy.ptr());
                                                                                 
     // create k_null_grid
-    const int block_kn_x = 8;
-    const int block_kn_y = 8;
+    const int block_kn_x = 2;
+    const int block_kn_y = 2;
     const int block_kn_z = 4;
 
     const int grid_kn_x  = ngrid_h/block_kn_x + (ngrid_h%block_kn_x > 0);
@@ -246,7 +246,7 @@ void Raytracer::trace_rays(
 
     dim3 grid{grid_size}, block{block_size};
     Int photons_per_thread = photons_to_shoot / (grid_size * block_size);
-   
+
     ray_tracer_kernel<<<grid, block>>>(
             photons_per_thread, k_null_grid.ptr(),
             toa_down_count.ptr(),

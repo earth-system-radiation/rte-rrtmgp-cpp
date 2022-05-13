@@ -39,7 +39,6 @@ class Raytracer
     private:
         curandDirectionVectors32_t* qrng_vectors_gpu;
         unsigned int* qrng_constants_gpu;
-
 };
 #endif
 

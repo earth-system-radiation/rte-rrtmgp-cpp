@@ -95,14 +95,14 @@ namespace rte_kernel_launcher_cuda_rt
         // Step 1.
         dim3 grid_1, block_1;
 
-        if (tunings.count("lw_step_1") == 0)
+        if (tunings.count("lw_step_1_rt") == 0)
         {
             Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
             Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
             Float* flux_up_jac_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
  
             std::tie(grid_1, block_1) = tune_kernel(
-                    "lw_step_1",
+                    "lw_step_1_rt",
                     dim3{ncol, nlay, 1}, 
                     {8, 16, 24, 32, 48, 64, 96, 128, 256, 512, 1024}, {1}, {1},
                     lw_solver_noscat_step_1_kernel,
@@ -114,14 +114,14 @@ namespace rte_kernel_launcher_cuda_rt
             Tools_gpu::free_gpu<Float>(flux_dn_tmp);
             Tools_gpu::free_gpu<Float>(flux_up_jac_tmp);
 
-            tunings["lw_step_1"].first = grid_1;
-            tunings["lw_step_1"].second = block_1;
+            tunings["lw_step_1_rt"].first = grid_1;
+            tunings["lw_step_1_rt"].second = block_1;
         
         }
         else
         {
-            grid_1 = tunings["lw_step_1"].first;
-            block_1 = tunings["lw_step_1"].second;
+            grid_1 = tunings["lw_step_1_rt"].first;
+            block_1 = tunings["lw_step_1_rt"].second;
         }
 
         lw_solver_noscat_step_1_kernel<<<grid_1, block_1>>>(
@@ -133,14 +133,14 @@ namespace rte_kernel_launcher_cuda_rt
         // Step 2.
         dim3 grid_2, block_2;
 
-        if (tunings.count("lw_step_2") == 0)
+        if (tunings.count("lw_step_2_rt") == 0)
         {
             Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
             Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
             Float* flux_up_jac_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
 
             std::tie(grid_2, block_2) = tune_kernel(
-                    "lw_step_2",
+                    "lw_step_2_rt",
                     dim3{ncol, 1, 1}, 
                     {64, 128, 256, 384, 512, 768, 1024}, {1}, {1},
                     lw_solver_noscat_step_2_kernel,
@@ -152,13 +152,13 @@ namespace rte_kernel_launcher_cuda_rt
             Tools_gpu::free_gpu<Float>(flux_dn_tmp);
             Tools_gpu::free_gpu<Float>(flux_up_jac_tmp);
 
-            tunings["lw_step_2"].first = grid_2;
-            tunings["lw_step_2"].second = block_2;
+            tunings["lw_step_2_rt"].first = grid_2;
+            tunings["lw_step_2_rt"].second = block_2;
         }
         else
         {
-            grid_2 = tunings["lw_step_2"].first;
-            block_2 = tunings["lw_step_2"].second;
+            grid_2 = tunings["lw_step_2_rt"].first;
+            block_2 = tunings["lw_step_2_rt"].second;
         }
 
         lw_solver_noscat_step_2_kernel<<<grid_2, block_2>>>(
@@ -170,14 +170,14 @@ namespace rte_kernel_launcher_cuda_rt
         // Step 3.
         dim3 grid_3, block_3;
 
-        if (tunings.count("lw_step_3") == 0)
+        if (tunings.count("lw_step_3_rt") == 0)
         {
             Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
             Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
             Float* flux_up_jac_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
             
             std::tie(grid_3, block_3) = tune_kernel(
-                    "lw_step_3",
+                    "lw_step_3_rt",
                     dim3{ncol, nlay+1, 1}, 
                     {8, 16, 24, 32, 48, 64, 96, 128, 256}, {1, 2, 4, 8}, {1},
                     lw_solver_noscat_step_3_kernel,
@@ -189,13 +189,13 @@ namespace rte_kernel_launcher_cuda_rt
             Tools_gpu::free_gpu<Float>(flux_dn_tmp);
             Tools_gpu::free_gpu<Float>(flux_up_jac_tmp);
             
-            tunings["lw_step_3"].first = grid_3;
-            tunings["lw_step_3"].second = block_3;
+            tunings["lw_step_3_rt"].first = grid_3;
+            tunings["lw_step_3_rt"].second = block_3;
         }
         else
         {
-            grid_3 = tunings["lw_step_3"].first;
-            block_3 = tunings["lw_step_3"].second;
+            grid_3 = tunings["lw_step_3_rt"].first;
+            block_3 = tunings["lw_step_3_rt"].second;
         }
 
         lw_solver_noscat_step_3_kernel<<<grid_3, block_3>>>(
@@ -274,12 +274,12 @@ namespace rte_kernel_launcher_cuda_rt
 
 
         // Step 1.
-        if (tunings.count("sw_source_2stream_kernel") == 0)
+        if (tunings.count("sw_source_2stream_kernel_rt") == 0)
         {
             if (top_at_1)
             {
                 std::tie(grid_source, block_source) = tune_kernel(
-                        "sw_source_2stream_kernel",
+                        "sw_source_2stream_kernel_rt",
                         dim3{ncol, 1}, 
                         {32, 64, 96, 128, 256, 384, 512, 768, 1024}, {1}, {1},
                         sw_source_2stream_kernel<1>,
@@ -289,7 +289,7 @@ namespace rte_kernel_launcher_cuda_rt
             else
             {
                 std::tie(grid_source, block_source) = tune_kernel(
-                        "sw_source_2stream_kernel",
+                        "sw_source_2stream_kernel_rt",
                         dim3{ncol, 1}, 
                         {32, 64, 96, 128, 256, 384, 512, 768, 1024}, {1}, {1},
                         sw_source_2stream_kernel<0>,
@@ -297,13 +297,13 @@ namespace rte_kernel_launcher_cuda_rt
                         sfc_alb_dir, source_up, source_dn, source_sfc, flux_dir);
             }
 
-            tunings["sw_source_2stream_kernel"].first = grid_source;
-            tunings["sw_source_2stream_kernel"].second = block_source;
+            tunings["sw_source_2stream_kernel_rt"].first = grid_source;
+            tunings["sw_source_2stream_kernel_rt"].second = block_source;
         }
         else
         {
-            grid_source = tunings["sw_source_2stream_kernel"].first;
-            block_source = tunings["sw_source_2stream_kernel"].second;
+            grid_source = tunings["sw_source_2stream_kernel_rt"].first;
+            block_source = tunings["sw_source_2stream_kernel_rt"].second;
         }
 
         if (top_at_1)
@@ -323,7 +323,7 @@ namespace rte_kernel_launcher_cuda_rt
         // Step 2.
         dim3 grid_adding, block_adding;
 
-        if (tunings.count("sw_adding") == 0)
+        if (tunings.count("sw_adding_rt") == 0)
         {
             Float* flux_up_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
             Float* flux_dn_tmp = Tools_gpu::allocate_gpu<Float>((nlay+1)*ncol);
@@ -332,7 +332,7 @@ namespace rte_kernel_launcher_cuda_rt
             if (top_at_1)
             {
                 std::tie(grid_adding, block_adding) = tune_kernel(
-                        "sw_adding",
+                        "sw_adding_rt",
                         dim3{ncol, 1},
                         {16, 32, 64, 96, 128, 256, 384, 512}, {1}, {1},
                         sw_adding_kernel<1>,
@@ -344,7 +344,7 @@ namespace rte_kernel_launcher_cuda_rt
             else
             {
                 std::tie(grid_adding, block_adding) = tune_kernel(
-                        "sw_adding",
+                        "sw_adding_rt",
                         dim3{ncol, 1}, 
                         {16, 32, 64, 96, 128, 256, 384, 512}, {1}, {1},
                         sw_adding_kernel<0>,
@@ -357,13 +357,13 @@ namespace rte_kernel_launcher_cuda_rt
             Tools_gpu::free_gpu<Float>(flux_up_tmp);
             Tools_gpu::free_gpu<Float>(flux_dn_tmp);
             Tools_gpu::free_gpu<Float>(flux_dir_tmp);
-            tunings["sw_adding"].first = grid_adding;
-            tunings["sw_adding"].second = block_adding;
+            tunings["sw_adding_rt"].first = grid_adding;
+            tunings["sw_adding_rt"].second = block_adding;
         }
         else
         {
-            grid_adding = tunings["sw_adding"].first;
-            block_adding = tunings["sw_adding"].second;
+            grid_adding = tunings["sw_adding_rt"].first;
+            block_adding = tunings["sw_adding_rt"].second;
         }
 
         if (top_at_1)
