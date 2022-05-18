@@ -344,7 +344,7 @@ namespace
         ++photons_shot;
         if (!generation_completed)
         {
-            const Float i = (ij _cam % cam_nx) / (Float(0.5) * Float(cam_nx)) - Float(1.) + Float(0.5) / Float(cam_nx);
+            const Float i = (ij_cam % cam_nx) / (Float(0.5) * Float(cam_nx)) - Float(1.) + Float(0.5) / Float(cam_nx);
             const Float j = Float(ij_cam/cam_nx) / (Float(0.5) * Float(cam_nx)) - Float(1.) + Float(0.5) / Float(cam_nx);
              
             photon.position.x = Float(0.) + s_min;
