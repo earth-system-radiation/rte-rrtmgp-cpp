@@ -238,9 +238,9 @@ void Raytracer::trace_rays(
     const Float y_size = ncol_y * dy_grid;
     const Float z_size = nlay * dz_grid;
 
-    // direction of direct rays
-    const Float dir_x = -std::sin(zenith_angle) * std::cos(azimuth_angle);
-    const Float dir_y = -std::sin(zenith_angle) * std::sin(azimuth_angle);
+    // direction of direct rays. Take into account that azimuth is 0 north and increases clockwise
+    const Float dir_x = -std::sin(zenith_angle) * std::cos(Float(0.5*M_PI) - azimuth_angle);
+    const Float dir_y = -std::sin(zenith_angle) * std::sin(Float(0.5*M_PI) - azimuth_angle);
     const Float dir_z = -std::cos(zenith_angle);
 
 

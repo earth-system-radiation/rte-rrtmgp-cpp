@@ -344,7 +344,7 @@ namespace
         ++photons_shot;
         if (!generation_completed)
         {
-            const Float i = fmod(ij_cam, cam_nx) / (Float(0.5) * Float(cam_nx)) - Float(1.) + Float(0.5) / Float(cam_nx);
+            const Float i = (ij _cam % cam_nx) / (Float(0.5) * Float(cam_nx)) - Float(1.) + Float(0.5) / Float(cam_nx);
             const Float j = Float(ij_cam/cam_nx) / (Float(0.5) * Float(cam_nx)) - Float(1.) + Float(0.5) / Float(cam_nx);
              
             photon.position.x = Float(0.) + s_min;
@@ -465,7 +465,8 @@ void ray_tracer_kernel_bw(
         const int ij_cam = atomicAdd(&counter[0], 1);
         if (ij_cam >= cam_nx*cam_ny) return;
         const int i = int(fmod(ij_cam, cam_nx));
-        const int j = int(ij_cam/cam_nx);
+        const int j = ij_cam % cam_nx;
+
         const bool completed = false;
         Int photons_shot = Atomic_reduce_const;
         Float weight;
