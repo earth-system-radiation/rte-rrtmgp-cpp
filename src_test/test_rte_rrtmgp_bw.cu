@@ -26,7 +26,7 @@
 #include "Array.h"
 #include "raytracer_kernels_bw.h"
 #include "Radiation_solver_bw.h"
-#include "Gas_concs_rt.h"
+#include "Gas_concs.h"
 #include "Types.h"
 #include "Mem_pool_gpu.h"
 
@@ -542,7 +542,7 @@ void solve_radiation(int argc, char** argv)
         Status::print_message("Initializing the shortwave solver.");
 
 
-        Gas_concs_rt gas_concs_gpu(gas_concs);
+        Gas_concs_gpu gas_concs_gpu(gas_concs);
         Radiation_solver_shortwave rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
 
         // Read the boundary conditions.

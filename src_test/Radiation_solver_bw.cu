@@ -27,7 +27,7 @@
 #include "Netcdf_interface.h"
 
 #include "Array.h"
-#include "Gas_concs_rt.h"
+#include "Gas_concs.h"
 #include "Gas_optics_rrtmgp_rt.h"
 #include "Optical_props_rt.h"
 #include "Source_functions_rt.h"
@@ -140,7 +140,7 @@ namespace
 
     
     Gas_optics_rrtmgp_rt load_and_init_gas_optics(
-            const Gas_concs_rt& gas_concs,
+            const Gas_concs_gpu& gas_concs,
             const std::string& coef_file)
     {
         // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
@@ -404,7 +404,7 @@ namespace
 
 
 Radiation_solver_longwave::Radiation_solver_longwave(
-        const Gas_concs_rt& gas_concs,
+        const Gas_concs_gpu& gas_concs,
         const std::string& file_name_gas,
         const std::string& file_name_cloud)
 {
@@ -422,7 +422,7 @@ void Radiation_solver_longwave::solve_gpu(
         const bool switch_cloud_optics,
         const bool switch_output_optical,
         const bool switch_output_bnd_fluxes,
-        const Gas_concs_rt& gas_concs,
+        const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
         Array_gpu<Float,2>& col_dry,
@@ -645,7 +645,7 @@ Float xyz_irradiance(
 
 
 Radiation_solver_shortwave::Radiation_solver_shortwave(
-        const Gas_concs_rt& gas_concs,
+        const Gas_concs_gpu& gas_concs,
         const std::string& file_name_gas,
         const std::string& file_name_cloud)
 {
@@ -664,7 +664,7 @@ void Radiation_solver_shortwave::solve_gpu(
         const bool switch_cloud_optics,
         const bool switch_output_bnd_fluxes,
         const Int ray_count,
-        const Gas_concs_rt& gas_concs,
+        const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
         const Array_gpu<Float,1>& z_lev,

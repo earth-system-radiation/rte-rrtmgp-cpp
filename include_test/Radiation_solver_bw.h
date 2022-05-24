@@ -21,7 +21,7 @@
 #define RADIATION_SOLVER_BW_H
 
 #include "Array.h"
-#include "Gas_concs_rt.h"
+#include "Gas_concs.h"
 #include "Gas_optics_rrtmgp_rt.h"
 #include "Cloud_optics_rt.h"
 #include "Rte_lw_rt.h"
@@ -42,7 +42,7 @@ class Radiation_solver_longwave
                 const std::string& file_name_cloud);
 
         Radiation_solver_longwave(
-                const Gas_concs_rt& gas_concs,
+                const Gas_concs_gpu& gas_concs,
                 const std::string& file_name_gas,
                 const std::string& file_name_cloud);
 
@@ -69,7 +69,7 @@ class Radiation_solver_longwave
                 const bool switch_cloud_optics,
                 const bool switch_output_optical,
                 const bool switch_output_bnd_fluxes,
-                const Gas_concs_rt& gas_concs,
+                const Gas_concs_gpu& gas_concs,
                 const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
                 const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
                 Array_gpu<Float,2>& col_dry,
@@ -115,7 +115,7 @@ class Radiation_solver_shortwave
                 const std::string& file_name_gas,
                 const std::string& file_name_cloud);
         Radiation_solver_shortwave(
-                const Gas_concs_rt& gas_concs,
+                const Gas_concs_gpu& gas_concs,
                 const std::string& file_name_gas,
                 const std::string& file_name_cloud);
 
@@ -146,7 +146,7 @@ class Radiation_solver_shortwave
                 const bool switch_cloud_optics,
                 const bool switch_output_bnd_fluxes,
                 const Int ray_count,
-                const Gas_concs_rt& gas_concs,
+                const Gas_concs_gpu& gas_concs,
                 const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
                 const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
                 const Array_gpu<Float,1>& z_lev,
