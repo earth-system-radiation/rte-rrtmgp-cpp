@@ -463,9 +463,12 @@ void ray_tracer_kernel_bw(
     while (counter[0] < cam_nx*cam_ny)
     {
         const int ij_cam = atomicAdd(&counter[0], 1);
-        if (ij_cam >= cam_nx*cam_ny) return;
-        const int i = int(fmod(ij_cam, cam_nx));
-        const int j = ij_cam % cam_nx;
+
+        if (ij_cam >= cam_nx*cam_ny)
+            return;
+
+        const int i = ij_cam % cam_nx;
+        const int j = ij_cam / cam_nx;
 
         const bool completed = false;
         Int photons_shot = Atomic_reduce_const;
@@ -484,12 +487,14 @@ void ray_tracer_kernel_bw(
                 completed, weight, bg_idx,
                 cam_nx, cam_ny, cam_data, axis_h, axis_v, axis_z,
                 itot, jtot, ktot, kbg, bg_tau_cum, z_lev_bg, s_min, s_min_bg);
+
         Float tau;
         Float d_max = Float(0.);
         Float k_ext_null;
         bool transition = false;
         int i_n, j_n, k_n, ijk_n;
         bool m = true;
+
         while (photons_shot < photons_per_pixel)
         {
             const bool photon_generation_completed = (photons_shot == photons_per_pixel - 1);
