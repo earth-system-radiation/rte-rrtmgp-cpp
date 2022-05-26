@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <utility>
 
 #ifdef __CUDACC__
 #include "tools_gpu.h"
