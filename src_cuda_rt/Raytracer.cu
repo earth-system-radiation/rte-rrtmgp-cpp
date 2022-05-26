@@ -104,8 +104,8 @@ namespace
     __global__
     void count_to_flux_2d(
             const int ncol_x, const int ncol_y, const Float photons_per_col, const Float toa_src,
-            const Float* __restrict__ count_1, const Float* __restrict__ count_2, const Float* __restrict__ count_3, const Float* __restrict__ count_4,
-            Float* __restrict__ flux_1, Float* __restrict__ flux_2, Float* __restrict__ flux_3, Float* __restrict__ flux_4)
+            const Float* __restrict__ count_1, const Float* __restrict__ count_2, const Float* __restrict__ count_3, const Float* __restrict__ count_4, const Float* __restrict__ count_5,
+            Float* __restrict__ flux_1, Float* __restrict__ flux_2, Float* __restrict__ flux_3, Float* __restrict__ flux_4, Float* __restrict__ flux_5)
     {
         const int icol_x = blockIdx.x*blockDim.x + threadIdx.x;
         const int icol_y = blockIdx.y*blockDim.y + threadIdx.y;
@@ -118,6 +118,7 @@ namespace
             flux_2[idx] = count_2[idx] * flux_per_ray;
             flux_3[idx] = count_3[idx] * flux_per_ray;
             flux_4[idx] = count_4[idx] * flux_per_ray;
+            flux_5[idx] = count_5[idx] * flux_per_ray;
         }
     }
 
@@ -163,15 +164,16 @@ void Raytracer::trace_rays(
         const Int photons_to_shoot,
         const int ncol_x, const int ncol_y, const int nlay,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
-        const Array_gpu<Float,3>& tau_gas,
-        const Array_gpu<Float,3>& ssa_gas,
-        const Array_gpu<Float,3>& asy_gas,
-        const Array_gpu<Float,3>& tau_cloud,
+        const Array_gpu<Float,2>& tau_gas,
+        const Array_gpu<Float,2>& ssa_gas,
+        const Array_gpu<Float,2>& asy_gas,
+        const Array_gpu<Float,2>& tau_cloud,
         const Array_gpu<Float,2>& surface_albedo,
         const Float zenith_angle,
         const Float azimuth_angle,
         const Float tod_inc_direct,
         const Float tod_inc_diffuse,
+        Array_gpu<Float,2>& flux_tod_dn,
         Array_gpu<Float,2>& flux_tod_up,
         Array_gpu<Float,2>& flux_sfc_dir,
         Array_gpu<Float,2>& flux_sfc_dif,
@@ -223,7 +225,7 @@ void Raytracer::trace_rays(
             k_ext.ptr(), k_null_grid.ptr());
 
     // initialise output arrays and set to 0
-    Array_gpu<Float,2> toa_down_count({ncol_x, ncol_y});
+    Array_gpu<Float,2> tod_dn_count({ncol_x, ncol_y});
     Array_gpu<Float,2> tod_up_count({ncol_x, ncol_y});
     Array_gpu<Float,2> surface_down_direct_count({ncol_x, ncol_y});
     Array_gpu<Float,2> surface_down_diffuse_count({ncol_x, ncol_y});
@@ -231,7 +233,7 @@ void Raytracer::trace_rays(
     Array_gpu<Float,3> atmos_direct_count({ncol_x, ncol_y, nlay});
     Array_gpu<Float,3> atmos_diffuse_count({ncol_x, ncol_y, nlay});
 
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, toa_down_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, tod_dn_count.ptr());
     rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, tod_up_count.ptr());
     rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, surface_down_direct_count.ptr());
     rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, surface_down_diffuse_count.ptr());
@@ -254,7 +256,7 @@ void Raytracer::trace_rays(
 
     ray_tracer_kernel<<<grid, block>>>(
             photons_per_thread, k_null_grid.ptr(),
-            toa_down_count.ptr(),
+            tod_dn_count.ptr(),
             tod_up_count.ptr(),
             surface_down_direct_count.ptr(),
             surface_down_diffuse_count.ptr(),
@@ -278,10 +280,12 @@ void Raytracer::trace_rays(
     count_to_flux_2d<<<grid_2d, block_2d>>>(
             ncol_x, ncol_y, photons_per_col,
             toa_src,
+            tod_dn_count.ptr(),
             tod_up_count.ptr(),
             surface_down_direct_count.ptr(),
             surface_down_diffuse_count.ptr(),
             surface_up_count.ptr(),
+            flux_tod_dn.ptr(),
             flux_tod_up.ptr(),
             flux_sfc_dir.ptr(),
             flux_sfc_dif.ptr(),

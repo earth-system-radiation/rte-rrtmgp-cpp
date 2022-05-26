@@ -175,6 +175,7 @@ Fluxes_broadband_rt::Fluxes_broadband_rt(const int ncol_x, const int ncol_y, con
     flux_dn     ({ncol_x*ncol_y, nlev}),
     flux_dn_dir ({ncol_x*ncol_y, nlev}),
     flux_net    ({ncol_x*ncol_y, nlev}),
+    flux_tod_dn ({ncol_x, ncol_y}),
     flux_tod_up ({ncol_x, ncol_y}),
     flux_sfc_dir({ncol_x, ncol_y}),
     flux_sfc_dif({ncol_x, ncol_y}),

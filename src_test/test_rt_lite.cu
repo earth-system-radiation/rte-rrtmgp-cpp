@@ -173,8 +173,41 @@ void solve_radiation(int argc, char** argv)
     const int nx = input_nc.get_dimension_size("x");
     const int ny = input_nc.get_dimension_size("y");
     const int nz = input_nc.get_dimension_size("z");
+    const int ncol = nx*ny;
 
+    // Read the x,y,z dimensions if raytracing is enabled
+    const Array<Float,1> grid_x(input_nc.get_variable<Float>("x", {nx}), {nx});
+    const Array<Float,1> grid_y(input_nc.get_variable<Float>("x", {ny}), {ny});
+    const Array<Float,1> grid_z(input_nc.get_variable<Float>("x", {nz}), {nz});
+    
+    const Float dx = grid_x({2}) - grid_x({1});
+    const Float dy = grid_y({2}) - grid_y({1});
+    const Float dz = grid_z({2}) - grid_z({1});
 
+    // Read the atmospheric fields.
+    const Array<Float,2> tau_gas(input_nc.get_variable<Float>("tau_gas", {nz, ny, nx}), {ncol, nz});
+    const Array<Float,2> tau_cld(input_nc.get_variable<Float>("tau_cld", {nz, ny, nx}), {ncol, nz});
+    const Array<Float,2> ssa(input_nc.get_variable<Float>("ssa", {nz, ny, nx}), {ncol, nz});
+    const Array<Float,2> asy(input_nc.get_variable<Float>("asy", {nz, ny, nx}), {ncol, nz});
+
+    // all below should be from netcdf in the end:
+    const Array<Float,2> sfc_alb({1,ncol});
+    sfc_alb.fill(Float(0.2));;
+    const Float zenith_angle = .5;
+    const Float azimuth_angle = .5;
+    const float tod_dir = 100;
+    const float tod_dif = 10;
+   
+
+    // output arrays
+    Array_gpu<Float,2> flux_tod_dn({nx, ny});
+    Array_gpu<Float,2> flux_tod_up({nx, ny});
+    Array_gpu<Float,2> flux_sfc_dir({nx, ny});
+    Array_gpu<Float,2> flux_sfc_dif({nx, ny});
+    Array_gpu<Float,2> flux_sfc_up({nx, ny});
+    Array_gpu<Float,3> flux_abs_dir({nx, ny, nz});
+    Array_gpu<Float,3> flux_abs_dif({nx, ny, nz});
+    
     ////// CREATE THE OUTPUT FILE //////
     // Create the general dimensions and arrays.
     Status::print_message("Preparing NetCDF output file.");
@@ -184,7 +217,13 @@ void solve_radiation(int argc, char** argv)
     output_nc.add_dimension("y", ny);
     output_nc.add_dimension("z", nz);
 
-
+    //// GPU arrays
+    Array_gpu<Float,2> tau_gas_g(tau_gas);
+    Array_gpu<Float,2> tau_cld_g(tau_cld);
+    Array_gpu<Float,2> ssa_g(ssa);
+    Array_gpu<Float,2> asy_g(asy);
+    Array_gpu<Float,2> sfc_alb_g(sfc_alb);
+    
     ////// RUN THE SHORTWAVE SOLVER //////
     if (switch_shortwave)
     {
@@ -205,24 +244,22 @@ void solve_radiation(int argc, char** argv)
             cudaEventRecord(start, 0);
             // do something.
 
-            /*
             raytracer.trace_rays(
                     ray_count,
                     nx, ny, nz,
-                    dx_grid, dy_grid, dz_grid,
-                    dynamic_cast<Optical_props_2str_rt&>(*optical_props),
-                    dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props),
-                    sfc_alb_dir, zenith_angle, 
+                    dx, dy, dz,
+                    tau_gas_g, ssa_g, asy_g, tau_cld_g,
+                    sfc_alb_g, zenith_angle, 
                     azimuth_angle,
-                    tod_dir_diff({1}),
-                    tod_dir_diff({2}),
-                    (*fluxes).get_flux_tod_up(),
-                    (*fluxes).get_flux_sfc_dir(),
-                    (*fluxes).get_flux_sfc_dif(),
-                    (*fluxes).get_flux_sfc_up(),
-                    (*fluxes).get_flux_abs_dir(),
-                    (*fluxes).get_flux_abs_dif());
-                    */
+                    tod_dir,
+                    tod_dif,
+                    flux_tod_dn,
+                    flux_tod_up,
+                    flux_sfc_dir,
+                    flux_sfc_dif,
+                    flux_sfc_up,
+                    flux_abs_dir,
+                    flux_abs_dif);
 
             cudaEventRecord(stop, 0);
             cudaEventSynchronize(stop);

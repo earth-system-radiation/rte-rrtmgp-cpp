@@ -99,6 +99,7 @@ class Fluxes_broadband_rt : public Fluxes_rt
         Array_gpu<Float,2> flux_dn;
         Array_gpu<Float,2> flux_dn_dir;
         Array_gpu<Float,2> flux_net;
+        Array_gpu<Float,2> flux_tod_dn;
         Array_gpu<Float,2> flux_tod_up;
         Array_gpu<Float,2> flux_sfc_dir;
         Array_gpu<Float,2> flux_sfc_dif;
