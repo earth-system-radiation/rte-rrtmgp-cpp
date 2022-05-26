@@ -706,7 +706,8 @@ void Radiation_solver_shortwave::solve_gpu(
 
             if (switch_raytracing)
             {
-                if (!switch_cloud_optics) rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
+                if (!switch_cloud_optics)
+                    rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
 
                 Float zenith_angle = std::acos(mu0({1}));
                 Float azimuth_angle = 3.14; // sun approximately from south
@@ -718,8 +719,10 @@ void Radiation_solver_shortwave::solve_gpu(
                         ray_count,
                         n_col_x, n_col_y, n_z,
                         dx_grid, dy_grid, dz_grid,
-                        dynamic_cast<Optical_props_2str_rt&>(*optical_props),
-                        dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props),
+                        dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
+                        dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
+                        dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_g(),
+                        dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
                         sfc_alb_dir, zenith_angle, 
                         azimuth_angle,
                         tod_dir_diff({1}),
