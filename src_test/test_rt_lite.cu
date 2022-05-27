@@ -34,27 +34,18 @@
 
 
 bool parse_command_line_options(
-        std::map<std::string, std::pair<bool, std::string>>& command_line_options,
         Int& ray_count_exponent,
         int argc, char** argv)
 {
-    for (int i=1; i<argc; ++i)
+    if (argc > 2)
     {
-        std::string argument(argv[i]);
+        std::string error = "too many arguments, give ray count exponent or nothing";
+        throw std::runtime_error(error);
+    }
+    else if (argc == 2 )
+    {
+        std::string argument(argv[1]);
         boost::trim(argument);
-
-        if (argument == "-h" || argument == "--help")
-        {
-            Status::print_message("Possible usage:");
-            for (const auto& clo : command_line_options)
-            {
-                std::ostringstream ss;
-                ss << std::left << std::setw(30) << ("--" + clo.first);
-                ss << clo.second.second << std::endl;
-                Status::print_message(ss);
-            }
-            return true;
-        }
 
         //check if option is integer n (2**n rays)
         if (std::isdigit(argument[0]))
@@ -63,107 +54,45 @@ bool parse_command_line_options(
             {
                 for (int i=1; i<argument.size(); ++i)
                 {
-                    if (!std::isdigit(argument[i]))
+                    if (!std::isdigit(argument[1]))
                     {
-                        std::string error = argument + " is an illegal command line option.";
+                        std::string error = "illegal commnd line optin - give an integer!";
                         throw std::runtime_error(error);
                     }
-
                 }
             }
-            ray_count_exponent = Int(std::stoi(argv[i]));
+            ray_count_exponent = Int(std::stoi(argv[1]));
         }
         else
         {
-            // Check if option starts with --
-            if (argument[0] != '-' || argument[1] != '-')
-            {
-                std::string error = argument + " is an illegal command line option.";
-                throw std::runtime_error(error);
-            }
-            else
-                argument.erase(0, 2);
+            std::string error = "illegal commnd line optin - give an integer!";
+            throw std::runtime_error(error);
 
-            // Check if option has prefix no-
-            bool enable = true;
-            if (argument[0] == 'n' && argument[1] == 'o' && argument[2] == '-')
-            {
-                enable = false;
-                argument.erase(0, 3);
-            }
-
-            if (command_line_options.find(argument) == command_line_options.end())
-            {
-                std::string error = argument + " is an illegal command line option.";
-                throw std::runtime_error(error);
-            }
-            else
-                command_line_options.at(argument).first = enable;
         }
     }
 
     return false;
 }
 
-
-void print_command_line_options(
-        const std::map<std::string, std::pair<bool, std::string>>& command_line_options)
-{
-    Status::print_message("Solver settings:");
-    for (const auto& option : command_line_options)
-    {
-        std::ostringstream ss;
-        ss << std::left << std::setw(20) << (option.first);
-        ss << " = " << std::boolalpha << option.second.first << std::endl;
-        Status::print_message(ss);
-    }
-}
-
-
 void solve_radiation(int argc, char** argv)
 {
     Status::print_message("###### Starting RTE+RRTMGP solver ######");
 
-    ////// FLOW CONTROL SWITCHES //////
-    // Parse the command line options.
-    std::map<std::string, std::pair<bool, std::string>> command_line_options {
-        {"shortwave"        , { true,  "Enable computation of shortwave radiation."}},
-        {"longwave"         , { true,  "Enable computation of longwave radiation." }},
-        {"fluxes"           , { true,  "Enable computation of fluxes."             }},
-        {"raytracing"       , { false, "Use raytracing for flux computation."      }},
-        {"cloud-optics"     , { false, "Enable cloud optics."                      }},
-        {"output-optical"   , { false, "Enable output of optical properties."      }},
-        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }} };
-
     Int ray_count_exponent = 22;
 
-    if (parse_command_line_options(command_line_options, ray_count_exponent, argc, argv))
+    if (parse_command_line_options(ray_count_exponent, argc, argv))
         return;
     
-
-    const bool switch_shortwave         = command_line_options.at("shortwave"        ).first;
-    const bool switch_longwave          = command_line_options.at("longwave"         ).first;
-    const bool switch_fluxes            = command_line_options.at("fluxes"           ).first;
-    const bool switch_raytracing        = command_line_options.at("raytracing"       ).first;
-    const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
-    const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
-    const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
-    
-    // Print the options to the screen.
-    print_command_line_options(command_line_options);
-
     Int ray_count;
-    if (switch_raytracing)
+    ray_count = pow(2,ray_count_exponent);
+    
+    if (ray_count < block_size*grid_size)
     {
-        ray_count = pow(2,ray_count_exponent);
-        if (ray_count < block_size*grid_size)
-        {
-            std::string error = "Cannot shoot " + std::to_string(ray_count) + " rays with current block/grid sizes.";
-            throw std::runtime_error(error);
-        }
-        else
-            Status::print_message("Using "+ std::to_string(Int(pow(2, ray_count_exponent))) + " rays");
+        std::string error = "Cannot shoot " + std::to_string(ray_count) + " rays with current block/grid sizes.";
+        throw std::runtime_error(error);
     }
+    else
+        Status::print_message("Using "+ std::to_string(Int(pow(2, ray_count_exponent))) + " rays");
 
 
     ////// READ THE ATMOSPHERIC DATA //////
