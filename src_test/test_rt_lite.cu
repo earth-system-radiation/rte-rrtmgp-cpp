@@ -122,11 +122,11 @@ void solve_radiation(int argc, char** argv)
 
     // all below should be from netcdf in the end:
     Array<Float,2> sfc_alb({1,ncol});
-    sfc_alb.fill(Float(0.2));;
-    const Float zenith_angle = .5;
-    const Float azimuth_angle = .5;
-    const float tod_dir = 100;
-    const float tod_dif = 10;
+    sfc_alb.fill(input_nc.get_variable<Float>("albedo"));
+    const Float zenith_angle = input_nc.get_variable<Float>("sza");
+    const Float azimuth_angle = input_nc.get_variable<Float>("azi");
+    const Float tod_dir = input_nc.get_variable<Float>("tod_direct");
+    const Float tod_dif = input_nc.get_variable<Float>("tod_diffuse");
    
 
     // output arrays

@@ -2,6 +2,11 @@ import numpy as np
 import netCDF4 as nc
 import matplotlib.pyplot as pl
 ### input ###
+azimuth_angle = 235.
+zenith_angle = 45
+albedo = 0.2
+tod_flux_direct = 95
+tod_flux_diffuse = 5
 
 # optical properties
 tau_clear = 0.1
@@ -63,3 +68,17 @@ nc_tau_gas[:] = tau_gas
 nc_tau_cld[:] = tau_cld
 nc_ssa[:] = ssa
 nc_asy[:] = asy
+
+nc_azi = ncf.createVariable("azi", "f8")
+nc_sza = ncf.createVariable("sza", "f8")
+nc_alb = ncf.createVariable("albedo", "f8")
+nc_dir = ncf.createVariable("tod_direct", "f8")
+nc_dif = ncf.createVariable("tod_diffuse", "f8")
+
+nc_azi = np.deg2rad(azimuth_angle)
+nc_sza = np.deg2rad(zenith_angle)
+nc_alb = albedo
+nc_dir = tod_flux_direct
+nc_dif = tod_flux_diffuse
+
+ncf.close()
