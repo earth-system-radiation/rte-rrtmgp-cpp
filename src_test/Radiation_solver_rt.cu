@@ -727,6 +727,7 @@ void Radiation_solver_shortwave::solve_gpu(
                         azimuth_angle,
                         tod_dir_diff({1}),
                         tod_dir_diff({2}),
+                        (*fluxes).get_flux_tod_dn(),
                         (*fluxes).get_flux_tod_up(),
                         (*fluxes).get_flux_sfc_dir(),
                         (*fluxes).get_flux_sfc_dif(),

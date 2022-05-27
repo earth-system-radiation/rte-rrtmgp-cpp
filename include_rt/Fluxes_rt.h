@@ -81,6 +81,7 @@ class Fluxes_broadband_rt : public Fluxes_rt
         Array_gpu<Float,2>& get_flux_dn_dir() { return flux_dn_dir; }
         Array_gpu<Float,2>& get_flux_net   () { return flux_net;    }
 
+        Array_gpu<Float,2>& get_flux_tod_dn    () { return flux_tod_dn; }
         Array_gpu<Float,2>& get_flux_tod_up    () { return flux_tod_up; }
         Array_gpu<Float,2>& get_flux_sfc_dir   () { return flux_sfc_dir;}
         Array_gpu<Float,2>& get_flux_sfc_dif   () { return flux_sfc_dif;}

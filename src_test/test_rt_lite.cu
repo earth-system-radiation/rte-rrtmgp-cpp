@@ -25,6 +25,7 @@
 #include "Status.h"
 #include "Netcdf_interface.h"
 #include "Array.h"
+#include "Raytracer.h"
 #include "raytracer_kernels.h"
 #include "Radiation_solver_rt.h"
 #include "Gas_concs.h"
@@ -191,7 +192,7 @@ void solve_radiation(int argc, char** argv)
     const Array<Float,2> asy(input_nc.get_variable<Float>("asy", {nz, ny, nx}), {ncol, nz});
 
     // all below should be from netcdf in the end:
-    const Array<Float,2> sfc_alb({1,ncol});
+    Array<Float,2> sfc_alb({1,ncol});
     sfc_alb.fill(Float(0.2));;
     const Float zenith_angle = .5;
     const Float azimuth_angle = .5;
@@ -223,68 +224,89 @@ void solve_radiation(int argc, char** argv)
     Array_gpu<Float,2> ssa_g(ssa);
     Array_gpu<Float,2> asy_g(asy);
     Array_gpu<Float,2> sfc_alb_g(sfc_alb);
-    
-    ////// RUN THE SHORTWAVE SOLVER //////
-    if (switch_shortwave)
+   
+    //raytracer object
+    Raytracer raytracer; 
+
+    // Solve the radiation.
+    Status::print_message("Starting the raytracer!!");
+
+    auto run_solver = [&]()
     {
-        // Initialize the solver.
-        Status::print_message("Initializing the shortwave solver.");
+        cudaDeviceSynchronize();
+        cudaEvent_t start;
+        cudaEvent_t stop;
+        cudaEventCreate(&start);
+        cudaEventCreate(&stop);
 
-        // Solve the radiation.
-        Status::print_message("Solving the shortwave radiation.");
+        cudaEventRecord(start, 0);
+        // do something.
 
-        auto run_solver = [&]()
-        {
-            cudaDeviceSynchronize();
-            cudaEvent_t start;
-            cudaEvent_t stop;
-            cudaEventCreate(&start);
-            cudaEventCreate(&stop);
+        raytracer.trace_rays(
+                ray_count,
+                nx, ny, nz,
+                dx, dy, dz,
+                tau_gas_g, ssa_g, asy_g, tau_cld_g,
+                sfc_alb_g, zenith_angle, 
+                azimuth_angle,
+                tod_dir,
+                tod_dif,
+                flux_tod_dn,
+                flux_tod_up,
+                flux_sfc_dir,
+                flux_sfc_dif,
+                flux_sfc_up,
+                flux_abs_dir,
+                flux_abs_dif);
 
-            cudaEventRecord(start, 0);
-            // do something.
+        cudaEventRecord(stop, 0);
+        cudaEventSynchronize(stop);
+        float duration = 0.f;
+        cudaEventElapsedTime(&duration, start, stop);
 
-            raytracer.trace_rays(
-                    ray_count,
-                    nx, ny, nz,
-                    dx, dy, dz,
-                    tau_gas_g, ssa_g, asy_g, tau_cld_g,
-                    sfc_alb_g, zenith_angle, 
-                    azimuth_angle,
-                    tod_dir,
-                    tod_dif,
-                    flux_tod_dn,
-                    flux_tod_up,
-                    flux_sfc_dir,
-                    flux_sfc_dif,
-                    flux_sfc_up,
-                    flux_abs_dir,
-                    flux_abs_dif);
+        cudaEventDestroy(start);
+        cudaEventDestroy(stop);
 
-            cudaEventRecord(stop, 0);
-            cudaEventSynchronize(stop);
-            float duration = 0.f;
-            cudaEventElapsedTime(&duration, start, stop);
+        Status::print_message("Duration raytracer: " + std::to_string(duration) + " (ms)");
+    };
 
-            cudaEventDestroy(start);
-            cudaEventDestroy(stop);
+    // Tuning step;
+    run_solver();
 
-            Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
-        };
+    // Profiling step;
+    cudaProfilerStart();
+    run_solver();
+    cudaProfilerStop();
 
-        // Tuning step;
-        run_solver();
+    // output arrays to cpu
+    Array<Float,2> flux_tod_dn_c(flux_tod_dn);    
+    Array<Float,2> flux_tod_up_c(flux_tod_up);
+    Array<Float,2> flux_sfc_dir_c(flux_sfc_dir);
+    Array<Float,2> flux_sfc_dif_c(flux_sfc_dif);
+    Array<Float,2> flux_sfc_up_c(flux_sfc_up);
+    Array<Float,3> flux_abs_dir_c(flux_abs_dir);
+    Array<Float,3> flux_abs_dif_c(flux_abs_dif);
 
-        // Profiling step;
-        cudaProfilerStart();
-        run_solver();
-        cudaProfilerStop();
+    // Store the output.
+    Status::print_message("Storing the raytracer output.");
+            
+    auto nc_flux_tod_dn     = output_nc.add_variable<Float>("flux_tod_dn"  , {"y", "x"});
+    auto nc_flux_tod_up     = output_nc.add_variable<Float>("flux_tod_up"  , {"y", "x"});
+    auto nc_flux_sfc_dir    = output_nc.add_variable<Float>("flux_sfc_dir" , {"y", "x"});
+    auto nc_flux_sfc_dif    = output_nc.add_variable<Float>("flux_sfc_dif" , {"y", "x"});
+    auto nc_flux_sfc_up     = output_nc.add_variable<Float>("flux_sfc_up"  , {"y", "x"});
+    auto nc_flux_abs_dir    = output_nc.add_variable<Float>("abs_dir"      , {"z", "y", "x"});
+    auto nc_flux_abs_dif    = output_nc.add_variable<Float>("bas_dif"      , {"z", "y", "x"});
 
-        // Store the output.
-        Status::print_message("Storing the shortwave output.");
-    }
+    nc_flux_tod_dn   .insert(flux_tod_dn_c  .v(), {0, 0});
+    nc_flux_tod_up   .insert(flux_tod_up_c  .v(), {0, 0});
+    nc_flux_sfc_dir  .insert(flux_sfc_dir_c .v(), {0, 0});
+    nc_flux_sfc_dif  .insert(flux_sfc_dif_c .v(), {0, 0});
+    nc_flux_sfc_up   .insert(flux_sfc_up_c  .v(), {0, 0});
+    nc_flux_abs_dir  .insert(flux_abs_dir_c .v(), {0, 0, 0});
+    nc_flux_abs_dif  .insert(flux_abs_dif_c .v(), {0, 0, 0});
 
-    Status::print_message("###### Finished RTE+RRTMGP solver ######");
+    Status::print_message("###### Finished RAYTRACING #####");
 }
 
 
