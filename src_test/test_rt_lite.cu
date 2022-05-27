@@ -98,7 +98,7 @@ void solve_radiation(int argc, char** argv)
     ////// READ THE ATMOSPHERIC DATA //////
     Status::print_message("Reading atmospheric input data from NetCDF.");
 
-    Netcdf_file input_nc("rte_rrtmgp_input.nc", Netcdf_mode::Read);
+    Netcdf_file input_nc("rt_input.nc", Netcdf_mode::Read);
 
     const int nx = input_nc.get_dimension_size("x");
     const int ny = input_nc.get_dimension_size("y");
@@ -142,7 +142,7 @@ void solve_radiation(int argc, char** argv)
     // Create the general dimensions and arrays.
     Status::print_message("Preparing NetCDF output file.");
 
-    Netcdf_file output_nc("rte_rrtmgp_output.nc", Netcdf_mode::Create);
+    Netcdf_file output_nc("rt_output.nc", Netcdf_mode::Create);
     output_nc.add_dimension("x", nx);
     output_nc.add_dimension("y", ny);
     output_nc.add_dimension("z", nz);
