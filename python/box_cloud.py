@@ -1,6 +1,7 @@
 import numpy as np
 import netCDF4 as nc
 import matplotlib.pyplot as pl
+
 ### input ###
 azimuth_angle = 235.
 zenith_angle = 45
@@ -10,10 +11,10 @@ tod_flux_diffuse = 5
 
 # optical properties
 tau_clear = 0.1
-tau_cloud = 10
+tau_cloud = 10.
 ssa_clear = 0.5
 ssa_cloud = 0.9
-asy_param  = .86
+asy_param = .86
 
 #grid settings
 nx = 256
@@ -37,6 +38,7 @@ n_cloud_y = 2
 cld_mask = np.zeros((nz,ny,nx))
 void_x = int((nx - (cloud_size_x * n_cloud_x)) / n_cloud_x)
 void_y = int((ny - (cloud_size_y * n_cloud_y)) / n_cloud_y)
+
 for j in range(n_cloud_y):
     for i in range(n_cloud_x):
         i0 = i*(cloud_size_x+void_x)
@@ -59,10 +61,10 @@ tau_cld = cld_mask * (tau_cloud / (cld_top_idx - cld_bot_idx))
 ssa = (tau_cld*ssa_cloud + tau_gas * ssa_clear)/(tau_cld + tau_gas)
 asy = cld_mask * asy_param
 
-nc_tau_gas = ncf.createVariable("tau_gas", "f8", ("z","y","x"))
-nc_tau_cld = ncf.createVariable("tau_cld", "f8", ("z","y","x"))
-nc_ssa = ncf.createVariable("ssa", "f8", ("z","y","x"))
-nc_asy = ncf.createVariable("asy", "f8", ("z","y","x"))
+nc_tau_gas = ncf.createVariable("tau_gas", "f8", ("z", "y", "x"))
+nc_tau_cld = ncf.createVariable("tau_cld", "f8", ("z", "y", "x"))
+nc_ssa = ncf.createVariable("ssa", "f8", ("z", "y", "x"))
+nc_asy = ncf.createVariable("asy", "f8", ("z", "y", "x"))
 
 nc_tau_gas[:] = tau_gas
 nc_tau_cld[:] = tau_cld
@@ -75,10 +77,10 @@ nc_alb = ncf.createVariable("albedo", "f8")
 nc_dir = ncf.createVariable("tod_direct", "f8")
 nc_dif = ncf.createVariable("tod_diffuse", "f8")
 
-nc_azi = np.deg2rad(azimuth_angle)
-nc_sza = np.deg2rad(zenith_angle)
-nc_alb = albedo
-nc_dir = tod_flux_direct
-nc_dif = tod_flux_diffuse
+nc_azi[:] = np.deg2rad(azimuth_angle)
+nc_sza[:] = np.deg2rad(zenith_angle)
+nc_alb[:] = albedo
+nc_dir[:] = tod_flux_direct
+nc_dif[:] = tod_flux_diffuse
 
 ncf.close()
