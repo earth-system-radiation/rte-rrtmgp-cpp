@@ -27,10 +27,7 @@
 #include "Array.h"
 #include "Raytracer.h"
 #include "raytracer_kernels.h"
-#include "Radiation_solver_rt.h"
-#include "Gas_concs.h"
 #include "Types.h"
-#include "Mem_pool_gpu.h"
 
 
 bool parse_command_line_options(
@@ -84,7 +81,7 @@ void solve_radiation(int argc, char** argv)
         return;
     
     Int ray_count;
-    ray_count = pow(2, ray_count_exponent);
+    ray_count = std::pow(2, ray_count_exponent);
     
     if (ray_count < block_size*grid_size)
     {
