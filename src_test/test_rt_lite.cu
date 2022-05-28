@@ -39,7 +39,7 @@ bool parse_command_line_options(
 {
     if (argc > 2)
     {
-        std::string error = "too many arguments, give ray count exponent or nothing";
+        std::string error = "Too many arguments, give ray count exponent or nothing";
         throw std::runtime_error(error);
     }
     else if (argc == 2 )
@@ -56,7 +56,7 @@ bool parse_command_line_options(
                 {
                     if (!std::isdigit(argument[1]))
                     {
-                        std::string error = "illegal commnd line optin - give an integer!";
+                        std::string error = "Illegal command line option - give an integer!";
                         throw std::runtime_error(error);
                     }
                 }
@@ -65,7 +65,7 @@ bool parse_command_line_options(
         }
         else
         {
-            std::string error = "illegal commnd line optin - give an integer!";
+            std::string error = "Illegal command line option - give an integer!";
             throw std::runtime_error(error);
 
         }
@@ -84,7 +84,7 @@ void solve_radiation(int argc, char** argv)
         return;
     
     Int ray_count;
-    ray_count = pow(2,ray_count_exponent);
+    ray_count = pow(2, ray_count_exponent);
     
     if (ray_count < block_size*grid_size)
     {
@@ -152,7 +152,6 @@ void solve_radiation(int argc, char** argv)
     Array_gpu<Float,2> ssa_g(ssa);
     Array_gpu<Float,2> asy_g(asy);
     Array_gpu<Float,2> sfc_alb_g(sfc_alb);
-    //raytracer object
     Raytracer raytracer; 
 
     // Solve the radiation.
@@ -216,13 +215,13 @@ void solve_radiation(int argc, char** argv)
     // Store the output.
     Status::print_message("Storing the raytracer output.");
             
-    auto nc_flux_tod_dn     = output_nc.add_variable<Float>("flux_tod_dn"  , {"y", "x"});
-    auto nc_flux_tod_up     = output_nc.add_variable<Float>("flux_tod_up"  , {"y", "x"});
-    auto nc_flux_sfc_dir    = output_nc.add_variable<Float>("flux_sfc_dir" , {"y", "x"});
-    auto nc_flux_sfc_dif    = output_nc.add_variable<Float>("flux_sfc_dif" , {"y", "x"});
-    auto nc_flux_sfc_up     = output_nc.add_variable<Float>("flux_sfc_up"  , {"y", "x"});
-    auto nc_flux_abs_dir    = output_nc.add_variable<Float>("abs_dir"      , {"z", "y", "x"});
-    auto nc_flux_abs_dif    = output_nc.add_variable<Float>("abs_dif"      , {"z", "y", "x"});
+    auto nc_flux_tod_dn     = output_nc.add_variable<Float>("flux_tod_dn" , {"y", "x"});
+    auto nc_flux_tod_up     = output_nc.add_variable<Float>("flux_tod_up" , {"y", "x"});
+    auto nc_flux_sfc_dir    = output_nc.add_variable<Float>("flux_sfc_dir", {"y", "x"});
+    auto nc_flux_sfc_dif    = output_nc.add_variable<Float>("flux_sfc_dif", {"y", "x"});
+    auto nc_flux_sfc_up     = output_nc.add_variable<Float>("flux_sfc_up" , {"y", "x"});
+    auto nc_flux_abs_dir    = output_nc.add_variable<Float>("abs_dir"     , {"z", "y", "x"});
+    auto nc_flux_abs_dif    = output_nc.add_variable<Float>("abs_dif"     , {"z", "y", "x"});
 
     nc_flux_tod_dn   .insert(flux_tod_dn_c  .v(), {0, 0});
     nc_flux_tod_up   .insert(flux_tod_up_c  .v(), {0, 0});
