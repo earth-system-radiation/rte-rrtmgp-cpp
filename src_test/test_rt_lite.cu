@@ -89,7 +89,7 @@ void solve_radiation(int argc, char** argv)
         throw std::runtime_error(error);
     }
     else
-        Status::print_message("Using "+ std::to_string(Int(pow(2, ray_count_exponent))) + " rays");
+        Status::print_message("Using "+ std::to_string(ray_count) + " rays");
 
 
     ////// READ THE ATMOSPHERIC DATA //////
