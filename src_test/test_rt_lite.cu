@@ -115,7 +115,7 @@ void solve_radiation(int argc, char** argv)
     const Float dz = grid_z({2}) - grid_z({1});
 
     // Read the atmospheric fields.
-    const Array<Float,2> tau_gas(input_nc.get_variable<Float>("tau_gas", {nz, ny, nx}), {ncol, nz});
+    const Array<Float,2> tau_tot(input_nc.get_variable<Float>("tau_tot", {nz, ny, nx}), {ncol, nz});
     const Array<Float,2> tau_cld(input_nc.get_variable<Float>("tau_cld", {nz, ny, nx}), {ncol, nz});
     const Array<Float,2> ssa(input_nc.get_variable<Float>("ssa", {nz, ny, nx}), {ncol, nz});
     const Array<Float,2> asy(input_nc.get_variable<Float>("asy", {nz, ny, nx}), {ncol, nz});
@@ -127,8 +127,7 @@ void solve_radiation(int argc, char** argv)
     const Float azimuth_angle = input_nc.get_variable<Float>("azi");
     const Float tod_dir = input_nc.get_variable<Float>("tod_direct");
     const Float tod_dif = input_nc.get_variable<Float>("tod_diffuse");
-   
-
+    
     // output arrays
     Array_gpu<Float,2> flux_tod_dn({nx, ny});
     Array_gpu<Float,2> flux_tod_up({nx, ny});
@@ -148,12 +147,11 @@ void solve_radiation(int argc, char** argv)
     output_nc.add_dimension("z", nz);
 
     //// GPU arrays
-    Array_gpu<Float,2> tau_gas_g(tau_gas);
+    Array_gpu<Float,2> tau_tot_g(tau_tot);
     Array_gpu<Float,2> tau_cld_g(tau_cld);
     Array_gpu<Float,2> ssa_g(ssa);
     Array_gpu<Float,2> asy_g(asy);
     Array_gpu<Float,2> sfc_alb_g(sfc_alb);
-   
     //raytracer object
     Raytracer raytracer; 
 
@@ -175,7 +173,7 @@ void solve_radiation(int argc, char** argv)
                 ray_count,
                 nx, ny, nz,
                 dx, dy, dz,
-                tau_gas_g, ssa_g, asy_g, tau_cld_g,
+                tau_tot_g, ssa_g, asy_g, tau_cld_g,
                 sfc_alb_g, zenith_angle, 
                 azimuth_angle,
                 tod_dir,
@@ -215,7 +213,6 @@ void solve_radiation(int argc, char** argv)
     Array<Float,2> flux_sfc_up_c(flux_sfc_up);
     Array<Float,3> flux_abs_dir_c(flux_abs_dir);
     Array<Float,3> flux_abs_dif_c(flux_abs_dif);
-
     // Store the output.
     Status::print_message("Storing the raytracer output.");
             
@@ -225,7 +222,7 @@ void solve_radiation(int argc, char** argv)
     auto nc_flux_sfc_dif    = output_nc.add_variable<Float>("flux_sfc_dif" , {"y", "x"});
     auto nc_flux_sfc_up     = output_nc.add_variable<Float>("flux_sfc_up"  , {"y", "x"});
     auto nc_flux_abs_dir    = output_nc.add_variable<Float>("abs_dir"      , {"z", "y", "x"});
-    auto nc_flux_abs_dif    = output_nc.add_variable<Float>("bas_dif"      , {"z", "y", "x"});
+    auto nc_flux_abs_dif    = output_nc.add_variable<Float>("abs_dif"      , {"z", "y", "x"});
 
     nc_flux_tod_dn   .insert(flux_tod_dn_c  .v(), {0, 0});
     nc_flux_tod_up   .insert(flux_tod_up_c  .v(), {0, 0});

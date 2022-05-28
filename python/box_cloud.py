@@ -56,17 +56,17 @@ nc_x[:] = np.arange(nx) * dx
 nc_y[:] = np.arange(ny) * dy
 nc_z[:] = np.arange(nz) * dz
 
-tau_gas = np.ones((nz, ny, nx)) * (tau_clear / 128)
 tau_cld = cld_mask * (tau_cloud / (cld_top_idx - cld_bot_idx))
-ssa = (tau_cld*ssa_cloud + tau_gas * ssa_clear)/(tau_cld + tau_gas)
+tau_tot = np.ones((nz, ny, nx)) * (tau_clear / 128) + tau_cld
+ssa = (tau_cld*ssa_cloud + tau_tot * ssa_clear)/(tau_cld + tau_tot)
 asy = cld_mask * asy_param
 
-nc_tau_gas = ncf.createVariable("tau_gas", "f8", ("z", "y", "x"))
+nc_tau_tot = ncf.createVariable("tau_tot", "f8", ("z", "y", "x"))
 nc_tau_cld = ncf.createVariable("tau_cld", "f8", ("z", "y", "x"))
 nc_ssa = ncf.createVariable("ssa", "f8", ("z", "y", "x"))
 nc_asy = ncf.createVariable("asy", "f8", ("z", "y", "x"))
 
-nc_tau_gas[:] = tau_gas
+nc_tau_tot[:] = tau_tot
 nc_tau_cld[:] = tau_cld
 nc_ssa[:] = ssa
 nc_asy[:] = asy
