@@ -145,11 +145,48 @@ namespace
     {
         return 1.f - curand_uniform(&state);
     }
+
+
+    struct Quasi_random_number_generator_2d
+    {
+        __device__ Quasi_random_number_generator_2d(
+                curandDirectionVectors32_t* vectors, unsigned int* constants, unsigned int offset)
+        {
+            curand_init(vectors[0], constants[0], offset, &state_x);
+            curand_init(vectors[1], constants[1], offset, &state_y);
+        }
+    
+        __device__ void xy(unsigned int* x, unsigned int* y, const int itot, const int jtot)
+        {
+            *x = curand(&state_x);
+            *y = curand(&state_y);
+
+            while (true)
+            {
+                const int i = *x / static_cast<unsigned int>((1ULL << 32) / 512);
+                const int j = *y / static_cast<unsigned int>((1ULL << 32) / 512);
+
+                if (i < itot && j < jtot)
+                {
+                    return;
+                }
+                else
+                {
+                    *x = curand(&state_x);
+                    *y = curand(&state_y);
+                }
+            }
+        }
+    
+        curandStateScrambledSobol32_t state_x;
+        curandStateScrambledSobol32_t state_y;
+    };
+    
     
     __device__
     inline void reset_photon(
             Photon& photon, Int& photons_shot, Float* __restrict__ const toa_down_count,
-            const unsigned int random_number_x, const unsigned int random_number_y,
+            Quasi_random_number_generator_2d& qrng,
             Random_number_generator<Float>& rng,
             const Float tod_inc_direct, const Float tod_inc_diffuse,
             const Float x_size, const Float y_size, const Float z_size,
@@ -161,8 +198,12 @@ namespace
         ++photons_shot;
         if (!generation_completed)
         {
-            const int i = random_number_x / static_cast<unsigned int>((1ULL << 32) / itot);
-            const int j = random_number_y / static_cast<unsigned int>((1ULL << 32) / jtot);
+            unsigned int random_number_x;
+            unsigned int random_number_y;
+            qrng.xy(&random_number_x, &random_number_y, itot, jtot);
+
+            const int i = random_number_x / static_cast<unsigned int>((1ULL << 32) / 512);
+            const int j = random_number_y / static_cast<unsigned int>((1ULL << 32) / 512);
     
             photon.position.x = x_size * random_number_x / (1ULL << 32);
             photon.position.y = y_size * random_number_y / (1ULL << 32);
@@ -194,23 +235,6 @@ namespace
     
         }
     }
-    
-    
-    struct Quasi_random_number_generator_2d
-    {
-        __device__ Quasi_random_number_generator_2d(
-                curandDirectionVectors32_t* vectors, unsigned int* constants, unsigned int offset)
-        {
-            curand_init(vectors[0], constants[0], offset, &state_x);
-            curand_init(vectors[1], constants[1], offset, &state_y);
-        }
-    
-        __device__ unsigned int x() { return curand(&state_x); }
-        __device__ unsigned int y() { return curand(&state_y); }
-    
-        curandStateScrambledSobol32_t state_x;
-        curandStateScrambledSobol32_t state_y;
-    };
     
     
     __device__
@@ -249,7 +273,7 @@ void ray_tracer_kernel(
     
     Photon photon;
     Random_number_generator<Float> rng(n);
-    Quasi_random_number_generator_2d qrng(qrng_vectors, qrng_constants, n * photons_to_shoot);
+    Quasi_random_number_generator_2d qrng(qrng_vectors, qrng_constants, n*photons_to_shoot);
 
     const Float s_min = max(z_size, max(y_size, x_size)) * Float_epsilon;
 
@@ -260,7 +284,7 @@ void ray_tracer_kernel(
 
     reset_photon(
             photon, photons_shot, toa_down_count,
-            qrng.x(), qrng.y(), rng,
+            qrng, rng,
             tod_inc_direct, tod_inc_diffuse,
             x_size, y_size, z_size,
             dx_grid, dy_grid, dz_grid,
@@ -348,7 +372,7 @@ void ray_tracer_kernel(
                 {
                     reset_photon(
                             photon, photons_shot, toa_down_count,
-                            qrng.x(), qrng.y(), rng,
+                            qrng, rng,
                             tod_inc_direct, tod_inc_diffuse,
                             x_size, y_size, z_size,
                             dx_grid, dy_grid, dz_grid,
@@ -371,7 +395,7 @@ void ray_tracer_kernel(
                 
                 reset_photon(
                         photon, photons_shot, toa_down_count,
-                        qrng.x(), qrng.y(), rng,
+                        qrng, rng,
                         tod_inc_direct, tod_inc_diffuse,
                         x_size, y_size, z_size,
                         dx_grid, dy_grid, dz_grid,
@@ -484,7 +508,7 @@ void ray_tracer_kernel(
                 d_max = Float(0.);
                 reset_photon(
                         photon, photons_shot, toa_down_count,
-                        qrng.x(), qrng.y(), rng,
+                        qrng, rng,
                         tod_inc_direct, tod_inc_diffuse,
                         x_size, y_size, z_size,
                         dx_grid, dy_grid, dz_grid,
