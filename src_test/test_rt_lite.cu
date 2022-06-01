@@ -79,7 +79,7 @@ void solve_radiation(int argc, char** argv)
 
     if (parse_command_line_options(photons_per_pixel, argc, argv))
         return;
-    
+
     if (Float(int(std::log2(Float(photons_per_pixel)))) != std::log2(Float(photons_per_pixel)))
     {
         std::string error = "number of photons per pixel should be a power of 2 ";
@@ -103,7 +103,7 @@ void solve_radiation(int argc, char** argv)
     const Array<Float,1> grid_x(input_nc.get_variable<Float>("x", {nx}), {nx});
     const Array<Float,1> grid_y(input_nc.get_variable<Float>("y", {ny}), {ny});
     const Array<Float,1> grid_z(input_nc.get_variable<Float>("z", {nz}), {nz});
-    
+
     const Float dx = grid_x({2}) - grid_x({1});
     const Float dy = grid_y({2}) - grid_y({1});
     const Float dz = grid_z({2}) - grid_z({1});
@@ -121,7 +121,7 @@ void solve_radiation(int argc, char** argv)
     const Float azimuth_angle = input_nc.get_variable<Float>("azi");
     const Float tod_dir = input_nc.get_variable<Float>("tod_direct");
     const Float tod_dif = input_nc.get_variable<Float>("tod_diffuse");
-    
+
     // output arrays
     Array_gpu<Float,2> flux_tod_dn({nx, ny});
     Array_gpu<Float,2> flux_tod_up({nx, ny});
@@ -130,7 +130,7 @@ void solve_radiation(int argc, char** argv)
     Array_gpu<Float,2> flux_sfc_up({nx, ny});
     Array_gpu<Float,3> flux_abs_dir({nx, ny, nz});
     Array_gpu<Float,3> flux_abs_dif({nx, ny, nz});
-    
+
     ////// CREATE THE OUTPUT FILE //////
     // Create the general dimensions and arrays.
     Status::print_message("Preparing NetCDF output file.");
@@ -146,7 +146,7 @@ void solve_radiation(int argc, char** argv)
     Array_gpu<Float,2> ssa_g(ssa);
     Array_gpu<Float,2> asy_g(asy);
     Array_gpu<Float,2> sfc_alb_g(sfc_alb);
-    Raytracer raytracer; 
+    Raytracer raytracer;
 
     // Solve the radiation.
     Status::print_message("Starting the raytracer!!");
@@ -162,13 +162,12 @@ void solve_radiation(int argc, char** argv)
         cudaEventRecord(start, 0);
         // do something.
 
-        for (int ii=0; ii<25; ++ii)
         raytracer.trace_rays(
                 photons_per_pixel,
                 nx, ny, nz,
                 dx, dy, dz,
                 tau_tot_g, ssa_g, asy_g, tau_cld_g,
-                sfc_alb_g, zenith_angle, 
+                sfc_alb_g, zenith_angle,
                 azimuth_angle,
                 tod_dir,
                 tod_dif,
@@ -200,7 +199,7 @@ void solve_radiation(int argc, char** argv)
     cudaProfilerStop();
 
     // output arrays to cpu
-    Array<Float,2> flux_tod_dn_c(flux_tod_dn);    
+    Array<Float,2> flux_tod_dn_c(flux_tod_dn);
     Array<Float,2> flux_tod_up_c(flux_tod_up);
     Array<Float,2> flux_sfc_dir_c(flux_sfc_dir);
     Array<Float,2> flux_sfc_dif_c(flux_sfc_dif);
@@ -209,7 +208,7 @@ void solve_radiation(int argc, char** argv)
     Array<Float,3> flux_abs_dif_c(flux_abs_dif);
     // Store the output.
     Status::print_message("Storing the raytracer output.");
-            
+
     auto nc_flux_tod_dn     = output_nc.add_variable<Float>("flux_tod_dn" , {"y", "x"});
     auto nc_flux_tod_up     = output_nc.add_variable<Float>("flux_tod_up" , {"y", "x"});
     auto nc_flux_sfc_dir    = output_nc.add_variable<Float>("flux_sfc_dir", {"y", "x"});

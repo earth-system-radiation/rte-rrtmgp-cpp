@@ -252,14 +252,14 @@ void Raytracer::trace_rays(
     const Float dir_z = -std::cos(zenith_angle);
 
     dim3 grid{grid_size}, block{block_size};
-    
+
 //    // smallest two power that is larger than grid dimension
     const Int qrng_grid_x = pow(Float(2.), int(std::log2(Float(ncol_x))) + Float(1.));
     const Int qrng_grid_y = pow(Float(2.), int(std::log2(Float(ncol_y))) + Float(1.));
-    
+
     // total number of photons
     const Int photons_total = photons_per_pixel * qrng_grid_x * qrng_grid_y;
-    
+
     // number of photons per thread, this should a power of 2 and nonzero
     Float photons_per_thread_tmp = std::max(Float(1), static_cast<Float>(photons_total) / (grid_size * block_size));
     Int photons_per_thread = pow(Float(2.), std::floor(std::log2(Float(photons_per_thread_tmp))));
