@@ -31,12 +31,12 @@
 
 
 bool parse_command_line_options(
-        Int& ray_count_exponent,
+        Int& photons_per_pixel,
         int argc, char** argv)
 {
     if (argc > 2)
     {
-        std::string error = "Too many arguments, give ray count exponent or nothing";
+        std::string error = "Too many arguments, just give the number of rays per pixel (default: 1)";
         throw std::runtime_error(error);
     }
     else if (argc == 2 )
@@ -58,7 +58,7 @@ bool parse_command_line_options(
                     }
                 }
             }
-            ray_count_exponent = Int(std::stoi(argv[1]));
+            photons_per_pixel = Int(std::stoi(argv[1]));
         }
         else
         {
@@ -75,21 +75,18 @@ void solve_radiation(int argc, char** argv)
 {
     Status::print_message("###### Starting RTE+RRTMGP solver ######");
 
-    Int ray_count_exponent = 22;
+    Int photons_per_pixel = 1;
 
-    if (parse_command_line_options(ray_count_exponent, argc, argv))
+    if (parse_command_line_options(photons_per_pixel, argc, argv))
         return;
     
-    Int ray_count;
-    ray_count = std::pow(2, ray_count_exponent);
-    
-    if (ray_count < block_size*grid_size)
+    if (Float(int(std::log2(Float(photons_per_pixel)))) != std::log2(Float(photons_per_pixel)))
     {
-        std::string error = "Cannot shoot " + std::to_string(ray_count) + " rays with current block/grid sizes.";
+        std::string error = "number of photons per pixel should be a power of 2 ";
         throw std::runtime_error(error);
     }
-    else
-        Status::print_message("Using "+ std::to_string(ray_count) + " rays");
+
+    Status::print_message("Using "+ std::to_string(photons_per_pixel) + " rays per pixel");
 
 
     ////// READ THE ATMOSPHERIC DATA //////
@@ -165,8 +162,9 @@ void solve_radiation(int argc, char** argv)
         cudaEventRecord(start, 0);
         // do something.
 
+        for (int ii=0; ii<25; ++ii)
         raytracer.trace_rays(
-                ray_count,
+                photons_per_pixel,
                 nx, ny, nz,
                 dx, dy, dz,
                 tau_tot_g, ssa_g, asy_g, tau_cld_g,

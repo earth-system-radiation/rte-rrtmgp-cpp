@@ -161,7 +161,7 @@ Raytracer::Raytracer()
 
 
 void Raytracer::trace_rays(
-        const Int photons_to_shoot,
+        const Int photons_per_pixel,
         const int ncol_x, const int ncol_y, const int nlay,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
         const Array_gpu<Float,2>& tau_gas,
@@ -252,10 +252,23 @@ void Raytracer::trace_rays(
     const Float dir_z = -std::cos(zenith_angle);
 
     dim3 grid{grid_size}, block{block_size};
-    Int photons_per_thread = photons_to_shoot / (grid_size * block_size);
+    
+//    // smallest two power that is larger than grid dimension
+    const Int qrng_grid_x = pow(Float(2.), int(std::log2(Float(ncol_x))) + Float(1.));
+    const Int qrng_grid_y = pow(Float(2.), int(std::log2(Float(ncol_y))) + Float(1.));
+    
+    // total number of photons
+    const Int photons_total = photons_per_pixel * qrng_grid_x * qrng_grid_y;
+    
+    // number of photons per thread, this should a power of 2 and nonzero
+    Float photons_per_thread_tmp = std::max(Float(1), static_cast<Float>(photons_total) / (grid_size * block_size));
+    Int photons_per_thread = pow(Float(2.), std::floor(std::log2(Float(photons_per_thread_tmp))));
 
     ray_tracer_kernel<<<grid, block>>>(
-            photons_per_thread, k_null_grid.ptr(),
+            photons_per_thread,
+            qrng_grid_x,
+            qrng_grid_y,
+            k_null_grid.ptr(),
             tod_dn_count.ptr(),
             tod_up_count.ptr(),
             surface_down_direct_count.ptr(),
@@ -274,11 +287,10 @@ void Raytracer::trace_rays(
             this->qrng_vectors_gpu, this->qrng_constants_gpu);
 
     // convert counts to fluxes
-    const Float photons_per_col = Float(photons_to_shoot) / (512 * 512);
 
     const Float toa_src = tod_inc_direct + tod_inc_diffuse;
     count_to_flux_2d<<<grid_2d, block_2d>>>(
-            ncol_x, ncol_y, photons_per_col,
+            ncol_x, ncol_y, photons_per_pixel,
             toa_src,
             tod_dn_count.ptr(),
             tod_up_count.ptr(),
@@ -292,7 +304,7 @@ void Raytracer::trace_rays(
             flux_sfc_up.ptr());
 
     count_to_flux_3d<<<grid_3d, block_3d>>>(
-            ncol_x, ncol_y, nlay, photons_per_col,
+            ncol_x, ncol_y, nlay, photons_per_pixel,
             toa_src,
             atmos_direct_count.ptr(),
             atmos_diffuse_count.ptr(),

@@ -19,7 +19,7 @@ class Raytracer
         Raytracer();
 
         void trace_rays(
-                const Int photons_to_shoot,
+                const Int photons_per_pixel,
                 const int n_col_x, const int n_col_y, const int n_lay,
                 const Float dx_grid, const Float dy_grid, const Float dz_grid,
                 const Array_gpu<Float,2>& tau_gas,

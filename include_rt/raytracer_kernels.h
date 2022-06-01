@@ -35,6 +35,8 @@ struct Optics_scat
 __global__
 void ray_tracer_kernel(
         const Int photons_to_shoot,
+        const Int qrng_grid_x,
+        const Int qrng_grid_y,
         const Float* __restrict__ k_null_grid,
         Float* __restrict__ toa_down_count,
         Float* __restrict__ tod_up_count,
