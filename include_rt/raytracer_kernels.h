@@ -13,8 +13,9 @@ constexpr int block_size = 512;
 constexpr int grid_size = 256;
 #endif
 using Int = unsigned long long;
-constexpr int ngrid_h = 20;//90;
-constexpr int ngrid_v = 35;//71
+constexpr int ngrid_x = 20;//90;
+constexpr int ngrid_y = 20;//90;
+constexpr int ngrid_z = 35;//71
 constexpr Float k_null_gas_min = Float(1.e-3);
 
 
@@ -34,6 +35,8 @@ struct Optics_scat
 __global__
 void ray_tracer_kernel(
         const Int photons_to_shoot,
+        const Int qrng_grid_x,
+        const Int qrng_grid_y,
         const Float* __restrict__ k_null_grid,
         Float* __restrict__ toa_down_count,
         Float* __restrict__ tod_up_count,

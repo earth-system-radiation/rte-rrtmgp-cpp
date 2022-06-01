@@ -4,6 +4,7 @@
 #include "rrtmgp_kernel_launcher_cuda_rt.h"
 #include "raytracer_kernels.h"
 #include "Optical_props_rt.h"
+
 namespace
 {
     inline void gpu_assert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -31,7 +32,6 @@ namespace
     }
 
 
-
     template<typename T>
     void copy_from_gpu(T* cpu_data, const T* gpu_data, const int length)
     {
@@ -46,11 +46,11 @@ namespace
         const int grid_x = blockIdx.x*blockDim.x + threadIdx.x;
         const int grid_y = blockIdx.y*blockDim.y + threadIdx.y;
         const int grid_z = blockIdx.z*blockDim.z + threadIdx.z;
-        if ( ( grid_x < ngrid_h) && ( grid_y < ngrid_h) && ( grid_z < ngrid_v))
+        if ( ( grid_x < ngrid_x) && ( grid_y < ngrid_y) && ( grid_z < ngrid_z))
         {
-            const Float fx = Float(ncol_x) / Float(ngrid_h);
-            const Float fy = Float(ncol_y) / Float(ngrid_h);
-            const Float fz = Float(nlay) / Float(ngrid_v);
+            const Float fx = Float(ncol_x) / Float(ngrid_x);
+            const Float fy = Float(ncol_y) / Float(ngrid_y);
+            const Float fz = Float(nlay) / Float(ngrid_z);
 
             const int x0 = grid_x*fx;
             const int x1 = floor((grid_x+1)*fx);
@@ -59,7 +59,7 @@ namespace
             const int z0 = grid_z*fz;
             const int z1 = floor((grid_z+1)*fz);
 
-            const int ijk_grid = grid_x +grid_y*ngrid_h + grid_z*ngrid_h*ngrid_h;
+            const int ijk_grid = grid_x + grid_y*ngrid_x + grid_z*ngrid_y*ngrid_x;
             Float k_null = k_ext_null_min;
 
             for (int k=z0; k<z1; ++k)
@@ -85,7 +85,8 @@ namespace
         const int icol_x = blockIdx.x*blockDim.x + threadIdx.x;
         const int icol_y = blockIdx.y*blockDim.y + threadIdx.y;
         const int iz = blockIdx.z*blockDim.z + threadIdx.z;
-        if ( ( icol_x < ncol_x) && ( icol_y < ncol_y) && ( iz < nlay))
+
+        if ( (icol_x < ncol_x) && (icol_y < ncol_y) && (iz < nlay) )
         {
             const int idx = icol_x + icol_y*ncol_x + iz*ncol_y*ncol_x;
             const Float kext_cld = tau_cld[idx] / dz_grid;
@@ -97,11 +98,12 @@ namespace
         }
     }
 
+
     __global__
     void count_to_flux_2d(
             const int ncol_x, const int ncol_y, const Float photons_per_col, const Float toa_src,
-            const Float* __restrict__ count_1, const Float* __restrict__ count_2, const Float* __restrict__ count_3, const Float* __restrict__ count_4,
-            Float* __restrict__ flux_1, Float* __restrict__ flux_2, Float* __restrict__ flux_3, Float* __restrict__ flux_4)
+            const Float* __restrict__ count_1, const Float* __restrict__ count_2, const Float* __restrict__ count_3, const Float* __restrict__ count_4, const Float* __restrict__ count_5,
+            Float* __restrict__ flux_1, Float* __restrict__ flux_2, Float* __restrict__ flux_3, Float* __restrict__ flux_4, Float* __restrict__ flux_5)
     {
         const int icol_x = blockIdx.x*blockDim.x + threadIdx.x;
         const int icol_y = blockIdx.y*blockDim.y + threadIdx.y;
@@ -114,6 +116,7 @@ namespace
             flux_2[idx] = count_2[idx] * flux_per_ray;
             flux_3[idx] = count_3[idx] * flux_per_ray;
             flux_4[idx] = count_4[idx] * flux_per_ray;
+            flux_5[idx] = count_5[idx] * flux_per_ray;
         }
     }
 
@@ -156,16 +159,19 @@ Raytracer::Raytracer()
 
 
 void Raytracer::trace_rays(
-        const Int photons_to_shoot,
+        const Int photons_per_pixel,
         const int ncol_x, const int ncol_y, const int nlay,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
-        const Optical_props_2str_rt& optical_props,
-        const Optical_props_2str_rt& cloud_optical_props,
+        const Array_gpu<Float,2>& tau_gas,
+        const Array_gpu<Float,2>& ssa_gas,
+        const Array_gpu<Float,2>& asy_gas,
+        const Array_gpu<Float,2>& tau_cloud,
         const Array_gpu<Float,2>& surface_albedo,
         const Float zenith_angle,
         const Float azimuth_angle,
         const Float tod_inc_direct,
         const Float tod_inc_diffuse,
+        Array_gpu<Float,2>& flux_tod_dn,
         Array_gpu<Float,2>& flux_tod_up,
         Array_gpu<Float,2>& flux_sfc_dir,
         Array_gpu<Float,2>& flux_sfc_dif,
@@ -178,23 +184,23 @@ void Raytracer::trace_rays(
     const int block_col_y = 8;
     const int block_z = 4;
 
-    const int grid_col_x  = ncol_x/block_col_x + (ncol_x%block_col_x > 0);
-    const int grid_col_y  = ncol_y/block_col_y + (ncol_y%block_col_y > 0);
-    const int grid_z  = nlay/block_z + (nlay%block_z > 0);
+    const int grid_col_x = ncol_x/block_col_x + (ncol_x%block_col_x > 0);
+    const int grid_col_y = ncol_y/block_col_y + (ncol_y%block_col_y > 0);
+    const int grid_z = nlay/block_z + (nlay%block_z > 0);
 
     dim3 grid_2d(grid_col_x, grid_col_y);
     dim3 block_2d(block_col_x, block_col_y);
     dim3 grid_3d(grid_col_x, grid_col_y, grid_z);
     dim3 block_3d(block_col_x, block_col_y, block_z);
 
-    // bundle optical properties in struct
+    // Bundle optical properties in struct
     Array_gpu<Optics_ext,3> k_ext({ncol_x, ncol_y, nlay});
     Array_gpu<Optics_scat,3> ssa_asy({ncol_x, ncol_y, nlay});
 
     bundles_optical_props<<<grid_3d, block_3d>>>(
             ncol_x, ncol_y, nlay, dz_grid,
-            optical_props.get_tau().ptr(), optical_props.get_ssa().ptr(),
-            optical_props.get_g().ptr(), cloud_optical_props.get_tau().ptr(),
+            tau_gas.ptr(), ssa_gas.ptr(),
+            asy_gas.ptr(), tau_cloud.ptr(),
             k_ext.ptr(), ssa_asy.ptr());
 
     // create k_null_grid
@@ -202,14 +208,14 @@ void Raytracer::trace_rays(
     const int block_kn_y = 8;
     const int block_kn_z = 4;
 
-    const int grid_kn_x  = ngrid_h/block_kn_x + (ngrid_h%block_kn_x > 0);
-    const int grid_kn_y  = ngrid_h/block_kn_y + (ngrid_h%block_kn_y > 0);
-    const int grid_kn_z  = ngrid_v/block_kn_z + (ngrid_v%block_kn_z > 0);
+    const int grid_kn_x = ngrid_x/block_kn_x + (ngrid_x%block_kn_x > 0);
+    const int grid_kn_y = ngrid_y/block_kn_y + (ngrid_y%block_kn_y > 0);
+    const int grid_kn_z = ngrid_z/block_kn_z + (ngrid_z%block_kn_z > 0);
 
     dim3 grid_kn(grid_kn_x, grid_kn_y, grid_kn_z);
     dim3 block_kn(block_kn_x, block_kn_y, block_kn_z);
 
-    Array_gpu<Float,3> k_null_grid({ngrid_h, ngrid_h, ngrid_v});
+    Array_gpu<Float,3> k_null_grid({ngrid_x, ngrid_y, ngrid_z});
     const Float k_ext_null_min = Float(1e-3);
 
     create_knull_grid<<<grid_kn, block_kn>>>(
@@ -217,7 +223,7 @@ void Raytracer::trace_rays(
             k_ext.ptr(), k_null_grid.ptr());
 
     // initialise output arrays and set to 0
-    Array_gpu<Float,2> toa_down_count({ncol_x, ncol_y});
+    Array_gpu<Float,2> tod_dn_count({ncol_x, ncol_y});
     Array_gpu<Float,2> tod_up_count({ncol_x, ncol_y});
     Array_gpu<Float,2> surface_down_direct_count({ncol_x, ncol_y});
     Array_gpu<Float,2> surface_down_diffuse_count({ncol_x, ncol_y});
@@ -225,7 +231,7 @@ void Raytracer::trace_rays(
     Array_gpu<Float,3> atmos_direct_count({ncol_x, ncol_y, nlay});
     Array_gpu<Float,3> atmos_diffuse_count({ncol_x, ncol_y, nlay});
 
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, toa_down_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, tod_dn_count.ptr());
     rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, tod_up_count.ptr());
     rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, surface_down_direct_count.ptr());
     rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol_x, ncol_y, surface_down_diffuse_count.ptr());
@@ -243,13 +249,25 @@ void Raytracer::trace_rays(
     const Float dir_y = -std::sin(zenith_angle) * std::sin(Float(0.5*M_PI) - azimuth_angle);
     const Float dir_z = -std::cos(zenith_angle);
 
-
     dim3 grid{grid_size}, block{block_size};
-    Int photons_per_thread = photons_to_shoot / (grid_size * block_size);
+
+//    // smallest two power that is larger than grid dimension
+    const Int qrng_grid_x = pow(Float(2.), int(std::log2(Float(ncol_x))) + Float(1.));
+    const Int qrng_grid_y = pow(Float(2.), int(std::log2(Float(ncol_y))) + Float(1.));
+
+    // total number of photons
+    const Int photons_total = photons_per_pixel * qrng_grid_x * qrng_grid_y;
+
+    // number of photons per thread, this should a power of 2 and nonzero
+    Float photons_per_thread_tmp = std::max(Float(1), static_cast<Float>(photons_total) / (grid_size * block_size));
+    Int photons_per_thread = pow(Float(2.), std::floor(std::log2(Float(photons_per_thread_tmp))));
 
     ray_tracer_kernel<<<grid, block>>>(
-            photons_per_thread, k_null_grid.ptr(),
-            toa_down_count.ptr(),
+            photons_per_thread,
+            qrng_grid_x,
+            qrng_grid_y,
+            k_null_grid.ptr(),
+            tod_dn_count.ptr(),
             tod_up_count.ptr(),
             surface_down_direct_count.ptr(),
             surface_down_diffuse_count.ptr(),
@@ -267,27 +285,27 @@ void Raytracer::trace_rays(
             this->qrng_vectors_gpu, this->qrng_constants_gpu);
 
     // convert counts to fluxes
-    const Float photons_per_col = Float(photons_to_shoot) / (ncol_x * ncol_y);
 
     const Float toa_src = tod_inc_direct + tod_inc_diffuse;
     count_to_flux_2d<<<grid_2d, block_2d>>>(
-            ncol_x, ncol_y, photons_per_col,
+            ncol_x, ncol_y, photons_per_pixel,
             toa_src,
+            tod_dn_count.ptr(),
             tod_up_count.ptr(),
             surface_down_direct_count.ptr(),
             surface_down_diffuse_count.ptr(),
             surface_up_count.ptr(),
+            flux_tod_dn.ptr(),
             flux_tod_up.ptr(),
             flux_sfc_dir.ptr(),
             flux_sfc_dif.ptr(),
             flux_sfc_up.ptr());
 
     count_to_flux_3d<<<grid_3d, block_3d>>>(
-            ncol_x, ncol_y, nlay, photons_per_col,
+            ncol_x, ncol_y, nlay, photons_per_pixel,
             toa_src,
             atmos_direct_count.ptr(),
             atmos_diffuse_count.ptr(),
             flux_abs_dir.ptr(),
             flux_abs_dif.ptr());
 }
-
