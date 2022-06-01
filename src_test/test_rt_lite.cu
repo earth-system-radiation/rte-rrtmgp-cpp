@@ -104,8 +104,8 @@ void solve_radiation(int argc, char** argv)
 
     // Read the x,y,z dimensions if raytracing is enabled
     const Array<Float,1> grid_x(input_nc.get_variable<Float>("x", {nx}), {nx});
-    const Array<Float,1> grid_y(input_nc.get_variable<Float>("x", {ny}), {ny});
-    const Array<Float,1> grid_z(input_nc.get_variable<Float>("x", {nz}), {nz});
+    const Array<Float,1> grid_y(input_nc.get_variable<Float>("y", {ny}), {ny});
+    const Array<Float,1> grid_z(input_nc.get_variable<Float>("z", {nz}), {nz});
     
     const Float dx = grid_x({2}) - grid_x({1});
     const Float dy = grid_y({2}) - grid_y({1});

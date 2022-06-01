@@ -48,11 +48,11 @@ namespace
         const int grid_x = blockIdx.x*blockDim.x + threadIdx.x;
         const int grid_y = blockIdx.y*blockDim.y + threadIdx.y;
         const int grid_z = blockIdx.z*blockDim.z + threadIdx.z;
-        if ( ( grid_x < ngrid_h) && ( grid_y < ngrid_h) && ( grid_z < ngrid_v))
+        if ( ( grid_x < ngrid_x) && ( grid_y < ngrid_y) && ( grid_z < ngrid_z))
         {
-            const Float fx = Float(ncol_x) / Float(ngrid_h);
-            const Float fy = Float(ncol_y) / Float(ngrid_h);
-            const Float fz = Float(nlay) / Float(ngrid_v);
+            const Float fx = Float(ncol_x) / Float(ngrid_x);
+            const Float fy = Float(ncol_y) / Float(ngrid_y);
+            const Float fz = Float(nlay) / Float(ngrid_z);
 
             const int x0 = grid_x*fx;
             const int x1 = floor((grid_x+1)*fx);
@@ -61,7 +61,7 @@ namespace
             const int z0 = grid_z*fz;
             const int z1 = floor((grid_z+1)*fz);
 
-            const int ijk_grid = grid_x + grid_y*ngrid_h + grid_z*ngrid_h*ngrid_h;
+            const int ijk_grid = grid_x + grid_y*ngrid_x + grid_z*ngrid_y*ngrid_x;
             Float k_null = k_ext_null_min;
 
             for (int k=z0; k<z1; ++k)
@@ -210,14 +210,14 @@ void Raytracer::trace_rays(
     const int block_kn_y = 2;
     const int block_kn_z = 4;
 
-    const int grid_kn_x = ngrid_h/block_kn_x + (ngrid_h%block_kn_x > 0);
-    const int grid_kn_y = ngrid_h/block_kn_y + (ngrid_h%block_kn_y > 0);
-    const int grid_kn_z = ngrid_v/block_kn_z + (ngrid_v%block_kn_z > 0);
+    const int grid_kn_x = ngrid_x/block_kn_x + (ngrid_x%block_kn_x > 0);
+    const int grid_kn_y = ngrid_y/block_kn_y + (ngrid_y%block_kn_y > 0);
+    const int grid_kn_z = ngrid_z/block_kn_z + (ngrid_z%block_kn_z > 0);
 
     dim3 grid_kn(grid_kn_x, grid_kn_y, grid_kn_z);
     dim3 block_kn(block_kn_x, block_kn_y, block_kn_z);
 
-    Array_gpu<Float,3> k_null_grid({ngrid_h, ngrid_h, ngrid_v});
+    Array_gpu<Float,3> k_null_grid({ngrid_x, ngrid_y, ngrid_z});
     const Float k_ext_null_min = Float(1e-3);
 
     create_knull_grid<<<grid_kn, block_kn>>>(
@@ -274,7 +274,7 @@ void Raytracer::trace_rays(
             this->qrng_vectors_gpu, this->qrng_constants_gpu);
 
     // convert counts to fluxes
-    const Float photons_per_col = Float(photons_to_shoot) / (ncol_x * ncol_y);
+    const Float photons_per_col = Float(photons_to_shoot) / (512 * 512);
 
     const Float toa_src = tod_inc_direct + tod_inc_diffuse;
     count_to_flux_2d<<<grid_2d, block_2d>>>(
