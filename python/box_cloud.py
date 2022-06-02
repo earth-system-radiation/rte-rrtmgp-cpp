@@ -76,11 +76,18 @@ nc_sza = ncf.createVariable("sza", "f8")
 nc_alb = ncf.createVariable("albedo", "f8")
 nc_dir = ncf.createVariable("tod_direct", "f8")
 nc_dif = ncf.createVariable("tod_diffuse", "f8")
+nc_ngridx = ncf.createVariable("ngrid_x", "f8")
+nc_ngridy = ncf.createVariable("ngrid_y", "f8")
+nc_ngridz = ncf.createVariable("ngrid_z", "f8")
 
 nc_azi[:] = np.deg2rad(azimuth_angle)
 nc_sza[:] = np.deg2rad(zenith_angle)
 nc_alb[:] = albedo
 nc_dir[:] = tod_flux_direct
 nc_dif[:] = tod_flux_diffuse
+
+nc_ngridx[:] = 20
+nc_ngridy[:] = 20
+nc_ngridz[:] = 35
 
 ncf.close()

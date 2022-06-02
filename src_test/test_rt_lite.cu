@@ -108,6 +108,10 @@ void solve_radiation(int argc, char** argv)
     const Float dy = grid_y({2}) - grid_y({1});
     const Float dz = grid_z({2}) - grid_z({1});
 
+    const int ngrid_x = input_nc.get_variable<Float>("ngrid_x");
+    const int ngrid_y = input_nc.get_variable<Float>("ngrid_y");
+    const int ngrid_z = input_nc.get_variable<Float>("ngrid_z");
+
     // Read the atmospheric fields.
     const Array<Float,2> tau_tot(input_nc.get_variable<Float>("tau_tot", {nz, ny, nx}), {ncol, nz});
     const Array<Float,2> tau_cld(input_nc.get_variable<Float>("tau_cld", {nz, ny, nx}), {ncol, nz});
@@ -166,6 +170,7 @@ void solve_radiation(int argc, char** argv)
                 photons_per_pixel,
                 nx, ny, nz,
                 dx, dy, dz,
+                ngrid_x, ngrid_y, ngrid_z,
                 tau_tot_g, ssa_g, asy_g, tau_cld_g,
                 sfc_alb_g, zenith_angle,
                 azimuth_angle,

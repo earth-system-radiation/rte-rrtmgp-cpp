@@ -237,6 +237,7 @@ void solve_radiation(int argc, char** argv)
     Array<Float,1> grid_y;
     Array<Float,1> grid_z;
     Array<Float,1> z_lev;
+    Array<int,1> kn_grid_dims({3});
     if (switch_raytracing)
     {
         n_z = input_nc.get_dimension_size("z");
@@ -252,6 +253,10 @@ void solve_radiation(int argc, char** argv)
         grid_dims({2}) = grid_y({2}) - grid_y({1});
         grid_dims({3}) = grid_z({2}) - grid_z({1});
         grid_dims({4}) = n_z;
+
+        kn_grid_dims({1}) = input_nc.get_variable<Float>("ngrid_x");
+        kn_grid_dims({2}) = input_nc.get_variable<Float>("ngrid_y");
+        kn_grid_dims({3}) = input_nc.get_variable<Float>("ngrid_z");
     }
 
     // Read the atmospheric fields.
@@ -647,6 +652,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> t_lev_gpu(t_lev);
             Array_gpu<Float,1> z_lev_gpu(z_lev);
             Array_gpu<Float,1> grid_dims_gpu(grid_dims);
+            Array_gpu<int,1> kn_grid_dims_gpu(kn_grid_dims);
             Array_gpu<Float,2> col_dry_gpu(col_dry);
             Array_gpu<Float,2> sfc_alb_dir_gpu(sfc_alb_dir);
             Array_gpu<Float,2> sfc_alb_dif_gpu(sfc_alb_dif);
@@ -677,6 +683,7 @@ void solve_radiation(int argc, char** argv)
                     t_lay_gpu, t_lev_gpu,
                     z_lev_gpu,
                     grid_dims_gpu,
+                    kn_grid_dims_gpu,
                     col_dry_gpu,
                     sfc_alb_dir_gpu, sfc_alb_dif_gpu,
                     tsi_scaling_gpu, mu0_gpu,

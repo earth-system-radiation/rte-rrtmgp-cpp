@@ -569,6 +569,7 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
         const Array_gpu<Float,1>& z_lev,
         const Array_gpu<Float,1>& grid_dims,
+        const Array_gpu<int,1>& kn_grid_dims,
         Array_gpu<Float,2>& col_dry,
         const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
         const Array_gpu<Float,1>& tsi_scaling, const Array_gpu<Float,1>& mu0,
@@ -596,10 +597,13 @@ void Radiation_solver_shortwave::solve_gpu(
 
     const int n_col_x = (switch_raytracing) ? rt_flux_sfc_dir.dim(1) : n_col;
     const int n_col_y = (switch_raytracing) ? rt_flux_sfc_dir.dim(2) : 1;
-    const int dx_grid = (switch_raytracing) ? grid_dims({1}) : 0;
-    const int dy_grid = (switch_raytracing) ? grid_dims({2}) : 0;
-    const int dz_grid = (switch_raytracing) ? grid_dims({3}) : 0;
+    const Float dx_grid = (switch_raytracing) ? grid_dims({1}) : 0;
+    const Float dy_grid = (switch_raytracing) ? grid_dims({2}) : 0;
+    const Float dz_grid = (switch_raytracing) ? grid_dims({3}) : 0;
     const int n_z     = (switch_raytracing) ? grid_dims({4}) : 0;
+    const int ngrid_x = (switch_raytracing) ? kn_grid_dims({1}) : 0;
+    const int ngrid_y = (switch_raytracing) ? kn_grid_dims({2}) : 0;
+    const int ngrid_z = (switch_raytracing) ? kn_grid_dims({3}) : 0;
 
     const Bool top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
@@ -719,6 +723,7 @@ void Radiation_solver_shortwave::solve_gpu(
                         ray_count,
                         n_col_x, n_col_y, n_z,
                         dx_grid, dy_grid, dz_grid,
+                        ngrid_x, ngrid_y, ngrid_z,
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_g(),

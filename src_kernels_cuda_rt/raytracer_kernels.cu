@@ -265,6 +265,7 @@ void ray_tracer_kernel(
         const Float* __restrict__ surface_albedo,
         const Float x_size, const Float y_size, const Float z_size,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
+        const int ngrid_x, const int ngrid_y, const int ngrid_z,
         const Float dir_x, const Float dir_y, const Float dir_z,
         const int itot, const int jtot, const int ktot,
         curandDirectionVectors32_t* qrng_vectors, unsigned int* qrng_constants) // const Float* __restrict__ cloud_dims)

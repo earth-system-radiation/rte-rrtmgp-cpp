@@ -41,6 +41,7 @@ namespace
     __global__
     void create_knull_grid(
             const int ncol_x, const int ncol_y, const int nlay, const Float k_ext_null_min,
+            const int ngrid_x, const int ngrid_y, const int ngrid_z,
             const Optics_ext* __restrict__ k_ext, Float* __restrict__ k_null_grid)
     {
         const int grid_x = blockIdx.x*blockDim.x + threadIdx.x;
@@ -162,6 +163,7 @@ void Raytracer::trace_rays(
         const Int photons_per_pixel,
         const int ncol_x, const int ncol_y, const int nlay,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
+        const int ngrid_x, const int ngrid_y, const int ngrid_z,
         const Array_gpu<Float,2>& tau_gas,
         const Array_gpu<Float,2>& ssa_gas,
         const Array_gpu<Float,2>& asy_gas,
@@ -220,6 +222,7 @@ void Raytracer::trace_rays(
 
     create_knull_grid<<<grid_kn, block_kn>>>(
             ncol_x, ncol_y, nlay, k_ext_null_min,
+            ngrid_x, ngrid_y, ngrid_z,
             k_ext.ptr(), k_null_grid.ptr());
 
     // initialise output arrays and set to 0
@@ -280,6 +283,7 @@ void Raytracer::trace_rays(
             surface_albedo.ptr(),
             x_size, y_size, z_size,
             dx_grid, dy_grid, dz_grid,
+            ngrid_x, ngrid_y, ngrid_z,
             dir_x, dir_y, dir_z,
             ncol_x, ncol_y, nlay,
             this->qrng_vectors_gpu, this->qrng_constants_gpu);
