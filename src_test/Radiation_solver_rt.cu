@@ -57,7 +57,7 @@ namespace
     {
         const int block_col = 16;
         const int grid_col  = ncol/block_col + (ncol%block_col > 0);
-        
+
         dim3 grid_gpu(grid_col, 1);
         dim3 block_gpu(block_col, 1);
         scaling_to_subset_kernel<<<grid_gpu, block_gpu>>>(
@@ -83,7 +83,7 @@ namespace
         atomicAdd(&tod_dir_diff[0], flx_dir);
         atomicAdd(&tod_dir_diff[1], flx_tot - flx_dir);
     }
-    
+
     void compute_tod_flux(
             const int ncol, const int nlay, const Array_gpu<Float,2>& flux_dn, const Array_gpu<Float,2>& flux_dn_dir, Array<Float,1>& tod_dir_diff)
     {
@@ -91,7 +91,7 @@ namespace
         const int nthread = int(ncol/col_per_thread) + 1;
         const int block_col = 16;
         const int grid_col  = nthread/block_col + (nthread%block_col > 0);
-        
+
         dim3 grid_gpu(grid_col, 1);
         dim3 block_gpu(block_col, 1);
 
@@ -99,7 +99,7 @@ namespace
         compute_tod_flux_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nlay, col_per_thread, flux_dn.ptr(), flux_dn_dir.ptr(), tod_dir_diff_g.ptr());
         Array<Float,1> tod_dir_diff_c(tod_dir_diff_g);
-    
+
         tod_dir_diff({1}) = tod_dir_diff_c({1}) / Float(ncol);
         tod_dir_diff({2}) = tod_dir_diff_c({2}) / Float(ncol);
     }
@@ -452,7 +452,7 @@ void Radiation_solver_longwave::solve_gpu(
         rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_dn.ptr());
         rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_net.ptr());
     }
-    
+
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
     for (int igpt=1; igpt<=n_gpt; ++igpt)
     {
@@ -465,7 +465,7 @@ void Radiation_solver_longwave::solve_gpu(
                 break;
             }
         }
-        
+
         kdist_gpu->gas_optics(
                 igpt-1,
                 p_lay,
@@ -494,7 +494,7 @@ void Radiation_solver_longwave::solve_gpu(
                     dynamic_cast<Optical_props_1scl_rt&>(*optical_props),
                     dynamic_cast<Optical_props_1scl_rt&>(*cloud_optical_props));
         }
-        
+
         // Store the optical properties, if desired.
         if (switch_output_optical)
         {
@@ -526,7 +526,7 @@ void Radiation_solver_longwave::solve_gpu(
                     n_ang);
 
             (*fluxes).net_flux();
-            
+
             // Copy the data to the output.
             gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
                     n_col, n_lev, lw_flux_up.ptr(), lw_flux_dn.ptr(), lw_flux_net.ptr(),
@@ -593,19 +593,19 @@ void Radiation_solver_shortwave::solve_gpu(
     const int n_lev = p_lev.dim(2);
     const int n_gpt = this->kdist_gpu->get_ngpt();
     const int n_bnd = this->kdist_gpu->get_nband();
-    
+
     const int n_col_x = (switch_raytracing) ? rt_flux_sfc_dir.dim(1) : n_col;
     const int n_col_y = (switch_raytracing) ? rt_flux_sfc_dir.dim(2) : 1;
     const int dx_grid = (switch_raytracing) ? grid_dims({1}) : 0;
     const int dy_grid = (switch_raytracing) ? grid_dims({2}) : 0;
     const int dz_grid = (switch_raytracing) ? grid_dims({3}) : 0;
     const int n_z     = (switch_raytracing) ? grid_dims({4}) : 0;
-    
+
     const Bool top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
     optical_props = std::make_unique<Optical_props_2str_rt>(n_col, n_lay, *kdist_gpu);
     cloud_optical_props = std::make_unique<Optical_props_2str_rt>(n_col, n_lay, *cloud_optics_gpu);
-    
+
     if (col_dry.size() == 0)
     {
         col_dry.set_dims({n_col, n_lay});
@@ -613,10 +613,10 @@ void Radiation_solver_shortwave::solve_gpu(
     }
 
     Array_gpu<Float,1> toa_src({n_col});
-        
+
     Array<int,2> cld_mask_liq({n_col, n_lay});
     Array<int,2> cld_mask_ice({n_col, n_lay});
-    
+
     if (switch_fluxes)
     {
         rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_up.ptr());
@@ -646,7 +646,7 @@ void Radiation_solver_shortwave::solve_gpu(
                 break;
             }
         }
-        
+
         kdist_gpu->gas_optics(
                   igpt-1,
                   p_lay,
@@ -657,7 +657,7 @@ void Radiation_solver_shortwave::solve_gpu(
                   toa_src,
                   col_dry);
         scaling_to_subset(n_col, n_gpt, toa_src, tsi_scaling);
-        
+
         if (switch_cloud_optics)
         {
             cloud_optics_gpu->cloud_optics(
@@ -668,15 +668,15 @@ void Radiation_solver_shortwave::solve_gpu(
                     rei,
                     *cloud_optical_props);
 
- 
+
             cloud_optical_props->delta_scale();
-        
+
             // Add the cloud optical props to the gas optical properties.
             add_to(
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props),
                     dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props));
         }
-        
+
         // Store the optical properties, if desired
         if (switch_output_optical)
         {
@@ -688,10 +688,10 @@ void Radiation_solver_shortwave::solve_gpu(
                     n_col, igpt-1, toa_source.ptr(), toa_src.ptr());
         }
         if (switch_fluxes)
-        {  
+        {
             std::unique_ptr<Fluxes_broadband_rt> fluxes =
                     std::make_unique<Fluxes_broadband_rt>(n_col_x, n_col_y, n_lev);
-            
+
             rte_sw.rte_sw(
                     optical_props,
                     top_at_1,
@@ -711,10 +711,10 @@ void Radiation_solver_shortwave::solve_gpu(
 
                 Float zenith_angle = std::acos(mu0({1}));
                 Float azimuth_angle = 3.14; // sun approximately from south
-                
+
                 Array<Float,1> tod_dir_diff({2});
                 compute_tod_flux(n_col, n_z, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
-                
+
                 raytracer.trace_rays(
                         ray_count,
                         n_col_x, n_col_y, n_z,
@@ -723,7 +723,7 @@ void Radiation_solver_shortwave::solve_gpu(
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_g(),
                         dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
-                        sfc_alb_dir, zenith_angle, 
+                        sfc_alb_dir, zenith_angle,
                         azimuth_angle,
                         tod_dir_diff({1}),
                         tod_dir_diff({2}),
@@ -741,7 +741,7 @@ void Radiation_solver_shortwave::solve_gpu(
             gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
                     n_col, n_lev, sw_flux_up.ptr(), sw_flux_dn.ptr(), sw_flux_dn_dir.ptr(), sw_flux_net.ptr(),
                     (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
-            
+
             if (switch_raytracing)
             {
                 gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(

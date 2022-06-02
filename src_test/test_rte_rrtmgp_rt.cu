@@ -95,7 +95,7 @@ void configure_memory_pool(int nlays, int ncols, int nchunks, int ngpts, int nbn
 
 bool parse_command_line_options(
         std::map<std::string, std::pair<bool, std::string>>& command_line_options,
-        Int& ray_count_exponent,
+        Int& photons_per_pixel,
         int argc, char** argv)
 {
     for (int i=1; i<argc; ++i)
@@ -116,7 +116,7 @@ bool parse_command_line_options(
             return true;
         }
 
-        //check if option is integer n (2**n rays)
+        //check if option is integer n (rays per pixel)
         if (std::isdigit(argument[0]))
         {
             if (argument.size() > 1)
@@ -131,7 +131,7 @@ bool parse_command_line_options(
 
                 }
             }
-            ray_count_exponent = Int(std::stoi(argv[i]));
+            photons_per_pixel = Int(std::stoi(argv[i]));
         }
         else
         {
@@ -194,11 +194,11 @@ void solve_radiation(int argc, char** argv)
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
         {"output-optical"   , { false, "Enable output of optical properties."      }},
         {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }} };
-    Int ray_count_exponent = 22;
+    Int photons_per_pixel = 1;
 
-    if (parse_command_line_options(command_line_options, ray_count_exponent, argc, argv))
+    if (parse_command_line_options(command_line_options, photons_per_pixel, argc, argv))
         return;
-    
+
 
     const bool switch_shortwave         = command_line_options.at("shortwave"        ).first;
     const bool switch_longwave          = command_line_options.at("longwave"         ).first;
@@ -207,23 +207,17 @@ void solve_radiation(int argc, char** argv)
     const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
-    
+
     // Print the options to the screen.
     print_command_line_options(command_line_options);
 
-    Int ray_count;
-    if (switch_raytracing)
+    if (Float(int(std::log2(Float(photons_per_pixel)))) != std::log2(Float(photons_per_pixel)))
     {
-        ray_count = pow(2,ray_count_exponent);
-        if (ray_count < block_size*grid_size)
-        {
-            std::string error = "Cannot shoot " + std::to_string(ray_count) + " rays with current block/grid sizes.";
-            throw std::runtime_error(error);
-        }
-        else
-            Status::print_message("Using "+ std::to_string(Int(pow(2, ray_count_exponent))) + " rays");
+        std::string error = "number of photons per pixel should be a power of 2 ";
+        throw std::runtime_error(error);
     }
 
+    Status::print_message("Using "+ std::to_string(photons_per_pixel) + " rays per pixel");
 
     ////// READ THE ATMOSPHERIC DATA //////
     Status::print_message("Reading atmospheric input data from NetCDF.");
@@ -297,7 +291,7 @@ void solve_radiation(int argc, char** argv)
     read_and_set_vmr("hfc134a", n_col_x, n_col_y, n_lay, input_nc, gas_concs);
     read_and_set_vmr("cf4"    , n_col_x, n_col_y, n_lay, input_nc, gas_concs);
     read_and_set_vmr("no2"    , n_col_x, n_col_y, n_lay, input_nc, gas_concs);
-    
+
     Array<Float,2> lwp;
     Array<Float,2> iwp;
     Array<Float,2> rel;
@@ -330,7 +324,7 @@ void solve_radiation(int argc, char** argv)
     output_nc.add_dimension("lay", n_lay);
     output_nc.add_dimension("lev", n_lev);
     output_nc.add_dimension("pair", 2);
-    if (switch_raytracing) 
+    if (switch_raytracing)
     {
         output_nc.add_dimension("z", n_z);
         auto nc_x = output_nc.add_variable<Float>("x", {"x"});
@@ -371,7 +365,7 @@ void solve_radiation(int argc, char** argv)
         Status::print_message("Initializing the longwave solver.");
 
         Gas_concs_gpu gas_concs_gpu(gas_concs);
-        
+
         Radiation_solver_longwave rad_lw(gas_concs_gpu, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
 
         // Read the boundary conditions.
@@ -437,7 +431,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> iwp_gpu(iwp);
             Array_gpu<Float,2> rel_gpu(rel);
             Array_gpu<Float,2> rei_gpu(rei);
-            
+
             cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
@@ -601,7 +595,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<Float,2> sw_flux_dn;
         Array_gpu<Float,2> sw_flux_dn_dir;
         Array_gpu<Float,2> sw_flux_net;
-        
+
         Array_gpu<Float,2> rt_flux_tod_up;
         Array_gpu<Float,2> rt_flux_sfc_dir;
         Array_gpu<Float,2> rt_flux_sfc_dif;
@@ -662,7 +656,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> iwp_gpu(iwp);
             Array_gpu<Float,2> rel_gpu(rel);
             Array_gpu<Float,2> rei_gpu(rei);
-            
+
             cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
@@ -677,7 +671,7 @@ void solve_radiation(int argc, char** argv)
                     switch_cloud_optics,
                     switch_output_optical,
                     switch_output_bnd_fluxes,
-                    ray_count,
+                    photons_per_pixel,
                     gas_concs_gpu,
                     p_lay_gpu, p_lev_gpu,
                     t_lay_gpu, t_lev_gpu,
@@ -739,7 +733,7 @@ void solve_radiation(int argc, char** argv)
         Array<Float,3> sw_bnd_flux_dn_cpu(sw_bnd_flux_dn);
         Array<Float,3> sw_bnd_flux_dn_dir_cpu(sw_bnd_flux_dn_dir);
         Array<Float,3> sw_bnd_flux_net_cpu(sw_bnd_flux_net);
-        
+
         Array<Float,2> rt_flux_tod_up_cpu(rt_flux_tod_up);
         Array<Float,2> rt_flux_sfc_dir_cpu(rt_flux_sfc_dir);
         Array<Float,2> rt_flux_sfc_dif_cpu(rt_flux_sfc_dif);
@@ -784,13 +778,13 @@ void solve_radiation(int argc, char** argv)
 
             if (switch_raytracing)
             {
-                auto nc_rt_flux_tod_up  = output_nc.add_variable<Float>("rt_flux_tod_up",  {"y","x"});    
-                auto nc_rt_flux_sfc_dir = output_nc.add_variable<Float>("rt_flux_sfc_dir", {"y","x"}); 
-                auto nc_rt_flux_sfc_dif = output_nc.add_variable<Float>("rt_flux_sfc_dif", {"y","x"}); 
-                auto nc_rt_flux_sfc_up  = output_nc.add_variable<Float>("rt_flux_sfc_up",  {"y","x"}); 
-                auto nc_rt_flux_abs_dir = output_nc.add_variable<Float>("rt_flux_abs_dir", {"z","y","x"}); 
-                auto nc_rt_flux_abs_dif = output_nc.add_variable<Float>("rt_flux_abs_dif", {"z","y","x"}); 
-            
+                auto nc_rt_flux_tod_up  = output_nc.add_variable<Float>("rt_flux_tod_up",  {"y","x"});
+                auto nc_rt_flux_sfc_dir = output_nc.add_variable<Float>("rt_flux_sfc_dir", {"y","x"});
+                auto nc_rt_flux_sfc_dif = output_nc.add_variable<Float>("rt_flux_sfc_dif", {"y","x"});
+                auto nc_rt_flux_sfc_up  = output_nc.add_variable<Float>("rt_flux_sfc_up",  {"y","x"});
+                auto nc_rt_flux_abs_dir = output_nc.add_variable<Float>("rt_flux_abs_dir", {"z","y","x"});
+                auto nc_rt_flux_abs_dif = output_nc.add_variable<Float>("rt_flux_abs_dif", {"z","y","x"});
+
                 nc_rt_flux_tod_up .insert(rt_flux_tod_up_cpu .v(), {0,0});
                 nc_rt_flux_sfc_dir.insert(rt_flux_sfc_dir_cpu.v(), {0,0});
                 nc_rt_flux_sfc_dif.insert(rt_flux_sfc_dif_cpu.v(), {0,0});
@@ -798,8 +792,8 @@ void solve_radiation(int argc, char** argv)
                 nc_rt_flux_abs_dir.insert(rt_flux_abs_dir_cpu.v(), {0,0,0});
                 nc_rt_flux_abs_dif.insert(rt_flux_abs_dif_cpu.v(), {0,0,0});
             }
-            
-            
+
+
             if (switch_output_bnd_fluxes)
             {
                 auto nc_sw_bnd_flux_up     = output_nc.add_variable<Float>("sw_bnd_flux_up"    , {"band_sw", "lev", "y", "x"});

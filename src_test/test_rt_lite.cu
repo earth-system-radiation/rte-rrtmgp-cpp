@@ -44,7 +44,7 @@ bool parse_command_line_options(
         std::string argument(argv[1]);
         boost::trim(argument);
 
-        //check if option is integer n (2**n rays)
+        //check if option is integer n (rays per pixel)
         if (std::isdigit(argument[0]))
         {
             if (argument.size() > 1)
