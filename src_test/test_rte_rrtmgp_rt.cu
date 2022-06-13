@@ -236,7 +236,6 @@ void solve_radiation(int argc, char** argv)
     Array<Float,1> grid_x;
     Array<Float,1> grid_y;
     Array<Float,1> grid_z;
-    Array<Float,1> z_lev;
     Array<int,1> kn_grid_dims({3});
     if (switch_raytracing)
     {
@@ -244,11 +243,9 @@ void solve_radiation(int argc, char** argv)
         grid_x.set_dims({n_col_x});
         grid_y.set_dims({n_col_y});
         grid_z.set_dims({n_z});
-        z_lev.set_dims({n_lev});
         grid_x = std::move(input_nc.get_variable<Float>("x", {n_col_x}));
         grid_y = std::move(input_nc.get_variable<Float>("y", {n_col_y}));
         grid_z = std::move(input_nc.get_variable<Float>("z", {n_z}));
-        z_lev = std::move(input_nc.get_variable<Float>("z_lev", {n_lev}));
         grid_dims({1}) = grid_x({2}) - grid_x({1});
         grid_dims({2}) = grid_y({2}) - grid_y({1});
         grid_dims({3}) = grid_z({2}) - grid_z({1});
@@ -565,6 +562,7 @@ void solve_radiation(int argc, char** argv)
         const int n_gpt_sw = rad_sw.get_n_gpt_gpu();
 
         Array<Float,1> mu0(input_nc.get_variable<Float>("mu0", {n_col_y, n_col_x}), {n_col});
+        Array<Float,1> azi(input_nc.get_variable<Float>("azi", {n_col_y, n_col_x}), {n_col});
         Array<Float,2> sfc_alb_dir(input_nc.get_variable<Float>("sfc_alb_dir", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
         Array<Float,2> sfc_alb_dif(input_nc.get_variable<Float>("sfc_alb_dif", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
 
@@ -576,12 +574,19 @@ void solve_radiation(int argc, char** argv)
             for (int icol=1; icol<=n_col; ++icol)
                 tsi_scaling({icol}) = tsi({icol}) / tsi_ref;
         }
+        else if (input_nc.variable_exists("tsi_scaling"))
+        {
+            Float tsi_scaling_in = input_nc.get_variable<Float>("tsi_scaling");
+            for (int icol=1; icol<=n_col; ++icol)
+                tsi_scaling({icol}) = tsi_scaling_in;
+        }
         else
         {
             for (int icol=1; icol<=n_col; ++icol)
                 tsi_scaling({icol}) = Float(1.);
         }
 
+        // Optional top of domain fluxes
         // Create output arrays.
         Array_gpu<Float,3> sw_tau;
         Array_gpu<Float,3> ssa;
@@ -650,7 +655,6 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> p_lev_gpu(p_lev);
             Array_gpu<Float,2> t_lay_gpu(t_lay);
             Array_gpu<Float,2> t_lev_gpu(t_lev);
-            Array_gpu<Float,1> z_lev_gpu(z_lev);
             Array_gpu<Float,1> grid_dims_gpu(grid_dims);
             Array_gpu<int,1> kn_grid_dims_gpu(kn_grid_dims);
             Array_gpu<Float,2> col_dry_gpu(col_dry);
@@ -658,6 +662,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> sfc_alb_dif_gpu(sfc_alb_dif);
             Array_gpu<Float,1> tsi_scaling_gpu(tsi_scaling);
             Array_gpu<Float,1> mu0_gpu(mu0);
+            Array_gpu<Float,1> azi_gpu(azi);
             Array_gpu<Float,2> lwp_gpu(lwp);
             Array_gpu<Float,2> iwp_gpu(iwp);
             Array_gpu<Float,2> rel_gpu(rel);
@@ -681,12 +686,11 @@ void solve_radiation(int argc, char** argv)
                     gas_concs_gpu,
                     p_lay_gpu, p_lev_gpu,
                     t_lay_gpu, t_lev_gpu,
-                    z_lev_gpu,
                     grid_dims_gpu,
                     kn_grid_dims_gpu,
                     col_dry_gpu,
                     sfc_alb_dir_gpu, sfc_alb_dif_gpu,
-                    tsi_scaling_gpu, mu0_gpu,
+                    tsi_scaling_gpu, mu0_gpu, azi_gpu,
                     lwp_gpu, iwp_gpu,
                     rel_gpu, rei_gpu,
                     sw_tau, ssa, g,

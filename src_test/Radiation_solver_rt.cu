@@ -567,12 +567,12 @@ void Radiation_solver_shortwave::solve_gpu(
         const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
-        const Array_gpu<Float,1>& z_lev,
         const Array_gpu<Float,1>& grid_dims,
         const Array_gpu<int,1>& kn_grid_dims,
         Array_gpu<Float,2>& col_dry,
         const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
-        const Array_gpu<Float,1>& tsi_scaling, const Array_gpu<Float,1>& mu0,
+        const Array_gpu<Float,1>& tsi_scaling, 
+        const Array_gpu<Float,1>& mu0, const Array_gpu<Float,1>& azi, 
         const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         Array_gpu<Float,3>& tau, Array_gpu<Float,3>& ssa, Array_gpu<Float,3>& g,
@@ -714,7 +714,7 @@ void Radiation_solver_shortwave::solve_gpu(
                     rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
 
                 Float zenith_angle = std::acos(mu0({1}));
-                Float azimuth_angle = 3.14; // sun approximately from south
+                Float azimuth_angle = azi({1}); // sun approximately from south
 
                 Array<Float,1> tod_dir_diff({2});
                 compute_tod_flux(n_col, n_z, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
