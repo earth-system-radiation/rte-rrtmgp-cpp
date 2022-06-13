@@ -231,7 +231,11 @@ namespace
             }
 
             const int ij = i + j*itot;
+            
+            #ifdef NDEBUG
             if (ij < 0 || ij >=itot*jtot) printf("outofbounds 3");
+            #endif 
+
             atomicAdd(&toa_down_count[ij], Float(1.));
             weight = 1;
 
@@ -344,8 +348,10 @@ void ray_tracer_kernel(
                 const int j = float_to_int(photon.position.y, dy_grid, jtot);
                 const int ij = i + j*itot;
                 d_max = Float(0.);
-
+            
+                #ifdef NDEBUG
                 if (ij < 0 || ij >=itot*jtot) printf("outofbounds 1");
+                #endif
 
                 // Add surface irradiance
                 if (photon.kind == Photon_kind::Direct)
@@ -396,7 +402,10 @@ void ray_tracer_kernel(
                 const int j = float_to_int(photon.position.y, dy_grid, jtot);
                 const int ij = i + j*itot;
 
+                #ifdef NDEBUG
                 if (ij < 0 || ij >=itot*jtot) printf("outofbounds 2");
+                #endif
+                
                 write_photon_out(&tod_up_count[ij], weight);
 
                 reset_photon(
@@ -455,9 +464,11 @@ void ray_tracer_kernel(
 
             // Compute probability not being absorbed and store weighted absorption probability
             const Float f_no_abs = Float(1.) - (Float(1.) - ssa_asy[ijk].ssa) * (k_ext_tot/k_ext_null);
-
+            
+            #ifdef NDEBUG
             if (ijk < 0 || ijk >= itot*jtot*ktot) printf("oufofbounds hr \n");
-
+            #endif
+           
             if (photon.kind == Photon_kind::Direct)
                 write_photon_out(&atmos_direct_count[ijk], weight*(1-f_no_abs));
             else

@@ -6,8 +6,8 @@
 
 
 #ifdef RTE_RRTMGP_SINGLE_PRECISION
-constexpr int block_size = 256;
-constexpr int grid_size = 512;
+constexpr int block_size = 512;
+constexpr int grid_size = 1024;
 #else
 constexpr int block_size = 512;
 constexpr int grid_size = 256;
