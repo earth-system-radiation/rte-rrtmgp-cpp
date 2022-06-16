@@ -123,7 +123,8 @@ namespace
 
     __global__
     void count_to_flux_3d(
-            const int ncol_x, const int ncol_y, const int nlay, const Float photons_per_col, const Float toa_src,
+            const int ncol_x, const int ncol_y, const int nlay, const Float photons_per_col, 
+            const Float dz_grid, const Float toa_src,
             const Float* __restrict__ count_1, const Float* __restrict__ count_2,
             Float* __restrict__ flux_1, Float* __restrict__ flux_2)
     {
@@ -135,8 +136,8 @@ namespace
         {
             const int idx = icol_x + icol_y*ncol_x + iz*ncol_x*ncol_y;
             const Float flux_per_ray = toa_src / photons_per_col;
-            flux_1[idx] = count_1[idx] * flux_per_ray;
-            flux_2[idx] = count_2[idx] * flux_per_ray;
+            flux_1[idx] = count_1[idx] * flux_per_ray / dz_grid;
+            flux_2[idx] = count_2[idx] * flux_per_ray / dz_grid;
         }
     }
 }
@@ -307,6 +308,7 @@ void Raytracer::trace_rays(
 
     count_to_flux_3d<<<grid_3d, block_3d>>>(
             ncol_x, ncol_y, nlay, photons_per_pixel,
+            dz_grid,
             toa_src,
             atmos_direct_count.ptr(),
             atmos_diffuse_count.ptr(),
