@@ -232,7 +232,7 @@ namespace
 
             const int ij = i + j*itot;
             
-            #ifdef NDEBUG
+            #ifndef NDEBUG
             if (ij < 0 || ij >=itot*jtot) printf("outofbounds 3");
             #endif 
 
@@ -349,7 +349,7 @@ void ray_tracer_kernel(
                 const int ij = i + j*itot;
                 d_max = Float(0.);
             
-                #ifdef NDEBUG
+                #ifndef NDEBUG
                 if (ij < 0 || ij >=itot*jtot) printf("outofbounds 1");
                 #endif
 
@@ -402,7 +402,7 @@ void ray_tracer_kernel(
                 const int j = float_to_int(photon.position.y, dy_grid, jtot);
                 const int ij = i + j*itot;
 
-                #ifdef NDEBUG
+                #ifndef NDEBUG
                 if (ij < 0 || ij >=itot*jtot) printf("outofbounds 2");
                 #endif
                 
@@ -465,7 +465,7 @@ void ray_tracer_kernel(
             // Compute probability not being absorbed and store weighted absorption probability
             const Float f_no_abs = Float(1.) - (Float(1.) - ssa_asy[ijk].ssa) * (k_ext_tot/k_ext_null);
             
-            #ifdef NDEBUG
+            #ifndef NDEBUG
             if (ijk < 0 || ijk >= itot*jtot*ktot) printf("oufofbounds hr \n");
             #endif
            
