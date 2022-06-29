@@ -162,6 +162,7 @@ Raytracer::Raytracer()
 
 void Raytracer::trace_rays(
         const Int photons_per_pixel,
+        const Int qrng_gpt_offset,
         const int ncol_x, const int ncol_y, const int nlay,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
         const int ngrid_x, const int ngrid_y, const int ngrid_z,
@@ -270,6 +271,7 @@ void Raytracer::trace_rays(
             photons_per_thread,
             qrng_grid_x,
             qrng_grid_y,
+            qrng_gpt_offset,
             k_null_grid.ptr(),
             tod_dn_count.ptr(),
             tod_up_count.ptr(),

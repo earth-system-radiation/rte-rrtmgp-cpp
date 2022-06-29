@@ -168,6 +168,7 @@ void solve_radiation(int argc, char** argv)
 
         raytracer.trace_rays(
                 photons_per_pixel,
+                0,
                 nx, ny, nz,
                 dx, dy, dz,
                 ngrid_x, ngrid_y, ngrid_z,

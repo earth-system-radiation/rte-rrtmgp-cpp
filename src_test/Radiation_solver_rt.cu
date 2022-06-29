@@ -721,6 +721,7 @@ void Radiation_solver_shortwave::solve_gpu(
 
                 raytracer.trace_rays(
                         ray_count,
+                        igpt-1,
                         n_col_x, n_col_y, n_z,
                         dx_grid, dy_grid, dz_grid,
                         ngrid_x, ngrid_y, ngrid_z,

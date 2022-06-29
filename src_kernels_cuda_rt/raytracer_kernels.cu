@@ -255,6 +255,7 @@ void ray_tracer_kernel(
         const Int photons_to_shoot,
         const Int qrng_grid_x,
         const Int qrng_grid_y,
+        const Int qrng_gpt_offset,
         const Float* __restrict__ k_null_grid,
         Float* __restrict__ toa_down_count,
         Float* __restrict__ tod_up_count,
@@ -282,7 +283,7 @@ void ray_tracer_kernel(
 
     Photon photon;
     Random_number_generator<Float> rng(n);
-    Quasi_random_number_generator_2d qrng(qrng_vectors, qrng_constants, n*photons_to_shoot);
+    Quasi_random_number_generator_2d qrng(qrng_vectors, qrng_constants, n*photons_to_shoot + qrng_gpt_offset*photons_to_shoot*block_size*grid_size);
 
     const Float s_min = max(z_size, max(y_size, x_size)) * Float_epsilon;
 
