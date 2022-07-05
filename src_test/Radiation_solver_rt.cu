@@ -34,6 +34,7 @@
 #include "Fluxes_rt.h"
 #include "Rte_lw_rt.h"
 #include "Rte_sw_rt.h"
+#include "subset_kernel_launcher_cuda.h"
 #include "rrtmgp_kernel_launcher_cuda_rt.h"
 #include "gpt_combine_kernel_launcher_cuda_rt.h"
 
@@ -571,8 +572,8 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<int,1>& kn_grid_dims,
         Array_gpu<Float,2>& col_dry,
         const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
-        const Array_gpu<Float,1>& tsi_scaling, 
-        const Array_gpu<Float,1>& mu0, const Array_gpu<Float,1>& azi, 
+        const Array_gpu<Float,1>& tsi_scaling,
+        const Array_gpu<Float,1>& mu0, const Array_gpu<Float,1>& azi,
         const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         Array_gpu<Float,3>& tau, Array_gpu<Float,3>& ssa, Array_gpu<Float,3>& g,
@@ -651,6 +652,7 @@ void Radiation_solver_shortwave::solve_gpu(
             }
         }
 
+        /*
         kdist_gpu->gas_optics(
                   igpt-1,
                   p_lay,
@@ -660,7 +662,63 @@ void Radiation_solver_shortwave::solve_gpu(
                   optical_props,
                   toa_src,
                   col_dry);
-        scaling_to_subset(n_col, n_gpt, toa_src, tsi_scaling);
+        */
+
+        // We loop over the gas optics, due to memory constraints
+        constexpr int n_col_block = 1<<14; // 2^14
+
+        Array_gpu<Float,1> toa_src_temp({n_col_block});
+
+        auto gas_optics_subset = [&](
+                const int col_s, const int col_e, const int n_col_subset,
+                std::unique_ptr<Optical_props_arry_rt>& optical_props_subset)
+        {
+            Gas_concs_gpu gas_concs_subset(gas_concs, col_s, n_col_subset);
+            // Run the gas_optics on a subset.
+            kdist_gpu->gas_optics(
+                    igpt-1,
+                    p_lay.subset({{ {col_s, col_e}, {1, n_lay} }}),
+                    p_lev.subset({{ {col_s, col_e}, {1, n_lev} }}),
+                    t_lay.subset({{ {col_s, col_e}, {1, n_lay} }}),
+                    gas_concs_subset,
+                    optical_props_subset,
+                    toa_src_temp,
+                    col_dry.subset({{ {col_s, col_e}, {1, n_lay} }}));
+            subset_kernel_launcher_cuda::get_from_subset(
+                    n_col, n_lay, n_col_subset, col_s,
+                    optical_props->get_tau().ptr(), optical_props->get_ssa().ptr(), optical_props->get_g().ptr(),
+                    optical_props_subset->get_tau().ptr(), optical_props_subset->get_ssa().ptr(), optical_props_subset->get_g().ptr());
+
+        };
+
+        const int n_blocks = n_col / n_col_block;
+        const int n_col_residual = n_col % n_col_block;
+
+        std::unique_ptr<Optical_props_arry_rt> optical_props_block =
+                std::make_unique<Optical_props_2str_rt>(n_col_block, n_lay, *kdist_gpu);
+
+        for (int n=0; n<n_blocks; ++n)
+        {
+            const int col_s = n*n_col_block + 1;
+            const int col_e = (n+1)*n_col_block;
+
+            gas_optics_subset(col_s, col_e, n_col_block, optical_props_block);
+        }
+
+        optical_props_block.reset();
+
+        if (n_col_residual > 0)
+        {
+            std::unique_ptr<Optical_props_arry_rt> optical_props_residual =
+                    std::make_unique<Optical_props_2str_rt>(n_col_residual, n_lay, *kdist_gpu);
+
+            const int col_s = n_blocks*n_col_block + 1;
+            const int col_e = n_col;
+
+            gas_optics_subset(col_s, col_e, n_col_residual, optical_props_residual);
+        }
+
+        toa_src.fill(toa_src_temp({1}) * tsi_scaling({1}));
 
         if (switch_cloud_optics)
         {
@@ -673,7 +731,7 @@ void Radiation_solver_shortwave::solve_gpu(
                     *cloud_optical_props);
 
 
-            cloud_optical_props->delta_scale();
+            //cloud_optical_props->delta_scale();
 
             // Add the cloud optical props to the gas optical properties.
             add_to(
