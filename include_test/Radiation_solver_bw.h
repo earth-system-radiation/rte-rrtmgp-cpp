@@ -83,7 +83,7 @@ class Radiation_solver_longwave
 
         int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
-        
+
         Array<int,2> get_band_lims_gpoint_gpu() const
         { return this->kdist_gpu->get_band_lims_gpoint(); }
 
@@ -159,11 +159,29 @@ class Radiation_solver_shortwave
                 const Array_gpu<Float,1>& cam_data,
                 Array_gpu<Float,3>& XYZ);
 
+        #ifdef __CUDACC__
+        void solve_gpu_bb(
+                const bool switch_cloud_optics,
+                const bool switch_output_bnd_fluxes,
+                const Int ray_count,
+                const Gas_concs_gpu& gas_concs,
+                const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
+                const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
+                const Array_gpu<Float,1>& z_lev,
+                const Array_gpu<Float,1>& grid_dims,
+                Array_gpu<Float,2>& col_dry,
+                const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
+                const Array_gpu<Float,1>& tsi_scaling, const Array_gpu<Float,1>& mu0,
+                const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
+                const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
+                const Array_gpu<Float,1>& cam_data,
+                Array_gpu<Float,2>& radiance);
+
         int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
 
         Float get_tsi_gpu() const { return this->kdist_gpu->get_tsi(); };
-        
+
         Array<int,2> get_band_lims_gpoint_gpu() const
         { return this->kdist_gpu->get_band_lims_gpoint(); }
 

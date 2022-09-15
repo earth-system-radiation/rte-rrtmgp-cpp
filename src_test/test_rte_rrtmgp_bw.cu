@@ -70,6 +70,19 @@ void read_and_set_vmr(
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 void configure_memory_pool(int nlays, int ncols, int nchunks, int ngpts, int nbnds)
 {
     /* Heuristic way to set up memory pool queues */
@@ -199,7 +212,7 @@ void solve_radiation(int argc, char** argv)
 
     if (parse_command_line_options(command_line_options, ray_count_exponent, argc, argv))
         return;
-    
+
 
     const bool switch_shortwave         = command_line_options.at("shortwave"        ).first;
     const bool switch_longwave          = command_line_options.at("longwave"         ).first;
@@ -208,12 +221,12 @@ void solve_radiation(int argc, char** argv)
     const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
-    
+
     // Print the options to the screen.
     print_command_line_options(command_line_options);
 
     Int ray_count;
-  
+
     ray_count = pow(Int(2),ray_count_exponent);
     if (ray_count < block_size*grid_size)
     {
@@ -222,7 +235,7 @@ void solve_radiation(int argc, char** argv)
     }
     else
         Status::print_message("Using "+ std::to_string(Int(pow(2, ray_count_exponent))) + " rays");
-   
+
     ////// READ THE ATMOSPHERIC DATA //////
     Status::print_message("Reading atmospheric input data from NetCDF.");
 
@@ -235,13 +248,16 @@ void solve_radiation(int argc, char** argv)
     const int n_lev = input_nc.get_dimension_size("lev");
     const int n_z = input_nc.get_dimension_size("z");
 
+
+    const bool do_bb = true;
+
     // Read the x,y,z dimensions if raytracing is enabled
     Array<Float,1> grid_dims({6});
     Array<Float,1> grid_x({n_col_x});
     Array<Float,1> grid_y({n_col_y});
     Array<Float,1> grid_z({n_z});
     Array<Float,1> z_lev({n_lev});
-    
+
     // Reading camera data
     Array<Float,1> cam_data({2});
     cam_data({1}) = input_nc.get_variable<Float>("cam_azi");
@@ -258,7 +274,7 @@ void solve_radiation(int argc, char** argv)
     grid_dims({4}) = n_z;
     grid_dims({5}) = n_col_y;
     grid_dims({6}) = n_col_x;
-    
+
     //hard code camera size fow now
     const int cam_nx = 1024;
     const int cam_ny = 1024;
@@ -268,7 +284,7 @@ void solve_radiation(int argc, char** argv)
     Array<Float,2> p_lev(input_nc.get_variable<Float>("p_lev", {n_lev, n_col_y, n_col_x}), {n_col, n_lev});
     Array<Float,2> t_lev(input_nc.get_variable<Float>("t_lev", {n_lev, n_col_y, n_col_x}), {n_col, n_lev});
 
-    
+
     // Fetch the col_dry in case present.
     Array<Float,2> col_dry;
     if (input_nc.variable_exists("col_dry"))
@@ -300,7 +316,7 @@ void solve_radiation(int argc, char** argv)
     read_and_set_vmr("hfc134a", n_col_x, n_col_y, n_lay, input_nc, gas_concs);
     read_and_set_vmr("cf4"    , n_col_x, n_col_y, n_lay, input_nc, gas_concs);
     read_and_set_vmr("no2"    , n_col_x, n_col_y, n_lay, input_nc, gas_concs);
-    
+
     Array<Float,2> lwp;
     Array<Float,2> iwp;
     Array<Float,2> rel;
@@ -355,7 +371,7 @@ void solve_radiation(int argc, char** argv)
         Status::print_message("Initializing the longwave solver.");
 
         Gas_concs_gpu gas_concs_gpu(gas_concs);
-        
+
         Radiation_solver_longwave rad_lw(gas_concs_gpu, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
 
         // Read the boundary conditions.
@@ -421,7 +437,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> iwp_gpu(iwp);
             Array_gpu<Float,2> rel_gpu(rel);
             Array_gpu<Float,2> rei_gpu(rei);
-            
+
             cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
@@ -550,6 +566,7 @@ void solve_radiation(int argc, char** argv)
         const int n_gpt_sw = rad_sw.get_n_gpt_gpu();
 
         Array<Float,1> mu0(input_nc.get_variable<Float>("mu0", {n_col_y, n_col_x}), {n_col});
+        Array<Float,1> azi(input_nc.get_variable<Float>("azi", {n_col_y, n_col_x}), {n_col});
         Array<Float,2> sfc_alb_dir(input_nc.get_variable<Float>("sfc_alb_dir", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
         Array<Float,2> sfc_alb_dif(input_nc.get_variable<Float>("sfc_alb_dif", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
 
@@ -566,13 +583,19 @@ void solve_radiation(int argc, char** argv)
             for (int icol=1; icol<=n_col; ++icol)
                 tsi_scaling({icol}) = Float(1.);
         }
-        
-        Array_gpu<Float,3> XYZ({cam_nx, cam_ny, 3});
-        
+
+        Array_gpu<Float,3> XYZ;
+        Array_gpu<Float,2> radiance;
+
+        if (do_bb)
+            radiance.set_dims({cam_nx, cam_ny});
+        else
+            XYZ.set_dims({cam_nx, cam_ny, 3});
+
         // Solve the radiation.
         Status::print_message("Solving the shortwave radiation.");
 
-        auto run_solver = [&](const bool tune_step)
+        auto run_solver = [&](const bool tune_step, const bool do_bb)
         {
             Array_gpu<Float,2> p_lay_gpu(p_lay);
             Array_gpu<Float,2> p_lev_gpu(p_lev);
@@ -585,11 +608,12 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> sfc_alb_dif_gpu(sfc_alb_dif);
             Array_gpu<Float,1> tsi_scaling_gpu(tsi_scaling);
             Array_gpu<Float,1> mu0_gpu(mu0);
+            Array_gpu<Float,1> azi_gpu(azi);
             Array_gpu<Float,2> lwp_gpu(lwp);
             Array_gpu<Float,2> iwp_gpu(iwp);
             Array_gpu<Float,2> rel_gpu(rel);
             Array_gpu<Float,2> rei_gpu(rei);
-            
+
             cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
@@ -598,8 +622,9 @@ void solve_radiation(int argc, char** argv)
 
             cudaEventRecord(start, 0);
 
-            rad_sw.solve_gpu(
-                    tune_step,
+            if (do_bb)
+            {
+                rad_sw.solve_gpu_bb(
                     switch_cloud_optics,
                     switch_output_bnd_fluxes,
                     ray_count,
@@ -610,10 +635,31 @@ void solve_radiation(int argc, char** argv)
                     grid_dims_gpu,
                     col_dry_gpu,
                     sfc_alb_dir_gpu, sfc_alb_dif_gpu,
-                    tsi_scaling_gpu, mu0_gpu,
+                    tsi_scaling_gpu,
+                    mu0_gpu, azi_gpu,
                     lwp_gpu, iwp_gpu,
                     rel_gpu, rei_gpu,
                     cam_data_gpu, XYZ);
+            }
+            else
+            {
+                rad_sw.solve_gpu(
+                        tune_step,
+                        switch_cloud_optics,
+                        switch_output_bnd_fluxes,
+                        ray_count,
+                        gas_concs_gpu,
+                        p_lay_gpu, p_lev_gpu,
+                        t_lay_gpu, t_lev_gpu,
+                        z_lev_gpu,
+                        grid_dims_gpu,
+                        col_dry_gpu,
+                        sfc_alb_dir_gpu, sfc_alb_dif_gpu,
+                        tsi_scaling_gpu,
+                        mu0_gpu, azi_gpu,
+                        lwp_gpu, iwp_gpu,
+                        rel_gpu, rei_gpu,
+                        cam_data_gpu, XYZ);
 
             cudaEventRecord(stop, 0);
             cudaEventSynchronize(stop);
@@ -627,11 +673,12 @@ void solve_radiation(int argc, char** argv)
         };
 
         // Tuning step;
-        run_solver(true);
+        if (!do_bb)
+            run_solver(true,do_bb);
 
         // Profiling step;
         cudaProfilerStart();
-        run_solver(false);
+        run_solver(false, do_bb);
         cudaProfilerStop();
 
         // constexpr int n_measures=10;
@@ -641,27 +688,32 @@ void solve_radiation(int argc, char** argv)
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");
-        XYZ.dump("xyz");
-        Array<Float,3> XYZ_cpu(XYZ);
 
-        output_nc.add_dimension("gpt_sw", n_gpt_sw);
-        output_nc.add_dimension("band_sw", n_bnd_sw);
-        output_nc.add_dimension("n",3);
+        if (do_bb)
+        {
+            Array<Float,3> radiance_cpu(radiance);
+            output_nc.add_dimension("gpt_sw", n_gpt_sw);
+            output_nc.add_dimension("band_sw", n_bnd_sw);
 
-        auto nc_sw_band_lims_wvn = output_nc.add_variable<Float>("sw_band_lims_wvn", {"band_sw", "pair"});
-        nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber_gpu().v(), {0, 0});
-        
-        //auto nc_xx = output_nc.add_variable<Float>("X", {"darn","y","x"}); 
-        auto nc_xx = output_nc.add_variable<Float>("XYZ", {"n","y","x"}); 
-        //auto nc_yy = output_nc.add_variable<Float>("Y", {"n","y","x"}); 
-        //auto nc_zz = output_nc.add_variable<Float>("Z", {"n","y","x"}); 
+            auto nc_sw_band_lims_wvn = output_nc.add_variable<Float>("sw_band_lims_wvn", {"band_sw", "pair"});
+            nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber_gpu().v(), {0, 0});
 
-        nc_xx.insert(XYZ_cpu.v(), {0, 0, 0});
-        //printf("---");
-        //nc_yy.insert(XYZ_cpu.v()[cam_ny*cam_nx], {0, 0, 0}, {1, cam_ny, cam_nx});
-        //printf("---");
-        //nc_zz.insert(XYZ_cpu.v()[cam_ny*cam_nx], {0, 0, 0}, {1, cam_ny, cam_nx});
-        
+            auto nc_var = output_nc.add_variable<Float>("radiance", {"y","x"});
+            nc_var.insert(radiance_cpu.v(), {0, 00});
+        }
+        else
+        {
+            Array<Float,3> XYZ_cpu(XYZ);
+            output_nc.add_dimension("gpt_sw", n_gpt_sw);
+            output_nc.add_dimension("band_sw", n_bnd_sw);
+            output_nc.add_dimension("n",3);
+
+            auto nc_sw_band_lims_wvn = output_nc.add_variable<Float>("sw_band_lims_wvn", {"band_sw", "pair"});
+            nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber_gpu().v(), {0, 0});
+
+            auto nc_xx = output_nc.add_variable<Float>("XYZ", {"n","y","x"});
+            nc_xx.insert(XYZ_cpu.v(), {0, 0, 0});
+        }
     }
 
     Status::print_message("###### Finished RTE+RRTMGP solver ######");

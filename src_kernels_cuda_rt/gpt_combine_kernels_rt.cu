@@ -66,6 +66,20 @@ void add_from_gpoint_kernel(const int ncol, const int nlay,
 
 __global__
 void add_from_gpoint_kernel(const int ncol, const int nlay,
+              Float* __restrict__ var1_full, const Float* __restrict__ var1_sub)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+
+    if ( (icol < ncol) && (ilay < nlay) )
+    {
+        const int idx = icol + ilay*ncol;
+        var1_full[idx] += var1_sub[idx];
+    }
+}
+
+__global__
+void add_from_gpoint_kernel(const int ncol, const int nlay,
               Float* __restrict__ var1_full, Float* __restrict__ var2_full, Float* __restrict__ var3_full,
               const Float* __restrict__ var1_sub, const Float* __restrict__ var2_sub, const Float* __restrict__ var3_sub)
 {
