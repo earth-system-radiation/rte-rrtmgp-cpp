@@ -260,8 +260,8 @@ void solve_radiation(int argc, char** argv)
 
     // Reading camera data
     Array<Float,1> cam_data({2});
-    cam_data({1}) = input_nc.get_variable<Float>("cam_azi");
-    cam_data({2}) = input_nc.get_variable<Float>("cam_z");
+    cam_data({1}) = 90;//input_nc.get_variable<Float>("cam_azi");
+    cam_data({2}) = 0.;//input_nc.get_variable<Float>("cam_z");
     Array_gpu<Float,1> cam_data_gpu(cam_data);
 
     grid_x = std::move(input_nc.get_variable<Float>("x", {n_col_x}));
@@ -278,6 +278,7 @@ void solve_radiation(int argc, char** argv)
     //hard code camera size fow now
     const int cam_nx = 1024;
     const int cam_ny = 1024;
+
     // Read the atmospheric fields.
     Array<Float,2> p_lay(input_nc.get_variable<Float>("p_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
     Array<Float,2> t_lay(input_nc.get_variable<Float>("t_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
@@ -578,6 +579,12 @@ void solve_radiation(int argc, char** argv)
             for (int icol=1; icol<=n_col; ++icol)
                 tsi_scaling({icol}) = tsi({icol}) / tsi_ref;
         }
+        else if (input_nc.variable_exists("tsi_scaling"))
+        {
+            Float tsi_scaling_in = input_nc.get_variable<Float>("tsi_scaling");
+            for (int icol=1; icol<=n_col; ++icol)
+                tsi_scaling({icol}) = tsi_scaling_in;
+        }
         else
         {
             for (int icol=1; icol<=n_col; ++icol)
@@ -595,7 +602,7 @@ void solve_radiation(int argc, char** argv)
         // Solve the radiation.
         Status::print_message("Solving the shortwave radiation.");
 
-        auto run_solver = [&](const bool tune_step, const bool do_bb)
+        auto run_solver_bb = [&](const bool tune_step)
         {
             Array_gpu<Float,2> p_lay_gpu(p_lay);
             Array_gpu<Float,2> p_lev_gpu(p_lev);
@@ -622,9 +629,63 @@ void solve_radiation(int argc, char** argv)
 
             cudaEventRecord(start, 0);
 
-            if (do_bb)
-            {
-                rad_sw.solve_gpu_bb(
+            rad_sw.solve_gpu_bb(
+                switch_cloud_optics,
+                switch_output_bnd_fluxes,
+                ray_count,
+                gas_concs_gpu,
+                p_lay_gpu, p_lev_gpu,
+                t_lay_gpu, t_lev_gpu,
+                z_lev_gpu,
+                grid_dims_gpu,
+                col_dry_gpu,
+                sfc_alb_dir_gpu, sfc_alb_dif_gpu,
+                tsi_scaling_gpu,
+                mu0_gpu, azi_gpu,
+                lwp_gpu, iwp_gpu,
+                rel_gpu, rei_gpu,
+                cam_data_gpu, radiance);
+
+            cudaEventRecord(stop, 0);
+            cudaEventSynchronize(stop);
+            float duration = 0.f;
+            cudaEventElapsedTime(&duration, start, stop);
+
+            cudaEventDestroy(start);
+            cudaEventDestroy(stop);
+
+            Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
+        };
+
+        auto run_solver = [&](const bool tune_step)
+        {
+            Array_gpu<Float,2> p_lay_gpu(p_lay);
+            Array_gpu<Float,2> p_lev_gpu(p_lev);
+            Array_gpu<Float,2> t_lay_gpu(t_lay);
+            Array_gpu<Float,2> t_lev_gpu(t_lev);
+            Array_gpu<Float,1> z_lev_gpu(z_lev);
+            Array_gpu<Float,1> grid_dims_gpu(grid_dims);
+            Array_gpu<Float,2> col_dry_gpu(col_dry);
+            Array_gpu<Float,2> sfc_alb_dir_gpu(sfc_alb_dir);
+            Array_gpu<Float,2> sfc_alb_dif_gpu(sfc_alb_dif);
+            Array_gpu<Float,1> tsi_scaling_gpu(tsi_scaling);
+            Array_gpu<Float,1> mu0_gpu(mu0);
+            Array_gpu<Float,1> azi_gpu(azi);
+            Array_gpu<Float,2> lwp_gpu(lwp);
+            Array_gpu<Float,2> iwp_gpu(iwp);
+            Array_gpu<Float,2> rel_gpu(rel);
+            Array_gpu<Float,2> rei_gpu(rei);
+
+            cudaDeviceSynchronize();
+            cudaEvent_t start;
+            cudaEvent_t stop;
+            cudaEventCreate(&start);
+            cudaEventCreate(&stop);
+
+            cudaEventRecord(start, 0);
+
+            rad_sw.solve_gpu(
+                    tune_step,
                     switch_cloud_optics,
                     switch_output_bnd_fluxes,
                     ray_count,
@@ -640,26 +701,6 @@ void solve_radiation(int argc, char** argv)
                     lwp_gpu, iwp_gpu,
                     rel_gpu, rei_gpu,
                     cam_data_gpu, XYZ);
-            }
-            else
-            {
-                rad_sw.solve_gpu(
-                        tune_step,
-                        switch_cloud_optics,
-                        switch_output_bnd_fluxes,
-                        ray_count,
-                        gas_concs_gpu,
-                        p_lay_gpu, p_lev_gpu,
-                        t_lay_gpu, t_lev_gpu,
-                        z_lev_gpu,
-                        grid_dims_gpu,
-                        col_dry_gpu,
-                        sfc_alb_dir_gpu, sfc_alb_dif_gpu,
-                        tsi_scaling_gpu,
-                        mu0_gpu, azi_gpu,
-                        lwp_gpu, iwp_gpu,
-                        rel_gpu, rei_gpu,
-                        cam_data_gpu, XYZ);
 
             cudaEventRecord(stop, 0);
             cudaEventSynchronize(stop);
@@ -673,14 +714,22 @@ void solve_radiation(int argc, char** argv)
         };
 
         // Tuning step;
-        if (!do_bb)
-            run_solver(true,do_bb);
+        if (do_bb)
+        {
+           // Profiling step;
+           //cudaProfilerStart();
+           run_solver_bb(false);
+           //cudaProfilerStop();
+        }
+        else
+        {
+           run_solver(true);
 
-        // Profiling step;
-        cudaProfilerStart();
-        run_solver(false, do_bb);
-        cudaProfilerStop();
-
+           // Profiling step;
+           cudaProfilerStart();
+           run_solver(false);
+           cudaProfilerStop();
+        }
         // constexpr int n_measures=10;
         // for (int n=0; n<n_measures; ++n)
         //     run_solver();
@@ -691,7 +740,7 @@ void solve_radiation(int argc, char** argv)
 
         if (do_bb)
         {
-            Array<Float,3> radiance_cpu(radiance);
+            Array<Float,2> radiance_cpu(radiance);
             output_nc.add_dimension("gpt_sw", n_gpt_sw);
             output_nc.add_dimension("band_sw", n_bnd_sw);
 

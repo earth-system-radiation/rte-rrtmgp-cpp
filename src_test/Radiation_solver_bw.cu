@@ -34,6 +34,7 @@
 #include "Fluxes_rt.h"
 #include "Rte_lw_rt.h"
 #include "Rte_sw_rt.h"
+#include "subset_kernel_launcher_cuda.h"
 #include "rrtmgp_kernel_launcher_cuda_rt.h"
 #include "gpt_combine_kernel_launcher_cuda_rt.h"
 
@@ -727,7 +728,7 @@ void Radiation_solver_shortwave::solve_gpu(
     const int dx_grid = grid_dims({1});
     const int dy_grid = grid_dims({2});
     const int dz_grid = grid_dims({3});
-    const int n_lay   = grid_dims({4});
+    const int n_z     = grid_dims({4});
     const int n_col_y = grid_dims({5});
     const int n_col_x = grid_dims({6});
 
@@ -888,7 +889,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
         Array_gpu<Float,2>& col_dry,
         const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
         const Array_gpu<Float,1>& tsi_scaling,
-        const Array_gpu<Float,1>& mu0, const Array_gpu<Float,1>& mu0
+        const Array_gpu<Float,1>& mu0, const Array_gpu<Float,1>& azi,
         const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         const Array_gpu<Float,1>& cam_data,
@@ -904,7 +905,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
     const int dx_grid = grid_dims({1});
     const int dy_grid = grid_dims({2});
     const int dz_grid = grid_dims({3});
-    const int n_lay   = grid_dims({4});
+    const int n_z     = grid_dims({4});
     const int n_col_y = grid_dims({5});
     const int n_col_x = grid_dims({6});
 
@@ -933,6 +934,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
     Float total_source = 0.;
 
     for (int igpt=1; igpt<=n_gpt; ++igpt)
+    //for (int igpt=1; igpt<=1; ++igpt)
     {
         int band = 0;
         for (int ibnd=1; ibnd<=n_bnd; ++ibnd)
@@ -956,7 +958,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                   toa_src,
                   col_dry);
         */
-        constexpr int n_col_block = 1<<14; // 2^14
+        constexpr int n_col_block = 1<<13; // 2^14
 
         Array_gpu<Float,1> toa_src_temp({n_col_block});
 
@@ -975,6 +977,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                     optical_props_subset,
                     toa_src_temp,
                     col_dry.subset({{ {col_s, col_e}, {1, n_lay} }}));
+
             subset_kernel_launcher_cuda::get_from_subset(
                     n_col, n_lay, n_col_subset, col_s,
                     optical_props->get_tau().ptr(), optical_props->get_ssa().ptr(), optical_props->get_g().ptr(),
@@ -1045,19 +1048,23 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                 (*fluxes).get_flux_dn_dir());
 
         Array<Float,1> tod_dir_diff({2});
-        compute_tod_flux(n_col, n_z, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
+        compute_tod_flux(n_col, n_lay, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
 
         Float zenith_angle = std::acos(mu0({1}));
         Float azimuth_angle = azi({1});//M_PI;//Float(3.4906585); //3.14; // sun approximately from south
 
-
+        //printf("%d %f %f \n",igpt,tod_dir_diff({1}), tod_dir_diff({2}));
+        //if ( (tod_dir_diff({1})+tod_dir_diff({2}) > 0.1))
+        //{
         raytracer.trace_rays_bb(
                 ray_count,
                 n_col_x, n_col_y, n_z, n_lay,
                 dx_grid, dy_grid, dz_grid,
                 z_lev,
-                dynamic_cast<Optical_props_2str_rt&>(*optical_props),
-                dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props),
+                dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
+                dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
+                dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_g(),
+                dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
                 sfc_alb_dir.subset({{ {band, band}, {1, n_col}}}),
                 zenith_angle,
                 azimuth_angle,
@@ -1066,30 +1073,10 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                 cam_data,
                 flux_camera);
 
-        gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-                n_col, n_lay, radiance.ptr(), flux_camera.ptr());
-
-            //    (*fluxes).net_flux();
-
-            //    gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-            //            n_col, n_lev, sw_flux_up, sw_flux_dn, sw_flux_dn_dir, sw_flux_net,
-            //            (*fluxes).get_flux_up(), (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), (*fluxes).get_flux_net());
-
-            // gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-           //         n_col_x, n_col_y, rt_flux_toa_up, rt_flux_sfc_dir, rt_flux_sfc_dif, rt_flux_sfc_up,
-            //         (*fluxes).get_flux_toa_up(), (*fluxes).get_flux_sfc_dir(), (*fluxes).get_flux_sfc_dif(), (*fluxes).get_flux_sfc_up());
-
-            // gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-            //         n_col, n_z, rt_flux_abs_dir, rt_flux_abs_dif,
-            //         (*fluxes).get_flux_abs_dir(), (*fluxes).get_flux_abs_dif());
-
-            //    if (switch_output_bnd_fluxes)
-            //    {
-            //        gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-            //                n_col, n_lev, igpt-1, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dn_dir, sw_bnd_flux_net,
-            //                (*fluxes).get_flux_up(), (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), (*fluxes).get_flux_net());
-            //    }
-
-        }
+        raytracer.add_camera(
+                cam_nx, cam_ny,
+                flux_camera,
+                radiance);
+        //}
     }
 }

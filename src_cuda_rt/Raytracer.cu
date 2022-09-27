@@ -123,7 +123,7 @@ namespace
 
     __global__
     void count_to_flux_3d(
-            const int ncol_x, const int ncol_y, const int nlay, const Float photons_per_col, 
+            const int ncol_x, const int ncol_y, const int nlay, const Float photons_per_col,
             const Float dz_grid, const Float toa_src,
             const Float* __restrict__ count_1, const Float* __restrict__ count_2,
             Float* __restrict__ flux_1, Float* __restrict__ flux_2)
@@ -266,7 +266,7 @@ void Raytracer::trace_rays(
     // number of photons per thread, this should a power of 2 and nonzero
     Float photons_per_thread_tmp = std::max(Float(1), static_cast<Float>(photons_total) / (grid_size * block_size));
     Int photons_per_thread = pow(Float(2.), std::floor(std::log2(Float(photons_per_thread_tmp))));
-
+    printf(" raytracing \n");
     ray_tracer_kernel<<<grid, block>>>(
             photons_per_thread,
             qrng_grid_x,

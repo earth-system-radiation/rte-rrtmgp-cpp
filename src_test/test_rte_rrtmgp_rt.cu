@@ -720,10 +720,10 @@ void solve_radiation(int argc, char** argv)
         // Tuning step;
         run_solver();
 
-        // Profiling step;
-        cudaProfilerStart();
-        run_solver();
-        cudaProfilerStop();
+        // // Profiling step;
+        // cudaProfilerStart();
+        // run_solver();
+        // cudaProfilerStop();
 
         // constexpr int n_measures=10;
         // for (int n=0; n<n_measures; ++n)

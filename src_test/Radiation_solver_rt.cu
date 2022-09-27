@@ -776,7 +776,6 @@ void Radiation_solver_shortwave::solve_gpu(
 
                 Array<Float,1> tod_dir_diff({2});
                 compute_tod_flux(n_col, n_z, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
-
                 raytracer.trace_rays(
                         ray_count,
                         igpt-1,
@@ -805,7 +804,6 @@ void Radiation_solver_shortwave::solve_gpu(
             gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
                     n_col, n_lev, sw_flux_up.ptr(), sw_flux_dn.ptr(), sw_flux_dn_dir.ptr(), sw_flux_net.ptr(),
                     (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
-
             if (switch_raytracing)
             {
                 gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(

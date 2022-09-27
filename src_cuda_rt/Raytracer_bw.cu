@@ -25,6 +25,21 @@ namespace
     }
 
     __global__
+    void add_camera_kernel(
+            const int cam_nx, const int cam_ny,
+            const Float* __restrict__ flux_camera,
+            Float* __restrict__ radiance)
+    {
+        const int ix = blockIdx.x*blockDim.x + threadIdx.x;
+        const int iy = blockIdx.y*blockDim.y + threadIdx.y;
+        if ( ( ix < cam_nx) && ( iy < cam_ny) )
+        {
+            const int idx = ix + iy*cam_nx;
+            radiance[idx] += flux_camera[idx];
+        }
+    }
+
+    __global__
     void add_xyz_camera_kernel(
             const int cam_nx, const int cam_ny,
             const Float* __restrict__ xyz_factor,
@@ -150,7 +165,7 @@ namespace
             for (int i=nz; i < nlay; ++i)
             {
                 const int idx = i*ncol_y*ncol_x;
-                bg_tau += tau_tot];
+                bg_tau += tau_tot[idx];
             }
             bg_trans[0] = exp(Float(-1) * bg_tau);
         }
@@ -158,7 +173,7 @@ namespace
 
     __global__
     void bundles_optical_props_bb(
-            const int ncol_x, const int ncol_y, const int nz, const int nlay, const Float dz_grid,
+            const int ncol_x, const int ncol_y, const int nz, const int nlay, const Float dz_grid, const Float mu,
             const Float* __restrict__ tau_tot, const Float* __restrict__ ssa,
             const Float* __restrict__ asy, const Float* __restrict__ tau_cld,
             Optics_ext* __restrict__ k_ext, Optics_scat* __restrict__ ssa_asy,
@@ -178,15 +193,33 @@ namespace
             ssa_asy[idx].ssa = ssa[idx];
             ssa_asy[idx].asy = asy[idx];
         }
-        if ( (icol_x == 0) && (icol_y == 0) && (iz == 0) )
+    }
+
+    __global__
+    void background_profile_bb(
+            const int ncol_x, const int ncol_y, const int nz, const int nbg,
+            const Float* __restrict__ z_lev,
+            const Float* __restrict__ tau_tot, const Float* __restrict__ ssa,
+            const Float* __restrict__ asy, const Float* __restrict__ tau_cld,
+            Optics_ext* __restrict__ k_ext_bg, Optics_scat* __restrict__ ssa_asy_bg, Float* __restrict__ z_lev_bg)
+    {
+        const int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if ( i < nbg)
         {
-            Float bg_tau = 0;
-            for (int i=nz; i < nlay; ++i)
-            {
-                const int idx = i*ncol_y*ncol_x;
-                bg_tau += tau_tot];
-            }
-            bg_trans[0] = exp(Float(-1) * bg_tau);
+            const int idx_out = i;
+            const int idx_in = (i+nz)*ncol_y*ncol_x;
+            const Float dz = abs(z_lev[i+nz+1] - z_lev[i+nz]);
+
+            const Float kext_cld = tau_cld[idx_in] / dz;
+            const Float kext_gas = tau_tot[idx_in] / dz - kext_cld;
+
+            k_ext_bg[idx_out].cloud = kext_cld;
+            k_ext_bg[idx_out].gas = kext_gas;
+            ssa_asy_bg[idx_out].ssa = ssa[idx_in];
+            ssa_asy_bg[idx_out].asy = asy[idx_in];
+
+            z_lev_bg[i] = z_lev[i + nz];
+            if (i == nbg-1) z_lev_bg[i + 1] = z_lev[i + nz + 1];
         }
     }
 
@@ -206,6 +239,23 @@ namespace
         }
     }
 
+    __global__
+    void add_to_flux_2d(
+            const int cam_nx, const int cam_ny, const Float photons_per_col, const Float toa_src, const Float toa_factor,
+            const Float* __restrict__ count, Float* __restrict__ flux)
+    {
+        const int ix = blockIdx.x*blockDim.x + threadIdx.x;
+        const int iy = blockIdx.y*blockDim.y + threadIdx.y;
+
+        if ( ( ix < cam_nx) && ( iy < cam_ny) )
+        {
+            const int idx = ix + iy*cam_nx;
+            const Float flux_per_ray = toa_src * toa_factor / photons_per_col;
+            flux[idx] += count[idx] * flux_per_ray;
+        }
+    }
+
+
 }
 
 
@@ -213,6 +263,25 @@ Raytracer_bw::Raytracer_bw()
 {
 }
 
+void Raytracer_bw::add_camera(
+    const int cam_nx, const int cam_ny,
+    const Array_gpu<Float,2>& flux_camera,
+    Array_gpu<Float,2>& radiance)
+{
+    const int block_x = 8;
+    const int block_y = 8;
+
+    const int grid_x  = cam_nx/block_x + (cam_nx%block_x > 0);
+    const int grid_y  = cam_ny/block_y + (cam_ny%block_y > 0);
+
+    dim3 grid(grid_x, grid_y);
+    dim3 block(block_x, block_y);
+
+    add_camera_kernel<<<grid, block>>>(
+            cam_nx, cam_ny,
+            flux_camera.ptr(),
+            radiance.ptr());
+}
 
 void Raytracer_bw::add_xyz_camera(
     const int cam_nx, const int cam_ny,
@@ -234,7 +303,6 @@ void Raytracer_bw::add_xyz_camera(
             xyz_factor.ptr(),
             flux_camera.ptr(),
             XYZ.ptr());
-
 }
 
 
@@ -279,6 +347,9 @@ void Raytracer_bw::trace_rays(
         const Array_gpu<Float,1>& cam_data,
         Array_gpu<Float,2>& flux_camera)
 {
+    const Float mu = std::abs(std::cos(zenith_angle));
+    const Float tod_frac_diff = tod_inc_diffuse / (tod_inc_direct + tod_inc_diffuse);
+
     // set of block and grid dimensions used in data processing kernels - requires some proper tuning later
     const int block_col_x = 8;
     const int block_col_y = 8;
@@ -329,10 +400,12 @@ void Raytracer_bw::trace_rays(
     const int cam_ny = flux_camera.dim(2);
 
     Array_gpu<Float,2> camera_count({cam_nx, cam_ny});
+    Array_gpu<Float,2> camera_diff({cam_nx, cam_ny});
     Array_gpu<Float,2> shot_count({cam_nx, cam_ny});
     Array_gpu<int,1> counter({1});
 
     rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, camera_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, camera_diff.ptr());
     rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, shot_count.ptr());
     rrtmgp_kernel_launcher_cuda_rt::zero_array(1, counter.ptr());
 
@@ -346,23 +419,26 @@ void Raytracer_bw::trace_rays(
     const Float dir_y = -std::sin(zenith_angle) * std::cos(azimuth_angle);
     const Float dir_z = -std::cos(zenith_angle);
 
-    const Float mu = std::abs(std::cos(zenith_angle));
-
     dim3 grid{grid_size}, block{block_size};
     Int photons_per_thread = photons_to_shoot / (grid_size * block_size);
-    ray_tracer_kernel_bw<<<grid, block>>>(
-            photons_per_thread, k_null_grid.ptr(),
-            camera_count.ptr(),
-            shot_count.ptr(),
-            counter.ptr(),
-            cam_nx, cam_ny, cam_data.ptr(),
-            k_ext.ptr(), ssa_asy.ptr(),
-            surface_albedo.ptr(),
-            mu,
-            x_size, y_size, z_size,
-            dx_grid, dy_grid, dz_grid,
-            dir_x, dir_y, dir_z,
-            ncol_x, ncol_y, nz);
+//    ray_tracer_kernel_bw<<<grid, block>>>(
+//            photons_per_thread, k_null_grid.ptr(),
+//            camera_count.ptr(),
+//            camera_diff.ptr(),
+//            shot_count.ptr(),
+//            counter.ptr(),
+//            cam_nx, cam_ny, cam_data.ptr(),
+//            k_ext.ptr(), ssa_asy.ptr(),
+//            k_ext_bg.ptr(), ssa_asy_bg.ptr(),
+//            z_lev_bg.ptr(),
+//            surface_albedo.ptr(),
+//            mu,
+//            bg_trans({1}),
+//            tod_frac_diff,
+//            x_size, y_size, z_size,
+//            dx_grid, dy_grid, dz_grid,
+//            dir_x, dir_y, dir_z,
+//            ncol_x, ncol_y, nz);
 
     //// convert counts to fluxes
     const int block_cam_x = 8;
@@ -375,6 +451,7 @@ void Raytracer_bw::trace_rays(
     dim3 block_cam(block_cam_x, block_cam_y);
 
     const Float photons_per_col = Float(photons_to_shoot) / (cam_nx * cam_ny);
+    const Float toa_src = tod_inc_direct + tod_inc_diffuse;
     count_to_flux_2d<<<grid_cam, block_cam>>>(
             cam_nx, cam_ny, photons_per_col,
             toa_src,
@@ -388,6 +465,7 @@ void Raytracer_bw::trace_rays_bb(
         const Int photons_to_shoot,
         const int ncol_x, const int ncol_y, const int nz, const int nlay,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
+        const Array_gpu<Float,1>& z_lev,
         const Array_gpu<Float,2>& tau_gas,
         const Array_gpu<Float,2>& ssa_gas,
         const Array_gpu<Float,2>& asy_gas,
@@ -400,6 +478,9 @@ void Raytracer_bw::trace_rays_bb(
         const Array_gpu<Float,1>& cam_data,
         Array_gpu<Float,2>& flux_camera)
 {
+    const Float mu = std::abs(std::cos(zenith_angle));
+    const Float tod_frac_diff = tod_inc_diffuse / (tod_inc_direct + tod_inc_diffuse);
+
     // set of block and grid dimensions used in data processing kernels - requires some proper tuning later
     const int block_col_x = 8;
     const int block_col_y = 8;
@@ -420,7 +501,7 @@ void Raytracer_bw::trace_rays_bb(
 
     Array_gpu<Float,1> bg_trans_g({1});
     bundles_optical_props_bb<<<grid_3d, block_3d>>>(
-            ncol_x, ncol_y, nz, nlay, dz_grid,
+            ncol_x, ncol_y, nz, nlay, dz_grid, mu,
             tau_gas.ptr(), ssa_gas.ptr(),
             asy_gas.ptr(), tau_cloud.ptr(),
             k_ext.ptr(), ssa_asy.ptr(), bg_trans_g.ptr());
@@ -445,15 +526,36 @@ void Raytracer_bw::trace_rays_bb(
             ncol_x, ncol_y, nz, k_ext_null_min,
             k_ext.ptr(), k_null_grid.ptr());
 
+    // TOA-TOD profile (at x=0, y=0)
+    const int nbg = nlay-nz;
+    Array_gpu<Optics_ext,1> k_ext_bg({nbg});
+    Array_gpu<Optics_scat,1> ssa_asy_bg({nbg});
+    Array_gpu<Float,1> z_lev_bg({nbg+1});
+
+    const int block_1d_z = 16;
+    const int grid_1d_z  = nbg/block_1d_z + (nbg%block_1d_z > 0);
+    dim3 grid_1d(grid_1d_z);
+    dim3 block_1d(block_1d_z);
+
+    background_profile_bb<<<grid_1d, block_1d>>>(
+            ncol_x, ncol_y, nz, nbg, z_lev.ptr(),
+            tau_gas.ptr(), ssa_gas.ptr(),
+            asy_gas.ptr(), tau_cloud.ptr(),
+            k_ext_bg.ptr(), ssa_asy_bg.ptr(), z_lev_bg.ptr());
+
+
+
     // initialise output arrays and set to 0
     const int cam_nx = flux_camera.dim(1);
     const int cam_ny = flux_camera.dim(2);
 
     Array_gpu<Float,2> camera_count({cam_nx, cam_ny});
+    Array_gpu<Float,2> camera_diff({cam_nx, cam_ny});
     Array_gpu<Float,2> shot_count({cam_nx, cam_ny});
     Array_gpu<int,1> counter({1});
 
     rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, camera_count.ptr());
+    rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, camera_diff.ptr());
     rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, shot_count.ptr());
     rrtmgp_kernel_launcher_cuda_rt::zero_array(1, counter.ptr());
 
@@ -467,26 +569,25 @@ void Raytracer_bw::trace_rays_bb(
     const Float dir_y = -std::sin(zenith_angle) * std::cos(azimuth_angle);
     const Float dir_z = -std::cos(zenith_angle);
 
-    const Float mu = std::abs(std::cos(zenith_angle));
-    const Float tod_frac_diff = tod_inc_diffuse / (tod_inc_direct + tod_inc_diffuse)
-
     dim3 grid{grid_size}, block{block_size};
     Int photons_per_thread = photons_to_shoot / (grid_size * block_size);
-    ray_tracer_kernel_bw<<<grid, block>>>(
+
+    ray_tracer_kernel_bw<<<grid, block, nbg*sizeof(Float)>>>(
             photons_per_thread, k_null_grid.ptr(),
             camera_count.ptr(),
+            camera_diff.ptr(),
             shot_count.ptr(),
             counter.ptr(),
             cam_nx, cam_ny, cam_data.ptr(),
             k_ext.ptr(), ssa_asy.ptr(),
+            k_ext_bg.ptr(), ssa_asy_bg.ptr(),
+            z_lev_bg.ptr(),
             surface_albedo.ptr(),
             mu,
-            bg_trans({1}),
-            tod_frac_diff,
             x_size, y_size, z_size,
             dx_grid, dy_grid, dz_grid,
             dir_x, dir_y, dir_z,
-            ncol_x, ncol_y, nz);
+           ncol_x, ncol_y, nz, nbg);
 
     //// convert counts to fluxes
     const int block_cam_x = 8;
@@ -500,12 +601,47 @@ void Raytracer_bw::trace_rays_bb(
 
     const Float photons_per_col = Float(photons_to_shoot) / (cam_nx * cam_ny);
     const Float toa_src = tod_inc_direct + tod_inc_diffuse;
+
+    // Array<Float,2> x1(camera_count);
+    // Array<Float,2> x2(camera_diff);
+
+    // Float m = 0;
+    // Float s = 0;
+    // Float muu = 0;
+    // for (int ii=1; ii<=1024; ++ii)
+    // {
+    //     if (x2({ii,1}) > 0)
+    //         {m += x1({ii,1}) / x2({ii,1});}
+    //     s += x2({ii,1});
+    //     muu += x2({ii,1}) * Float(ii) / Float(1024);
+    // }
+    // printf("%e %f %f \n", m/Float(1024), s, muu/s);
+    // if (s>0)
+    // {
+    // x1.dump("rad");
+    // x2.dump("cnt");
+    // throw;}
+
     count_to_flux_2d<<<grid_cam, block_cam>>>(
             cam_nx, cam_ny, photons_per_col,
-            toa_src,
+            tod_inc_direct/mu,
             Float(1.),
             camera_count.ptr(),
             flux_camera.ptr());
 
+//    add_to_flux_2d<<<grid_cam, block_cam>>>(
+//            cam_nx, cam_ny, photons_per_col,
+//            tod_inc_diffuse,
+//            Float(1.),
+//            camera_diff.ptr(),
+//            flux_camera.ptr());
+
+//    count_to_flux_2d<<<grid_cam, block_cam>>>(
+//            cam_nx, cam_ny, photons_per_col,
+//            tod_inc_direct,
+//            Float(1.),
+//            camera_diff.ptr(),
+//            flux_camera.ptr());
+//
 }
 
