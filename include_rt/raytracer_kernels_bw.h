@@ -45,7 +45,6 @@ void ray_tracer_kernel_bw(
         const Int photons_to_shoot,
         const Grid_knull* __restrict__ k_null_grid,
         Float* __restrict__ camera_count,
-        Float* __restrict__ camera_diff,
         Float* __restrict__ camera_shot,
         int* __restrict__ counter,
         const int cam_nx, const int cam_ny, const Float* __restrict__ cam_data,

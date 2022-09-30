@@ -249,7 +249,7 @@ void solve_radiation(int argc, char** argv)
     const int n_z = input_nc.get_dimension_size("z");
 
 
-    const bool do_bb = true;
+    const bool do_bb = false;
 
     // Read the x,y,z dimensions if raytracing is enabled
     Array<Float,1> grid_dims({6});

@@ -353,8 +353,9 @@ namespace
             const Float i = (Float(ij_cam % cam_nx) + rng())/ Float(cam_nx);//(Float(0.5) * Float(cam_nx)) - Float(1.) + Float(0.5) / Float(cam_nx);
             const Float j = (Float(ij_cam / cam_nx) + rng())/ Float(cam_nx);//(Float(0.5) * Float(cam_nx)) - Float(1.) + Float(0.5) / Float(cam_nx);
 
-            photon.position.x = Float(0.) + s_min;
-            photon.position.y = Float(0.) + s_min;
+
+            photon.position.x = Float(3225.) + s_min;
+            photon.position.y = Float(3225.) + s_min;
             photon.position.z = cam_data[1] + s_min; //Float(500.)+ s_min;
 
             const Float photon_zenith = i * Float(0.5) * M_PI;
@@ -420,7 +421,6 @@ void ray_tracer_kernel_bw(
         const Int photons_to_shoot,
         const Grid_knull* __restrict__ k_null_grid,
         Float* __restrict__ camera_count,
-        Float* __restrict__ camera_diff,
         Float* __restrict__ camera_shot,
         int* __restrict__ counter,
         const int cam_nx, const int cam_ny, const Float* __restrict__ cam_data,

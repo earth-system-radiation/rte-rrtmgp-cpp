@@ -830,9 +830,6 @@ void Radiation_solver_shortwave::solve_gpu(
             const Float rayleigh = rayleigh_mean(wv1_sub, wv2_sub);
             const Float toa_factor = local_planck / total_planck * Float(1.)/solar_source_band;
 
-            std::unique_ptr<Fluxes_broadband_rt> fluxes =
-                    std::make_unique<Fluxes_broadband_rt>(cam_nx, cam_ny, 1);
-
             // XYZ factors
             Array<Float,1> xyz_factor({3});
             xyz_factor({1}) = xyz_irradiance(wv1_sub,wv2_sub,&get_x);
@@ -848,25 +845,27 @@ void Radiation_solver_shortwave::solve_gpu(
             Float zenith_angle = std::acos(mu0({1}));
             Float azimuth_angle = azi({1});
 
-//            raytracer.trace_rays(
-//                    ray_count,
-//                    n_col_x, n_col_y, n_lay,
-//                    dx_grid, dy_grid, dz_grid,
-//                    z_lev,
-//                    dynamic_cast<Optical_props_2str_rt&>(*optical_props),
-//                    dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props),
-//                    sfc_alb_dir.subset({{ {band, band}, {1, n_col}}}),
-//                    zenith_angle,
-//                    azimuth_angle,
-//                    tod_dir_diff({1}),
-//                    tod_dir_diff({2}),
-//                    Float(1.),
-//                    rayleigh,
-//                    col_dry,
-//                    gas_concs.get_vmr("h2o"),
-//                    cam_data,
-//                    flux_camera);
-//
+            raytracer.trace_rays(
+                    ray_count,
+                    n_col_x, n_col_y, n_z, n_lay,
+                    dx_grid, dy_grid, dz_grid,
+                    z_lev,
+                    dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
+                    dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
+                    dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_g(),
+                    dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
+                    dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_ssa(),
+                    sfc_alb_dir.subset({{ {band, band}, {1, n_col}}}),
+                    zenith_angle,
+                    azimuth_angle,
+                    toa_src({1}),
+                    toa_factor,
+                    rayleigh,
+                    col_dry,
+                    gas_concs.get_vmr("h2o"),
+                    cam_data,
+                    flux_camera);
+
             raytracer.add_xyz_camera(
                     cam_nx, cam_ny,
                     xyz_factor_gpu,
@@ -1032,30 +1031,27 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                     dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props));
         }
 
-        std::unique_ptr<Fluxes_broadband_rt> fluxes =
-                std::make_unique<Fluxes_broadband_rt>(n_col_x, n_col_y, n_lev);
+        //std::unique_ptr<Fluxes_broadband_rt> fluxes =
+        //        std::make_unique<Fluxes_broadband_rt>(n_col_x, n_col_y, n_lev);
 
-        rte_sw.rte_sw(
-                optical_props,
-                top_at_1,
-                mu0,
-                toa_src,
-                sfc_alb_dir.subset({{ {band, band}, {1, n_col}}}),
-                sfc_alb_dif.subset({{ {band, band}, {1, n_col}}}),
-                Array_gpu<Float,1>(), // Add an empty array, no inc_flux.
-                (*fluxes).get_flux_up(),
-                (*fluxes).get_flux_dn(),
-                (*fluxes).get_flux_dn_dir());
+        //rte_sw.rte_sw(
+        //        optical_props,
+        //        top_at_1,
+        //        mu0,
+        //        toa_src,
+        //        sfc_alb_dir.subset({{ {band, band}, {1, n_col}}}),
+        //        sfc_alb_dif.subset({{ {band, band}, {1, n_col}}}),
+        //        Array_gpu<Float,1>(), // Add an empty array, no inc_flux.
+        //        (*fluxes).get_flux_up(),
+        //        (*fluxes).get_flux_dn(),
+        //        (*fluxes).get_flux_dn_dir());
 
-        Array<Float,1> tod_dir_diff({2});
-        compute_tod_flux(n_col, n_lay, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
+        //Array<Float,1> tod_dir_diff({2});
+        //compute_tod_flux(n_col, n_lay, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
 
         Float zenith_angle = std::acos(mu0({1}));
-        Float azimuth_angle = azi({1});//M_PI;//Float(3.4906585); //3.14; // sun approximately from south
+        Float azimuth_angle = azi({1});
 
-        //printf("%d %f %f \n",igpt,tod_dir_diff({1}), tod_dir_diff({2}));
-        //if ( (tod_dir_diff({1})+tod_dir_diff({2}) > 0.1))
-        //{
         raytracer.trace_rays_bb(
                 ray_count,
                 n_col_x, n_col_y, n_z, n_lay,
@@ -1068,8 +1064,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                 sfc_alb_dir.subset({{ {band, band}, {1, n_col}}}),
                 zenith_angle,
                 azimuth_angle,
-                tod_dir_diff({1}),
-                tod_dir_diff({2}),
+                toa_src({1}),
                 cam_data,
                 flux_camera);
 
@@ -1077,6 +1072,5 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                 cam_nx, cam_ny,
                 flux_camera,
                 radiance);
-        //}
     }
 }
