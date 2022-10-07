@@ -25,6 +25,11 @@ struct Optics_ext
     Float cloud;
 };
 
+struct Optics_sca
+{
+    Float tot;
+    Float cloud;
+};
 
 struct Optics_scat
 {
@@ -46,7 +51,8 @@ void ray_tracer_kernel(
         Float* __restrict__ surface_up_count,
         Float* __restrict__ atmos_direct_count,
         Float* __restrict__ atmos_diffuse_count,
-        const Optics_ext* __restrict__ k_ext, const Optics_scat* __restrict__ ssa_asy,
+        const Optics_ext* __restrict__ k_ext, const Optics_sca* __restrict__ k_sca,
+        const Optics_scat* __restrict__ ssa_asy,
         const Float tod_inc_direct,
         const Float tod_inc_diffuse,
         const Float* __restrict__ surface_albedo,

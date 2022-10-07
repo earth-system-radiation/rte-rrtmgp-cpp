@@ -78,6 +78,28 @@ namespace optical_props_kernel_launcher_cuda_rt
                 tau_in, ssa_in, g_in);
     }
 
+    void increment_2stream_by_2stream_1d(
+            int ncol, int nlay,
+            Float* tau_inout, Float* ssa_inout, Float* g_inout,
+            const Float* tau_in, const Float* ssa_in, const Float* g_in)
+    {
+        const int block_lay = 16;
+        const int block_col = 16;
+
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+
+        dim3 grid_gpu(grid_col, grid_lay, 1);
+        dim3 block_gpu(block_col, block_lay, 1);
+
+        Float eps = std::numeric_limits<Float>::epsilon();
+
+        increment_2stream_by_2stream_1d_kernel<<<grid_gpu, block_gpu>>>(
+                ncol, nlay, eps,
+                tau_inout, ssa_inout, g_inout,
+                tau_in, ssa_in, g_in);
+    }
+
     void delta_scale_2str_k(
             int ncol, int nlay, int ngpt,
             Float* tau_inout, Float* ssa_inout, Float* g_inout)

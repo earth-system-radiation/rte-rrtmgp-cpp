@@ -264,7 +264,7 @@ void ray_tracer_kernel(
         Float* __restrict__ surface_up_count,
         Float* __restrict__ atmos_direct_count,
         Float* __restrict__ atmos_diffuse_count,
-        const Optics_ext* __restrict__ k_ext, const Optics_scat* __restrict__ ssa_asy,
+        const Optics_ext* __restrict__ k_ext, const Optics_sca* __restrict__ k_sca, const Optics_scat* __restrict__ ssa_asy,
         const Float tod_inc_direct,
         const Float tod_inc_diffuse,
         const Float* __restrict__ surface_albedo,
@@ -492,7 +492,8 @@ void ray_tracer_kernel(
                 else
                 {
                     d_max = Float(0.);
-                    const Bool cloud_scatter = rng() < (k_ext[ijk].cloud / k_ext_tot);
+                    //const Bool cloud_scatter = rng() < (k_ext[ijk].cloud / k_ext_tot);
+                    const Bool cloud_scatter = rng() < (k_sca[ijk].cloud / k_sca[ijk].tot);
 
                     const Float cos_scat = cloud_scatter ? henyey(ssa_asy[ijk].asy, rng()) : rayleigh(rng());
                     const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));

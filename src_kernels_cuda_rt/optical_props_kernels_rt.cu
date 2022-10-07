@@ -69,6 +69,31 @@ void increment_2stream_by_2stream_kernel(
 }
 
 __global__
+void increment_2stream_by_2stream_1d_kernel(
+            const int ncol, const int nlay, const Float eps,
+            Float* __restrict__ tau1, Float* __restrict__ ssa1, Float* __restrict__ g1,
+            const Float* __restrict__ tau2, const Float* __restrict__ ssa2, const Float* __restrict__ g2)
+{
+    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
+    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
+
+    if ( (icol < ncol) && (ilay < nlay) )
+    {
+        const int idx = icol + ilay*ncol;
+        const Float tau1_value = tau1[idx];
+        const Float tau2_value = tau2[ilay];
+        const Float tau12 = tau1_value + tau2_value;
+        const Float ssa1_value = ssa1[idx];
+        const Float ssa2_value = ssa2[ilay];
+        const Float tauscat12 = (tau1_value * ssa1_value) + (tau2_value * ssa2_value);
+
+        g1[idx] = ((tau1_value * ssa1_value * g1[idx]) + (tau2_value * ssa2_value * g2[ilay])) / max(tauscat12, eps);
+        ssa1[idx] = tauscat12 / max(eps, tau12);
+        tau1[idx] = tau12;
+    }
+}
+
+__global__
 void delta_scale_2str_k_kernel(
             const int ncol, const int nlay, const int ngpt, const Float eps,
             Float* __restrict__ tau, Float* __restrict__ ssa, Float* __restrict__ g)

@@ -80,8 +80,8 @@ namespace
     void bundles_optical_props(
             const int ncol_x, const int ncol_y, const int nlay, const Float dz_grid,
             const Float* __restrict__ tau_tot, const Float* __restrict__ ssa,
-            const Float* __restrict__ asy, const Float* __restrict__ tau_cld,
-            Optics_ext* __restrict__ k_ext, Optics_scat* __restrict__ ssa_asy)
+            const Float* __restrict__ asy, const Float* __restrict__ tau_cld, const Float* __restrict__ ssa_cld,
+            Optics_ext* __restrict__ k_ext, Optics_sca* __restrict__ k_sca, Optics_scat* __restrict__ ssa_asy)
     {
         const int icol_x = blockIdx.x*blockDim.x + threadIdx.x;
         const int icol_y = blockIdx.y*blockDim.y + threadIdx.y;
@@ -94,6 +94,8 @@ namespace
             const Float kext_gas = tau_tot[idx] / dz_grid - kext_cld;
             k_ext[idx].cloud = kext_cld;
             k_ext[idx].gas = kext_gas;
+            k_sca[idx].cloud = kext_cld * ssa_cld[idx];
+            k_sca[idx].tot = tau_tot[idx] / dz_grid * ssa[idx];
             ssa_asy[idx].ssa = ssa[idx];
             ssa_asy[idx].asy = asy[idx];
         }
@@ -168,8 +170,9 @@ void Raytracer::trace_rays(
         const int ngrid_x, const int ngrid_y, const int ngrid_z,
         const Array_gpu<Float,2>& tau_gas,
         const Array_gpu<Float,2>& ssa_gas,
-        const Array_gpu<Float,2>& asy_gas,
+        const Array_gpu<Float,2>& asy_cloud,
         const Array_gpu<Float,2>& tau_cloud,
+        const Array_gpu<Float,2>& ssa_cloud,
         const Array_gpu<Float,2>& surface_albedo,
         const Float zenith_angle,
         const Float azimuth_angle,
@@ -199,13 +202,14 @@ void Raytracer::trace_rays(
 
     // Bundle optical properties in struct
     Array_gpu<Optics_ext,3> k_ext({ncol_x, ncol_y, nlay});
+    Array_gpu<Optics_sca,3> k_sca({ncol_x, ncol_y, nlay});
     Array_gpu<Optics_scat,3> ssa_asy({ncol_x, ncol_y, nlay});
 
     bundles_optical_props<<<grid_3d, block_3d>>>(
             ncol_x, ncol_y, nlay, dz_grid,
             tau_gas.ptr(), ssa_gas.ptr(),
-            asy_gas.ptr(), tau_cloud.ptr(),
-            k_ext.ptr(), ssa_asy.ptr());
+            asy_cloud.ptr(), tau_cloud.ptr(), ssa_cloud.ptr(),
+            k_ext.ptr(), k_sca.ptr(), ssa_asy.ptr());
 
     // create k_null_grid
     const int block_kn_x = 8;
@@ -280,7 +284,7 @@ void Raytracer::trace_rays(
             surface_up_count.ptr(),
             atmos_direct_count.ptr(),
             atmos_diffuse_count.ptr(),
-            k_ext.ptr(), ssa_asy.ptr(),
+            k_ext.ptr(), k_sca.ptr(), ssa_asy.ptr(),
             tod_inc_direct,
             tod_inc_diffuse,
             surface_albedo.ptr(),
