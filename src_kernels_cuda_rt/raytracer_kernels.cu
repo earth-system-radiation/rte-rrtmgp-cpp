@@ -24,6 +24,8 @@ namespace
     #endif
 
     constexpr Float w_thres = 0.5;
+    //constexpr Float solar_cone_cos_half_angle = Float(0.9961947); // cos(Float(5.0) / Float(180.) * M_PI;)
+    constexpr Float solar_cone_cos_half_angle = Float(0.99904823); // cos(Float(2.5) / Float(180.) * M_PI;)
 
 
     struct Vector
@@ -231,10 +233,10 @@ namespace
             }
 
             const int ij = i + j*itot;
-            
+
             #ifndef NDEBUG
             if (ij < 0 || ij >=itot*jtot) printf("outofbounds 3");
-            #endif 
+            #endif
 
             atomicAdd(&toa_down_count[ij], Float(1.));
             weight = 1;
@@ -247,6 +249,15 @@ namespace
     {
         atomicAdd(field_out, w);
     }
+
+    __device__
+    inline Float from_solar_cone(
+        const Vector& solar_dir,
+        const Vector& photon_dir)
+    {
+        return dot(solar_dir, photon_dir) > solar_cone_cos_half_angle;
+    }
+
 }
 
 
@@ -275,6 +286,7 @@ void ray_tracer_kernel(
         const int itot, const int jtot, const int ktot,
         curandDirectionVectors32_t* qrng_vectors, unsigned int* qrng_constants) // const Float* __restrict__ cloud_dims)
 {
+    const Vector solar_dir = {dir_x, dir_y, dir_z};
     const Float kgrid_x = x_size/Float(ngrid_x);
     const Float kgrid_y = y_size/Float(ngrid_y);
     const Float kgrid_z = z_size/Float(ngrid_z);
@@ -349,16 +361,20 @@ void ray_tracer_kernel(
                 const int j = float_to_int(photon.position.y, dy_grid, jtot);
                 const int ij = i + j*itot;
                 d_max = Float(0.);
-            
+
                 #ifndef NDEBUG
                 if (ij < 0 || ij >=itot*jtot) printf("outofbounds 1");
                 #endif
 
-                // Add surface irradiance
+                // // Add surface irradiance
                 if (photon.kind == Photon_kind::Direct)
                     write_photon_out(&surface_down_direct_count[ij], weight);
                 else if (photon.kind == Photon_kind::Diffuse)
                     write_photon_out(&surface_down_diffuse_count[ij], weight);
+                // if (from_solar_cone(solar_dir, photon.direction))
+                //     write_photon_out(&surface_down_direct_count[ij], weight);
+                // else
+                //     write_photon_out(&surface_down_diffuse_count[ij], weight);
 
                 // Update weights and add upward surface flux
                 const Float local_albedo = surface_albedo[0];
@@ -406,7 +422,7 @@ void ray_tracer_kernel(
                 #ifndef NDEBUG
                 if (ij < 0 || ij >=itot*jtot) printf("outofbounds 2");
                 #endif
-                
+
                 write_photon_out(&tod_up_count[ij], weight);
 
                 reset_photon(
@@ -465,11 +481,11 @@ void ray_tracer_kernel(
 
             // Compute probability not being absorbed and store weighted absorption probability
             const Float f_no_abs = Float(1.) - (Float(1.) - ssa_asy[ijk].ssa) * (k_ext_tot/k_ext_null);
-            
+
             #ifndef NDEBUG
             if (ijk < 0 || ijk >= itot*jtot*ktot) printf("oufofbounds hr \n");
             #endif
-           
+
             if (photon.kind == Photon_kind::Direct)
                 write_photon_out(&atmos_direct_count[ijk], weight*(1-f_no_abs));
             else
