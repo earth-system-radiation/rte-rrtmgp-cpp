@@ -51,7 +51,7 @@ namespace
         }
     }
 
-    
+
     void spread_col(
             const int ncol, const int igpt, Array_gpu<Float,1>& src_out, const Array_gpu<Float,1>& src_in)
     {
@@ -75,7 +75,7 @@ namespace
             return it - data.v().begin() + 1;
     }
 
-    
+
     void reduce_minor_arrays(
                 const Gas_concs_gpu& available_gases,
                 const Array<std::string,1>& gas_names,
@@ -998,8 +998,7 @@ void Gas_optics_rrtmgp_rt::gas_optics(
     const int nlay = play.dim(2);
     const int ngpt = this->get_ngpt();
     const int nband = this->get_nband();
-
-    if (jtemp.size()==0)
+    if (this->jtemp.size()==0)
     {
         this->jtemp.set_dims({play.dim(1), play.dim(2)});
         this->jpress.set_dims({play.dim(1), play.dim(2)});
@@ -1007,7 +1006,7 @@ void Gas_optics_rrtmgp_rt::gas_optics(
         this->fmajor.set_dims({2, 2, 2, play.dim(1), play.dim(2), this->get_nflav()});
         this->jeta.set_dims({2, play.dim(1), play.dim(2), this->get_nflav()});
     }
-    
+
     // Gas optics.
     compute_gas_taus(
             ncol, nlay, ngpt, nband, igpt,
@@ -1041,12 +1040,12 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
     const int neta = this->get_neta();
     const int npres = this->get_npres();
     const int ntemp = this->get_ntemp();
-    
+
     const int nminorlower = this->minor_scales_with_density_lower.dim(1);
     const int nminorklower = this->kminor_lower.dim(3);
     const int nminorupper = this->minor_scales_with_density_upper.dim(1);
     const int nminorkupper = this->kminor_upper.dim(3);
-    
+
     if (fminor.size()==0)
     {
         this->vmr.set_dims({ncol, nlay, this->get_ngas()});
@@ -1057,7 +1056,7 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
         this->scalings_lower.set_dims({ncol, nlay,  this->minor_scales_with_density_lower.dim(1)});
         this->scalings_upper.set_dims({ncol, nlay,  this->minor_scales_with_density_upper.dim(1)});
     }
-        
+
     const int block_lay = 16;
     const int block_col = 16;
 
@@ -1073,7 +1072,7 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
         fill_gases_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nlay, vmr_2d.dim(1), vmr_2d.dim(2), ngas, igas, vmr.ptr(), vmr_2d.ptr(), col_gas.ptr(), col_dry.ptr());
     }
- 
+
     rrtmgp_kernel_launcher_cuda_rt::interpolation(
             ncol, nlay,
             ngas, nflav, neta, npres, ntemp,
@@ -1126,8 +1125,8 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
             tropo.ptr(),
             scalings_lower.ptr(),
             scalings_upper.ptr());
-    
-    
+
+
     bool has_rayleigh = (this->krayl.size() > 0);
 
     if (has_rayleigh)
@@ -1226,7 +1225,6 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
 }
 
 
-// 
 // void Gas_optics_rrtmgp_rt::combine_abs_and_rayleigh(
 //         const Array_gpu<Float,2>& tau,
 //         const Array_gpu<Float,2>& tau_rayleigh,
@@ -1234,13 +1232,12 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
 // {
 //     int ncol = tau.dim(1);
 //     int nlay = tau.dim(2);
-// 
+//
 //     rrtmgp_kernel_launcher_cuda_rt::combine_abs_and_rayleigh(
 //             ncol, nlay,
 //             tau, tau_rayleigh,
 //             optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
 // }
-// 
 
 
 void Gas_optics_rrtmgp_rt::source(

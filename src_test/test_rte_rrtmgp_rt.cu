@@ -194,7 +194,8 @@ void solve_radiation(int argc, char** argv)
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
         {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
         {"output-optical"   , { false, "Enable output of optical properties."      }},
-        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }} };
+        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
+        {"profiling        ", { false, "Perform additional profiling run."         }} };
     Int photons_per_pixel = 1;
 
     if (parse_command_line_options(command_line_options, photons_per_pixel, argc, argv))
@@ -209,6 +210,7 @@ void solve_radiation(int argc, char** argv)
     const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
+    const bool switch_profiling         = command_line_options.at("profiling"        ).first;
 
     // Print the options to the screen.
     print_command_line_options(command_line_options);
@@ -792,15 +794,13 @@ void solve_radiation(int argc, char** argv)
         // Tuning step;
         run_solver();
 
-        // // Profiling step;
-        // cudaProfilerStart();
-        // run_solver();
-        // cudaProfilerStop();
-
-        // constexpr int n_measures=10;
-        // for (int n=0; n<n_measures; ++n)
-        //     run_solver();
-
+        // Profiling step;
+        if (switch_profiling)
+        {
+            cudaProfilerStart();
+            run_solver();
+            cudaProfilerStop();
+        }
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");

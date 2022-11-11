@@ -210,6 +210,7 @@ void solve_radiation(int argc, char** argv)
         {"output-optical"   , { false, "Enable output of optical properties."      }},
         {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
         {"simple-albedo"    , { false, "Do not compute spectral albedo, use sfc_alb_dir from input"}} };
+        {"profiling        ", { false, "Perform additional profiling run."         }} };
     Int ray_count_exponent = 22;
 
     if (parse_command_line_options(command_line_options, ray_count_exponent, argc, argv))
@@ -224,7 +225,8 @@ void solve_radiation(int argc, char** argv)
     const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
-    const bool switch_simple_albedo     = command_line_options.at("simple-albedo").first;
+    const bool switch_simple_albedo     = command_line_options.at("simple-albedo"    ).first;
+    const bool switch_profiling         = command_line_options.at("profiling"        ).first;
 
     // Print the options to the screen.
     print_command_line_options(command_line_options);
@@ -251,7 +253,6 @@ void solve_radiation(int argc, char** argv)
     const int n_lay = input_nc.get_dimension_size("lay");
     const int n_lev = input_nc.get_dimension_size("lev");
     const int n_z = input_nc.get_dimension_size("z");
-
 
     const bool do_bb = false;
 
@@ -803,23 +804,31 @@ void solve_radiation(int argc, char** argv)
         if (do_bb)
         {
            // Profiling step;
-           //cudaProfilerStart();
            run_solver_bb(false);
-           //cudaProfilerStop();
+
+           if (switch_profiling)
+           {
+               cudaProfilerStart();
+               run_solver_bb(false);
+               cudaProfilerStop();
+            }
         }
         else
         {
-           run_solver(true);
+            // tune step
+            run_solver(true);
 
-           // Profiling step;
-           cudaProfilerStart();
-           run_solver(false);
-           cudaProfilerStop();
+            // actual solve
+            run_solver(false);
+
+            // Profiling step;
+            if (switch_profiling)
+            {
+                cudaProfilerStart();
+                run_solver(false);
+                cudaProfilerStop();
+            }
         }
-        // constexpr int n_measures=10;
-        // for (int n=0; n<n_measures; ++n)
-        //     run_solver();
-
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");
