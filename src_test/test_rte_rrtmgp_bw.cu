@@ -206,8 +206,10 @@ void solve_radiation(int argc, char** argv)
         {"fluxes"           , { true,  "Enable computation of fluxes."             }},
         {"raytracing"       , { false, "Use raytracing for flux computation."      }},
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
+        {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
         {"output-optical"   , { false, "Enable output of optical properties."      }},
-        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }} };
+        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
+        {"simple-albedo"    , { false, "Do not compute spectral albedo, use sfc_alb_dir from input"}} };
     Int ray_count_exponent = 22;
 
     if (parse_command_line_options(command_line_options, ray_count_exponent, argc, argv))
@@ -219,8 +221,10 @@ void solve_radiation(int argc, char** argv)
     const bool switch_fluxes            = command_line_options.at("fluxes"           ).first;
     const bool switch_raytracing        = command_line_options.at("raytracing"       ).first;
     const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
+    const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
+    const bool switch_simple_albedo     = command_line_options.at("simple-albedo").first;
 
     // Print the options to the screen.
     print_command_line_options(command_line_options);
@@ -285,6 +289,18 @@ void solve_radiation(int argc, char** argv)
     Array<Float,2> p_lev(input_nc.get_variable<Float>("p_lev", {n_lev, n_col_y, n_col_x}), {n_col, n_lev});
     Array<Float,2> t_lev(input_nc.get_variable<Float>("t_lev", {n_lev, n_col_y, n_col_x}), {n_col, n_lev});
 
+    // read land use map if present, used for choosing between spectral and lambertian reflection and for spectral albedo
+    // 0: water, 1: "grass", 2: "soil", 3: "concrete". Interpolating between 1 and 2 is currently possible
+    Array<Float,1> land_use_map({n_col});
+    if (input_nc.variable_exists("land_use_map"))
+    {
+        land_use_map = std::move(input_nc.get_variable<Float>("land_use_map", {n_col_y, n_col_x}));
+    }
+    else
+    {
+        // default to grass with some soil
+        land_use_map.fill(Float(1.3));
+    }
 
     // Fetch the col_dry in case present.
     Array<Float,2> col_dry;
@@ -336,6 +352,58 @@ void solve_radiation(int argc, char** argv)
 
         rei.set_dims({n_col, n_lay});
         rei = std::move(input_nc.get_variable<Float>("rei", {n_lay, n_col_y, n_col_x}));
+    }
+
+    Array<Float,2> rh;
+    Array<Float,1> aermr01;
+    Array<Float,1> aermr02;
+    Array<Float,1> aermr03;
+    Array<Float,1> aermr04;
+    Array<Float,1> aermr05;
+    Array<Float,1> aermr06;
+    Array<Float,1> aermr07;
+    Array<Float,1> aermr08;
+    Array<Float,1> aermr09;
+    Array<Float,1> aermr10;
+    Array<Float,1> aermr11;
+
+    if (switch_aerosol_optics)
+    {
+        rh.set_dims({n_col, n_lay});
+        rh = std::move(input_nc.get_variable<Float>("rh", {n_lay, n_col_y, n_col_x}));
+
+        aermr01.set_dims({n_lay});
+        aermr01 = std::move(input_nc.get_variable<Float>("aermr01", {n_lay}));
+
+        aermr02.set_dims({n_lay});
+        aermr02 = std::move(input_nc.get_variable<Float>("aermr02", {n_lay}));
+
+        aermr03.set_dims({n_lay});
+        aermr03 = std::move(input_nc.get_variable<Float>("aermr03", {n_lay}));
+
+        aermr04.set_dims({n_lay});
+        aermr04 = std::move(input_nc.get_variable<Float>("aermr04", {n_lay}));
+
+        aermr05.set_dims({n_lay});
+        aermr05 = std::move(input_nc.get_variable<Float>("aermr05", {n_lay}));
+
+        aermr06.set_dims({n_lay});
+        aermr06 = std::move(input_nc.get_variable<Float>("aermr06", {n_lay}));
+
+        aermr07.set_dims({n_lay});
+        aermr07 = std::move(input_nc.get_variable<Float>("aermr07", {n_lay}));
+
+        aermr08.set_dims({n_lay});
+        aermr08 = std::move(input_nc.get_variable<Float>("aermr08", {n_lay}));
+
+        aermr09.set_dims({n_lay});
+        aermr09 = std::move(input_nc.get_variable<Float>("aermr09", {n_lay}));
+
+        aermr10.set_dims({n_lay});
+        aermr10 = std::move(input_nc.get_variable<Float>("aermr10", {n_lay}));
+
+        aermr11.set_dims({n_lay});
+        aermr11 = std::move(input_nc.get_variable<Float>("aermr11", {n_lay}));
     }
 
 
@@ -560,7 +628,7 @@ void solve_radiation(int argc, char** argv)
 
 
         Gas_concs_gpu gas_concs_gpu(gas_concs);
-        Radiation_solver_shortwave rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
+        Radiation_solver_shortwave rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc","aerosol_optics.nc");
 
         // Read the boundary conditions.
         const int n_bnd_sw = rad_sw.get_n_bnd_gpu();
@@ -568,8 +636,8 @@ void solve_radiation(int argc, char** argv)
 
         Array<Float,1> mu0(input_nc.get_variable<Float>("mu0", {n_col_y, n_col_x}), {n_col});
         Array<Float,1> azi(input_nc.get_variable<Float>("azi", {n_col_y, n_col_x}), {n_col});
-        Array<Float,2> sfc_alb_dir(input_nc.get_variable<Float>("sfc_alb_dir", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
-        Array<Float,2> sfc_alb_dif(input_nc.get_variable<Float>("sfc_alb_dif", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
+
+        Array<Float,2> sfc_alb(input_nc.get_variable<Float>("sfc_alb_dir", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
 
         Array<Float,1> tsi_scaling({n_col});
         if (input_nc.variable_exists("tsi"))
@@ -611,8 +679,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,1> z_lev_gpu(z_lev);
             Array_gpu<Float,1> grid_dims_gpu(grid_dims);
             Array_gpu<Float,2> col_dry_gpu(col_dry);
-            Array_gpu<Float,2> sfc_alb_dir_gpu(sfc_alb_dir);
-            Array_gpu<Float,2> sfc_alb_dif_gpu(sfc_alb_dif);
+            Array_gpu<Float,2> sfc_alb_gpu(sfc_alb);
             Array_gpu<Float,1> tsi_scaling_gpu(tsi_scaling);
             Array_gpu<Float,1> mu0_gpu(mu0);
             Array_gpu<Float,1> azi_gpu(azi);
@@ -639,7 +706,7 @@ void solve_radiation(int argc, char** argv)
                 z_lev_gpu,
                 grid_dims_gpu,
                 col_dry_gpu,
-                sfc_alb_dir_gpu, sfc_alb_dif_gpu,
+                sfc_alb_gpu,
                 tsi_scaling_gpu,
                 mu0_gpu, azi_gpu,
                 lwp_gpu, iwp_gpu,
@@ -666,8 +733,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,1> z_lev_gpu(z_lev);
             Array_gpu<Float,1> grid_dims_gpu(grid_dims);
             Array_gpu<Float,2> col_dry_gpu(col_dry);
-            Array_gpu<Float,2> sfc_alb_dir_gpu(sfc_alb_dir);
-            Array_gpu<Float,2> sfc_alb_dif_gpu(sfc_alb_dif);
+            Array_gpu<Float,2> sfc_alb_gpu(sfc_alb);
             Array_gpu<Float,1> tsi_scaling_gpu(tsi_scaling);
             Array_gpu<Float,1> mu0_gpu(mu0);
             Array_gpu<Float,1> azi_gpu(azi);
@@ -675,6 +741,21 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> iwp_gpu(iwp);
             Array_gpu<Float,2> rel_gpu(rel);
             Array_gpu<Float,2> rei_gpu(rei);
+
+            Array_gpu<Float,2> rh_gpu(rh);
+            Array_gpu<Float,1> aermr01_gpu(aermr01);
+            Array_gpu<Float,1> aermr02_gpu(aermr02);
+            Array_gpu<Float,1> aermr03_gpu(aermr03);
+            Array_gpu<Float,1> aermr04_gpu(aermr04);
+            Array_gpu<Float,1> aermr05_gpu(aermr05);
+            Array_gpu<Float,1> aermr06_gpu(aermr06);
+            Array_gpu<Float,1> aermr07_gpu(aermr07);
+            Array_gpu<Float,1> aermr08_gpu(aermr08);
+            Array_gpu<Float,1> aermr09_gpu(aermr09);
+            Array_gpu<Float,1> aermr10_gpu(aermr10);
+            Array_gpu<Float,1> aermr11_gpu(aermr11);
+
+            Array_gpu<Float,1> land_use_map_gpu(land_use_map);
 
             cudaDeviceSynchronize();
             cudaEvent_t start;
@@ -687,7 +768,8 @@ void solve_radiation(int argc, char** argv)
             rad_sw.solve_gpu(
                     tune_step,
                     switch_cloud_optics,
-                    switch_output_bnd_fluxes,
+                    switch_aerosol_optics,
+                    switch_simple_albedo,
                     ray_count,
                     gas_concs_gpu,
                     p_lay_gpu, p_lev_gpu,
@@ -695,11 +777,15 @@ void solve_radiation(int argc, char** argv)
                     z_lev_gpu,
                     grid_dims_gpu,
                     col_dry_gpu,
-                    sfc_alb_dir_gpu, sfc_alb_dif_gpu,
+                    sfc_alb_gpu,
                     tsi_scaling_gpu,
                     mu0_gpu, azi_gpu,
                     lwp_gpu, iwp_gpu,
                     rel_gpu, rei_gpu,
+                    land_use_map_gpu,
+                    rh_gpu,
+                    aermr01_gpu, aermr02_gpu, aermr03_gpu, aermr04_gpu, aermr05_gpu,
+                    aermr06_gpu, aermr07_gpu, aermr08_gpu, aermr09_gpu, aermr10_gpu, aermr11_gpu,
                     cam_data_gpu, XYZ);
 
             cudaEventRecord(stop, 0);

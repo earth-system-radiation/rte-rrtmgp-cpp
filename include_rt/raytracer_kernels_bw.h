@@ -52,6 +52,7 @@ void ray_tracer_kernel_bw(
         const Optics_ext* __restrict__ k_ext_bg, const Optics_scat* __restrict__ ssa_asy_bg,
         const Float* __restrict__ z_lev_bg,
         const Float* __restrict__ surface_albedo,
+        const Float* __restrict__ land_use_map,
         const Float mu,
         const Float x_size, const Float y_size, const Float z_size,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,

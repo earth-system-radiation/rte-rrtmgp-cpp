@@ -95,6 +95,106 @@ namespace
         }
     }
 
+    // spectral albedo functions estimated from http://gsp.humboldt.edu/olm/Courses/GSP_216/lessons/reflectance.html
+    __device__
+    Float get_grass_alb_proc(const Float wv)
+    {
+        if (wv < 500)
+        {
+            return Float(3.0) + Float(0.0065) * (wv - Float(300.));
+        }
+        else if (wv < 550)
+        {
+            return Float(4.3) + Float(0.216) * (wv - Float(500.));
+        }
+        else if (wv < 580)
+        {
+            return Float(15.1) - Float(0.13) * (wv - Float(550.));
+        }
+        else if (wv < 680)
+        {
+            return Float(12.) - Float(0.083) * (wv - Float(580.));
+        }
+        else if (wv < 750)
+        {
+            return Float(4.5) - Float(0.5) * (wv - Float(680.));
+        }
+        else
+        {
+            return Float(45);
+        }
+    }
+
+    __device__
+    Float get_soil_alb_proc(const Float wv)
+    {
+        if (wv < 400)
+        {
+            return Float(0.4);
+        }
+        else
+        {
+            return Float(0.4) + Float(0.085) * (wv - Float(400.));
+        }
+    }
+
+    __device__
+    Float get_concrete_alb_proc(const Float wv)
+    {
+        if (wv < 600)
+        {
+            return Float(9) + Float(0.0666666) * (wv - Float(300));
+        }
+        else
+        {
+            return Float(30);
+        }
+    }
+
+    __device__
+    Float mean_albedo(const Float wv1, const Float wv2,  Float (*f_albedo)(Float))
+    {
+        const int nwv = 100;
+        const Float dwv = (wv2 - wv1)/Float(nwv);
+        Float albedo = Float(0.);
+        for (int i=0; i<nwv; ++i)
+            albedo += f_albedo(wv1 + i*dwv);
+        return albedo / Float(nwv) * Float(0.01);
+    }
+
+    __global__
+    void spectral_albedo_kernel(const int ncol, const Float wv1, const Float wv2,
+                         const Float* __restrict__ land_use_map,
+                         Float* __restrict__ albedo)
+    {
+        const int i = blockIdx.x*blockDim.x + threadIdx.x;
+        if ( (i<ncol) )
+        {
+            if (land_use_map[i] == 0)
+            {
+                albedo[i] = Float(0.25);
+            }
+            else if (land_use_map[i] >= 1 && land_use_map[i] <= 2)
+            {
+                albedo[i] = mean_albedo(wv1, wv2, &get_grass_alb_proc) * (land_use_map[i]-1) + mean_albedo(wv1, wv2, &get_soil_alb_proc) * (Float(2.)-land_use_map[i]);
+            }
+            else if (land_use_map[i] == 3)
+                albedo[i] = mean_albedo(wv1, wv2, &get_concrete_alb_proc);
+        }
+    }
+
+    void spectral_albedo(const int ncol, const Float wv1, const Float wv2,
+                         const Array_gpu<Float,1>& land_use_map,
+                         Array_gpu<Float,2>& albedo)
+    {
+        const int block_col = 16;
+        const int grid_col = ncol/block_col + (ncol%block_col > 0);
+
+        dim3 grid_gpu(grid_col, 1);
+        dim3 block_gpu(block_col, 1);
+        spectral_albedo_kernel<<<grid_gpu, block_gpu>>>(
+            ncol, wv1, wv2, land_use_map.ptr(), albedo.ptr());
+    }
 
     void scaling_to_subset(
             const int ncol, const int ngpt, Array_gpu<Float,1>& toa_src, const Array_gpu<Float,1>& tsi_scaling)
@@ -440,6 +540,43 @@ namespace
                 lut_extliq, lut_ssaliq, lut_asyliq,
                 lut_extice, lut_ssaice, lut_asyice);
     }
+
+    Aerosol_optics_rt load_and_init_aerosol_optics(
+            const std::string& coef_file)
+    {
+        // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
+        Netcdf_file coef_nc(coef_file, Netcdf_mode::Read);
+
+        // Read look-up table coefficient dimensions
+        int n_band     = coef_nc.get_dimension_size("band_sw");
+        int n_hum      = coef_nc.get_dimension_size("relative_humidity");
+        int n_philic = coef_nc.get_dimension_size("hydrophilic");
+        int n_phobic = coef_nc.get_dimension_size("hydrophobic");
+
+        Array<Float,2> band_lims_wvn({2, n_band});
+
+        Array<Float,2> mext_phobic(
+                coef_nc.get_variable<Float>("mass_ext_sw_hydrophobic", {n_phobic, n_band}), {n_band, n_phobic});
+        Array<Float,2> ssa_phobic(
+                coef_nc.get_variable<Float>("ssa_sw_hydrophobic", {n_phobic, n_band}), {n_band, n_phobic});
+        Array<Float,2> g_phobic(
+                coef_nc.get_variable<Float>("asymmetry_sw_hydrophobic", {n_phobic, n_band}), {n_band, n_phobic});
+
+        Array<Float,3> mext_philic(
+                coef_nc.get_variable<Float>("mass_ext_sw_hydrophilic", {n_philic, n_hum, n_band}), {n_band, n_hum, n_philic});
+        Array<Float,3> ssa_philic(
+                coef_nc.get_variable<Float>("ssa_sw_hydrophilic", {n_philic, n_hum, n_band}), {n_band, n_hum, n_philic});
+        Array<Float,3> g_philic(
+                coef_nc.get_variable<Float>("asymmetry_sw_hydrophilic", {n_philic, n_hum, n_band}), {n_band, n_hum, n_philic});
+
+        Array<Float,1> rh_upper(
+                coef_nc.get_variable<Float>("relative_humidity2", {n_hum}), {n_hum});
+
+        return Aerosol_optics_rt(
+                band_lims_wvn, rh_upper,
+                mext_phobic, ssa_phobic, g_phobic,
+                mext_philic, ssa_philic, g_philic);
+    }
 }
 
 
@@ -617,8 +754,6 @@ Float get_z(const Float wv)
     return Float(1.217) * std::exp(Float(-0.5)*a*a) + Float(0.681) * std::exp(Float(-0.5)*b*b);
 }
 
-
-
 Float Planck(Float wv)
 {
     const Float h = Float(6.62607015e-34);
@@ -634,7 +769,6 @@ Float Planck_integrator(
         const Float wv1, const Float wv2)
 {
     const int n = 100;
-    const Float sa = 6.771e-5;
     const Float dwv = (wv2-wv1)/Float(n);
     Float sum = 0;
     for (int i=0; i<n; ++i)
@@ -642,7 +776,7 @@ Float Planck_integrator(
         const Float wv = (wv1 + i*dwv)*1e-9;
         sum += Planck(wv) * dwv;
     }
-    return sum * Float(1e-9) * sa;
+    return sum * Float(1e-9);
 }
 
 
@@ -687,7 +821,8 @@ Float xyz_irradiance(
 Radiation_solver_shortwave::Radiation_solver_shortwave(
         const Gas_concs_gpu& gas_concs,
         const std::string& file_name_gas,
-        const std::string& file_name_cloud)
+        const std::string& file_name_cloud,
+        const std::string& file_name_aerosol)
 {
     // Construct the gas optics classes for the solver.
     this->kdist_gpu = std::make_unique<Gas_optics_rrtmgp_rt>(
@@ -695,6 +830,9 @@ Radiation_solver_shortwave::Radiation_solver_shortwave(
 
     this->cloud_optics_gpu = std::make_unique<Cloud_optics_rt>(
             load_and_init_cloud_optics(file_name_cloud));
+
+    this->aerosol_optics_gpu = std::make_unique<Aerosol_optics_rt>(
+            load_and_init_aerosol_optics(file_name_aerosol));
 }
 
 
@@ -702,7 +840,8 @@ Radiation_solver_shortwave::Radiation_solver_shortwave(
 void Radiation_solver_shortwave::solve_gpu(
         const bool tune_step,
         const bool switch_cloud_optics,
-        const bool switch_output_bnd_fluxes,
+        const bool switch_aerosol_optics,
+        const bool switch_simple_albedo,
         const Int ray_count,
         const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
@@ -710,11 +849,19 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,1>& z_lev,
         const Array_gpu<Float,1>& grid_dims,
         Array_gpu<Float,2>& col_dry,
-        const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
+        const Array_gpu<Float,2>& sfc_alb,
         const Array_gpu<Float,1>& tsi_scaling,
         const Array_gpu<Float,1>& mu0, const Array_gpu<Float,1>& azi,
         const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
+        const Array_gpu<Float,1>& land_use_map,
+        const Array_gpu<Float,2>& rh,
+        const Array_gpu<Float,1>& aermr01, const Array_gpu<Float,1>& aermr02,
+        const Array_gpu<Float,1>& aermr03, const Array_gpu<Float,1>& aermr04,
+        const Array_gpu<Float,1>& aermr05, const Array_gpu<Float,1>& aermr06,
+        const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08,
+        const Array_gpu<Float,1>& aermr09, const Array_gpu<Float,1>& aermr10,
+        const Array_gpu<Float,1>& aermr11,
         const Array_gpu<Float,1>& cam_data,
         Array_gpu<Float,3>& XYZ)
 
@@ -739,7 +886,9 @@ void Radiation_solver_shortwave::solve_gpu(
 
     optical_props = std::make_unique<Optical_props_2str_rt>(n_col, n_lay, *kdist_gpu);
     cloud_optical_props = std::make_unique<Optical_props_2str_rt>(n_col, n_lay, *cloud_optics_gpu);
+    aerosol_optical_props = std::make_unique<Optical_props_2str_rt>(n_col, n_lay, *aerosol_optics_gpu);
 
+    Array_gpu<Float,2> albedo;
     if (col_dry.size() == 0)
     {
         col_dry.set_dims({n_col, n_lay});
@@ -768,6 +917,8 @@ void Radiation_solver_shortwave::solve_gpu(
                 break;
             }
         }
+        if (switch_simple_albedo) albedo = sfc_alb.subset({{ {band, band}, {1, n_col}}});
+
         if (!tune_step && (! (band == 10 || band == 11 || band ==12))) continue;
 
         const Float solar_source_band = kdist_gpu->band_source(band_limits_gpt({1,band}), band_limits_gpt({2,band}));
@@ -797,6 +948,37 @@ void Radiation_solver_shortwave::solve_gpu(
             //cloud_optical_props->delta_scale();
 
             // Add the cloud optical props to the gas optical properties.
+            //add_to(
+            //        dynamic_cast<Optical_props_2str_rt&>(*optical_props),
+            //        dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props));
+        }
+
+        if (switch_aerosol_optics)
+        {
+            if (!switch_cloud_optics)
+            {
+                rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
+                rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
+                rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_g().ptr());
+            }
+
+            aerosol_optics_gpu->aerosol_optics(
+                    band-1,
+                    aermr01, aermr02, aermr03, aermr04, aermr05,
+                    aermr06, aermr07, aermr08, aermr09, aermr10, aermr11,
+                    rh, p_lev,
+                    *aerosol_optical_props);
+
+            //aerosol_optical_props->delta_scale();
+
+            // Add the cloud optical props to the gas optical properties.
+            add_to(
+                    dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props),
+                    dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props));
+        }
+
+        if (switch_cloud_optics || switch_aerosol_optics)
+        {
             add_to(
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props),
                     dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props));
@@ -826,6 +1008,7 @@ void Radiation_solver_shortwave::solve_gpu(
         {
             const Float wv1_sub = wv1 + iwv*dwv;
             const Float wv2_sub = wv1 + (iwv+1)*dwv;
+            const Float wv_mid = (wv1_sub + wv2_sub)/2;
             const Float local_planck = Planck_integrator(wv1_sub,wv2_sub);
             const Float rayleigh = rayleigh_mean(wv1_sub, wv2_sub);
             const Float toa_factor = local_planck / total_planck * Float(1.)/solar_source_band;
@@ -842,6 +1025,12 @@ void Radiation_solver_shortwave::solve_gpu(
                 rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
             }
 
+            if (!switch_simple_albedo)
+            {
+                albedo.set_dims({1, n_col});
+                spectral_albedo(n_col, wv1, wv2, land_use_map, albedo);
+            }
+
             Float zenith_angle = std::acos(mu0({1}));
             Float azimuth_angle = azi({1});
 
@@ -855,7 +1044,8 @@ void Radiation_solver_shortwave::solve_gpu(
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_g(),
                     dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
                     dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_ssa(),
-                    sfc_alb_dir.subset({{ {band, band}, {1, n_col}}}),
+                    albedo,//.subset({{ {band, band}, {1, n_col}}}),
+                    land_use_map,
                     zenith_angle,
                     azimuth_angle,
                     toa_src({1}),
@@ -886,7 +1076,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
         const Array_gpu<Float,1>& z_lev,
         const Array_gpu<Float,1>& grid_dims,
         Array_gpu<Float,2>& col_dry,
-        const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
+        const Array_gpu<Float,2>& sfc_alb,
         const Array_gpu<Float,1>& tsi_scaling,
         const Array_gpu<Float,1>& mu0, const Array_gpu<Float,1>& azi,
         const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,

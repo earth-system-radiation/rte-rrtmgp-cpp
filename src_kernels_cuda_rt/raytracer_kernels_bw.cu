@@ -367,6 +367,11 @@ namespace
             weight = 1;
             bg_idx = 0;
 
+            for (int i=0; i<kbg; ++i)
+            {
+                if (photon.position.z > z_lev_bg[i]) bg_idx = i;
+            }
+
             if ( (dot(photon.direction, sun_direction) > cos_half_angle_app) )
             {
                 const Float trans_sun = transmission_direct_sun(photon,n,rng,sun_direction,
@@ -428,13 +433,14 @@ void ray_tracer_kernel_bw(
         const Optics_ext* __restrict__ k_ext_bg, const Optics_scat* __restrict__ ssa_asy_bg,
         const Float* __restrict__ z_lev_bg,
         const Float* __restrict__ surface_albedo,
+        const Float* __restrict__ land_use_map,
         const Float mu,
         const Float x_size, const Float y_size, const Float z_size,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
         const Float dir_x, const Float dir_y, const Float dir_z,
         const int itot, const int jtot, const int ktot, const int kbg)
 {
-    const Phase_kind surface_kind = Phase_kind::Lambertian;
+    //const Phase_kind surface_kind = Phase_kind::Lambertian;
     const int n = blockDim.x * blockIdx.x + threadIdx.x;
     Vector sun_direction = {-dir_x, -dir_y, -dir_z};
     Vector normal_direction = {0, 0, 1};
@@ -454,7 +460,6 @@ void ray_tracer_kernel_bw(
         bg_tau_cum[k] = bg_tau;
     }
     const Float bg_transmissivity = exp(-bg_tau_cum[0]);
-    //if (bg_transmissivity < Float(1.e-4)) return;
 
     const Float kgrid_x = x_size/Float(ngrid_x);
     const Float kgrid_y = y_size/Float(ngrid_y);
@@ -689,8 +694,10 @@ void ray_tracer_kernel_bw(
                         d_max = Float(0.);
 
                         // Update weights and add upward surface flux
-                        const Float local_albedo = surface_albedo[0];
+                        const Float local_albedo =  surface_albedo[ij];
                         weight *= local_albedo;
+
+                        const Phase_kind surface_kind = (land_use_map[ij] == 0) ? Phase_kind::Specular : Phase_kind::Lambertian;
 
                         // SUN SCATTERING GOES HERE
                         const Float p_sun = probability_from_sun(photon, sun_direction, solid_angle, Float(0.), (photon.kind == Photon_kind::Direct) ? surface_kind : Phase_kind::Lambertian);

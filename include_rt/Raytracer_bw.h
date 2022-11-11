@@ -29,6 +29,7 @@ class Raytracer_bw
                 const Array_gpu<Float,2>& tau_cloud,
                 const Array_gpu<Float,2>& ssa_cloud,
                 const Array_gpu<Float,2>& surface_albedo,
+                const Array_gpu<Float,1>& land_use_map,
                 const Float zenith_angle,
                 const Float azimuth_angle,
                 const Float toa_src,
