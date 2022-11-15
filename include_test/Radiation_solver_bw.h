@@ -148,7 +148,7 @@ class Radiation_solver_shortwave
                 const bool tune_step,
                 const bool switch_cloud_optics,
                 const bool switch_aerosol_optics,
-                const bool switch_simple_albedo,
+                const bool switch_lu_albedo,
                 const Int ray_count,
                 const Gas_concs_gpu& gas_concs,
                 const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
@@ -176,7 +176,8 @@ class Radiation_solver_shortwave
         #ifdef __CUDACC__
         void solve_gpu_bb(
                 const bool switch_cloud_optics,
-                const bool switch_output_bnd_fluxes,
+                const bool switch_aerosol_optics,
+                const bool switch_lu_albedo,
                 const Int ray_count,
                 const Gas_concs_gpu& gas_concs,
                 const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
@@ -189,6 +190,14 @@ class Radiation_solver_shortwave
                 const Array_gpu<Float,1>& mu0, const Array_gpu<Float,1>& azi,
                 const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
                 const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
+                const Array_gpu<Float,1>& land_use_map,
+                const Array_gpu<Float,2>& rh,
+                const Array_gpu<Float,1>& aermr01, const Array_gpu<Float,1>& aermr02,
+                const Array_gpu<Float,1>& aermr03, const Array_gpu<Float,1>& aermr04,
+                const Array_gpu<Float,1>& aermr05, const Array_gpu<Float,1>& aermr06,
+                const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08,
+                const Array_gpu<Float,1>& aermr09, const Array_gpu<Float,1>& aermr10,
+                const Array_gpu<Float,1>& aermr11,
                 const Array_gpu<Float,1>& cam_data,
                 Array_gpu<Float,2>& radiance);
 

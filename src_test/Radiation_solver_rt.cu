@@ -410,7 +410,6 @@ namespace
 
         Array<Float,2> band_lims_wvn({2, n_band});
 
-        printf("+++\n");
         Array<Float,2> mext_phobic(
                 coef_nc.get_variable<Float>("mass_ext_sw_hydrophobic", {n_phobic, n_band}), {n_band, n_phobic});
         Array<Float,2> ssa_phobic(
@@ -418,7 +417,6 @@ namespace
         Array<Float,2> g_phobic(
                 coef_nc.get_variable<Float>("asymmetry_sw_hydrophobic", {n_phobic, n_band}), {n_band, n_phobic});
 
-        printf("+++\n");
         Array<Float,3> mext_philic(
                 coef_nc.get_variable<Float>("mass_ext_sw_hydrophilic", {n_philic, n_hum, n_band}), {n_band, n_hum, n_philic});
         Array<Float,3> ssa_philic(
@@ -428,7 +426,6 @@ namespace
 
         Array<Float,1> rh_upper(
                 coef_nc.get_variable<Float>("relative_humidity2", {n_hum}), {n_hum});
-        printf("+++\n");
 
         return Aerosol_optics_rt(
                 band_lims_wvn, rh_upper,

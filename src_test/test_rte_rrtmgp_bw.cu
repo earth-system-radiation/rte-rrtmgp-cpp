@@ -209,8 +209,9 @@ void solve_radiation(int argc, char** argv)
         {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
         {"output-optical"   , { false, "Enable output of optical properties."      }},
         {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
-        {"simple-albedo"    , { false, "Do not compute spectral albedo, use sfc_alb_dir from input"}} };
-        {"profiling        ", { false, "Perform additional profiling run."         }} };
+        {"lu-albedo"        , { false, "Compute spectral albedo from land use map" }},
+        {"broadband"        , { false, "Compute broadband fluxes"                  }},
+        {"profiling"        , { false, "Perform additional profiling run."         }} };
     Int ray_count_exponent = 22;
 
     if (parse_command_line_options(command_line_options, ray_count_exponent, argc, argv))
@@ -225,7 +226,8 @@ void solve_radiation(int argc, char** argv)
     const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
-    const bool switch_simple_albedo     = command_line_options.at("simple-albedo"    ).first;
+    const bool switch_lu_albedo         = command_line_options.at("lu-albedo"        ).first;
+    const bool switch_broadband         = command_line_options.at("broadband"        ).first;
     const bool switch_profiling         = command_line_options.at("profiling"        ).first;
 
     // Print the options to the screen.
@@ -253,8 +255,6 @@ void solve_radiation(int argc, char** argv)
     const int n_lay = input_nc.get_dimension_size("lay");
     const int n_lev = input_nc.get_dimension_size("lev");
     const int n_z = input_nc.get_dimension_size("z");
-
-    const bool do_bb = false;
 
     // Read the x,y,z dimensions if raytracing is enabled
     Array<Float,1> grid_dims({6});
@@ -663,7 +663,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<Float,3> XYZ;
         Array_gpu<Float,2> radiance;
 
-        if (do_bb)
+        if (switch_broadband)
             radiance.set_dims({cam_nx, cam_ny});
         else
             XYZ.set_dims({cam_nx, cam_ny, 3});
@@ -689,6 +689,21 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> rel_gpu(rel);
             Array_gpu<Float,2> rei_gpu(rei);
 
+            Array_gpu<Float,2> rh_gpu(rh);
+            Array_gpu<Float,1> aermr01_gpu(aermr01);
+            Array_gpu<Float,1> aermr02_gpu(aermr02);
+            Array_gpu<Float,1> aermr03_gpu(aermr03);
+            Array_gpu<Float,1> aermr04_gpu(aermr04);
+            Array_gpu<Float,1> aermr05_gpu(aermr05);
+            Array_gpu<Float,1> aermr06_gpu(aermr06);
+            Array_gpu<Float,1> aermr07_gpu(aermr07);
+            Array_gpu<Float,1> aermr08_gpu(aermr08);
+            Array_gpu<Float,1> aermr09_gpu(aermr09);
+            Array_gpu<Float,1> aermr10_gpu(aermr10);
+            Array_gpu<Float,1> aermr11_gpu(aermr11);
+
+            Array_gpu<Float,1> land_use_map_gpu(land_use_map);
+
             cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
@@ -699,7 +714,8 @@ void solve_radiation(int argc, char** argv)
 
             rad_sw.solve_gpu_bb(
                 switch_cloud_optics,
-                switch_output_bnd_fluxes,
+                switch_aerosol_optics,
+                switch_lu_albedo,
                 ray_count,
                 gas_concs_gpu,
                 p_lay_gpu, p_lev_gpu,
@@ -712,6 +728,10 @@ void solve_radiation(int argc, char** argv)
                 mu0_gpu, azi_gpu,
                 lwp_gpu, iwp_gpu,
                 rel_gpu, rei_gpu,
+                land_use_map_gpu,
+                rh_gpu,
+                aermr01_gpu, aermr02_gpu, aermr03_gpu, aermr04_gpu, aermr05_gpu,
+                aermr06_gpu, aermr07_gpu, aermr08_gpu, aermr09_gpu, aermr10_gpu, aermr11_gpu,
                 cam_data_gpu, radiance);
 
             cudaEventRecord(stop, 0);
@@ -770,7 +790,7 @@ void solve_radiation(int argc, char** argv)
                     tune_step,
                     switch_cloud_optics,
                     switch_aerosol_optics,
-                    switch_simple_albedo,
+                    switch_lu_albedo,
                     ray_count,
                     gas_concs_gpu,
                     p_lay_gpu, p_lev_gpu,
@@ -800,8 +820,7 @@ void solve_radiation(int argc, char** argv)
             Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
         };
 
-        // Tuning step;
-        if (do_bb)
+        if (switch_broadband)
         {
            // Profiling step;
            run_solver_bb(false);
@@ -833,7 +852,7 @@ void solve_radiation(int argc, char** argv)
         // Store the output.
         Status::print_message("Storing the shortwave output.");
 
-        if (do_bb)
+        if (switch_broadband)
         {
             Array<Float,2> radiance_cpu(radiance);
             output_nc.add_dimension("gpt_sw", n_gpt_sw);

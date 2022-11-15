@@ -49,8 +49,6 @@ namespace
     constexpr Float solid_angle = Float(6.799910294339209e-05); // 2.*M_PI*(1-cos_half_angle);
     //constexpr Float solid_angle = Float(0.023909417039326832); //Float(6.799910294339209e-05); // 2.*M_PI*(1-cos_half_angle);
 
-
-
     static inline __device__
     Vector operator*(const Vector v, const Float s) { return Vector{s*v.x, s*v.y, s*v.z}; }
     static inline __device__
@@ -146,7 +144,7 @@ namespace
     __device__
     Float henyey_phase(const Float g, const Float cos_angle)
     {
-        const Float denom = 1 + g*g - 2*g*cos_angle;
+        const Float denom = max(Float_epsilon, 1 + g*g - 2*g*cos_angle);
         return Float(1.)/(Float(4.)*M_PI) * (1-g*g) / (denom*sqrt(denom));
     }
 
@@ -198,7 +196,7 @@ namespace
             Random_number_generator<Float>& rng,
             const Vector& sun_dir,
             const Grid_knull* __restrict__ k_null_grid,
-            const Optics_ext* __restrict__ k_ext,
+            const Float* __restrict__ k_ext,
             const Float* __restrict__ bg_tau_cum,
             const Float* __restrict__ z_lev_bg,
             const int bg_idx,
@@ -227,7 +225,6 @@ namespace
 
             if (photon.position.z > z_size)
             {
-                //printf("x %f \n",tau_min + bg_tau_cum[bg_idx]);
                 return exp(Float(-1.) * (tau_min + bg_tau_cum[bg_idx]));
             }
             // main grid (dynamical)
@@ -310,7 +307,7 @@ namespace
                     const int ijk = i + j*itot + k*itot*jtot;
 
                     // Handle the action.
-                    const Float k_ext_tot = k_ext[ijk].gas + k_ext[ijk].cloud - k_ext_min;
+                    const Float k_ext_tot = k_ext[ijk] - k_ext_min;
                     // Compute probability not being absorbed and store weighted absorption probability
                     if (rng() < k_ext_tot/k_ext_null) return 0;
 
@@ -331,7 +328,7 @@ namespace
             Random_number_generator<Float>& rng,
             const Vector& sun_direction,
             const Grid_knull* __restrict__ k_null_grid,
-            const Optics_ext* __restrict__ k_ext,
+            const Float* __restrict__ k_ext,
             const Float kgrid_x, const Float kgrid_y, const Float kgrid_z,
             const Float x_size, const Float y_size, const Float z_size,
             const Float dx_grid, const Float dy_grid, const Float dz_grid,
@@ -420,7 +417,6 @@ namespace
 
 }
 
-
 __global__
 void ray_tracer_kernel_bw(
         const Int photons_to_shoot,
@@ -429,14 +425,15 @@ void ray_tracer_kernel_bw(
         Float* __restrict__ camera_shot,
         int* __restrict__ counter,
         const int cam_nx, const int cam_ny, const Float* __restrict__ cam_data,
-        const Optics_ext* __restrict__ k_ext, const Optics_scat* __restrict__ ssa_asy,
-        const Optics_ext* __restrict__ k_ext_bg, const Optics_scat* __restrict__ ssa_asy_bg,
+        const Float* __restrict__ k_ext, const Optics_scat* __restrict__ scat_asy,
+        const Float* __restrict__ k_ext_bg, const Optics_scat* __restrict__ scat_asy_bg,
         const Float* __restrict__ z_lev_bg,
         const Float* __restrict__ surface_albedo,
         const Float* __restrict__ land_use_map,
         const Float mu,
         const Float x_size, const Float y_size, const Float z_size,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
+        const int ngrid_x, const int ngrid_y, const int ngrid_z,
         const Float dir_x, const Float dir_y, const Float dir_z,
         const int itot, const int jtot, const int ktot, const int kbg)
 {
@@ -455,8 +452,7 @@ void ray_tracer_kernel_bw(
     Float bg_tau = Float(0.);
     for (int k=kbg-1; k >= 0; --k)
     {
-    //    if (n==0)printf("X %e %e %f \n",k_ext_bg[k].gas , k_ext_bg[k].cloud,  abs(z_lev_bg[k+1]-z_lev_bg[k]));
-        bg_tau += (k_ext_bg[k].gas + k_ext_bg[k].cloud) * abs(z_lev_bg[k+1]-z_lev_bg[k]) / mu;
+        bg_tau += k_ext_bg[k] * abs(z_lev_bg[k+1]-z_lev_bg[k]) / mu;
         bg_tau_cum[k] = bg_tau;
     }
     const Float bg_transmissivity = exp(-bg_tau_cum[0]);
@@ -490,6 +486,7 @@ void ray_tracer_kernel_bw(
         int bg_idx;
 
         Photon photon;
+
         reset_photon(
                 photon, camera_count,camera_shot, photons_shot,
                 ij_cam, n, rng, sun_direction,
@@ -507,7 +504,6 @@ void ray_tracer_kernel_bw(
         Float k_ext_null;
         bool transition = false;
         int i_n, j_n, k_n, ijk_n;
-        bool m = true;
 
         while (photons_shot < photons_per_pixel)
         {
@@ -522,8 +518,7 @@ void ray_tracer_kernel_bw(
             // 1D raytracing between TOD and TOA?
             if (photon.position.z > z_size)
             {
-                const Float k_ext_bg_tot = k_ext_bg[bg_idx].gas + k_ext_bg[bg_idx].cloud;
-                const Float dn = max(Float_epsilon, tau / k_ext_bg_tot);
+                const Float dn = max(Float_epsilon, tau / k_ext_bg[bg_idx]);
                 d_max = abs( (photon.direction.z>0) ? (z_lev_bg[bg_idx+1] - photon.position.z) / photon.direction.z : (z_lev_bg[bg_idx] - photon.position.z) / photon.direction.z );
                 if (dn >= d_max)
                 {
@@ -534,7 +529,7 @@ void ray_tracer_kernel_bw(
                     // move to actual grid: reduce tau and set next position
                     if (photon.position.z <= z_size + s_min_bg)
                     {
-                        tau -= k_ext_bg_tot * (d_max + s_min_bg);
+                        tau -= k_ext_bg[bg_idx] * (d_max + s_min_bg);
                         photon.position.z = z_size - s_min;
                         d_max = Float(0.);
                         transition=true;
@@ -569,7 +564,7 @@ void ray_tracer_kernel_bw(
                     {
                         // just move to next grid
                         transition = true;
-                        tau -= k_ext_bg_tot * (d_max + s_min_bg);
+                        tau -= k_ext_bg[bg_idx] * (d_max + s_min_bg);
 
                         bg_idx += (photon.direction.z > 0) ? 1 : -1;
                     }
@@ -583,24 +578,39 @@ void ray_tracer_kernel_bw(
                     photon.position.x += photon.direction.x * dn;
 
                     // Compute probability not being absorbed and store weighted absorption probability
-                    const Float f_no_abs = ssa_asy_bg[bg_idx].ssa;
+                    const Float k_sca_bg_tot = scat_asy_bg[bg_idx].k_sca_gas + scat_asy_bg[bg_idx].k_sca_cld + scat_asy_bg[bg_idx].k_sca_aer;
+                    const Float ssa_bg_tot = k_sca_bg_tot / k_ext_bg[bg_idx];
 
                     // Update weights (see Iwabuchi 2006: https://doi.org/10.1175/JAS3755.1)
-                    weight *= f_no_abs;
+                    weight *= ssa_bg_tot;
                     if (weight < w_thres)
                         weight = (rng() > weight) ? Float(0.) : Float(1.);
 
                     // only with nonzero weight continue ray tracing, else start new ray
                     if (weight > Float(0.))
                     {
-                        // SUN SCATTERING GOES HERE
-                        const bool cloud_scatter = rng() < (k_ext_bg[bg_idx].cloud / k_ext_bg_tot);
-                        const Float g = cloud_scatter ? ssa_asy_bg[bg_idx].asy : Float(0.);
-                        const Float cos_scat = cloud_scatter ? henyey(g, rng()) : rayleigh(rng());
+                        // find scatter type: 0 = gas, 1 = cloud, 2 = aerosol
+                        const Float scatter_rng = rng();
+                        const int scatter_type = scatter_rng < (scat_asy_bg[bg_idx].k_sca_aer/k_sca_bg_tot) ? 2 :
+                                                 scatter_rng < ((scat_asy_bg[bg_idx].k_sca_aer+scat_asy_bg[bg_idx].k_sca_cld)/k_sca_bg_tot) ? 1 : 0;
+                        Float g;
+                        switch (scatter_type)
+                        {
+                            case 0:
+                                g = Float(0.);
+                                break;
+                            case 1:
+                                g = min(Float(1.) - Float_epsilon, scat_asy_bg[bg_idx].asy_cld);
+                                break;
+                            case 2:
+                                g = min(Float(1.) - Float_epsilon, scat_asy_bg[bg_idx].asy_aer);
+                                break;
+                        }
+                        const Float cos_scat = (scatter_type == 0) ? rayleigh(rng()) : henyey(g, rng());
                         const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));
 
                         // direct contribution
-                        const Phase_kind kind = cloud_scatter ? Phase_kind::HG :Phase_kind::Rayleigh;
+                        const Phase_kind kind = (scatter_type==0) ? Phase_kind::Rayleigh : Phase_kind::HG;
                         const Float p_sun = probability_from_sun(photon, sun_direction, solid_angle, g, kind);
                         const Float trans_sun = transmission_direct_sun(photon,n,rng,sun_direction,
                                                     k_null_grid,k_ext,
@@ -757,22 +767,6 @@ void ray_tracer_kernel_bw(
                         d_max = Float(0.);
                         transition = true;
 
-                        // const Float p_sun = probability_from_sun(photon, normal_direction, solid_angle, Float(0.), Phase_kind::Lambertian);
-                        // //atomicAdd(&camera_diff[ij_cam], weight * p_sun * bg_trans);
-                        // //atomicAdd(&camera_count[ij_cam], weight * bg_trans * tod_frac_diff);
-
-                        // d_max = Float(0.);
-                        // reset_photon(
-                        //         photon, camera_count,camera_shot, photons_shot,
-                        //         ij_cam, n, rng, sun_direction,
-                        //         k_null_grid, k_ext,
-                        //         kgrid_x, kgrid_y, kgrid_z,
-                        //         x_size, y_size, z_size,
-                        //         dx_grid, dy_grid, dz_grid,
-                        //         dir_x, dir_y, dir_z,
-                        //         photon_generation_completed, weight,
-                        //         cam_nx, cam_ny, cam_data, axis_h, axis_v, axis_z,
-                        //         itot, jtot, ktot, bg_trans, s_min);
                     }
                     // regular cell crossing: adjust tau and apply periodic BC
                     else
@@ -812,12 +806,11 @@ void ray_tracer_kernel_bw(
                     const int k = float_to_int(photon.position.z, dz_grid, ktot);
                     const int ijk = i + j*itot + k*itot*jtot;
 
-                    // Handle the action.
-                    const Float random_number = rng();
-                    const Float k_ext_tot = k_ext[ijk].gas + k_ext[ijk].cloud;
 
                     // Compute probability not being absorbed and store weighted absorption probability
-                    const Float f_no_abs = Float(1.) - (Float(1.) - ssa_asy[ijk].ssa) * (k_ext_tot/k_ext_null);
+                    const Float k_sca_tot = scat_asy[ijk].k_sca_gas + scat_asy[ijk].k_sca_cld + scat_asy[ijk].k_sca_aer;
+                    const Float ssa_tot = k_sca_tot / k_ext[ijk];
+                    const Float f_no_abs = Float(1.) - (Float(1.) - ssa_tot) * (k_ext[ijk]/k_ext_null);
 
                     // Update weights (see Iwabuchi 2006: https://doi.org/10.1175/JAS3755.1)
                     weight *= f_no_abs;
@@ -829,7 +822,7 @@ void ray_tracer_kernel_bw(
                     if (weight > Float(0.))
                     {
                         // Null collision.
-                        if (random_number >= ssa_asy[ijk].ssa / (ssa_asy[ijk].ssa - Float(1.) + k_ext_null / k_ext_tot))
+                        if (rng() >= ssa_tot / (ssa_tot - Float(1.) + k_ext_null / k_ext[ijk]))
                         {
                             d_max -= dn;
                         }
@@ -837,13 +830,28 @@ void ray_tracer_kernel_bw(
                         else
                         {
                             d_max = Float(0.);
-                            const bool cloud_scatter = rng() < (k_ext[ijk].cloud / k_ext_tot);
-                            const Float g = cloud_scatter ? ssa_asy[ijk].asy : Float(0.);
-                            const Float cos_scat = cloud_scatter ? henyey(g, rng()) : rayleigh(rng());
+                            // find scatter type: 0 = gas, 1 = cloud, 2 = aerosol
+                            const Float scatter_rng = rng();
+                            const int scatter_type = scatter_rng < (scat_asy[ijk].k_sca_aer/k_sca_tot) ? 2 :
+                                                     scatter_rng < ((scat_asy[ijk].k_sca_aer+scat_asy[ijk].k_sca_cld)/k_sca_tot) ? 1 : 0;
+                            Float g;
+                            switch (scatter_type)
+                            {
+                                case 0:
+                                    g = Float(0.);
+                                    break;
+                                case 1:
+                                    g = min(Float(1.) - Float_epsilon, scat_asy[ijk].asy_cld);
+                                    break;
+                                case 2:
+                                    g = min(Float(1.) - Float_epsilon, scat_asy[ijk].asy_aer);
+                                    break;
+                            }
+                            const Float cos_scat = (scatter_type == 0) ? rayleigh(rng()) : henyey(g, rng());
                             const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));
 
                             // SUN SCATTERING GOES HERE
-                            const Phase_kind kind = cloud_scatter ? Phase_kind::HG : Phase_kind::Rayleigh;
+                            const Phase_kind kind = (scatter_type==0) ? Phase_kind::Rayleigh : Phase_kind::HG;
                             const Float p_sun = probability_from_sun(photon, sun_direction, solid_angle, g, kind);
                             const Float trans_sun = transmission_direct_sun(photon,n,rng,sun_direction,
                                                         k_null_grid,k_ext,
@@ -876,8 +884,7 @@ void ray_tracer_kernel_bw(
                             const Float phi = Float(2.*M_PI)*rng();
 
                             photon.direction = cos_scat*photon.direction
-                                    + sin_scat*(sin(phi)*t1 + cos(phi)*t2);
-
+                                + sin_scat*(sin(phi)*t1 + cos(phi)*t2);
                             photon.kind = Photon_kind::Diffuse;
 
                         }
