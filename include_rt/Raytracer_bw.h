@@ -20,8 +20,10 @@ class Raytracer_bw
 
         void trace_rays(
                 const Int photons_to_shoot,
-                const int n_col_x, const int n_col_y, const int nz, const int n_lay,
-                const Float dx_grid, const Float dy_grid, const Float dz_grid,
+                const int nlay,
+                const Vector<int>& grid_cells,
+                const Vector<Float>& grid_d,
+                const Vector<int>& kn_grid,
                 const Array_gpu<Float,1>& z_lev,
                 const Array_gpu<Float,2>& tau_total,
                 const Array_gpu<Float,2>& ssa_total,
@@ -40,13 +42,15 @@ class Raytracer_bw
                 const Float rayleigh,
                 const Array_gpu<Float,2>& col_dry,
                 const Array_gpu<Float,2>& vmr_h2o,
-                const Array_gpu<Float,1>& cam_data,
+                const Camera& camera,
                 Array_gpu<Float,2>& flux_camera);
 
         void trace_rays_bb(
                 const Int photons_to_shoot,
-                const int ncol_x, const int ncol_y, const int nz, const int nlay,
-                const Float dx_grid, const Float dy_grid, const Float dz_grid,
+                const int nlay,
+                const Vector<int>& grid_cells,
+                const Vector<Float>& grid_d,
+                const Vector<int>& kn_grid,
                 const Array_gpu<Float,1>& z_lev,
                 const Array_gpu<Float,2>& tau_total,
                 const Array_gpu<Float,2>& ssa_total,
@@ -61,22 +65,22 @@ class Raytracer_bw
                 const Float zenith_angle,
                 const Float azimuth_angle,
                 const Float toa_src,
-                const Array_gpu<Float,1>& cam_data,
+                const Camera& camera,
                 Array_gpu<Float,2>& flux_camera);
 
         void add_camera(
-                const int cam_nx, const int cam_ny,
+                const Camera& camera,
                 const Array_gpu<Float,2>& flux_camera,
                 Array_gpu<Float,2>& radiance);
 
         void add_xyz_camera(
-                const int cam_nx, const int cam_ny,
+                const Camera& camera,
                 const Array_gpu<Float,1>& xyz_factor,
                 const Array_gpu<Float,2>& flux_camera,
                 Array_gpu<Float,3>& XYZ);
 
         void normalize_xyz_camera(
-                const int cam_nx, const int cam_ny,
+                const Camera& camera,
                 const Float total_source,
                 Array_gpu<Float,3>& XYZ);
 

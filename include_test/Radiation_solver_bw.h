@@ -149,12 +149,14 @@ class Radiation_solver_shortwave
                 const bool switch_cloud_optics,
                 const bool switch_aerosol_optics,
                 const bool switch_lu_albedo,
+                const Vector<int>& grid_cells,
+                const Vector<Float>& grid_d,
+                const Vector<int>& kn_grid,
                 const Int ray_count,
                 const Gas_concs_gpu& gas_concs,
                 const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
                 const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
                 const Array_gpu<Float,1>& z_lev,
-                const Array_gpu<Float,1>& grid_dims,
                 Array_gpu<Float,2>& col_dry,
                 const Array_gpu<Float,2>& sfc_alb,
                 const Array_gpu<Float,1>& tsi_scaling,
@@ -169,7 +171,7 @@ class Radiation_solver_shortwave
                 const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08,
                 const Array_gpu<Float,1>& aermr09, const Array_gpu<Float,1>& aermr10,
                 const Array_gpu<Float,1>& aermr11,
-                const Array_gpu<Float,1>& cam_data,
+                const Camera& camera,
                 Array_gpu<Float,3>& XYZ);
         #endif
 
@@ -178,12 +180,14 @@ class Radiation_solver_shortwave
                 const bool switch_cloud_optics,
                 const bool switch_aerosol_optics,
                 const bool switch_lu_albedo,
+                const Vector<int>& grid_cells,
+                const Vector<Float>& grid_d,
+                const Vector<int>& kn_grid,
                 const Int ray_count,
                 const Gas_concs_gpu& gas_concs,
                 const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
                 const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
                 const Array_gpu<Float,1>& z_lev,
-                const Array_gpu<Float,1>& grid_dims,
                 Array_gpu<Float,2>& col_dry,
                 const Array_gpu<Float,2>& sfc_alb,
                 const Array_gpu<Float,1>& tsi_scaling,
@@ -198,7 +202,7 @@ class Radiation_solver_shortwave
                 const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08,
                 const Array_gpu<Float,1>& aermr09, const Array_gpu<Float,1>& aermr10,
                 const Array_gpu<Float,1>& aermr11,
-                const Array_gpu<Float,1>& cam_data,
+                const Camera& camera,
                 Array_gpu<Float,2>& radiance);
 
         int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };

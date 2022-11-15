@@ -842,12 +842,14 @@ void Radiation_solver_shortwave::solve_gpu(
         const bool switch_cloud_optics,
         const bool switch_aerosol_optics,
         const bool switch_lu_albedo,
+        const Vector<int>& grid_cells,
+        const Vector<Float>& grid_d,
+        const Vector<int>& kn_grid,
         const Int ray_count,
         const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
         const Array_gpu<Float,1>& z_lev,
-        const Array_gpu<Float,1>& grid_dims,
         Array_gpu<Float,2>& col_dry,
         const Array_gpu<Float,2>& sfc_alb,
         const Array_gpu<Float,1>& tsi_scaling,
@@ -862,7 +864,7 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08,
         const Array_gpu<Float,1>& aermr09, const Array_gpu<Float,1>& aermr10,
         const Array_gpu<Float,1>& aermr11,
-        const Array_gpu<Float,1>& cam_data,
+        const Camera& camera,
         Array_gpu<Float,3>& XYZ)
 
 {
@@ -871,13 +873,6 @@ void Radiation_solver_shortwave::solve_gpu(
     const int n_lev = p_lev.dim(2);
     const int n_gpt = this->kdist_gpu->get_ngpt();
     const int n_bnd = this->kdist_gpu->get_nband();
-
-    const int dx_grid = grid_dims({1});
-    const int dy_grid = grid_dims({2});
-    const int dz_grid = grid_dims({3});
-    const int n_z     = grid_dims({4});
-    const int n_col_y = grid_dims({5});
-    const int n_col_x = grid_dims({6});
 
     const int cam_nx = XYZ.dim(1);
     const int cam_ny = XYZ.dim(2);
@@ -1071,9 +1066,8 @@ void Radiation_solver_shortwave::solve_gpu(
             const Float azimuth_angle = azi({1});
 
             raytracer.trace_rays(
-                    ray_count,
-                    n_col_x, n_col_y, n_z, n_lay,
-                    dx_grid, dy_grid, dz_grid,
+                    ray_count, n_lay,
+                    grid_cells, grid_d, kn_grid,
                     z_lev,
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
@@ -1092,11 +1086,11 @@ void Radiation_solver_shortwave::solve_gpu(
                     rayleigh,
                     col_dry,
                     gas_concs.get_vmr("h2o"),
-                    cam_data,
+                    camera,
                     flux_camera);
 
             raytracer.add_xyz_camera(
-                    cam_nx, cam_ny,
+                    camera,
                     xyz_factor_gpu,
                     flux_camera,
                     XYZ);
@@ -1109,12 +1103,14 @@ void Radiation_solver_shortwave::solve_gpu_bb(
         const bool switch_cloud_optics,
         const bool switch_aerosol_optics,
         const bool switch_lu_albedo,
+        const Vector<int>& grid_cells,
+        const Vector<Float>& grid_d,
+        const Vector<int>& kn_grid,
         const Int ray_count,
         const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
         const Array_gpu<Float,1>& z_lev,
-        const Array_gpu<Float,1>& grid_dims,
         Array_gpu<Float,2>& col_dry,
         const Array_gpu<Float,2>& sfc_alb,
         const Array_gpu<Float,1>& tsi_scaling,
@@ -1129,7 +1125,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
         const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08,
         const Array_gpu<Float,1>& aermr09, const Array_gpu<Float,1>& aermr10,
         const Array_gpu<Float,1>& aermr11,
-        const Array_gpu<Float,1>& cam_data,
+        const Camera& camera,
         Array_gpu<Float,2>& radiance)
 
 {
@@ -1138,13 +1134,6 @@ void Radiation_solver_shortwave::solve_gpu_bb(
     const int n_lev = p_lev.dim(2);
     const int n_gpt = this->kdist_gpu->get_ngpt();
     const int n_bnd = this->kdist_gpu->get_nband();
-
-    const int dx_grid = grid_dims({1});
-    const int dy_grid = grid_dims({2});
-    const int dz_grid = grid_dims({3});
-    const int n_z     = grid_dims({4});
-    const int n_col_y = grid_dims({5});
-    const int n_col_x = grid_dims({6});
 
     const int cam_nx = radiance.dim(1);
     const int cam_ny = radiance.dim(2);
@@ -1302,9 +1291,8 @@ void Radiation_solver_shortwave::solve_gpu_bb(
         }
 
         raytracer.trace_rays_bb(
-                ray_count,
-                n_col_x, n_col_y, n_z, n_lay,
-                dx_grid, dy_grid, dz_grid,
+                ray_count, n_lay,
+                grid_cells, grid_d, kn_grid,
                 z_lev,
                 dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
                 dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
@@ -1319,11 +1307,11 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                 zenith_angle,
                 azimuth_angle,
                 toa_src({1}),
-                cam_data,
+                camera,
                 flux_camera);
 
         raytracer.add_camera(
-                cam_nx, cam_ny,
+                camera,
                 flux_camera,
                 radiance);
     }

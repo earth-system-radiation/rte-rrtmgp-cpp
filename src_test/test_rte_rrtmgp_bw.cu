@@ -236,7 +236,7 @@ void solve_radiation(int argc, char** argv)
     Int ray_count;
 
     ray_count = pow(Int(2),ray_count_exponent);
-    if (ray_count < block_size*grid_size)
+    if (ray_count < bw_kernel_block*bw_kernel_grid)
     {
         std::string error = "Cannot shoot " + std::to_string(ray_count) + " rays with current block/grid sizes.";
         throw std::runtime_error(error);
@@ -257,32 +257,20 @@ void solve_radiation(int argc, char** argv)
     const int n_z = input_nc.get_dimension_size("z");
 
     // Read the x,y,z dimensions if raytracing is enabled
-    Array<Float,1> grid_dims({6});
-    Array<Float,1> grid_x({n_col_x});
-    Array<Float,1> grid_y({n_col_y});
-    Array<Float,1> grid_z({n_z});
-    Array<Float,1> z_lev({n_lev});
+    Array<Float,1> grid_x(input_nc.get_variable<Float>("x", {n_col_x}), {n_col_x});
+    Array<Float,1> grid_y(input_nc.get_variable<Float>("y", {n_col_y}), {n_col_y});
+    Array<Float,1> grid_z(input_nc.get_variable<Float>("z", {n_z}), {n_z});
+    Array<Float,1> z_lev(input_nc.get_variable<Float>("z_lev", {n_lev}), {n_lev});
+
+    const Vector<int> grid_cells = {n_col_x, n_col_y, n_z};
+    const Vector<Float> grid_d = {grid_x({2}) - grid_x({1}), grid_y({2}) - grid_y({1}), grid_z({2}) - grid_z({1})};
+    const Vector<int> kn_grid = {input_nc.get_variable<int>("ngrid_x"), input_nc.get_variable<int>("ngrid_y"),input_nc.get_variable<int>("ngrid_z")};
 
     // Reading camera data
-    Array<Float,1> cam_data({2});
-    cam_data({1}) = 90;//input_nc.get_variable<Float>("cam_azi");
-    cam_data({2}) = 0.;//input_nc.get_variable<Float>("cam_z");
-    Array_gpu<Float,1> cam_data_gpu(cam_data);
-
-    grid_x = std::move(input_nc.get_variable<Float>("x", {n_col_x}));
-    grid_y = std::move(input_nc.get_variable<Float>("y", {n_col_y}));
-    grid_z = std::move(input_nc.get_variable<Float>("z", {n_z}));
-    z_lev = std::move(input_nc.get_variable<Float>("z_lev", {n_lev}));
-    grid_dims({1}) = grid_x({2}) - grid_x({1});
-    grid_dims({2}) = grid_y({2}) - grid_y({1});
-    grid_dims({3}) = grid_z({2}) - grid_z({1});
-    grid_dims({4}) = n_z;
-    grid_dims({5}) = n_col_y;
-    grid_dims({6}) = n_col_x;
-
-    //hard code camera size fow now
-    const int cam_nx = 1024;
-    const int cam_ny = 1024;
+    Camera camera;
+    camera.pos = {12004, 4, 3054};
+    camera.setup_rotation_matrix(Float(90)/Float(180)*M_PI, Float(60)/Float(180)*M_PI, Float(0)/Float(180)*M_PI);
+    camera.f_zoom = 1 + Float(1)/Float(9);
 
     // Read the atmospheric fields.
     Array<Float,2> p_lay(input_nc.get_variable<Float>("p_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
@@ -413,8 +401,8 @@ void solve_radiation(int argc, char** argv)
     Status::print_message("Preparing NetCDF output file.");
 
     Netcdf_file output_nc("rte_rrtmgp_output.nc", Netcdf_mode::Create);
-    output_nc.add_dimension("x", cam_nx);
-    output_nc.add_dimension("y", cam_ny);
+    output_nc.add_dimension("x", camera.nx);
+    output_nc.add_dimension("y", camera.ny);
     output_nc.add_dimension("pair", 2);
 
     int ngpts = 0;
@@ -664,9 +652,9 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<Float,2> radiance;
 
         if (switch_broadband)
-            radiance.set_dims({cam_nx, cam_ny});
+            radiance.set_dims({camera.nx, camera.ny});
         else
-            XYZ.set_dims({cam_nx, cam_ny, 3});
+            XYZ.set_dims({camera.nx, camera.ny, 3});
 
         // Solve the radiation.
         Status::print_message("Solving the shortwave radiation.");
@@ -678,7 +666,6 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> t_lay_gpu(t_lay);
             Array_gpu<Float,2> t_lev_gpu(t_lev);
             Array_gpu<Float,1> z_lev_gpu(z_lev);
-            Array_gpu<Float,1> grid_dims_gpu(grid_dims);
             Array_gpu<Float,2> col_dry_gpu(col_dry);
             Array_gpu<Float,2> sfc_alb_gpu(sfc_alb);
             Array_gpu<Float,1> tsi_scaling_gpu(tsi_scaling);
@@ -713,26 +700,29 @@ void solve_radiation(int argc, char** argv)
             cudaEventRecord(start, 0);
 
             rad_sw.solve_gpu_bb(
-                switch_cloud_optics,
-                switch_aerosol_optics,
-                switch_lu_albedo,
-                ray_count,
-                gas_concs_gpu,
-                p_lay_gpu, p_lev_gpu,
-                t_lay_gpu, t_lev_gpu,
-                z_lev_gpu,
-                grid_dims_gpu,
-                col_dry_gpu,
-                sfc_alb_gpu,
-                tsi_scaling_gpu,
-                mu0_gpu, azi_gpu,
-                lwp_gpu, iwp_gpu,
-                rel_gpu, rei_gpu,
-                land_use_map_gpu,
-                rh_gpu,
-                aermr01_gpu, aermr02_gpu, aermr03_gpu, aermr04_gpu, aermr05_gpu,
-                aermr06_gpu, aermr07_gpu, aermr08_gpu, aermr09_gpu, aermr10_gpu, aermr11_gpu,
-                cam_data_gpu, radiance);
+                    switch_cloud_optics,
+                    switch_aerosol_optics,
+                    switch_lu_albedo,
+                    grid_cells,
+                    grid_d,
+                    kn_grid,
+                    ray_count,
+                    gas_concs_gpu,
+                    p_lay_gpu, p_lev_gpu,
+                    t_lay_gpu, t_lev_gpu,
+                    z_lev_gpu,
+                    col_dry_gpu,
+                    sfc_alb_gpu,
+                    tsi_scaling_gpu,
+                    mu0_gpu, azi_gpu,
+                    lwp_gpu, iwp_gpu,
+                    rel_gpu, rei_gpu,
+                    land_use_map_gpu,
+                    rh_gpu,
+                    aermr01_gpu, aermr02_gpu, aermr03_gpu, aermr04_gpu, aermr05_gpu,
+                    aermr06_gpu, aermr07_gpu, aermr08_gpu, aermr09_gpu, aermr10_gpu, aermr11_gpu,
+                    camera,
+                    radiance);
 
             cudaEventRecord(stop, 0);
             cudaEventSynchronize(stop);
@@ -752,7 +742,6 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> t_lay_gpu(t_lay);
             Array_gpu<Float,2> t_lev_gpu(t_lev);
             Array_gpu<Float,1> z_lev_gpu(z_lev);
-            Array_gpu<Float,1> grid_dims_gpu(grid_dims);
             Array_gpu<Float,2> col_dry_gpu(col_dry);
             Array_gpu<Float,2> sfc_alb_gpu(sfc_alb);
             Array_gpu<Float,1> tsi_scaling_gpu(tsi_scaling);
@@ -791,12 +780,14 @@ void solve_radiation(int argc, char** argv)
                     switch_cloud_optics,
                     switch_aerosol_optics,
                     switch_lu_albedo,
+                    grid_cells,
+                    grid_d,
+                    kn_grid,
                     ray_count,
                     gas_concs_gpu,
                     p_lay_gpu, p_lev_gpu,
                     t_lay_gpu, t_lev_gpu,
                     z_lev_gpu,
-                    grid_dims_gpu,
                     col_dry_gpu,
                     sfc_alb_gpu,
                     tsi_scaling_gpu,
@@ -807,7 +798,8 @@ void solve_radiation(int argc, char** argv)
                     rh_gpu,
                     aermr01_gpu, aermr02_gpu, aermr03_gpu, aermr04_gpu, aermr05_gpu,
                     aermr06_gpu, aermr07_gpu, aermr08_gpu, aermr09_gpu, aermr10_gpu, aermr11_gpu,
-                    cam_data_gpu, XYZ);
+                    camera,
+                    XYZ);
 
             cudaEventRecord(stop, 0);
             cudaEventSynchronize(stop);
