@@ -267,10 +267,17 @@ void solve_radiation(int argc, char** argv)
     const Vector<int> kn_grid = {input_nc.get_variable<int>("ngrid_x"), input_nc.get_variable<int>("ngrid_y"),input_nc.get_variable<int>("ngrid_z")};
 
     // Reading camera data
+    Netcdf_group cam_in = input_nc.get_group("camera-settings");
     Camera camera;
-    camera.pos = {12004, 4, 3054};
-    camera.setup_rotation_matrix(Float(90)/Float(180)*M_PI, Float(60)/Float(180)*M_PI, Float(0)/Float(180)*M_PI);
-    camera.f_zoom = 1 + Float(1)/Float(9);
+    camera.position = {cam_in.get_variable<Float>("px"),
+                       cam_in.get_variable<Float>("py"),
+                       cam_in.get_variable<Float>("pz")};
+
+    camera.setup_rotation_matrix(cam_in.get_variable<Float>("yaw"),
+                                 cam_in.get_variable<Float>("pitch"),
+                                 cam_in.get_variable<Float>("roll"));
+
+    camera.f_zoom = cam_in.get_variable<Float>("f_zoom");
 
     // Read the atmospheric fields.
     Array<Float,2> p_lay(input_nc.get_variable<Float>("p_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
@@ -281,7 +288,7 @@ void solve_radiation(int argc, char** argv)
     // read land use map if present, used for choosing between spectral and lambertian reflection and for spectral albedo
     // 0: water, 1: "grass", 2: "soil", 3: "concrete". Interpolating between 1 and 2 is currently possible
     Array<Float,1> land_use_map({n_col});
-    if (input_nc.variable_exists("land_use_map"))
+    if (input_nc.variable_exists("land_use_map") && switch_lu_albedo)
     {
         land_use_map = std::move(input_nc.get_variable<Float>("land_use_map", {n_col_y, n_col_x}));
     }
@@ -858,7 +865,7 @@ void solve_radiation(int argc, char** argv)
         }
         else
         {
-            Array<Float,3> XYZ_cpu(XYZ);
+            Array<Float,3> xyz_cpu(XYZ);
             output_nc.add_dimension("gpt_sw", n_gpt_sw);
             output_nc.add_dimension("band_sw", n_bnd_sw);
             output_nc.add_dimension("n",3);
@@ -866,8 +873,24 @@ void solve_radiation(int argc, char** argv)
             auto nc_sw_band_lims_wvn = output_nc.add_variable<Float>("sw_band_lims_wvn", {"band_sw", "pair"});
             nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber_gpu().v(), {0, 0});
 
-            auto nc_xx = output_nc.add_variable<Float>("XYZ", {"n","y","x"});
-            nc_xx.insert(XYZ_cpu.v(), {0, 0, 0});
+            auto nc_xyz = output_nc.add_variable<Float>("XYZ", {"n","y","x"});
+            nc_xyz.insert(xyz_cpu.v(), {0, 0, 0});
+
+        }
+        auto nc_mu0 = output_nc.add_variable<Float>("sza");
+        nc_mu0.insert(acos(mu0({1}))/M_PI * Float(180.), {0});
+
+        auto nc_azi = output_nc.add_variable<Float>("azi");
+        nc_azi.insert(azi({1})/M_PI * Float(180.), {0});
+
+        // camera position and direction
+        Netcdf_group output_cam = output_nc.add_group("camera-settings");
+
+        std::string cam_vars[] = {"yaw","pitch","roll","f_zoom","px","py","pz"};
+        for (auto &&cam_var : cam_vars)
+        {
+            auto nc_cam_out = output_cam.add_variable<Float>(cam_var);
+            nc_cam_out.insert(cam_in.get_variable<Float>(cam_var), {0});
         }
     }
 

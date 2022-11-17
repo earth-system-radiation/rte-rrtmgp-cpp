@@ -179,8 +179,10 @@ namespace
                 albedo[i] = mean_albedo(wv1, wv2, &get_grass_alb_proc) * (land_use_map[i]-1) + mean_albedo(wv1, wv2, &get_soil_alb_proc) * (Float(2.)-land_use_map[i]);
             }
             else if (land_use_map[i] == 3)
+            {
                 albedo[i] = mean_albedo(wv1, wv2, &get_concrete_alb_proc);
-        }
+            }
+       }
     }
 
     void spectral_albedo(const int ncol, const Float wv1, const Float wv2,
@@ -1058,7 +1060,7 @@ void Radiation_solver_shortwave::solve_gpu(
 
             if (switch_lu_albedo)
             {
-                if (albedo.size() > 0) albedo.set_dims({1, n_col});
+                if (albedo.size() == 0) albedo.set_dims({1, n_col});
                 spectral_albedo(n_col, wv1, wv2, land_use_map, albedo);
             }
 
@@ -1171,7 +1173,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                 break;
             }
         }
-
+        printf("running g-point %d \n",igpt);
         constexpr int n_col_block = 1<<13; // 2^14
 
         Array_gpu<Float,1> toa_src_temp({n_col_block});

@@ -195,6 +195,7 @@ namespace
 
         bool transition = false;
         int i_n,j_n,k_n;
+
         while (true)
         {
             if (!transition)
@@ -339,41 +340,34 @@ namespace
             // const Float roll = Float(0.) / Float(180) * M_PI;
 
 
-            photon.position.x = Float(12004.) + s_min;
-            photon.position.y = Float(04.) + s_min; //Float4710);
-            photon.position.z = Float(3054.)+ s_min;
+            // photon.position.x = Float(12004.) + s_min;
+            // photon.position.y = Float(04.) + s_min; //Float4710);
+            // photon.position.z = Float(54.)+ s_min;
             //photon.position.z = cam_data[1] + s_min; //Float(500.)+ s_min;
 
-            const Float photon_zenith = i * Float(.45) * M_PI;
+            photon.position = camera.position;
+
+            const Float photon_zenith = i * Float(.5) * M_PI / camera.f_zoom;
             const Float photon_azimuth = j * Float(2.) * M_PI;
+            const Vector<Float> dir_tmp = {sin(photon_zenith) * sin(photon_azimuth), sin(photon_zenith) * cos(photon_azimuth), cos(photon_zenith)};
 
-            const Float yaw = Float(90.) / Float(180) * M_PI;
-            const Float pitch = Float(60) / Float(180) * M_PI;
-            const Float roll = Float(0.) / Float(180) * M_PI;
+            photon.direction.x = dot(camera.mx,  dir_tmp);
+            photon.direction.y = dot(camera.my,  dir_tmp);
+            photon.direction.z = dot(camera.mz,  dir_tmp) * Float(-1);
 
-            photon.direction = {sin(photon_zenith) * sin(photon_azimuth), sin(photon_zenith) * cos(photon_azimuth), cos(photon_zenith)};
-            // rotate?
-            const Float dir_x = cos(yaw)*sin(pitch)*photon.direction.x +
-                                (cos(yaw)*cos(pitch)*sin(roll)-sin(yaw)*cos(roll))*photon.direction.y +
-                                (cos(yaw)*cos(pitch)*cos(roll)+sin(yaw)*sin(roll)) * photon.direction.z;
-            const Float dir_y = sin(yaw)*sin(pitch)*photon.direction.x +
-                                (sin(yaw)*cos(pitch)*sin(roll)+cos(yaw)*cos(roll))*photon.direction.y +
-                                (sin(yaw)*cos(pitch)*cos(roll)-cos(yaw)*sin(roll)) * photon.direction.z;
-            const Float dir_z = -cos(pitch)*photon.direction.x +
-                                sin(pitch)*sin(roll) * photon.direction.y +
-                                sin(pitch)*cos(roll) * photon.direction.z;
-            //const Float dir_x = Float(-.5)*photon.direction.x +
-            //                    Float(0.7071067811865475)*photon.direction.y +
-            //                    Float(0.5) * photon.direction.z;
-            //const Float dir_y = Float(0.5)/*photon.direction.x +
-            //                    Float(0.7071067811865475)*photon.direction.y +
-            //                    Float(-0.5) * photon.direction.z;
-            //const Float dir_z = Float(-0.7071067811865475) * photon.direction.x +
-            //                    Float(0.) * photon.direction.y +
-            //                    Float(-0.7071067811865475)*photon.direction.z;
-
-            photon.direction = {dir_x,dir_y,-dir_z};
-            //photon.direction = {photon.direction.z, photon.direction.y, photon.direction.x};
+            // const Float yaw = Float(90.) / Float(180) * M_PI;
+            // const Float pitch = Float(-90) / Float(180) * M_PI;
+            // const Float roll = Float(0.) / Float(180) * M_PI;
+            // const Float dir_x = cos(yaw)*sin(pitch)*photon.direction.x +
+            //                     (cos(yaw)*cos(pitch)*sin(roll)-sin(yaw)*cos(roll))*photon.direction.y +
+            //                     (cos(yaw)*cos(pitch)*cos(roll)+sin(yaw)*sin(roll)) * photon.direction.z;
+            // const Float dir_y = sin(yaw)*sin(pitch)*photon.direction.x +
+            //                     (sin(yaw)*cos(pitch)*sin(roll)+cos(yaw)*cos(roll))*photon.direction.y +
+            //                     (sin(yaw)*cos(pitch)*cos(roll)-cos(yaw)*sin(roll)) * photon.direction.z;
+            // const Float dir_z = -cos(pitch)*photon.direction.x +
+            //                     sin(pitch)*sin(roll) * photon.direction.y +
+            //                     sin(pitch)*cos(roll) * photon.direction.z;
+            // photon.direction = {dir_x,dir_y,-dir_z};
 
             photon.kind = Photon_kind::Direct;
             weight = 1;
