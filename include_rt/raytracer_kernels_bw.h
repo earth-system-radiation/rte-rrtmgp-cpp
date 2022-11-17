@@ -67,7 +67,7 @@ Vector<Float> operator*(const Vector<Float> v1, const Vector<int> v2) { return V
 
 struct Camera
 {
-    Vector<Float> pos;
+    Vector<Float> position;
 
     // rotation matrix
     Vector<Float> mx;
@@ -75,8 +75,11 @@ struct Camera
     Vector<Float> mz;
 
     Float f_zoom;
-    void setup_rotation_matrix(const Float yaw, const Float pitch, const Float roll)
+    void setup_rotation_matrix(const Float yaw_deg, const Float pitch_deg, const Float roll_deg)
     {
+        const Float yaw = yaw_deg / Float(180.) * M_PI;
+        const Float pitch = pitch_deg / Float(180.) * M_PI;
+        const Float roll = roll_deg / Float(180.) * M_PI;
         mx = {cos(yaw)*sin(pitch), (cos(yaw)*cos(pitch)*sin(roll)-sin(yaw)*cos(roll)), (cos(yaw)*cos(pitch)*cos(roll)+sin(yaw)*sin(roll))};
         my = {sin(yaw)*sin(pitch), (sin(yaw)*cos(pitch)*sin(roll)+cos(yaw)*cos(roll)), (sin(yaw)*cos(pitch)*cos(roll)-cos(yaw)*sin(roll))};
         mz = {-cos(pitch), sin(pitch)*sin(roll), sin(pitch)*cos(roll)};
