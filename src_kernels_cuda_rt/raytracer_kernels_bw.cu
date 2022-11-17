@@ -345,7 +345,7 @@ namespace
             // photon.position.z = Float(54.)+ s_min;
             //photon.position.z = cam_data[1] + s_min; //Float(500.)+ s_min;
 
-            photon.position = camera.position;
+            photon.position = camera.position + s_min;
 
             const Float photon_zenith = i * Float(.5) * M_PI / camera.f_zoom;
             const Float photon_azimuth = j * Float(2.) * M_PI;

@@ -202,7 +202,7 @@ void solve_radiation(int argc, char** argv)
     // Parse the command line options.
     std::map<std::string, std::pair<bool, std::string>> command_line_options {
         {"shortwave"        , { true,  "Enable computation of shortwave radiation."}},
-        {"longwave"         , { true,  "Enable computation of longwave radiation." }},
+        {"longwave"         , { false, "Enable computation of longwave radiation." }},
         {"fluxes"           , { true,  "Enable computation of fluxes."             }},
         {"raytracing"       , { false, "Use raytracing for flux computation."      }},
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
@@ -221,7 +221,6 @@ void solve_radiation(int argc, char** argv)
     const bool switch_shortwave         = command_line_options.at("shortwave"        ).first;
     const bool switch_longwave          = command_line_options.at("longwave"         ).first;
     const bool switch_fluxes            = command_line_options.at("fluxes"           ).first;
-    const bool switch_raytracing        = command_line_options.at("raytracing"       ).first;
     const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
     const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
