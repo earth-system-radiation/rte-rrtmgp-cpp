@@ -192,8 +192,10 @@ void solve_radiation(int argc, char** argv)
         {"fluxes"           , { true,  "Enable computation of fluxes."             }},
         {"raytracing"       , { false, "Use raytracing for flux computation."      }},
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
+        {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
         {"output-optical"   , { false, "Enable output of optical properties."      }},
-        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }} };
+        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
+        {"profiling        ", { false, "Perform additional profiling run."         }} };
     Int photons_per_pixel = 1;
 
     if (parse_command_line_options(command_line_options, photons_per_pixel, argc, argv))
@@ -205,8 +207,10 @@ void solve_radiation(int argc, char** argv)
     const bool switch_fluxes            = command_line_options.at("fluxes"           ).first;
     const bool switch_raytracing        = command_line_options.at("raytracing"       ).first;
     const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
+    const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
+    const bool switch_profiling         = command_line_options.at("profiling"        ).first;
 
     // Print the options to the screen.
     print_command_line_options(command_line_options);
@@ -312,6 +316,58 @@ void solve_radiation(int argc, char** argv)
 
         rei.set_dims({n_col, n_lay});
         rei = std::move(input_nc.get_variable<Float>("rei", {n_lay, n_col_y, n_col_x}));
+    }
+
+    Array<Float,2> rh;
+    Array<Float,1> aermr01;
+    Array<Float,1> aermr02;
+    Array<Float,1> aermr03;
+    Array<Float,1> aermr04;
+    Array<Float,1> aermr05;
+    Array<Float,1> aermr06;
+    Array<Float,1> aermr07;
+    Array<Float,1> aermr08;
+    Array<Float,1> aermr09;
+    Array<Float,1> aermr10;
+    Array<Float,1> aermr11;
+
+    if (switch_aerosol_optics)
+    {
+        rh.set_dims({n_col, n_lay});
+        rh = std::move(input_nc.get_variable<Float>("rh", {n_lay, n_col_y, n_col_x}));
+
+        aermr01.set_dims({n_lay});
+        aermr01 = std::move(input_nc.get_variable<Float>("aermr01", {n_lay}));
+
+        aermr02.set_dims({n_lay});
+        aermr02 = std::move(input_nc.get_variable<Float>("aermr02", {n_lay}));
+
+        aermr03.set_dims({n_lay});
+        aermr03 = std::move(input_nc.get_variable<Float>("aermr03", {n_lay}));
+
+        aermr04.set_dims({n_lay});
+        aermr04 = std::move(input_nc.get_variable<Float>("aermr04", {n_lay}));
+
+        aermr05.set_dims({n_lay});
+        aermr05 = std::move(input_nc.get_variable<Float>("aermr05", {n_lay}));
+
+        aermr06.set_dims({n_lay});
+        aermr06 = std::move(input_nc.get_variable<Float>("aermr06", {n_lay}));
+
+        aermr07.set_dims({n_lay});
+        aermr07 = std::move(input_nc.get_variable<Float>("aermr07", {n_lay}));
+
+        aermr08.set_dims({n_lay});
+        aermr08 = std::move(input_nc.get_variable<Float>("aermr08", {n_lay}));
+
+        aermr09.set_dims({n_lay});
+        aermr09 = std::move(input_nc.get_variable<Float>("aermr09", {n_lay}));
+
+        aermr10.set_dims({n_lay});
+        aermr10 = std::move(input_nc.get_variable<Float>("aermr10", {n_lay}));
+
+        aermr11.set_dims({n_lay});
+        aermr11 = std::move(input_nc.get_variable<Float>("aermr11", {n_lay}));
     }
 
 
@@ -434,6 +490,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> rel_gpu(rel);
             Array_gpu<Float,2> rei_gpu(rei);
 
+
             cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
@@ -555,7 +612,7 @@ void solve_radiation(int argc, char** argv)
 
 
         Gas_concs_gpu gas_concs_gpu(gas_concs);
-        Radiation_solver_shortwave rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
+        Radiation_solver_shortwave rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc", "aerosol_optics.nc");
 
         // Read the boundary conditions.
         const int n_bnd_sw = rad_sw.get_n_bnd_gpu();
@@ -668,6 +725,19 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> rel_gpu(rel);
             Array_gpu<Float,2> rei_gpu(rei);
 
+            Array_gpu<Float,2> rh_gpu(rh);
+            Array_gpu<Float,1> aermr01_gpu(aermr01);
+            Array_gpu<Float,1> aermr02_gpu(aermr02);
+            Array_gpu<Float,1> aermr03_gpu(aermr03);
+            Array_gpu<Float,1> aermr04_gpu(aermr04);
+            Array_gpu<Float,1> aermr05_gpu(aermr05);
+            Array_gpu<Float,1> aermr06_gpu(aermr06);
+            Array_gpu<Float,1> aermr07_gpu(aermr07);
+            Array_gpu<Float,1> aermr08_gpu(aermr08);
+            Array_gpu<Float,1> aermr09_gpu(aermr09);
+            Array_gpu<Float,1> aermr10_gpu(aermr10);
+            Array_gpu<Float,1> aermr11_gpu(aermr11);
+
             cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
@@ -680,6 +750,7 @@ void solve_radiation(int argc, char** argv)
                     switch_fluxes,
                     switch_raytracing,
                     switch_cloud_optics,
+                    switch_aerosol_optics,
                     switch_output_optical,
                     switch_output_bnd_fluxes,
                     photons_per_pixel,
@@ -693,6 +764,9 @@ void solve_radiation(int argc, char** argv)
                     tsi_scaling_gpu, mu0_gpu, azi_gpu,
                     lwp_gpu, iwp_gpu,
                     rel_gpu, rei_gpu,
+                    rh,
+                    aermr01, aermr02, aermr03, aermr04, aermr05,
+                    aermr06, aermr07, aermr08, aermr09, aermr10, aermr11,
                     sw_tau, ssa, g,
                     toa_source,
                     sw_flux_up, sw_flux_dn,
@@ -721,14 +795,12 @@ void solve_radiation(int argc, char** argv)
         run_solver();
 
         // Profiling step;
-        cudaProfilerStart();
-        run_solver();
-        cudaProfilerStop();
-
-        // constexpr int n_measures=10;
-        // for (int n=0; n<n_measures; ++n)
-        //     run_solver();
-
+        if (switch_profiling)
+        {
+            cudaProfilerStart();
+            run_solver();
+            cudaProfilerStop();
+        }
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");

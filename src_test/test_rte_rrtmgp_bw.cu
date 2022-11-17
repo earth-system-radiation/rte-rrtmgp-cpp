@@ -70,6 +70,19 @@ void read_and_set_vmr(
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 void configure_memory_pool(int nlays, int ncols, int nchunks, int ngpts, int nbnds)
 {
     /* Heuristic way to set up memory pool queues */
@@ -189,40 +202,47 @@ void solve_radiation(int argc, char** argv)
     // Parse the command line options.
     std::map<std::string, std::pair<bool, std::string>> command_line_options {
         {"shortwave"        , { true,  "Enable computation of shortwave radiation."}},
-        {"longwave"         , { true,  "Enable computation of longwave radiation." }},
+        {"longwave"         , { false, "Enable computation of longwave radiation." }},
         {"fluxes"           , { true,  "Enable computation of fluxes."             }},
         {"raytracing"       , { false, "Use raytracing for flux computation."      }},
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
+        {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
         {"output-optical"   , { false, "Enable output of optical properties."      }},
-        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }} };
+        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
+        {"lu-albedo"        , { false, "Compute spectral albedo from land use map" }},
+        {"broadband"        , { false, "Compute broadband fluxes"                  }},
+        {"profiling"        , { false, "Perform additional profiling run."         }} };
     Int ray_count_exponent = 22;
 
     if (parse_command_line_options(command_line_options, ray_count_exponent, argc, argv))
         return;
-    
+
 
     const bool switch_shortwave         = command_line_options.at("shortwave"        ).first;
     const bool switch_longwave          = command_line_options.at("longwave"         ).first;
     const bool switch_fluxes            = command_line_options.at("fluxes"           ).first;
-    const bool switch_raytracing        = command_line_options.at("raytracing"       ).first;
     const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
+    const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
-    
+    const bool switch_lu_albedo         = command_line_options.at("lu-albedo"        ).first;
+    const bool switch_broadband         = command_line_options.at("broadband"        ).first;
+    const bool switch_profiling         = command_line_options.at("profiling"        ).first;
+
     // Print the options to the screen.
     print_command_line_options(command_line_options);
 
     Int ray_count;
-  
+
     ray_count = pow(Int(2),ray_count_exponent);
-    if (ray_count < block_size*grid_size)
+    if (ray_count < bw_kernel_block*bw_kernel_grid)
     {
         std::string error = "Cannot shoot " + std::to_string(ray_count) + " rays with current block/grid sizes.";
         throw std::runtime_error(error);
     }
     else
         Status::print_message("Using "+ std::to_string(Int(pow(2, ray_count_exponent))) + " rays");
-   
+
     ////// READ THE ATMOSPHERIC DATA //////
     Status::print_message("Reading atmospheric input data from NetCDF.");
 
@@ -236,39 +256,47 @@ void solve_radiation(int argc, char** argv)
     const int n_z = input_nc.get_dimension_size("z");
 
     // Read the x,y,z dimensions if raytracing is enabled
-    Array<Float,1> grid_dims({6});
-    Array<Float,1> grid_x({n_col_x});
-    Array<Float,1> grid_y({n_col_y});
-    Array<Float,1> grid_z({n_z});
-    Array<Float,1> z_lev({n_lev});
-    
-    // Reading camera data
-    Array<Float,1> cam_data({2});
-    cam_data({1}) = input_nc.get_variable<Float>("cam_azi");
-    cam_data({2}) = input_nc.get_variable<Float>("cam_z");
-    Array_gpu<Float,1> cam_data_gpu(cam_data);
+    Array<Float,1> grid_x(input_nc.get_variable<Float>("x", {n_col_x}), {n_col_x});
+    Array<Float,1> grid_y(input_nc.get_variable<Float>("y", {n_col_y}), {n_col_y});
+    Array<Float,1> grid_z(input_nc.get_variable<Float>("z", {n_z}), {n_z});
+    Array<Float,1> z_lev(input_nc.get_variable<Float>("z_lev", {n_lev}), {n_lev});
 
-    grid_x = std::move(input_nc.get_variable<Float>("x", {n_col_x}));
-    grid_y = std::move(input_nc.get_variable<Float>("y", {n_col_y}));
-    grid_z = std::move(input_nc.get_variable<Float>("z", {n_z}));
-    z_lev = std::move(input_nc.get_variable<Float>("z_lev", {n_lev}));
-    grid_dims({1}) = grid_x({2}) - grid_x({1});
-    grid_dims({2}) = grid_y({2}) - grid_y({1});
-    grid_dims({3}) = grid_z({2}) - grid_z({1});
-    grid_dims({4}) = n_z;
-    grid_dims({5}) = n_col_y;
-    grid_dims({6}) = n_col_x;
-    
-    //hard code camera size fow now
-    const int cam_nx = 1024;
-    const int cam_ny = 1024;
+    const Vector<int> grid_cells = {n_col_x, n_col_y, n_z};
+    const Vector<Float> grid_d = {grid_x({2}) - grid_x({1}), grid_y({2}) - grid_y({1}), grid_z({2}) - grid_z({1})};
+    const Vector<int> kn_grid = {input_nc.get_variable<int>("ngrid_x"), input_nc.get_variable<int>("ngrid_y"),input_nc.get_variable<int>("ngrid_z")};
+
+    // Reading camera data
+    Netcdf_group cam_in = input_nc.get_group("camera-settings");
+    Camera camera;
+    camera.position = {cam_in.get_variable<Float>("px"),
+                       cam_in.get_variable<Float>("py"),
+                       cam_in.get_variable<Float>("pz")};
+
+    camera.setup_rotation_matrix(cam_in.get_variable<Float>("yaw"),
+                                 cam_in.get_variable<Float>("pitch"),
+                                 cam_in.get_variable<Float>("roll"));
+
+    camera.f_zoom = cam_in.get_variable<Float>("f_zoom");
+
     // Read the atmospheric fields.
     Array<Float,2> p_lay(input_nc.get_variable<Float>("p_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
     Array<Float,2> t_lay(input_nc.get_variable<Float>("t_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
     Array<Float,2> p_lev(input_nc.get_variable<Float>("p_lev", {n_lev, n_col_y, n_col_x}), {n_col, n_lev});
     Array<Float,2> t_lev(input_nc.get_variable<Float>("t_lev", {n_lev, n_col_y, n_col_x}), {n_col, n_lev});
 
-    
+    // read land use map if present, used for choosing between spectral and lambertian reflection and for spectral albedo
+    // 0: water, 1: "grass", 2: "soil", 3: "concrete". Interpolating between 1 and 2 is currently possible
+    Array<Float,1> land_use_map({n_col});
+    if (input_nc.variable_exists("land_use_map") && switch_lu_albedo)
+    {
+        land_use_map = std::move(input_nc.get_variable<Float>("land_use_map", {n_col_y, n_col_x}));
+    }
+    else
+    {
+        // default to grass with some soil
+        land_use_map.fill(Float(1.3));
+    }
+
     // Fetch the col_dry in case present.
     Array<Float,2> col_dry;
     if (input_nc.variable_exists("col_dry"))
@@ -300,7 +328,7 @@ void solve_radiation(int argc, char** argv)
     read_and_set_vmr("hfc134a", n_col_x, n_col_y, n_lay, input_nc, gas_concs);
     read_and_set_vmr("cf4"    , n_col_x, n_col_y, n_lay, input_nc, gas_concs);
     read_and_set_vmr("no2"    , n_col_x, n_col_y, n_lay, input_nc, gas_concs);
-    
+
     Array<Float,2> lwp;
     Array<Float,2> iwp;
     Array<Float,2> rel;
@@ -321,14 +349,66 @@ void solve_radiation(int argc, char** argv)
         rei = std::move(input_nc.get_variable<Float>("rei", {n_lay, n_col_y, n_col_x}));
     }
 
+    Array<Float,2> rh;
+    Array<Float,1> aermr01;
+    Array<Float,1> aermr02;
+    Array<Float,1> aermr03;
+    Array<Float,1> aermr04;
+    Array<Float,1> aermr05;
+    Array<Float,1> aermr06;
+    Array<Float,1> aermr07;
+    Array<Float,1> aermr08;
+    Array<Float,1> aermr09;
+    Array<Float,1> aermr10;
+    Array<Float,1> aermr11;
+
+    if (switch_aerosol_optics)
+    {
+        rh.set_dims({n_col, n_lay});
+        rh = std::move(input_nc.get_variable<Float>("rh", {n_lay, n_col_y, n_col_x}));
+
+        aermr01.set_dims({n_lay});
+        aermr01 = std::move(input_nc.get_variable<Float>("aermr01", {n_lay}));
+
+        aermr02.set_dims({n_lay});
+        aermr02 = std::move(input_nc.get_variable<Float>("aermr02", {n_lay}));
+
+        aermr03.set_dims({n_lay});
+        aermr03 = std::move(input_nc.get_variable<Float>("aermr03", {n_lay}));
+
+        aermr04.set_dims({n_lay});
+        aermr04 = std::move(input_nc.get_variable<Float>("aermr04", {n_lay}));
+
+        aermr05.set_dims({n_lay});
+        aermr05 = std::move(input_nc.get_variable<Float>("aermr05", {n_lay}));
+
+        aermr06.set_dims({n_lay});
+        aermr06 = std::move(input_nc.get_variable<Float>("aermr06", {n_lay}));
+
+        aermr07.set_dims({n_lay});
+        aermr07 = std::move(input_nc.get_variable<Float>("aermr07", {n_lay}));
+
+        aermr08.set_dims({n_lay});
+        aermr08 = std::move(input_nc.get_variable<Float>("aermr08", {n_lay}));
+
+        aermr09.set_dims({n_lay});
+        aermr09 = std::move(input_nc.get_variable<Float>("aermr09", {n_lay}));
+
+        aermr10.set_dims({n_lay});
+        aermr10 = std::move(input_nc.get_variable<Float>("aermr10", {n_lay}));
+
+        aermr11.set_dims({n_lay});
+        aermr11 = std::move(input_nc.get_variable<Float>("aermr11", {n_lay}));
+    }
+
 
     ////// CREATE THE OUTPUT FILE //////
     // Create the general dimensions and arrays.
     Status::print_message("Preparing NetCDF output file.");
 
     Netcdf_file output_nc("rte_rrtmgp_output.nc", Netcdf_mode::Create);
-    output_nc.add_dimension("x", cam_nx);
-    output_nc.add_dimension("y", cam_ny);
+    output_nc.add_dimension("x", camera.nx);
+    output_nc.add_dimension("y", camera.ny);
     output_nc.add_dimension("pair", 2);
 
     int ngpts = 0;
@@ -355,7 +435,7 @@ void solve_radiation(int argc, char** argv)
         Status::print_message("Initializing the longwave solver.");
 
         Gas_concs_gpu gas_concs_gpu(gas_concs);
-        
+
         Radiation_solver_longwave rad_lw(gas_concs_gpu, "coefficients_lw.nc", "cloud_coefficients_lw.nc");
 
         // Read the boundary conditions.
@@ -421,7 +501,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> iwp_gpu(iwp);
             Array_gpu<Float,2> rel_gpu(rel);
             Array_gpu<Float,2> rei_gpu(rei);
-            
+
             cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
@@ -543,15 +623,16 @@ void solve_radiation(int argc, char** argv)
 
 
         Gas_concs_gpu gas_concs_gpu(gas_concs);
-        Radiation_solver_shortwave rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
+        Radiation_solver_shortwave rad_sw(gas_concs_gpu, "coefficients_sw.nc", "cloud_coefficients_sw.nc","aerosol_optics.nc");
 
         // Read the boundary conditions.
         const int n_bnd_sw = rad_sw.get_n_bnd_gpu();
         const int n_gpt_sw = rad_sw.get_n_gpt_gpu();
 
         Array<Float,1> mu0(input_nc.get_variable<Float>("mu0", {n_col_y, n_col_x}), {n_col});
-        Array<Float,2> sfc_alb_dir(input_nc.get_variable<Float>("sfc_alb_dir", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
-        Array<Float,2> sfc_alb_dif(input_nc.get_variable<Float>("sfc_alb_dif", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
+        Array<Float,1> azi(input_nc.get_variable<Float>("azi", {n_col_y, n_col_x}), {n_col});
+
+        Array<Float,2> sfc_alb(input_nc.get_variable<Float>("sfc_alb_dir", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
 
         Array<Float,1> tsi_scaling({n_col});
         if (input_nc.variable_exists("tsi"))
@@ -561,35 +642,61 @@ void solve_radiation(int argc, char** argv)
             for (int icol=1; icol<=n_col; ++icol)
                 tsi_scaling({icol}) = tsi({icol}) / tsi_ref;
         }
+        else if (input_nc.variable_exists("tsi_scaling"))
+        {
+            Float tsi_scaling_in = input_nc.get_variable<Float>("tsi_scaling");
+            for (int icol=1; icol<=n_col; ++icol)
+                tsi_scaling({icol}) = tsi_scaling_in;
+        }
         else
         {
             for (int icol=1; icol<=n_col; ++icol)
                 tsi_scaling({icol}) = Float(1.);
         }
-        
-        Array_gpu<Float,3> XYZ({cam_nx, cam_ny, 3});
-        
+
+        Array_gpu<Float,3> XYZ;
+        Array_gpu<Float,2> radiance;
+
+        if (switch_broadband)
+            radiance.set_dims({camera.nx, camera.ny});
+        else
+            XYZ.set_dims({camera.nx, camera.ny, 3});
+
         // Solve the radiation.
         Status::print_message("Solving the shortwave radiation.");
 
-        auto run_solver = [&](const bool tune_step)
+        auto run_solver_bb = [&](const bool tune_step)
         {
             Array_gpu<Float,2> p_lay_gpu(p_lay);
             Array_gpu<Float,2> p_lev_gpu(p_lev);
             Array_gpu<Float,2> t_lay_gpu(t_lay);
             Array_gpu<Float,2> t_lev_gpu(t_lev);
             Array_gpu<Float,1> z_lev_gpu(z_lev);
-            Array_gpu<Float,1> grid_dims_gpu(grid_dims);
             Array_gpu<Float,2> col_dry_gpu(col_dry);
-            Array_gpu<Float,2> sfc_alb_dir_gpu(sfc_alb_dir);
-            Array_gpu<Float,2> sfc_alb_dif_gpu(sfc_alb_dif);
+            Array_gpu<Float,2> sfc_alb_gpu(sfc_alb);
             Array_gpu<Float,1> tsi_scaling_gpu(tsi_scaling);
             Array_gpu<Float,1> mu0_gpu(mu0);
+            Array_gpu<Float,1> azi_gpu(azi);
             Array_gpu<Float,2> lwp_gpu(lwp);
             Array_gpu<Float,2> iwp_gpu(iwp);
             Array_gpu<Float,2> rel_gpu(rel);
             Array_gpu<Float,2> rei_gpu(rei);
-            
+
+            Array_gpu<Float,2> rh_gpu(rh);
+            Array_gpu<Float,1> aermr01_gpu(aermr01);
+            Array_gpu<Float,1> aermr02_gpu(aermr02);
+            Array_gpu<Float,1> aermr03_gpu(aermr03);
+            Array_gpu<Float,1> aermr04_gpu(aermr04);
+            Array_gpu<Float,1> aermr05_gpu(aermr05);
+            Array_gpu<Float,1> aermr06_gpu(aermr06);
+            Array_gpu<Float,1> aermr07_gpu(aermr07);
+            Array_gpu<Float,1> aermr08_gpu(aermr08);
+            Array_gpu<Float,1> aermr09_gpu(aermr09);
+            Array_gpu<Float,1> aermr10_gpu(aermr10);
+            Array_gpu<Float,1> aermr11_gpu(aermr11);
+
+            Array_gpu<Float,1> land_use_map_gpu(land_use_map);
+
             cudaDeviceSynchronize();
             cudaEvent_t start;
             cudaEvent_t stop;
@@ -598,22 +705,30 @@ void solve_radiation(int argc, char** argv)
 
             cudaEventRecord(start, 0);
 
-            rad_sw.solve_gpu(
-                    tune_step,
+            rad_sw.solve_gpu_bb(
                     switch_cloud_optics,
-                    switch_output_bnd_fluxes,
+                    switch_aerosol_optics,
+                    switch_lu_albedo,
+                    grid_cells,
+                    grid_d,
+                    kn_grid,
                     ray_count,
                     gas_concs_gpu,
                     p_lay_gpu, p_lev_gpu,
                     t_lay_gpu, t_lev_gpu,
                     z_lev_gpu,
-                    grid_dims_gpu,
                     col_dry_gpu,
-                    sfc_alb_dir_gpu, sfc_alb_dif_gpu,
-                    tsi_scaling_gpu, mu0_gpu,
+                    sfc_alb_gpu,
+                    tsi_scaling_gpu,
+                    mu0_gpu, azi_gpu,
                     lwp_gpu, iwp_gpu,
                     rel_gpu, rei_gpu,
-                    cam_data_gpu, XYZ);
+                    land_use_map_gpu,
+                    rh_gpu,
+                    aermr01_gpu, aermr02_gpu, aermr03_gpu, aermr04_gpu, aermr05_gpu,
+                    aermr06_gpu, aermr07_gpu, aermr08_gpu, aermr09_gpu, aermr10_gpu, aermr11_gpu,
+                    camera,
+                    radiance);
 
             cudaEventRecord(stop, 0);
             cudaEventSynchronize(stop);
@@ -626,42 +741,156 @@ void solve_radiation(int argc, char** argv)
             Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
         };
 
-        // Tuning step;
-        run_solver(true);
+        auto run_solver = [&](const bool tune_step)
+        {
+            Array_gpu<Float,2> p_lay_gpu(p_lay);
+            Array_gpu<Float,2> p_lev_gpu(p_lev);
+            Array_gpu<Float,2> t_lay_gpu(t_lay);
+            Array_gpu<Float,2> t_lev_gpu(t_lev);
+            Array_gpu<Float,1> z_lev_gpu(z_lev);
+            Array_gpu<Float,2> col_dry_gpu(col_dry);
+            Array_gpu<Float,2> sfc_alb_gpu(sfc_alb);
+            Array_gpu<Float,1> tsi_scaling_gpu(tsi_scaling);
+            Array_gpu<Float,1> mu0_gpu(mu0);
+            Array_gpu<Float,1> azi_gpu(azi);
+            Array_gpu<Float,2> lwp_gpu(lwp);
+            Array_gpu<Float,2> iwp_gpu(iwp);
+            Array_gpu<Float,2> rel_gpu(rel);
+            Array_gpu<Float,2> rei_gpu(rei);
 
-        // Profiling step;
-        cudaProfilerStart();
-        run_solver(false);
-        cudaProfilerStop();
+            Array_gpu<Float,2> rh_gpu(rh);
+            Array_gpu<Float,1> aermr01_gpu(aermr01);
+            Array_gpu<Float,1> aermr02_gpu(aermr02);
+            Array_gpu<Float,1> aermr03_gpu(aermr03);
+            Array_gpu<Float,1> aermr04_gpu(aermr04);
+            Array_gpu<Float,1> aermr05_gpu(aermr05);
+            Array_gpu<Float,1> aermr06_gpu(aermr06);
+            Array_gpu<Float,1> aermr07_gpu(aermr07);
+            Array_gpu<Float,1> aermr08_gpu(aermr08);
+            Array_gpu<Float,1> aermr09_gpu(aermr09);
+            Array_gpu<Float,1> aermr10_gpu(aermr10);
+            Array_gpu<Float,1> aermr11_gpu(aermr11);
 
-        // constexpr int n_measures=10;
-        // for (int n=0; n<n_measures; ++n)
-        //     run_solver();
+            Array_gpu<Float,1> land_use_map_gpu(land_use_map);
 
+            cudaDeviceSynchronize();
+            cudaEvent_t start;
+            cudaEvent_t stop;
+            cudaEventCreate(&start);
+            cudaEventCreate(&stop);
+
+            cudaEventRecord(start, 0);
+
+            rad_sw.solve_gpu(
+                    tune_step,
+                    switch_cloud_optics,
+                    switch_aerosol_optics,
+                    switch_lu_albedo,
+                    grid_cells,
+                    grid_d,
+                    kn_grid,
+                    ray_count,
+                    gas_concs_gpu,
+                    p_lay_gpu, p_lev_gpu,
+                    t_lay_gpu, t_lev_gpu,
+                    z_lev_gpu,
+                    col_dry_gpu,
+                    sfc_alb_gpu,
+                    tsi_scaling_gpu,
+                    mu0_gpu, azi_gpu,
+                    lwp_gpu, iwp_gpu,
+                    rel_gpu, rei_gpu,
+                    land_use_map_gpu,
+                    rh_gpu,
+                    aermr01_gpu, aermr02_gpu, aermr03_gpu, aermr04_gpu, aermr05_gpu,
+                    aermr06_gpu, aermr07_gpu, aermr08_gpu, aermr09_gpu, aermr10_gpu, aermr11_gpu,
+                    camera,
+                    XYZ);
+
+            cudaEventRecord(stop, 0);
+            cudaEventSynchronize(stop);
+            float duration = 0.f;
+            cudaEventElapsedTime(&duration, start, stop);
+
+            cudaEventDestroy(start);
+            cudaEventDestroy(stop);
+
+            Status::print_message("Duration shortwave solver: " + std::to_string(duration) + " (ms)");
+        };
+
+        if (switch_broadband)
+        {
+           // Profiling step;
+           run_solver_bb(false);
+
+           if (switch_profiling)
+           {
+               cudaProfilerStart();
+               run_solver_bb(false);
+               cudaProfilerStop();
+            }
+        }
+        else
+        {
+            // tune step
+            run_solver(true);
+
+            // actual solve
+            run_solver(false);
+
+            // Profiling step;
+            if (switch_profiling)
+            {
+                cudaProfilerStart();
+                run_solver(false);
+                cudaProfilerStop();
+            }
+        }
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");
-        XYZ.dump("xyz");
-        Array<Float,3> XYZ_cpu(XYZ);
 
-        output_nc.add_dimension("gpt_sw", n_gpt_sw);
-        output_nc.add_dimension("band_sw", n_bnd_sw);
-        output_nc.add_dimension("n",3);
+        if (switch_broadband)
+        {
+            Array<Float,2> radiance_cpu(radiance);
+            output_nc.add_dimension("gpt_sw", n_gpt_sw);
+            output_nc.add_dimension("band_sw", n_bnd_sw);
 
-        auto nc_sw_band_lims_wvn = output_nc.add_variable<Float>("sw_band_lims_wvn", {"band_sw", "pair"});
-        nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber_gpu().v(), {0, 0});
-        
-        //auto nc_xx = output_nc.add_variable<Float>("X", {"darn","y","x"}); 
-        auto nc_xx = output_nc.add_variable<Float>("XYZ", {"n","y","x"}); 
-        //auto nc_yy = output_nc.add_variable<Float>("Y", {"n","y","x"}); 
-        //auto nc_zz = output_nc.add_variable<Float>("Z", {"n","y","x"}); 
+            auto nc_sw_band_lims_wvn = output_nc.add_variable<Float>("sw_band_lims_wvn", {"band_sw", "pair"});
+            nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber_gpu().v(), {0, 0});
 
-        nc_xx.insert(XYZ_cpu.v(), {0, 0, 0});
-        //printf("---");
-        //nc_yy.insert(XYZ_cpu.v()[cam_ny*cam_nx], {0, 0, 0}, {1, cam_ny, cam_nx});
-        //printf("---");
-        //nc_zz.insert(XYZ_cpu.v()[cam_ny*cam_nx], {0, 0, 0}, {1, cam_ny, cam_nx});
-        
+            auto nc_var = output_nc.add_variable<Float>("radiance", {"y","x"});
+            nc_var.insert(radiance_cpu.v(), {0, 00});
+        }
+        else
+        {
+            Array<Float,3> xyz_cpu(XYZ);
+            output_nc.add_dimension("gpt_sw", n_gpt_sw);
+            output_nc.add_dimension("band_sw", n_bnd_sw);
+            output_nc.add_dimension("n",3);
+
+            auto nc_sw_band_lims_wvn = output_nc.add_variable<Float>("sw_band_lims_wvn", {"band_sw", "pair"});
+            nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber_gpu().v(), {0, 0});
+
+            auto nc_xyz = output_nc.add_variable<Float>("XYZ", {"n","y","x"});
+            nc_xyz.insert(xyz_cpu.v(), {0, 0, 0});
+
+        }
+        auto nc_mu0 = output_nc.add_variable<Float>("sza");
+        nc_mu0.insert(acos(mu0({1}))/M_PI * Float(180.), {0});
+
+        auto nc_azi = output_nc.add_variable<Float>("azi");
+        nc_azi.insert(azi({1})/M_PI * Float(180.), {0});
+
+        // camera position and direction
+        Netcdf_group output_cam = output_nc.add_group("camera-settings");
+
+        std::string cam_vars[] = {"yaw","pitch","roll","f_zoom","px","py","pz"};
+        for (auto &&cam_var : cam_vars)
+        {
+            auto nc_cam_out = output_cam.add_variable<Float>(cam_var);
+            nc_cam_out.insert(cam_in.get_variable<Float>(cam_var), {0});
+        }
     }
 
     Status::print_message("###### Finished RTE+RRTMGP solver ######");

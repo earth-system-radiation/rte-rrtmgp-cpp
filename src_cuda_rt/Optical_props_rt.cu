@@ -129,7 +129,16 @@ void add_to(Optical_props_2str_rt& op_inout, const Optical_props_2str_rt& op_in)
     optical_props_kernel_launcher_cuda_rt::increment_2stream_by_2stream(
             ncol, nlay,
             op_inout.get_tau().ptr(), op_inout.get_ssa().ptr(), op_inout.get_g().ptr(),
-            op_in   .get_tau().ptr(), op_in   .get_ssa().ptr(), op_in   .get_g().ptr());    
+            op_in   .get_tau().ptr(), op_in   .get_ssa().ptr(), op_in   .get_g().ptr());
 }
 
+// void add_to_1d(Optical_props_2str_rt& op_inout, const Optical_props_2str_rt& op_in)
+// {
+//     const int ncol = op_inout.get_ncol();
+//     const int nlay = op_inout.get_nlay();
+//     optical_props_kernel_launcher_cuda_rt::increment_2stream_by_2stream_1d(
+//             ncol, nlay,
+//             op_inout.get_tau().ptr(), op_inout.get_ssa().ptr(), op_inout.get_g().ptr(),
+//             op_in   .get_tau().ptr(), op_in   .get_ssa().ptr(), op_in   .get_g().ptr());
+// }
 

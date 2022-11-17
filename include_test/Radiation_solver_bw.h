@@ -24,6 +24,7 @@
 #include "Gas_concs.h"
 #include "Gas_optics_rrtmgp_rt.h"
 #include "Cloud_optics_rt.h"
+#include "Aerosol_optics_rt.h"
 #include "Rte_lw_rt.h"
 #include "Rte_sw_rt.h"
 #include "Raytracer_bw.h"
@@ -83,7 +84,7 @@ class Radiation_solver_longwave
 
         int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
-        
+
         Array<int,2> get_band_lims_gpoint_gpu() const
         { return this->kdist_gpu->get_band_lims_gpoint(); }
 
@@ -113,11 +114,13 @@ class Radiation_solver_shortwave
         Radiation_solver_shortwave(
                 const Gas_concs& gas_concs,
                 const std::string& file_name_gas,
-                const std::string& file_name_cloud);
+                const std::string& file_name_cloud,
+                const std::string& file_name_aerosol);
         Radiation_solver_shortwave(
                 const Gas_concs_gpu& gas_concs,
                 const std::string& file_name_gas,
-                const std::string& file_name_cloud);
+                const std::string& file_name_cloud,
+                const std::string& file_name_aerosol);
 
         void solve(
                 const bool switch_fluxes,
@@ -128,7 +131,7 @@ class Radiation_solver_shortwave
                 const Array<Float,2>& p_lay, const Array<Float,2>& p_lev,
                 const Array<Float,2>& t_lay, const Array<Float,2>& t_lev,
                 const Array<Float,2>& col_dry,
-                const Array<Float,2>& sfc_alb_dir, const Array<Float,2>& sfc_alb_dif,
+                const Array<Float,2>& sfc_alb,
                 const Array<Float,1>& tsi_scaling, const Array<Float,1>& mu0,
                 const Array<Float,2>& lwp, const Array<Float,2>& iwp,
                 const Array<Float,2>& rel, const Array<Float,2>& rei,
@@ -144,26 +147,69 @@ class Radiation_solver_shortwave
         void solve_gpu(
                 const bool tune_step,
                 const bool switch_cloud_optics,
-                const bool switch_output_bnd_fluxes,
+                const bool switch_aerosol_optics,
+                const bool switch_lu_albedo,
+                const Vector<int>& grid_cells,
+                const Vector<Float>& grid_d,
+                const Vector<int>& kn_grid,
                 const Int ray_count,
                 const Gas_concs_gpu& gas_concs,
                 const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
                 const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
                 const Array_gpu<Float,1>& z_lev,
-                const Array_gpu<Float,1>& grid_dims,
                 Array_gpu<Float,2>& col_dry,
-                const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
-                const Array_gpu<Float,1>& tsi_scaling, const Array_gpu<Float,1>& mu0,
+                const Array_gpu<Float,2>& sfc_alb,
+                const Array_gpu<Float,1>& tsi_scaling,
+                const Array_gpu<Float,1>& mu0, const Array_gpu<Float,1>& azi,
                 const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
                 const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
-                const Array_gpu<Float,1>& cam_data,
+                const Array_gpu<Float,1>& land_use_map,
+                const Array_gpu<Float,2>& rh,
+                const Array_gpu<Float,1>& aermr01, const Array_gpu<Float,1>& aermr02,
+                const Array_gpu<Float,1>& aermr03, const Array_gpu<Float,1>& aermr04,
+                const Array_gpu<Float,1>& aermr05, const Array_gpu<Float,1>& aermr06,
+                const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08,
+                const Array_gpu<Float,1>& aermr09, const Array_gpu<Float,1>& aermr10,
+                const Array_gpu<Float,1>& aermr11,
+                const Camera& camera,
                 Array_gpu<Float,3>& XYZ);
+        #endif
+
+        #ifdef __CUDACC__
+        void solve_gpu_bb(
+                const bool switch_cloud_optics,
+                const bool switch_aerosol_optics,
+                const bool switch_lu_albedo,
+                const Vector<int>& grid_cells,
+                const Vector<Float>& grid_d,
+                const Vector<int>& kn_grid,
+                const Int ray_count,
+                const Gas_concs_gpu& gas_concs,
+                const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
+                const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
+                const Array_gpu<Float,1>& z_lev,
+                Array_gpu<Float,2>& col_dry,
+                const Array_gpu<Float,2>& sfc_alb,
+                const Array_gpu<Float,1>& tsi_scaling,
+                const Array_gpu<Float,1>& mu0, const Array_gpu<Float,1>& azi,
+                const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
+                const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
+                const Array_gpu<Float,1>& land_use_map,
+                const Array_gpu<Float,2>& rh,
+                const Array_gpu<Float,1>& aermr01, const Array_gpu<Float,1>& aermr02,
+                const Array_gpu<Float,1>& aermr03, const Array_gpu<Float,1>& aermr04,
+                const Array_gpu<Float,1>& aermr05, const Array_gpu<Float,1>& aermr06,
+                const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08,
+                const Array_gpu<Float,1>& aermr09, const Array_gpu<Float,1>& aermr10,
+                const Array_gpu<Float,1>& aermr11,
+                const Camera& camera,
+                Array_gpu<Float,2>& radiance);
 
         int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
 
         Float get_tsi_gpu() const { return this->kdist_gpu->get_tsi(); };
-        
+
         Array<int,2> get_band_lims_gpoint_gpu() const
         { return this->kdist_gpu->get_band_lims_gpoint(); }
 
@@ -176,12 +222,14 @@ class Radiation_solver_shortwave
         #ifdef __CUDACC__
         std::unique_ptr<Gas_optics_rt> kdist_gpu;
         std::unique_ptr<Cloud_optics_rt> cloud_optics_gpu;
+        std::unique_ptr<Aerosol_optics_rt> aerosol_optics_gpu;
         Rte_sw_rt rte_sw;
         Raytracer_bw raytracer;
 
         std::unique_ptr<Optical_props_arry_rt> optical_props;
 
         std::unique_ptr<Optical_props_2str_rt> cloud_optical_props;
+        std::unique_ptr<Optical_props_2str_rt> aerosol_optical_props;
         #endif
 };
 #endif

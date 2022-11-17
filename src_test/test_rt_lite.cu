@@ -166,24 +166,24 @@ void solve_radiation(int argc, char** argv)
         cudaEventRecord(start, 0);
         // do something.
 
-        raytracer.trace_rays(
-                photons_per_pixel,
-                0,
-                nx, ny, nz,
-                dx, dy, dz,
-                ngrid_x, ngrid_y, ngrid_z,
-                tau_tot_g, ssa_g, asy_g, tau_cld_g,
-                sfc_alb_g, zenith_angle,
-                azimuth_angle,
-                tod_dir,
-                tod_dif,
-                flux_tod_dn,
-                flux_tod_up,
-                flux_sfc_dir,
-                flux_sfc_dif,
-                flux_sfc_up,
-                flux_abs_dir,
-                flux_abs_dif);
+//        raytracer.trace_rays(
+//                photons_per_pixel,
+//                0,
+//                nx, ny, nz,
+//                dx, dy, dz,
+//                ngrid_x, ngrid_y, ngrid_z,
+//                tau_tot_g, ssa_g, asy_g, tau_cld_g,
+//                sfc_alb_g, zenith_angle,
+//                azimuth_angle,
+//                tod_dir,
+//                tod_dif,
+//                flux_tod_dn,
+//                flux_tod_up,
+//                flux_sfc_dir,
+//                flux_sfc_dif,
+//                flux_sfc_up,
+//                flux_abs_dir,
+//                flux_abs_dif);
 
         cudaEventRecord(stop, 0);
         cudaEventSynchronize(stop);

@@ -7,36 +7,89 @@
 
 #ifdef RTE_RRTMGP_SINGLE_PRECISION
 //using Float = float;
-constexpr int block_size= 512;
-constexpr int grid_size = 512;
+constexpr int bw_kernel_block= 512;
+constexpr int bw_kernel_grid = 1024;
 #else
 //using Float = double;
-constexpr int block_size = 512;
-constexpr int grid_size = 256;
+constexpr int bw_kernel_block = 256;
+constexpr int bw_kernel_grid = 256;
 #endif
 using Int = unsigned long long;
-constexpr int ngrid_h = 30;
-constexpr int ngrid_v = 71;
+//constexpr int ngrid_x = 96;
+//constexpr int ngrid_y = 96;
+//constexpr int ngrid_z = 24;
 constexpr Float k_null_gas_min = Float(1.e-3);
-
-
-struct Optics_ext
-{
-    Float gas;
-    Float cloud;
-};
-
 
 struct Optics_scat
 {
-    Float ssa;
-    Float asy;
+    Float k_sca_gas;
+    Float k_sca_cld;
+    Float k_sca_aer;
+    Float asy_cld;
+    Float asy_aer;
 };
 
 struct Grid_knull
 {
     Float k_max;
     Float k_min;
+};
+
+template<typename T>
+struct Vector
+{
+    T x;
+    T y;
+    T z;
+};
+
+template<typename T> static inline __host__ __device__
+Vector<T> operator*(const Vector<T> v, const Float s) { return Vector<T>{s*v.x, s*v.y, s*v.z}; }
+template<typename T> static inline __host__ __device__
+Vector<T> operator*(const Float s, const Vector<T> v) { return Vector<T>{s*v.x, s*v.y, s*v.z}; }
+template<typename T> static inline __host__ __device__
+Vector<T> operator-(const Vector<T> v1, const Vector<T> v2) { return Vector<T>{v1.x-v2.x, v1.y-v2.y, v1.z-v2.z}; }
+template<typename T> static inline __host__ __device__
+Vector<T> operator+(const Vector<T> v, const Float s) { return Vector<T>{s+v.x, s+v.y, s+v.z}; }
+template<typename T> static inline __host__ __device__
+Vector<T> operator+(const Vector<T> v1, const Vector<T> v2) { return Vector<T>{v1.x+v2.x, v1.y+v2.y, v1.z+v2.z}; }
+template<typename T> static inline __host__ __device__
+Vector<T> operator/(const Vector<T> v, const Float s) { return Vector<T>{v.x/s, v.y/s, v.z/s}; }
+template<typename T> static inline __host__ __device__
+Vector<T> operator/(const Float s, const Vector<T> v) { return Vector<T>{v.x/s, v.y/s, v.z/s}; }
+template<typename T> static inline __host__ __device__
+Vector<T> operator*(const Vector<T> v1, const Vector<T> v2) { return Vector<T>{v1.x*v2.x, v1.y*v2.y, v1.z*v2.z}; }
+template<typename T> static inline __host__ __device__
+Vector<T> operator/(const Vector<T> v1, const Vector<T> v2) { return Vector<T>{v1.x/v2.x, v1.y/v2.y, v1.z/v2.z}; }
+
+static inline __host__ __device__
+Vector<Float> operator/(const Vector<Float> v1, const Vector<int> v2) { return Vector<Float>{v1.x/v2.x, v1.y/v2.y, v1.z/v2.z}; }
+static inline __host__ __device__
+Vector<Float> operator*(const Vector<Float> v1, const Vector<int> v2) { return Vector<Float>{v1.x*v2.x, v1.y*v2.y, v1.z*v2.z}; }
+
+struct Camera
+{
+    Vector<Float> position;
+
+    // rotation matrix
+    Vector<Float> mx;
+    Vector<Float> my;
+    Vector<Float> mz;
+
+    Float f_zoom;
+    void setup_rotation_matrix(const Float yaw_deg, const Float pitch_deg, const Float roll_deg)
+    {
+        const Float yaw = yaw_deg / Float(180.) * M_PI;
+        const Float pitch = pitch_deg / Float(180.) * M_PI;
+        const Float roll = roll_deg / Float(180.) * M_PI;
+        mx = {cos(yaw)*sin(pitch), (cos(yaw)*cos(pitch)*sin(roll)-sin(yaw)*cos(roll)), (cos(yaw)*cos(pitch)*cos(roll)+sin(yaw)*sin(roll))};
+        my = {sin(yaw)*sin(pitch), (sin(yaw)*cos(pitch)*sin(roll)+cos(yaw)*cos(roll)), (sin(yaw)*cos(pitch)*cos(roll)-cos(yaw)*sin(roll))};
+        mz = {-cos(pitch), sin(pitch)*sin(roll), sin(pitch)*cos(roll)};
+    }
+
+    // size of output arrays, either number of horizontal and vertical pixels, or number of zenith/azimuth angles of fisheye lens
+    int ny = 1024;
+    int nx = 1024;
 };
 
 __global__
@@ -46,14 +99,17 @@ void ray_tracer_kernel_bw(
         Float* __restrict__ camera_count,
         Float* __restrict__ camera_shot,
         int* __restrict__ counter,
-        const int cam_nx, const int cam_ny, const Float* __restrict__ cam_data,
-        const Optics_ext* __restrict__ k_ext, const Optics_scat* __restrict__ ssa_asy,
-        const Optics_ext* __restrict__ k_ext_bg, const Optics_scat* __restrict__ ssa_asy_bg,
+        const Float* __restrict__ k_ext, const Optics_scat* __restrict__ scat_asy,
+        const Float* __restrict__ k_ext_bg, const Optics_scat* __restrict__ scat_asy_bg,
         const Float* __restrict__ z_lev_bg,
         const Float* __restrict__ surface_albedo,
+        const Float* __restrict__ land_use_map,
         const Float mu,
-        const Float x_size, const Float y_size, const Float z_size,
-        const Float dx_grid, const Float dy_grid, const Float dz_grid,
-        const Float dir_x, const Float dir_y, const Float dir_z,
-        const int itot, const int jtot, const int ktot, const int kbg);
+        const Vector<Float> grid_size,
+        const Vector<Float> grid_d,
+        const Vector<int> grid_cells,
+        const Vector<int> kn_grid,
+        const Vector<Float> sun_direction,
+        const Camera camera,
+        const int nbg);
 #endif

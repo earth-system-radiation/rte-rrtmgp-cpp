@@ -231,10 +231,10 @@ namespace
             }
 
             const int ij = i + j*itot;
-            
+
             #ifndef NDEBUG
             if (ij < 0 || ij >=itot*jtot) printf("outofbounds 3");
-            #endif 
+            #endif
 
             atomicAdd(&toa_down_count[ij], Float(1.));
             weight = 1;
@@ -264,7 +264,7 @@ void ray_tracer_kernel(
         Float* __restrict__ surface_up_count,
         Float* __restrict__ atmos_direct_count,
         Float* __restrict__ atmos_diffuse_count,
-        const Optics_ext* __restrict__ k_ext, const Optics_scat* __restrict__ ssa_asy,
+        const Optics_ext* __restrict__ k_ext, const Optics_sca* __restrict__ k_sca, const Optics_scat* __restrict__ ssa_asy,
         const Float tod_inc_direct,
         const Float tod_inc_diffuse,
         const Float* __restrict__ surface_albedo,
@@ -349,7 +349,7 @@ void ray_tracer_kernel(
                 const int j = float_to_int(photon.position.y, dy_grid, jtot);
                 const int ij = i + j*itot;
                 d_max = Float(0.);
-            
+
                 #ifndef NDEBUG
                 if (ij < 0 || ij >=itot*jtot) printf("outofbounds 1");
                 #endif
@@ -406,7 +406,7 @@ void ray_tracer_kernel(
                 #ifndef NDEBUG
                 if (ij < 0 || ij >=itot*jtot) printf("outofbounds 2");
                 #endif
-                
+
                 write_photon_out(&tod_up_count[ij], weight);
 
                 reset_photon(
@@ -465,11 +465,11 @@ void ray_tracer_kernel(
 
             // Compute probability not being absorbed and store weighted absorption probability
             const Float f_no_abs = Float(1.) - (Float(1.) - ssa_asy[ijk].ssa) * (k_ext_tot/k_ext_null);
-            
+
             #ifndef NDEBUG
             if (ijk < 0 || ijk >= itot*jtot*ktot) printf("oufofbounds hr \n");
             #endif
-           
+
             if (photon.kind == Photon_kind::Direct)
                 write_photon_out(&atmos_direct_count[ijk], weight*(1-f_no_abs));
             else
@@ -492,7 +492,8 @@ void ray_tracer_kernel(
                 else
                 {
                     d_max = Float(0.);
-                    const Bool cloud_scatter = rng() < (k_ext[ijk].cloud / k_ext_tot);
+                    //const Bool cloud_scatter = rng() < (k_ext[ijk].cloud / k_ext_tot);
+                    const Bool cloud_scatter = rng() < (k_sca[ijk].cloud / k_sca[ijk].tot);
 
                     const Float cos_scat = cloud_scatter ? henyey(ssa_asy[ijk].asy, rng()) : rayleigh(rng());
                     const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));
