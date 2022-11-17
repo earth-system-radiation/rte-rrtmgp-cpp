@@ -19,22 +19,13 @@ using Int = unsigned long long;
 constexpr Float k_null_gas_min = Float(1.e-3);
 
 
-struct Optics_ext
-{
-    Float gas;
-    Float cloud;
-};
-
-struct Optics_sca
-{
-    Float tot;
-    Float cloud;
-};
-
 struct Optics_scat
 {
-    Float ssa;
-    Float asy;
+    Float k_sca_gas;
+    Float k_sca_cld;
+    Float k_sca_aer;
+    Float asy_cld;
+    Float asy_aer;
 };
 
 __global__
@@ -51,8 +42,8 @@ void ray_tracer_kernel(
         Float* __restrict__ surface_up_count,
         Float* __restrict__ atmos_direct_count,
         Float* __restrict__ atmos_diffuse_count,
-        const Optics_ext* __restrict__ k_ext, const Optics_sca* __restrict__ k_sca,
-        const Optics_scat* __restrict__ ssa_asy,
+        const Float* __restrict__ k_ext,
+        const Optics_scat* __restrict__ scat_asy,
         const Float tod_inc_direct,
         const Float tod_inc_diffuse,
         const Float* __restrict__ surface_albedo,

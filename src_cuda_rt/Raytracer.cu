@@ -42,7 +42,7 @@ namespace
     void create_knull_grid(
             const int ncol_x, const int ncol_y, const int nlay, const Float k_ext_null_min,
             const int ngrid_x, const int ngrid_y, const int ngrid_z,
-            const Optics_ext* __restrict__ k_ext, Float* __restrict__ k_null_grid)
+            const Float* __restrict__ k_ext, Float* __restrict__ k_null_grid)
     {
         const int grid_x = blockIdx.x*blockDim.x + threadIdx.x;
         const int grid_y = blockIdx.y*blockDim.y + threadIdx.y;
@@ -68,20 +68,19 @@ namespace
                     for (int i=x0; i<x1; ++i)
                     {
                         const int ijk_in = i + j*ncol_x + k*ncol_x*ncol_y;
-                        const Float k_ext_tot = k_ext[ijk_in].gas + k_ext[ijk_in].cloud;
-                        k_null = max(k_null, k_ext_tot);
+                        k_null = max(k_null, k_ext[ijk_in]);
                     }
             k_null_grid[ijk_grid] = k_null;
         }
     }
 
-
     __global__
     void bundles_optical_props(
             const int ncol_x, const int ncol_y, const int nlay, const Float dz_grid,
-            const Float* __restrict__ tau_tot, const Float* __restrict__ ssa,
-            const Float* __restrict__ asy, const Float* __restrict__ tau_cld, const Float* __restrict__ ssa_cld,
-            Optics_ext* __restrict__ k_ext, Optics_sca* __restrict__ k_sca, Optics_scat* __restrict__ ssa_asy)
+            const Float* __restrict__ tau_tot, const Float* __restrict__ ssa_tot,
+            const Float* __restrict__ tau_cld, const Float* __restrict__ ssa_cld, const Float* __restrict__ asy_cld,
+            const Float* __restrict__ tau_aer, const Float* __restrict__ ssa_aer, const Float* __restrict__ asy_aer,
+            Float* __restrict__ k_ext, Optics_scat* __restrict__ scat_asy)
     {
         const int icol_x = blockIdx.x*blockDim.x + threadIdx.x;
         const int icol_y = blockIdx.y*blockDim.y + threadIdx.y;
@@ -90,14 +89,19 @@ namespace
         if ( (icol_x < ncol_x) && (icol_y < ncol_y) && (iz < nlay) )
         {
             const int idx = icol_x + icol_y*ncol_x + iz*ncol_y*ncol_x;
+            const Float kext_tot = tau_tot[idx] / dz_grid;
             const Float kext_cld = tau_cld[idx] / dz_grid;
-            const Float kext_gas = tau_tot[idx] / dz_grid - kext_cld;
-            k_ext[idx].cloud = kext_cld;
-            k_ext[idx].gas = kext_gas;
-            k_sca[idx].cloud = kext_cld * ssa_cld[idx];
-            k_sca[idx].tot = tau_tot[idx] / dz_grid * ssa[idx];
-            ssa_asy[idx].ssa = ssa[idx];
-            ssa_asy[idx].asy = asy[idx];
+            const Float kext_aer = tau_aer[idx] / dz_grid;
+            const Float ksca_cld = kext_cld * ssa_cld[idx];
+            const Float ksca_aer = kext_aer * ssa_aer[idx];
+            const Float ksca_gas = kext_tot * ssa_tot[idx] - ksca_cld - ksca_aer;
+            k_ext[idx] = tau_tot[idx] / dz_grid;
+
+            scat_asy[idx].k_sca_gas = ksca_gas;
+            scat_asy[idx].k_sca_cld = ksca_cld;
+            scat_asy[idx].k_sca_aer = ksca_aer;
+            scat_asy[idx].asy_cld = asy_cld[idx];
+            scat_asy[idx].asy_aer = asy_aer[idx];
         }
     }
 
@@ -168,11 +172,14 @@ void Raytracer::trace_rays(
         const int ncol_x, const int ncol_y, const int nlay,
         const Float dx_grid, const Float dy_grid, const Float dz_grid,
         const int ngrid_x, const int ngrid_y, const int ngrid_z,
-        const Array_gpu<Float,2>& tau_gas,
-        const Array_gpu<Float,2>& ssa_gas,
-        const Array_gpu<Float,2>& asy_cloud,
+        const Array_gpu<Float,2>& tau_total,
+        const Array_gpu<Float,2>& ssa_total,
         const Array_gpu<Float,2>& tau_cloud,
         const Array_gpu<Float,2>& ssa_cloud,
+        const Array_gpu<Float,2>& asy_cloud,
+        const Array_gpu<Float,2>& tau_aeros,
+        const Array_gpu<Float,2>& ssa_aeros,
+        const Array_gpu<Float,2>& asy_aeros,
         const Array_gpu<Float,2>& surface_albedo,
         const Float zenith_angle,
         const Float azimuth_angle,
@@ -201,15 +208,15 @@ void Raytracer::trace_rays(
     dim3 block_3d(block_col_x, block_col_y, block_z);
 
     // Bundle optical properties in struct
-    Array_gpu<Optics_ext,3> k_ext({ncol_x, ncol_y, nlay});
-    Array_gpu<Optics_sca,3> k_sca({ncol_x, ncol_y, nlay});
-    Array_gpu<Optics_scat,3> ssa_asy({ncol_x, ncol_y, nlay});
+    Array_gpu<Float,3> k_ext({ncol_x, ncol_y, nlay});
+    Array_gpu<Optics_scat,3> scat_asy({ncol_x, ncol_y, nlay});
 
     bundles_optical_props<<<grid_3d, block_3d>>>(
             ncol_x, ncol_y, nlay, dz_grid,
-            tau_gas.ptr(), ssa_gas.ptr(),
-            asy_cloud.ptr(), tau_cloud.ptr(), ssa_cloud.ptr(),
-            k_ext.ptr(), k_sca.ptr(), ssa_asy.ptr());
+            tau_total.ptr(), ssa_total.ptr(),
+            tau_cloud.ptr(), ssa_cloud.ptr(), asy_cloud.ptr(),
+            tau_aeros.ptr(), ssa_aeros.ptr(), asy_aeros.ptr(),
+            k_ext.ptr(), scat_asy.ptr());
 
     // create k_null_grid
     const int block_kn_x = 8;
@@ -284,7 +291,7 @@ void Raytracer::trace_rays(
             surface_up_count.ptr(),
             atmos_direct_count.ptr(),
             atmos_diffuse_count.ptr(),
-            k_ext.ptr(), k_sca.ptr(), ssa_asy.ptr(),
+            k_ext.ptr(), scat_asy.ptr(),
             tod_inc_direct,
             tod_inc_diffuse,
             surface_albedo.ptr(),

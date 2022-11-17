@@ -264,7 +264,8 @@ void ray_tracer_kernel(
         Float* __restrict__ surface_up_count,
         Float* __restrict__ atmos_direct_count,
         Float* __restrict__ atmos_diffuse_count,
-        const Optics_ext* __restrict__ k_ext, const Optics_sca* __restrict__ k_sca, const Optics_scat* __restrict__ ssa_asy,
+        const Float* __restrict__ k_ext,
+        const Optics_scat* __restrict__ scat_asy,
         const Float tod_inc_direct,
         const Float tod_inc_diffuse,
         const Float* __restrict__ surface_albedo,
@@ -459,12 +460,11 @@ void ray_tracer_kernel(
             const int k = float_to_int(photon.position.z, dz_grid, ktot);
             const int ijk = i + j*itot + k*itot*jtot;
 
-            // Handle the action.
-            const Float random_number = rng();
-            const Float k_ext_tot = k_ext[ijk].gas + k_ext[ijk].cloud;
-
             // Compute probability not being absorbed and store weighted absorption probability
-            const Float f_no_abs = Float(1.) - (Float(1.) - ssa_asy[ijk].ssa) * (k_ext_tot/k_ext_null);
+            const Float k_sca_tot = scat_asy[ijk].k_sca_gas + scat_asy[ijk].k_sca_cld + scat_asy[ijk].k_sca_aer;
+            const Float ssa_tot = k_sca_tot / k_ext[ijk];
+
+            const Float f_no_abs = Float(1.) - (Float(1.) - ssa_tot) * (k_ext[ijk]/k_ext_null);
 
             #ifndef NDEBUG
             if (ijk < 0 || ijk >= itot*jtot*ktot) printf("oufofbounds hr \n");
@@ -484,7 +484,7 @@ void ray_tracer_kernel(
             if (weight > Float(0.))
             {
                 // Null collision.
-                if (random_number >= ssa_asy[ijk].ssa / (ssa_asy[ijk].ssa - Float(1.) + k_ext_null / k_ext_tot))
+                if (rng() >= ssa_tot / (ssa_tot - Float(1.) + k_ext_null / k_ext[ijk]))
                 {
                     d_max -= dn;
                 }
@@ -492,10 +492,25 @@ void ray_tracer_kernel(
                 else
                 {
                     d_max = Float(0.);
-                    //const Bool cloud_scatter = rng() < (k_ext[ijk].cloud / k_ext_tot);
-                    const Bool cloud_scatter = rng() < (k_sca[ijk].cloud / k_sca[ijk].tot);
+                    // find scatter type: 0 = gas, 1 = cloud, 2 = aerosol
+                    const Float scatter_rng = rng();
+                    const int scatter_type = scatter_rng < (scat_asy[ijk].k_sca_aer/k_sca_tot) ? 2 :
+                                             scatter_rng < ((scat_asy[ijk].k_sca_aer+scat_asy[ijk].k_sca_cld)/k_sca_tot) ? 1 : 0;
+                    Float g;
+                    switch (scatter_type)
+                    {
+                        case 0:
+                            g = Float(0.);
+                            break;
+                        case 1:
+                            g = min(Float(1.) - Float_epsilon, scat_asy[ijk].asy_cld);
+                            break;
+                        case 2:
+                            g = min(Float(1.) - Float_epsilon, scat_asy[ijk].asy_aer);
+                            break;
+                    }
 
-                    const Float cos_scat = cloud_scatter ? henyey(ssa_asy[ijk].asy, rng()) : rayleigh(rng());
+                    const Float cos_scat = scatter_type == 0 ? rayleigh(rng()) : henyey(g, rng());
                     const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));
 
                     Vector t1{Float(0.), Float(0.), Float(0.)};

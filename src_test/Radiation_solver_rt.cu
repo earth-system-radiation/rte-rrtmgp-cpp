@@ -702,18 +702,6 @@ void Radiation_solver_shortwave::solve_gpu(
             }
         }
 
-        /*
-        kdist_gpu->gas_optics(
-                  igpt-1,
-                  p_lay,
-                  p_lev,
-                  t_lay,
-                  gas_concs,
-                  optical_props,
-                  toa_src,
-                  col_dry);
-        */
-
         // We loop over the gas optics, due to memory constraints
         constexpr int n_col_block = 1<<14; // 2^14
 
@@ -779,45 +767,40 @@ void Radiation_solver_shortwave::solve_gpu(
                     rel,
                     rei,
                     *cloud_optical_props);
-
-
             //cloud_optical_props->delta_scale();
 
             // Add the cloud optical props to the gas optical properties.
-            //add_to(
-            //        dynamic_cast<Optical_props_2str_rt&>(*optical_props),
-            //        dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props));
+            add_to(
+                    dynamic_cast<Optical_props_2str_rt&>(*optical_props),
+                    dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props));
+        }
+        else
+        {
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_g().ptr());
         }
 
         if (switch_aerosol_optics)
         {
-            if (!switch_cloud_optics)
-            {
-                rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
-                rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
-                rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_g().ptr());
-            }
-
             aerosol_optics_gpu->aerosol_optics(
                     band-1,
                     aermr01, aermr02, aermr03, aermr04, aermr05,
                     aermr06, aermr07, aermr08, aermr09, aermr10, aermr11,
                     rh, p_lev,
                     *aerosol_optical_props);
-
-            //cloud_optical_props->delta_scale();
+            //aerosol_optical_props->delta_scale();
 
             // Add the cloud optical props to the gas optical properties.
             add_to(
-                    dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props),
+                    dynamic_cast<Optical_props_2str_rt&>(*optical_props),
                     dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props));
         }
-
-        if (switch_cloud_optics || switch_aerosol_optics)
+        else
         {
-            add_to(
-                    dynamic_cast<Optical_props_2str_rt&>(*optical_props),
-                    dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props));
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_tau().ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_ssa().ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_g().ptr());
         }
 
         // Store the optical properties, if desired
@@ -849,9 +832,6 @@ void Radiation_solver_shortwave::solve_gpu(
 
             if (switch_raytracing)
             {
-                if (!switch_cloud_optics)
-                    rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
-
                 Float zenith_angle = std::acos(mu0({1}));
                 Float azimuth_angle = azi({1}); // sun approximately from south
 
@@ -865,9 +845,12 @@ void Radiation_solver_shortwave::solve_gpu(
                         ngrid_x, ngrid_y, ngrid_z,
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
-                        dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_g(),
                         dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
-                        dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_ssa(),
+                        dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
+                        dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_g(),
+                        dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props).get_tau(),
+                        dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props).get_tau(),
+                        dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props).get_g(),
                         sfc_alb_dir, zenith_angle,
                         azimuth_angle,
                         tod_dir_diff({1}),
