@@ -477,9 +477,9 @@ void Raytracer_bw::trace_rays(
     const Vector<Float> grid_size = grid_d * grid_cells;
 
     // direction of direct sun rays
-    const Vector<Float> sun_direction = {-std::sin(zenith_angle) * std::sin(azimuth_angle),
-                                  -std::sin(zenith_angle) * std::cos(azimuth_angle),
-                                  -std::cos(zenith_angle)};
+    const Vector<Float> sun_direction = {std::sin(zenith_angle) * std::sin(azimuth_angle),
+                                         std::sin(zenith_angle) * std::cos(azimuth_angle),
+                                         std::cos(zenith_angle)};
 
     dim3 grid{bw_kernel_grid}, block{bw_kernel_block};
     Int photons_per_thread = photons_to_shoot / (bw_kernel_grid * bw_kernel_block);
@@ -617,9 +617,9 @@ void Raytracer_bw::trace_rays_bb(
     const Vector<Float> grid_size = grid_d * grid_cells;
 
     // direction of direct sun rays
-    const Vector<Float> sun_direction = {-std::sin(zenith_angle) * std::sin(azimuth_angle),
-                                  -std::sin(zenith_angle) * std::cos(azimuth_angle),
-                                  -std::cos(zenith_angle)};
+    const Vector<Float> sun_direction = {std::sin(zenith_angle) * std::sin(azimuth_angle),
+                                         std::sin(zenith_angle) * std::cos(azimuth_angle),
+                                         std::cos(zenith_angle)};
 
     dim3 grid{bw_kernel_grid}, block{bw_kernel_block};
     Int photons_per_thread = photons_to_shoot / (bw_kernel_grid * bw_kernel_block);
