@@ -74,6 +74,10 @@ class Netcdf_handle
                 const std::vector<std::string>&);
 
         template<typename T>
+        Netcdf_variable<T> add_variable(
+                const std::string&);
+
+        template<typename T>
         T get_variable(
             const std::string&) const;
 
@@ -327,6 +331,28 @@ inline void Netcdf_handle::add_dimension(const std::string& dim_name, const int 
 
     nc_check_code = nc_enddef(root_ncid);
     nc_check(nc_check_code);
+}
+
+template<typename T>
+inline Netcdf_variable<T> Netcdf_handle::add_variable(
+        const std::string& var_name)
+{
+    int nc_check_code = 0;
+
+    int var_id = -1;
+
+    nc_check_code = nc_redef(root_ncid);
+    nc_check(nc_check_code);
+
+    std::vector<int> dims = {1};
+
+    nc_check_code = nc_def_var(ncid, var_name.c_str(), netcdf_dtype<T>(), 0, dims.data(), &var_id);
+    nc_check(nc_check_code);
+
+    nc_check_code = nc_enddef(root_ncid);
+    nc_check(nc_check_code);
+
+    return Netcdf_variable<T>(*this, var_id, dims);
 }
 
 template<typename T>
