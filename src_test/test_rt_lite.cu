@@ -26,7 +26,6 @@
 #include "Netcdf_interface.h"
 #include "Array.h"
 #include "Raytracer.h"
-#include "raytracer_kernels.h"
 #include "Types.h"
 
 

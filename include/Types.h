@@ -2,6 +2,7 @@
 #define TYPES_H
 
 #include <map>
+#include <float.h>
 
 #ifdef RTE_RRTMGP_USE_CBOOL
 using Bool = signed char;
@@ -11,8 +12,13 @@ using Bool = int;
 
 #ifdef RTE_RRTMGP_SINGLE_PRECISION
 using Float = float;
+const Float Float_epsilon = FLT_EPSILON;
 #else
 using Float = double;
+const Float Float_epsilon = DBL_EPSILON;
 #endif
+
+using Int = unsigned long long;
+const Int Atomic_reduce_const = (Int)(-1LL);
 
 #endif

@@ -1,9 +1,9 @@
 #ifndef RAYTRACER_KERNELS_H
 #define RAYTRACER_KERNELS_H
-#include <curand_kernel.h>
-#include "Types.h"
+#include "raytracer_functions.h"
 
-
+using Raytracer_functions::Vector;
+using Raytracer_functions::Optics_scat;
 
 #ifdef RTE_RRTMGP_SINGLE_PRECISION
 constexpr int block_size = 512;
@@ -12,21 +12,8 @@ constexpr int grid_size = 1024;
 constexpr int block_size = 512;
 constexpr int grid_size = 256;
 #endif
-using Int = unsigned long long;
-//constexpr int ngrid_x = 20;//90;
-//constexpr int ngrid_y = 20;//90;
-//constexpr int ngrid_z = 35;//71
+
 constexpr Float k_null_gas_min = Float(1.e-3);
-
-
-struct Optics_scat
-{
-    Float k_sca_gas;
-    Float k_sca_cld;
-    Float k_sca_aer;
-    Float asy_cld;
-    Float asy_aer;
-};
 
 __global__
 void ray_tracer_kernel(

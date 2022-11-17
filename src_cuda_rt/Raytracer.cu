@@ -2,7 +2,6 @@
 #include "Array.h"
 #include <curand_kernel.h>
 #include "rrtmgp_kernel_launcher_cuda_rt.h"
-#include "raytracer_kernels.h"
 #include "Optical_props_rt.h"
 
 namespace

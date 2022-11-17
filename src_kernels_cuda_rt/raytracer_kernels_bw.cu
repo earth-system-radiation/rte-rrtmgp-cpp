@@ -1,4 +1,3 @@
-#include <float.h>
 #include <curand_kernel.h>
 #include "raytracer_kernels_bw.h"
 #include <iomanip>
@@ -6,106 +5,26 @@
 
 namespace
 {
-    // using Int = unsigned long long;
-    const Int Atomic_reduce_const = (Int)(-1LL);
-
-    //using Int = unsigned int;
-    //const Int Atomic_reduce_const = (Int)(-1);
-
-    #ifdef RTE_RRTMGP_SINGLE_PRECISION
-    // using Float = float;
-    const Float Float_epsilon = FLT_EPSILON;
-    // constexpr int block_size = 512;
-    // constexpr int grid_size = 64;
-    #else
-    // using Float = double;
-    const Float Float_epsilon = DBL_EPSILON;
-    // constexpr int block_size = 512;
-    // constexpr int grid_size = 64;
-    #endif
+    using namespace Raytracer_functions;
 
     constexpr Float w_thres = 0.5;
-    constexpr Float fov = 160./180.*M_PI;
-    // constexpr Float fov_v = 60./180.*M_PI;
-
+    // constexpr Float fov = 160./180.*M_PI;
     // angle w.r.t. vertical: 0 degrees is looking up, 180 degrees down
-    constexpr Float zenith_cam = 0./180.*M_PI; //60./180.*M_PI;
+    // constexpr Float zenith_cam = 0./180.*M_PI; //60./180.*M_PI;
     // angle w.r.t. north,: 0 degrees is looking north
     //constexpr Float azimuth_cam = 0./180*M_PI;
-    constexpr Vector<Float> upward_cam = {0, 1, 0};
+    // constexpr Vector<Float> upward_cam = {0, 1, 0};
 
     constexpr Float half_angle = .26656288/180. * M_PI; // sun has a half angle of .266 degrees
-    //constexpr Float cos_half_angle = Float(0.9961946980917455); //Float(0.9999891776066407); // cos(half_angle);
     constexpr Float cos_half_angle = Float(0.9999891776066407); // cos(half_angle);
-    constexpr Float cos_half_angle_app = cos_half_angle; //we set this a bit larger that cos_half_angle to make sun larger
     constexpr Float solid_angle = Float(6.799910294339209e-05); // 2.*M_PI*(1-cos_half_angle);
-    //constexpr Float solid_angle = Float(0.023909417039326832); //Float(6.799910294339209e-05); // 2.*M_PI*(1-cos_half_angle);
-
-    template<typename T> __device__
-    Vector<T> cross(const Vector<T> v1, const Vector<T> v2)
-    {
-        return Vector<T>{
-                v1.y*v2.z - v1.z*v2.y,
-                v1.z*v2.x - v1.x*v2.z,
-                v1.x*v2.y - v1.y*v2.x};
-    }
-
-    template<typename T> __device__
-    Float dot(const Vector<T>& v1, const Vector<T>& v2)
-    {
-        return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
-    }
-
-    template<typename T> __device__
-    Float norm(const Vector<T> v) { return sqrt(v.x*v.x + v.y*v.y + v.z*v.z); }
-
-
-    template<typename T> __device__
-    Vector<T> normalize(const Vector<T> v)
-    {
-        const Float length = norm(v);
-        return Vector<T>{ v.x/length, v.y/length, v.z/length};
-    }
-
-    enum class Photon_kind { Direct, Diffuse };
 
     enum class Phase_kind {Lambertian, Specular, Rayleigh, HG};
-
-    struct Photon
-    {
-        Vector<Float> position;
-        Vector<Float> direction;
-        Photon_kind kind;
-        Vector<Float> start;
-    };
-
-
-    __device__
-    Float pow2(const Float d) { return d*d; }
 
     template<typename T> __device__
     Vector<T> specular(const Vector<T> dir_in)
     {
         return Vector<T>{dir_in.x, dir_in.y, Float(-1)*dir_in.z};
-    }
-
-    __device__
-    Float rayleigh(const Float random_number)
-    {
-        const Float q = Float(4.)*random_number - Float(2.);
-        const Float d = Float(1.) + pow2(q);
-        const Float u = pow(-q + sqrt(d), Float(1./3.));
-        return u - Float(1.)/u;
-    }
-
-
-    __device__
-    Float henyey(const Float g, const Float random_number)
-    {
-        const Float a = pow2(Float(1.) - pow2(g));
-        const Float b = Float(2.)*g*pow2(Float(2.)*random_number*g + Float(1.) - g);
-        const Float c = -g/Float(2.) - Float(1.)/(Float(2.)*g);
-        return Float(-1.)*(a/b) - c;
     }
 
     __device__
@@ -125,47 +44,6 @@ namespace
     {
         const Float denom = max(Float_epsilon, 1 + g*g - 2*g*cos_angle);
         return Float(1.)/(Float(4.)*M_PI) * (1-g*g) / (denom*sqrt(denom));
-    }
-
-    __device__
-    Float sample_tau(const Float random_number)
-    {
-        // Prevent log(0) possibility.
-        return Float(-1.)*log(-random_number + Float(1.) + Float_epsilon);
-    }
-
-    __device__
-    inline int float_to_int(const Float s_size, const Float ds, const int ntot_max)
-    {
-        const int ntot = static_cast<int>(s_size / ds);
-        return ntot < ntot_max ? ntot : ntot_max-1;
-    }
-
-    template<typename T>
-    struct Random_number_generator
-    {
-        __device__ Random_number_generator(unsigned int tid)
-        {
-            curand_init(tid, tid, 0, &state);
-        }
-
-        __device__ T operator()();
-
-        curandState state;
-    };
-
-
-    template<>
-    __device__ double Random_number_generator<double>::operator()()
-    {
-        return 1. - curand_uniform_double(&state);
-    }
-
-
-    template<>
-    __device__ float Random_number_generator<float>::operator()()
-    {
-        return 1.f - curand_uniform(&state);
     }
 
     __device__
@@ -378,7 +256,7 @@ namespace
                 if (photon.position.z > z_lev_bg[i]) bg_idx = i;
             }
 
-            if ( (dot(photon.direction, sun_direction) > cos_half_angle_app) )
+            if ( (dot(photon.direction, sun_direction) > cos_half_angle) )
             {
                 const Float trans_sun = transmission_direct_sun(photon,n,rng,sun_direction,
                                            k_null_grid,k_ext,
@@ -412,16 +290,9 @@ namespace
         }
         else if (kind == Phase_kind::Specular)
         {
-            return (dot( specular(photon.direction) , sun_direction) > cos_half_angle_app) ? Float(1.) : Float(0.);
+            return (dot( specular(photon.direction) , sun_direction) > cos_half_angle) ? Float(1.) : Float(0.);
         }
     }
-
-    __device__
-    inline void write_photon_out(Float* field_out, const Float w)
-    {
-        atomicAdd(field_out, w);
-    }
-
 }
 
 __global__

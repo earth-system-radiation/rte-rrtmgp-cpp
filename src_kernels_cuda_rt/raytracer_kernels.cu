@@ -1,150 +1,12 @@
-#include <float.h>
 #include <curand_kernel.h>
 #include "raytracer_kernels.h"
 #include <iostream>
 
 namespace
 {
-    // using Int = unsigned long long;
-    const Int Atomic_reduce_const = (Int)(-1LL);
-
-    //using Int = unsigned int;
-    //const Int Atomic_reduce_const = (Int)(-1);
-
-    #ifdef RTE_RRTMGP_SINGLE_PRECISION
-    // using Float = float;
-    const Float Float_epsilon = FLT_EPSILON;
-    // constexpr int block_size = 512;
-    // constexpr int grid_size = 64;
-    #else
-    // using Float = double;
-    const Float Float_epsilon = DBL_EPSILON;
-    // constexpr int block_size = 512;
-    // constexpr int grid_size = 64;
-    #endif
+    using namespace Raytracer_functions;
 
     constexpr Float w_thres = 0.5;
-
-
-    struct Vector
-    {
-        Float x;
-        Float y;
-        Float z;
-
-    };
-
-
-    static inline __device__
-    Vector operator*(const Vector v, const Float s) { return Vector{s*v.x, s*v.y, s*v.z}; }
-    static inline __device__
-    Vector operator*(const Float s, const Vector v) { return Vector{s*v.x, s*v.y, s*v.z}; }
-    static inline __device__
-    Vector operator-(const Vector v1, const Vector v2) { return Vector{v1.x-v2.x, v1.y-v2.y, v1.z-v2.z}; }
-    static inline __device__
-    Vector operator+(const Vector v1, const Vector v2) { return Vector{v1.x+v2.x, v1.y+v2.y, v1.z+v2.z}; }
-
-    __device__
-    Vector cross(const Vector v1, const Vector v2)
-    {
-        return Vector{
-                v1.y*v2.z - v1.z*v2.y,
-                v1.z*v2.x - v1.x*v2.z,
-                v1.x*v2.y - v1.y*v2.x};
-    }
-
-
-    __device__
-    Float dot(const Vector v1, const Vector v2)
-    {
-        return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
-    }
-
-    __device__
-    Float norm(const Vector v) { return sqrt(v.x*v.x + v.y*v.y + v.z*v.z); }
-
-
-    __device__
-    Vector normalize(const Vector v)
-    {
-        const Float length = norm(v);
-        return Vector{ v.x/length, v.y/length, v.z/length};
-    }
-
-    enum class Photon_kind { Direct, Diffuse };
-
-    struct Photon
-    {
-        Vector position;
-        Vector direction;
-        Photon_kind kind;
-    };
-
-
-    __device__
-    Float pow2(const Float d) { return d*d; }
-
-    __device__
-    Float rayleigh(const Float random_number)
-    {
-        const Float q = Float(4.)*random_number - Float(2.);
-        const Float d = Float(1.) + pow2(q);
-        const Float u = pow(-q + sqrt(d), Float(1./3.));
-        return u - Float(1.)/u;
-    }
-
-
-    __device__
-    Float henyey(const Float g, const Float random_number)
-    {
-        const Float a = pow2(Float(1.) - pow2(g));
-        const Float b = Float(2.)*g*pow2(Float(2.)*random_number*g + Float(1.) - g);
-        const Float c = -g/Float(2.) - Float(1.)/(Float(2.)*g);
-        return Float(-1.)*(a/b) - c;
-    }
-
-
-    __device__
-    Float sample_tau(const Float random_number)
-    {
-        // Prevent log(0) possibility.
-        return Float(-1.)*log(-random_number + Float(1.) + Float_epsilon);
-    }
-
-
-    __device__
-    inline int float_to_int(const Float s_size, const Float ds, const int ntot_max)
-    {
-        const int ntot = static_cast<int>(s_size / ds);
-        return ntot < ntot_max ? ntot : ntot_max-1;
-    }
-
-    template<typename T>
-    struct Random_number_generator
-    {
-        __device__ Random_number_generator(unsigned int tid)
-        {
-            curand_init(tid, tid, 0, &state);
-        }
-
-        __device__ T operator()();
-
-        curandState state;
-    };
-
-
-    template<>
-    __device__ double Random_number_generator<double>::operator()()
-    {
-        return 1. - curand_uniform_double(&state);
-    }
-
-
-    template<>
-    __device__ float Random_number_generator<float>::operator()()
-    {
-        return 1.f - curand_uniform(&state);
-    }
 
     struct Quasi_random_number_generator_2d
     {
@@ -240,12 +102,6 @@ namespace
             weight = 1;
 
         }
-    }
-
-    __device__
-    inline void write_photon_out(Float* field_out, const Float w)
-    {
-        atomicAdd(field_out, w);
     }
 }
 
@@ -513,7 +369,7 @@ void ray_tracer_kernel(
                     const Float cos_scat = scatter_type == 0 ? rayleigh(rng()) : henyey(g, rng());
                     const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));
 
-                    Vector t1{Float(0.), Float(0.), Float(0.)};
+                    Vector<Float> t1{Float(0.), Float(0.), Float(0.)};
                     if (fabs(photon.direction.x) < fabs(photon.direction.y))
                     {
                         if (fabs(photon.direction.x) < fabs(photon.direction.z))
@@ -529,7 +385,7 @@ void ray_tracer_kernel(
                             t1.z = Float(1.);
                     }
                     t1 = normalize(t1 - photon.direction*dot(t1, photon.direction));
-                    Vector t2 = cross(photon.direction, t1);
+                    Vector<Float> t2 = cross(photon.direction, t1);
 
                     const Float phi = Float(2.*M_PI)*rng();
 
