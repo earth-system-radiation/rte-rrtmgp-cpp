@@ -326,7 +326,7 @@ void fill_kernel(
         const int ncells)
 {
     const int idx = blockIdx.x*blockDim.x + threadIdx.x;
-    
+
     if (idx < ncells)
     {
         a[idx] = v;
@@ -361,8 +361,8 @@ class Array_gpu
         #ifdef __CUDACC__
         Array_gpu& operator=(const Array_gpu<T, N>& array)
         {
-            if ( !(this->ncells == 0 && data_ptr == nullptr) )
-                throw std::runtime_error("Only arrays with uninitialized pointers can be resized");
+            if ( !(this->ncells == array.size()) )
+                throw std::runtime_error("Initialised arrayscan not be resized");
 
             dims = array.dims;
             ncells = array.ncells;
