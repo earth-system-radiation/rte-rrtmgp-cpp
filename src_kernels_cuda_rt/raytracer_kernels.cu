@@ -7,6 +7,8 @@ namespace
     using namespace Raytracer_functions;
 
     constexpr Float w_thres = 0.5;
+    //constexpr Float solar_cone_cos_half_angle = Float(0.9961947); // cos(Float(5.0) / Float(180.) * M_PI;)
+    constexpr Float solar_cone_cos_half_angle = Float(0.99904823); // cos(Float(2.5) / Float(180.) * M_PI;)
 
     struct Quasi_random_number_generator_2d
     {
@@ -103,6 +105,14 @@ namespace
 
         }
     }
+
+    template<typename T> __device__
+    inline Float from_solar_cone(
+        const Vector<T>& solar_dir,
+        const Vector<T>& photon_dir)
+    {
+        return dot(solar_dir, photon_dir) > solar_cone_cos_half_angle;
+    }
 }
 
 
@@ -132,6 +142,7 @@ void ray_tracer_kernel(
         const int itot, const int jtot, const int ktot,
         curandDirectionVectors32_t* qrng_vectors, unsigned int* qrng_constants) // const Float* __restrict__ cloud_dims)
 {
+    const Vector<Float> solar_dir = {dir_x, dir_y, dir_z};
     const Float kgrid_x = x_size/Float(ngrid_x);
     const Float kgrid_y = y_size/Float(ngrid_y);
     const Float kgrid_z = z_size/Float(ngrid_z);
@@ -211,11 +222,15 @@ void ray_tracer_kernel(
                 if (ij < 0 || ij >=itot*jtot) printf("outofbounds 1");
                 #endif
 
-                // Add surface irradiance
+                // // Add surface irradiance
                 if (photon.kind == Photon_kind::Direct)
                     write_photon_out(&surface_down_direct_count[ij], weight);
                 else if (photon.kind == Photon_kind::Diffuse)
                     write_photon_out(&surface_down_diffuse_count[ij], weight);
+                // if (from_solar_cone(solar_dir, photon.direction))
+                //     write_photon_out(&surface_down_direct_count[ij], weight);
+                // else
+                //     write_photon_out(&surface_down_diffuse_count[ij], weight);
 
                 // Update weights and add upward surface flux
                 const Float local_albedo = surface_albedo[0];
