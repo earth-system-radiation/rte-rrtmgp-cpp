@@ -6,11 +6,11 @@ using Raytracer_functions::Vector;
 using Raytracer_functions::Optics_scat;
 
 #ifdef RTE_RRTMGP_SINGLE_PRECISION
-constexpr int block_size = 512;
-constexpr int grid_size = 1024;
+constexpr int rt_kernel_block = 512;
+constexpr int rt_kernel_grid = 1024;
 #else
-constexpr int block_size = 512;
-constexpr int grid_size = 256;
+constexpr int rt_kernel_block = 512;
+constexpr int rt_kernel_grid = 256;
 #endif
 
 constexpr Float k_null_gas_min = Float(1.e-3);
@@ -34,10 +34,10 @@ void ray_tracer_kernel(
         const Float tod_inc_direct,
         const Float tod_inc_diffuse,
         const Float* __restrict__ surface_albedo,
-        const Float x_size, const Float y_size, const Float z_size,
-        const Float dx_grid, const Float dy_grid, const Float dz_grid,
-        const int ngrid_x, const int ngrid_y, const int ngrid_z,
-        const Float dir_x, const Float dir_y, const Float dir_z,
-        const int itot, const int jtot, const int ktot,
+        const Vector<Float> grid_size,
+        const Vector<Float> grid_d,
+        const Vector<int> grid_cells,
+        const Vector<int> kn_grid,
+        const Vector<Float> sun_direction,
         curandDirectionVectors32_t* qrng_vectors, unsigned int* qrng_constants);
 #endif

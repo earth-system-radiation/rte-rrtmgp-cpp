@@ -422,19 +422,19 @@ void solve_radiation(int argc, char** argv)
         Array<Float,1> t_sfc(input_nc.get_variable<Float>("t_sfc", {n_col_y, n_col_x}), {n_col});
 
         // Create output arrays.
-        Array_gpu<Float,3> lw_tau;
-        Array_gpu<Float,3> lay_source;
-        Array_gpu<Float,3> lev_source_inc;
-        Array_gpu<Float,3> lev_source_dec;
-        Array_gpu<Float,2> sfc_source;
+        Array_gpu<Float,2> lw_tau;
+        Array_gpu<Float,2> lay_source;
+        Array_gpu<Float,2> lev_source_inc;
+        Array_gpu<Float,2> lev_source_dec;
+        Array_gpu<Float,1> sfc_source;
 
         if (switch_single_gpt)
         {
-            lw_tau        .set_dims({n_col, n_lay, n_gpt_lw});
-            lay_source    .set_dims({n_col, n_lay, n_gpt_lw});
-            lev_source_inc.set_dims({n_col, n_lay, n_gpt_lw});
-            lev_source_dec.set_dims({n_col, n_lay, n_gpt_lw});
-            sfc_source    .set_dims({n_col, n_gpt_lw});
+            lw_tau        .set_dims({n_col, n_lay});
+            lay_source    .set_dims({n_col, n_lay});
+            lev_source_inc.set_dims({n_col, n_lay});
+            lev_source_dec.set_dims({n_col, n_lay});
+            sfc_source    .set_dims({n_col});
         }
 
         Array_gpu<Float,2> lw_flux_up;
@@ -448,15 +448,15 @@ void solve_radiation(int argc, char** argv)
             lw_flux_net.set_dims({n_col, n_lev});
         }
 
-        Array_gpu<Float,3> lw_bnd_flux_up;
-        Array_gpu<Float,3> lw_bnd_flux_dn;
-        Array_gpu<Float,3> lw_bnd_flux_net;
+        Array_gpu<Float,2> lw_gpt_flux_up;
+        Array_gpu<Float,2> lw_gpt_flux_dn;
+        Array_gpu<Float,2> lw_gpt_flux_net;
 
         if (switch_single_gpt)
         {
-            lw_bnd_flux_up .set_dims({n_col, n_lev, n_bnd_lw});
-            lw_bnd_flux_dn .set_dims({n_col, n_lev, n_bnd_lw});
-            lw_bnd_flux_net.set_dims({n_col, n_lev, n_bnd_lw});
+            lw_gpt_flux_up .set_dims({n_col, n_lev});
+            lw_gpt_flux_dn .set_dims({n_col, n_lev});
+            lw_gpt_flux_net.set_dims({n_col, n_lev});
         }
 
 
@@ -501,7 +501,7 @@ void solve_radiation(int argc, char** argv)
                     rel_gpu, rei_gpu,
                     lw_tau, lay_source, lev_source_inc, lev_source_dec, sfc_source,
                     lw_flux_up, lw_flux_dn, lw_flux_net,
-                    lw_bnd_flux_up, lw_bnd_flux_dn, lw_bnd_flux_net);
+                    lw_gpt_flux_up, lw_gpt_flux_dn, lw_gpt_flux_net);
 
             cudaEventRecord(stop, 0);
             cudaEventSynchronize(stop);
@@ -529,17 +529,17 @@ void solve_radiation(int argc, char** argv)
 
         //// Store the output.
         Status::print_message("Storing the longwave output.");
-        Array<Float,3> lw_tau_cpu(lw_tau);
-        Array<Float,3> lay_source_cpu(lay_source);
-        Array<Float,2> sfc_source_cpu(sfc_source);
-        Array<Float,3> lev_source_inc_cpu(lev_source_inc);
-        Array<Float,3> lev_source_dec_cpu(lev_source_dec);
+        Array<Float,2> lw_tau_cpu(lw_tau);
+        Array<Float,2> lay_source_cpu(lay_source);
+        Array<Float,1> sfc_source_cpu(sfc_source);
+        Array<Float,2> lev_source_inc_cpu(lev_source_inc);
+        Array<Float,2> lev_source_dec_cpu(lev_source_dec);
         Array<Float,2> lw_flux_up_cpu(lw_flux_up);
         Array<Float,2> lw_flux_dn_cpu(lw_flux_dn);
         Array<Float,2> lw_flux_net_cpu(lw_flux_net);
-        Array<Float,3> lw_bnd_flux_up_cpu(lw_bnd_flux_up);
-        Array<Float,3> lw_bnd_flux_dn_cpu(lw_bnd_flux_dn);
-        Array<Float,3> lw_bnd_flux_net_cpu(lw_bnd_flux_net);
+        Array<Float,2> lw_gpt_flux_up_cpu(lw_gpt_flux_up);
+        Array<Float,2> lw_gpt_flux_dn_cpu(lw_gpt_flux_dn);
+        Array<Float,2> lw_gpt_flux_net_cpu(lw_gpt_flux_net);
 
         output_nc.add_dimension("gpt_lw", n_gpt_lw);
         output_nc.add_dimension("band_lw", n_bnd_lw);
@@ -552,20 +552,20 @@ void solve_radiation(int argc, char** argv)
             auto nc_lw_band_lims_gpt = output_nc.add_variable<int>("lw_band_lims_gpt", {"band_lw", "pair"});
             nc_lw_band_lims_gpt.insert(rad_lw.get_band_lims_gpoint_gpu().v(), {0, 0});
 
-            auto nc_lw_tau = output_nc.add_variable<Float>("lw_tau", {"gpt_lw", "lay", "y", "x"});
-            nc_lw_tau.insert(lw_tau_cpu.v(), {0, 0, 0, 0});
+            auto nc_lw_tau = output_nc.add_variable<Float>("lw_tau", {"lay", "y", "x"});
+            nc_lw_tau.insert(lw_tau_cpu.v(), {0, 0, 0});
 
-            auto nc_lay_source     = output_nc.add_variable<Float>("lay_source"    , {"gpt_lw", "lay", "y", "x"});
-            auto nc_lev_source_inc = output_nc.add_variable<Float>("lev_source_inc", {"gpt_lw", "lay", "y", "x"});
-            auto nc_lev_source_dec = output_nc.add_variable<Float>("lev_source_dec", {"gpt_lw", "lay", "y", "x"});
+            auto nc_lay_source     = output_nc.add_variable<Float>("lay_source"    , {"lay", "y", "x"});
+            auto nc_lev_source_inc = output_nc.add_variable<Float>("lev_source_inc", {"lay", "y", "x"});
+            auto nc_lev_source_dec = output_nc.add_variable<Float>("lev_source_dec", {"lay", "y", "x"});
 
-            auto nc_sfc_source = output_nc.add_variable<Float>("sfc_source", {"gpt_lw", "y", "x"});
+            auto nc_sfc_source = output_nc.add_variable<Float>("sfc_source", {"y", "x"});
 
-            nc_lay_source.insert    (lay_source_cpu.v()    , {0, 0, 0, 0});
-            nc_lev_source_inc.insert(lev_source_inc_cpu.v(), {0, 0, 0, 0});
-            nc_lev_source_dec.insert(lev_source_dec_cpu.v(), {0, 0, 0, 0});
+            nc_lay_source.insert    (lay_source_cpu.v()    , {0, 0, 0});
+            nc_lev_source_inc.insert(lev_source_inc_cpu.v(), {0, 0, 0});
+            nc_lev_source_dec.insert(lev_source_dec_cpu.v(), {0, 0, 0});
 
-            nc_sfc_source.insert(sfc_source_cpu.v(), {0, 0, 0});
+            nc_sfc_source.insert(sfc_source_cpu.v(), {0, 0});
         }
 
         if (switch_fluxes)
@@ -580,13 +580,13 @@ void solve_radiation(int argc, char** argv)
 
             if (switch_single_gpt)
             {
-                auto nc_lw_bnd_flux_up  = output_nc.add_variable<Float>("lw_bnd_flux_up" , {"band_lw", "lev", "y", "x"});
-                auto nc_lw_bnd_flux_dn  = output_nc.add_variable<Float>("lw_bnd_flux_dn" , {"band_lw", "lev", "y", "x"});
-                auto nc_lw_bnd_flux_net = output_nc.add_variable<Float>("lw_bnd_flux_net", {"band_lw", "lev", "y", "x"});
+                auto nc_lw_gpt_flux_up  = output_nc.add_variable<Float>("lw_gpt_flux_up" , {"lev", "y", "x"});
+                auto nc_lw_gpt_flux_dn  = output_nc.add_variable<Float>("lw_gpt_flux_dn" , {"lev", "y", "x"});
+                auto nc_lw_gpt_flux_net = output_nc.add_variable<Float>("lw_gpt_flux_net", {"lev", "y", "x"});
 
-                nc_lw_bnd_flux_up .insert(lw_bnd_flux_up_cpu.v(), {0, 0, 0, 0});
-                nc_lw_bnd_flux_dn .insert(lw_bnd_flux_dn_cpu.v(), {0, 0, 0, 0});
-                nc_lw_bnd_flux_net.insert(lw_bnd_flux_net_cpu.v(), {0, 0, 0, 0});
+                nc_lw_gpt_flux_up .insert(lw_gpt_flux_up_cpu.v(), {0, 0, 0});
+                nc_lw_gpt_flux_dn .insert(lw_gpt_flux_dn_cpu.v(), {0, 0, 0});
+                nc_lw_gpt_flux_net.insert(lw_gpt_flux_net_cpu.v(), {0, 0, 0});
             }
         }
     }
@@ -633,17 +633,15 @@ void solve_radiation(int argc, char** argv)
 
         // Optional top of domain fluxes
         // Create output arrays.
-        Array_gpu<Float,3> sw_tau;
-        Array_gpu<Float,3> ssa;
-        Array_gpu<Float,3> g;
-        Array_gpu<Float,2> toa_source;
+        Array_gpu<Float,2> sw_tau;
+        Array_gpu<Float,2> ssa;
+        Array_gpu<Float,2> g;
 
         if (switch_single_gpt)
         {
-            sw_tau    .set_dims({n_col, n_lay, n_gpt_sw});
-            ssa       .set_dims({n_col, n_lay, n_gpt_sw});
-            g         .set_dims({n_col, n_lay, n_gpt_sw});
-            toa_source.set_dims({n_col, n_gpt_sw});
+            sw_tau    .set_dims({n_col, n_lay});
+            ssa       .set_dims({n_col, n_lay});
+            g         .set_dims({n_col, n_lay});
         }
 
         Array_gpu<Float,2> sw_flux_up;
@@ -677,17 +675,17 @@ void solve_radiation(int argc, char** argv)
 
         }
 
-        Array_gpu<Float,3> sw_bnd_flux_up;
-        Array_gpu<Float,3> sw_bnd_flux_dn;
-        Array_gpu<Float,3> sw_bnd_flux_dn_dir;
-        Array_gpu<Float,3> sw_bnd_flux_net;
+        Array_gpu<Float,2> sw_gpt_flux_up;
+        Array_gpu<Float,2> sw_gpt_flux_dn;
+        Array_gpu<Float,2> sw_gpt_flux_dn_dir;
+        Array_gpu<Float,2> sw_gpt_flux_net;
 
         if (switch_single_gpt)
         {
-            sw_bnd_flux_up    .set_dims({n_col, n_lev, n_bnd_sw});
-            sw_bnd_flux_dn    .set_dims({n_col, n_lev, n_bnd_sw});
-            sw_bnd_flux_dn_dir.set_dims({n_col, n_lev, n_bnd_sw});
-            sw_bnd_flux_net   .set_dims({n_col, n_lev, n_bnd_sw});
+            sw_gpt_flux_up    .set_dims({n_col, n_lev});
+            sw_gpt_flux_dn    .set_dims({n_col, n_lev});
+            sw_gpt_flux_dn_dir.set_dims({n_col, n_lev});
+            sw_gpt_flux_net   .set_dims({n_col, n_lev});
         }
 
 
@@ -790,18 +788,17 @@ void solve_radiation(int argc, char** argv)
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");
-        Array<Float,3> sw_tau_cpu(sw_tau);
-        Array<Float,3> ssa_cpu(ssa);
-        Array<Float,3> g_cpu(g);
-        Array<Float,2> toa_source_cpu(toa_source);
+        Array<Float,2> sw_tau_cpu(sw_tau);
+        Array<Float,2> ssa_cpu(ssa);
+        Array<Float,2> g_cpu(g);
         Array<Float,2> sw_flux_up_cpu(sw_flux_up);
         Array<Float,2> sw_flux_dn_cpu(sw_flux_dn);
         Array<Float,2> sw_flux_dn_dir_cpu(sw_flux_dn_dir);
         Array<Float,2> sw_flux_net_cpu(sw_flux_net);
-        Array<Float,3> sw_bnd_flux_up_cpu(sw_bnd_flux_up);
-        Array<Float,3> sw_bnd_flux_dn_cpu(sw_bnd_flux_dn);
-        Array<Float,3> sw_bnd_flux_dn_dir_cpu(sw_bnd_flux_dn_dir);
-        Array<Float,3> sw_bnd_flux_net_cpu(sw_bnd_flux_net);
+        Array<Float,2> sw_gpt_flux_up_cpu(sw_gpt_flux_up);
+        Array<Float,2> sw_gpt_flux_dn_cpu(sw_gpt_flux_dn);
+        Array<Float,2> sw_gpt_flux_dn_dir_cpu(sw_gpt_flux_dn_dir);
+        Array<Float,2> sw_gpt_flux_net_cpu(sw_gpt_flux_net);
 
         Array<Float,2> rt_flux_tod_up_cpu(rt_flux_tod_up);
         Array<Float,2> rt_flux_sfc_dir_cpu(rt_flux_sfc_dir);
@@ -821,16 +818,13 @@ void solve_radiation(int argc, char** argv)
             auto nc_sw_band_lims_gpt = output_nc.add_variable<int>("sw_band_lims_gpt", {"band_sw", "pair"});
             nc_sw_band_lims_gpt.insert(rad_sw.get_band_lims_gpoint_gpu().v(), {0, 0});
 
-            auto nc_sw_tau = output_nc.add_variable<Float>("sw_tau", {"gpt_sw", "lay", "y", "x"});
-            auto nc_ssa    = output_nc.add_variable<Float>("ssa"   , {"gpt_sw", "lay", "y", "x"});
-            auto nc_g      = output_nc.add_variable<Float>("g"     , {"gpt_sw", "lay", "y", "x"});
+            auto nc_sw_tau = output_nc.add_variable<Float>("sw_tau"   , {"lay", "y", "x"});
+            auto nc_ssa    = output_nc.add_variable<Float>("sw_ssa"   , {"lay", "y", "x"});
+            auto nc_g      = output_nc.add_variable<Float>("sw_g"     , {"lay", "y", "x"});
 
             nc_sw_tau.insert(sw_tau_cpu.v(), {0, 0, 0, 0});
             nc_ssa   .insert(ssa_cpu   .v(), {0, 0, 0, 0});
             nc_g     .insert(g_cpu     .v(), {0, 0, 0, 0});
-
-            auto nc_toa_source = output_nc.add_variable<Float>("toa_source", {"gpt_sw", "y", "x"});
-            nc_toa_source.insert(toa_source_cpu.v(), {0, 0, 0});
         }
 
         if (switch_fluxes)
@@ -865,15 +859,15 @@ void solve_radiation(int argc, char** argv)
 
             if (switch_single_gpt)
             {
-                auto nc_sw_bnd_flux_up     = output_nc.add_variable<Float>("sw_bnd_flux_up"    , {"band_sw", "lev", "y", "x"});
-                auto nc_sw_bnd_flux_dn     = output_nc.add_variable<Float>("sw_bnd_flux_dn"    , {"band_sw", "lev", "y", "x"});
-                auto nc_sw_bnd_flux_dn_dir = output_nc.add_variable<Float>("sw_bnd_flux_dn_dir", {"band_sw", "lev", "y", "x"});
-                auto nc_sw_bnd_flux_net    = output_nc.add_variable<Float>("sw_bnd_flux_net"   , {"band_sw", "lev", "y", "x"});
+                auto nc_sw_gpt_flux_up     = output_nc.add_variable<Float>("sw_gpt_flux_up"    , {"lev", "y", "x"});
+                auto nc_sw_gpt_flux_dn     = output_nc.add_variable<Float>("sw_gpt_flux_dn"    , {"lev", "y", "x"});
+                auto nc_sw_gpt_flux_dn_dir = output_nc.add_variable<Float>("sw_gpt_flux_dn_dir", {"lev", "y", "x"});
+                auto nc_sw_gpt_flux_net    = output_nc.add_variable<Float>("sw_gpt_flux_net"   , {"lev", "y", "x"});
 
-                nc_sw_bnd_flux_up    .insert(sw_bnd_flux_up_cpu    .v(), {0, 0, 0, 0});
-                nc_sw_bnd_flux_dn    .insert(sw_bnd_flux_dn_cpu    .v(), {0, 0, 0, 0});
-                nc_sw_bnd_flux_dn_dir.insert(sw_bnd_flux_dn_dir_cpu.v(), {0, 0, 0, 0});
-                nc_sw_bnd_flux_net   .insert(sw_bnd_flux_net_cpu   .v(), {0, 0, 0, 0});
+                nc_sw_gpt_flux_up    .insert(sw_gpt_flux_up_cpu    .v(), {0, 0, 0});
+                nc_sw_gpt_flux_dn    .insert(sw_gpt_flux_dn_cpu    .v(), {0, 0, 0});
+                nc_sw_gpt_flux_dn_dir.insert(sw_gpt_flux_dn_dir_cpu.v(), {0, 0, 0});
+                nc_sw_gpt_flux_net   .insert(sw_gpt_flux_net_cpu   .v(), {0, 0, 0});
             }
         }
     }

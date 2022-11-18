@@ -459,10 +459,10 @@ void Radiation_solver_longwave::solve_gpu(
         const Array_gpu<Float,1>& t_sfc, const Array_gpu<Float,2>& emis_sfc,
         const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
-        Array_gpu<Float,3>& tau, Array_gpu<Float,3>& lay_source,
-        Array_gpu<Float,3>& lev_source_inc, Array_gpu<Float,3>& lev_source_dec, Array_gpu<Float,2>& sfc_source,
+        Array_gpu<Float,2>& tau, Array_gpu<Float,2>& lay_source,
+        Array_gpu<Float,2>& lev_source_inc, Array_gpu<Float,2>& lev_source_dec, Array_gpu<Float,1>& sfc_source,
         Array_gpu<Float,2>& lw_flux_up, Array_gpu<Float,2>& lw_flux_dn, Array_gpu<Float,2>& lw_flux_net,
-        Array_gpu<Float,3>& lw_bnd_flux_up, Array_gpu<Float,3>& lw_bnd_flux_dn, Array_gpu<Float,3>& lw_bnd_flux_net)
+        Array_gpu<Float,2>& lw_gpt_flux_up, Array_gpu<Float,2>& lw_gpt_flux_dn, Array_gpu<Float,2>& lw_gpt_flux_net)
 {
     const int n_col = p_lay.dim(1);
     const int n_lay = p_lay.dim(2);
@@ -573,7 +573,7 @@ void Radiation_solver_longwave::solve_gpu(
             if (switch_single_gpt && igpt == single_gpt)
             {
                 gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                        n_col, n_lev, igpt-1, lw_bnd_flux_up.ptr(), lw_bnd_flux_dn.ptr(), lw_bnd_flux_net.ptr(),
+                        n_col, n_lev, igpt-1, lw_gpt_flux_up.ptr(), lw_gpt_flux_dn.ptr(), lw_gpt_flux_net.ptr(),
                         (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
 
             }
@@ -626,12 +626,11 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08,
         const Array_gpu<Float,1>& aermr09, const Array_gpu<Float,1>& aermr10,
         const Array_gpu<Float,1>& aermr11,
-        Array_gpu<Float,3>& tau, Array_gpu<Float,3>& ssa, Array_gpu<Float,3>& g,
-        Array_gpu<Float,2>& toa_source,
+        Array_gpu<Float,2>& tau, Array_gpu<Float,2>& ssa, Array_gpu<Float,2>& g,
         Array_gpu<Float,2>& sw_flux_up, Array_gpu<Float,2>& sw_flux_dn,
         Array_gpu<Float,2>& sw_flux_dn_dir, Array_gpu<Float,2>& sw_flux_net,
-        Array_gpu<Float,3>& sw_bnd_flux_up, Array_gpu<Float,3>& sw_bnd_flux_dn,
-        Array_gpu<Float,3>& sw_bnd_flux_dn_dir, Array_gpu<Float,3>& sw_bnd_flux_net,
+        Array_gpu<Float,2>& sw_gpt_flux_up, Array_gpu<Float,2>& sw_gpt_flux_dn,
+        Array_gpu<Float,2>& sw_gpt_flux_dn_dir, Array_gpu<Float,2>& sw_gpt_flux_net,
         Array_gpu<Float,2>& rt_flux_tod_up,
         Array_gpu<Float,2>& rt_flux_sfc_dir,
         Array_gpu<Float,2>& rt_flux_sfc_dif,
@@ -872,7 +871,7 @@ void Radiation_solver_shortwave::solve_gpu(
             if (switch_single_gpt && igpt == single_gpt)
             {
                 gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                        n_col, n_lev, igpt-1, sw_bnd_flux_up.ptr(), sw_bnd_flux_dn.ptr(), sw_bnd_flux_dn_dir.ptr(), sw_bnd_flux_net.ptr(),
+                        n_col, n_lev, igpt-1, sw_gpt_flux_up.ptr(), sw_gpt_flux_dn.ptr(), sw_gpt_flux_dn_dir.ptr(), sw_gpt_flux_net.ptr(),
                         (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
             }
         }
