@@ -19,11 +19,11 @@ class Raytracer
         Raytracer();
 
         void trace_rays(
+                const int qrng_gpt_offset,
                 const Int photons_per_pixel,
-                const Int qrng_gpt_offset,
-                const int n_col_x, const int n_col_y, const int n_lay,
-                const Float dx_grid, const Float dy_grid, const Float dz_grid,
-                const int ngrid_x, const int ngrid_y, const int ngrid_z,
+                const Vector<int> grid_cells,
+                const Vector<Float> grid_d,
+                const Vector<int> kn_grid,
                 const Array_gpu<Float,2>& tau_total,
                 const Array_gpu<Float,2>& ssa_total,
                 const Array_gpu<Float,2>& tau_cloud,

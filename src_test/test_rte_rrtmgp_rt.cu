@@ -94,8 +94,8 @@ void configure_memory_pool(int nlays, int ncols, int nchunks, int ngpts, int nbn
 }
 
 bool parse_command_line_options(
-        std::map<std::string, std::pair<bool, std::string>>& command_line_options,
-        Int& photons_per_pixel,
+        std::map<std::string, std::pair<bool, std::string>>& command_line_switches,
+        std::map<std::string, std::pair<int, std::string>>& command_line_ints,
         int argc, char** argv)
 {
     for (int i=1; i<argc; ++i)
@@ -106,7 +106,7 @@ bool parse_command_line_options(
         if (argument == "-h" || argument == "--help")
         {
             Status::print_message("Possible usage:");
-            for (const auto& clo : command_line_options)
+            for (const auto& clo : command_line_switches)
             {
                 std::ostringstream ss;
                 ss << std::left << std::setw(30) << ("--" + clo.first);
@@ -116,67 +116,69 @@ bool parse_command_line_options(
             return true;
         }
 
-        //check if option is integer n (rays per pixel)
-        if (std::isdigit(argument[0]))
+        // Check if option starts with --
+        if (argument[0] != '-' || argument[1] != '-')
         {
-            if (argument.size() > 1)
-            {
-                for (int i=1; i<argument.size(); ++i)
-                {
-                    if (!std::isdigit(argument[i]))
-                    {
-                        std::string error = argument + " is an illegal command line option.";
-                        throw std::runtime_error(error);
-                    }
+            std::string error = argument + " is an illegal command line option.";
+            throw std::runtime_error(error);
+        }
+        else
+            argument.erase(0, 2);
 
-                }
-            }
-            photons_per_pixel = Int(std::stoi(argv[i]));
+        // Check if option has prefix no-
+        bool enable = true;
+        if (argument[0] == 'n' && argument[1] == 'o' && argument[2] == '-')
+        {
+            enable = false;
+            argument.erase(0, 3);
+        }
+
+        if (command_line_switches.find(argument) == command_line_switches.end())
+        {
+            std::string error = argument + " is an illegal command line option.";
+            throw std::runtime_error(error);
         }
         else
         {
-            // Check if option starts with --
-            if (argument[0] != '-' || argument[1] != '-')
-            {
-                std::string error = argument + " is an illegal command line option.";
-                throw std::runtime_error(error);
-            }
-            else
-                argument.erase(0, 2);
+            command_line_switches.at(argument).first = enable;
+        }
 
-            // Check if option has prefix no-
-            bool enable = true;
-            if (argument[0] == 'n' && argument[1] == 'o' && argument[2] == '-')
-            {
-                enable = false;
-                argument.erase(0, 3);
-            }
+        // Check if a is integer is too be expect and if so, supplied
+        if (command_line_ints.find(argument) != command_line_ints.end() && i+1 < argc)
+        {
+            std::string next_argument(argv[i+1]);
+            boost::trim(next_argument);
 
-            if (command_line_options.find(argument) == command_line_options.end())
+            bool arg_is_int = true;
+            for (int j=0; j<next_argument.size(); ++j)
+                arg_is_int *= std::isdigit(next_argument[j]);
+
+            if (arg_is_int)
             {
-                std::string error = argument + " is an illegal command line option.";
-                throw std::runtime_error(error);
+                command_line_ints.at(argument).first = std::stoi(argv[i+1]);
+                ++i;
             }
-            else
-                command_line_options.at(argument).first = enable;
         }
     }
 
     return false;
 }
 
-
 void print_command_line_options(
-        const std::map<std::string, std::pair<bool, std::string>>& command_line_options)
+        const std::map<std::string, std::pair<bool, std::string>>& command_line_switches,
+        const std::map<std::string, std::pair<int, std::string>>& command_line_ints)
 {
     Status::print_message("Solver settings:");
-    for (const auto& option : command_line_options)
+    for (const auto& option : command_line_switches)
     {
         std::ostringstream ss;
         ss << std::left << std::setw(20) << (option.first);
-        ss << " = " << std::boolalpha << option.second.first << std::endl;
+        if (command_line_ints.find(option.first) != command_line_ints.end() && option.second.first)
+            ss << " = " << std::boolalpha << command_line_ints.at(option.first).first << std::endl;
+        else
+            ss << " = " << std::boolalpha << option.second.first << std::endl;
         Status::print_message(ss);
-    }
+   }
 }
 
 
@@ -186,40 +188,43 @@ void solve_radiation(int argc, char** argv)
 
     ////// FLOW CONTROL SWITCHES //////
     // Parse the command line options.
-    std::map<std::string, std::pair<bool, std::string>> command_line_options {
+    std::map<std::string, std::pair<bool, std::string>> command_line_switches {
         {"shortwave"        , { true,  "Enable computation of shortwave radiation."}},
-        {"longwave"         , { true,  "Enable computation of longwave radiation." }},
+        {"longwave"         , { false, "Enable computation of longwave radiation." }},
         {"fluxes"           , { true,  "Enable computation of fluxes."             }},
-        {"raytracing"       , { false, "Use raytracing for flux computation."      }},
+        {"raytracing"       , { true,  "Use raytracing for flux computation. '--raytracing 256': use 256 rays per pixel" }},
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
         {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
-        {"output-optical"   , { false, "Enable output of optical properties."      }},
-        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
-        {"profiling        ", { false, "Perform additional profiling run."         }} };
-    Int photons_per_pixel = 1;
+        {"single-gpt"       , { false, "Output optical properties and fluxes for a single g-point. '--single-gpt 100': output 100th g-point" }},
+        {"profiling"        , { false, "Perform additional profiling run."         }} };
 
-    if (parse_command_line_options(command_line_options, photons_per_pixel, argc, argv))
+    std::map<std::string, std::pair<int, std::string>> command_line_ints {
+        {"raytracing", {32, "Number of rays initialised at TOD per pixel per quadraute."}},
+        {"single-gpt", {1 , "g-point to store optical properties and fluxes of" }} };
+
+    if (parse_command_line_options(command_line_switches, command_line_ints, argc, argv))
         return;
 
-
-    const bool switch_shortwave         = command_line_options.at("shortwave"        ).first;
-    const bool switch_longwave          = command_line_options.at("longwave"         ).first;
-    const bool switch_fluxes            = command_line_options.at("fluxes"           ).first;
-    const bool switch_raytracing        = command_line_options.at("raytracing"       ).first;
-    const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
-    const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
-    const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
-    const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
-    const bool switch_profiling         = command_line_options.at("profiling"        ).first;
+    const bool switch_shortwave         = command_line_switches.at("shortwave"        ).first;
+    const bool switch_longwave          = command_line_switches.at("longwave"         ).first;
+    const bool switch_fluxes            = command_line_switches.at("fluxes"           ).first;
+    const bool switch_raytracing        = command_line_switches.at("raytracing"       ).first;
+    const bool switch_cloud_optics      = command_line_switches.at("cloud-optics"     ).first;
+    const bool switch_aerosol_optics    = command_line_switches.at("aerosol-optics"   ).first;
+    const bool switch_single_gpt        = command_line_switches.at("single-gpt"       ).first;
+    const bool switch_profiling         = command_line_switches.at("profiling"        ).first;
 
     // Print the options to the screen.
-    print_command_line_options(command_line_options);
+    print_command_line_options(command_line_switches, command_line_ints);
 
+    Int photons_per_pixel = Int(command_line_ints.at("raytracing").first);
     if (Float(int(std::log2(Float(photons_per_pixel)))) != std::log2(Float(photons_per_pixel)))
     {
         std::string error = "number of photons per pixel should be a power of 2 ";
         throw std::runtime_error(error);
     }
+
+    int single_gpt = command_line_ints.at("single-gpt").first;
 
     Status::print_message("Using "+ std::to_string(photons_per_pixel) + " rays per pixel");
 
@@ -233,32 +238,17 @@ void solve_radiation(int argc, char** argv)
     const int n_col = n_col_x * n_col_y;
     const int n_lay = input_nc.get_dimension_size("lay");
     const int n_lev = input_nc.get_dimension_size("lev");
-    int n_z;
+    const int n_z = input_nc.get_dimension_size("z");
 
-    // Read the x,y,z dimensions if raytracing is enabled
-    Array<Float,1> grid_dims({4});
-    Array<Float,1> grid_x;
-    Array<Float,1> grid_y;
-    Array<Float,1> grid_z;
-    Array<int,1> kn_grid_dims({3});
-    if (switch_raytracing)
-    {
-        n_z = input_nc.get_dimension_size("z");
-        grid_x.set_dims({n_col_x});
-        grid_y.set_dims({n_col_y});
-        grid_z.set_dims({n_z});
-        grid_x = std::move(input_nc.get_variable<Float>("x", {n_col_x}));
-        grid_y = std::move(input_nc.get_variable<Float>("y", {n_col_y}));
-        grid_z = std::move(input_nc.get_variable<Float>("z", {n_z}));
-        grid_dims({1}) = grid_x({2}) - grid_x({1});
-        grid_dims({2}) = grid_y({2}) - grid_y({1});
-        grid_dims({3}) = grid_z({2}) - grid_z({1});
-        grid_dims({4}) = n_z;
+    Array<Float,1> grid_x(input_nc.get_variable<Float>("x", {n_col_x}), {n_col_x});
+    Array<Float,1> grid_y(input_nc.get_variable<Float>("y", {n_col_y}), {n_col_y});
+    Array<Float,1> grid_z(input_nc.get_variable<Float>("z", {n_z}), {n_z});
 
-        kn_grid_dims({1}) = input_nc.get_variable<Float>("ngrid_x");
-        kn_grid_dims({2}) = input_nc.get_variable<Float>("ngrid_y");
-        kn_grid_dims({3}) = input_nc.get_variable<Float>("ngrid_z");
-    }
+    const Vector<int> grid_cells = {n_col_x, n_col_y, n_z};
+    const Vector<Float> grid_d = {grid_x({2}) - grid_x({1}), grid_y({2}) - grid_y({1}), grid_z({2}) - grid_z({1})};
+    const Vector<int> kn_grid = {input_nc.get_variable<int>("ngrid_x"),
+                                 input_nc.get_variable<int>("ngrid_y"),
+                                 input_nc.get_variable<int>("ngrid_z")};
 
     // Read the atmospheric fields.
     Array<Float,2> p_lay(input_nc.get_variable<Float>("p_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
@@ -382,17 +372,15 @@ void solve_radiation(int argc, char** argv)
     output_nc.add_dimension("lay", n_lay);
     output_nc.add_dimension("lev", n_lev);
     output_nc.add_dimension("pair", 2);
-    if (switch_raytracing)
-    {
-        output_nc.add_dimension("z", n_z);
-        auto nc_x = output_nc.add_variable<Float>("x", {"x"});
-        auto nc_y = output_nc.add_variable<Float>("y", {"y"});
-        auto nc_z = output_nc.add_variable<Float>("z", {"z"});
-        nc_x.insert(grid_x.v(), {0});
-        nc_y.insert(grid_y.v(), {0});
-        nc_z.insert(grid_z.v(), {0});
 
-    }
+    output_nc.add_dimension("z", n_z);
+    auto nc_x = output_nc.add_variable<Float>("x", {"x"});
+    auto nc_y = output_nc.add_variable<Float>("y", {"y"});
+    auto nc_z = output_nc.add_variable<Float>("z", {"z"});
+    nc_x.insert(grid_x.v(), {0});
+    nc_y.insert(grid_y.v(), {0});
+    nc_z.insert(grid_z.v(), {0});
+
     auto nc_lay = output_nc.add_variable<Float>("p_lay", {"lay", "col"});
     auto nc_lev = output_nc.add_variable<Float>("p_lev", {"lev", "col"});
 
@@ -440,7 +428,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<Float,3> lev_source_dec;
         Array_gpu<Float,2> sfc_source;
 
-        if (switch_output_optical)
+        if (switch_single_gpt)
         {
             lw_tau        .set_dims({n_col, n_lay, n_gpt_lw});
             lay_source    .set_dims({n_col, n_lay, n_gpt_lw});
@@ -464,7 +452,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<Float,3> lw_bnd_flux_dn;
         Array_gpu<Float,3> lw_bnd_flux_net;
 
-        if (switch_output_bnd_fluxes)
+        if (switch_single_gpt)
         {
             lw_bnd_flux_up .set_dims({n_col, n_lev, n_bnd_lw});
             lw_bnd_flux_dn .set_dims({n_col, n_lev, n_bnd_lw});
@@ -502,8 +490,8 @@ void solve_radiation(int argc, char** argv)
             rad_lw.solve_gpu(
                     switch_fluxes,
                     switch_cloud_optics,
-                    switch_output_optical,
-                    switch_output_bnd_fluxes,
+                    switch_single_gpt,
+                    single_gpt,
                     gas_concs_gpu,
                     p_lay_gpu, p_lev_gpu,
                     t_lay_gpu, t_lev_gpu,
@@ -559,7 +547,7 @@ void solve_radiation(int argc, char** argv)
         auto nc_lw_band_lims_wvn = output_nc.add_variable<Float>("lw_band_lims_wvn", {"band_lw", "pair"});
         nc_lw_band_lims_wvn.insert(rad_lw.get_band_lims_wavenumber_gpu().v(), {0, 0});
 
-        if (switch_output_optical)
+        if (switch_single_gpt)
         {
             auto nc_lw_band_lims_gpt = output_nc.add_variable<int>("lw_band_lims_gpt", {"band_lw", "pair"});
             nc_lw_band_lims_gpt.insert(rad_lw.get_band_lims_gpoint_gpu().v(), {0, 0});
@@ -590,7 +578,7 @@ void solve_radiation(int argc, char** argv)
             nc_lw_flux_dn .insert(lw_flux_dn_cpu .v(), {0, 0, 0});
             nc_lw_flux_net.insert(lw_flux_net_cpu.v(), {0, 0, 0});
 
-            if (switch_output_bnd_fluxes)
+            if (switch_single_gpt)
             {
                 auto nc_lw_bnd_flux_up  = output_nc.add_variable<Float>("lw_bnd_flux_up" , {"band_lw", "lev", "y", "x"});
                 auto nc_lw_bnd_flux_dn  = output_nc.add_variable<Float>("lw_bnd_flux_dn" , {"band_lw", "lev", "y", "x"});
@@ -650,7 +638,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<Float,3> g;
         Array_gpu<Float,2> toa_source;
 
-        if (switch_output_optical)
+        if (switch_single_gpt)
         {
             sw_tau    .set_dims({n_col, n_lay, n_gpt_sw});
             ssa       .set_dims({n_col, n_lay, n_gpt_sw});
@@ -694,7 +682,7 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<Float,3> sw_bnd_flux_dn_dir;
         Array_gpu<Float,3> sw_bnd_flux_net;
 
-        if (switch_output_bnd_fluxes)
+        if (switch_single_gpt)
         {
             sw_bnd_flux_up    .set_dims({n_col, n_lev, n_bnd_sw});
             sw_bnd_flux_dn    .set_dims({n_col, n_lev, n_bnd_sw});
@@ -712,8 +700,6 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> p_lev_gpu(p_lev);
             Array_gpu<Float,2> t_lay_gpu(t_lay);
             Array_gpu<Float,2> t_lev_gpu(t_lev);
-            Array_gpu<Float,1> grid_dims_gpu(grid_dims);
-            Array_gpu<int,1> kn_grid_dims_gpu(kn_grid_dims);
             Array_gpu<Float,2> col_dry_gpu(col_dry);
             Array_gpu<Float,2> sfc_alb_dir_gpu(sfc_alb_dir);
             Array_gpu<Float,2> sfc_alb_dif_gpu(sfc_alb_dif);
@@ -751,14 +737,15 @@ void solve_radiation(int argc, char** argv)
                     switch_raytracing,
                     switch_cloud_optics,
                     switch_aerosol_optics,
-                    switch_output_optical,
-                    switch_output_bnd_fluxes,
+                    switch_single_gpt,
+                    single_gpt,
                     photons_per_pixel,
+                    grid_cells,
+                    grid_d,
+                    kn_grid,
                     gas_concs_gpu,
                     p_lay_gpu, p_lev_gpu,
                     t_lay_gpu, t_lev_gpu,
-                    grid_dims_gpu,
-                    kn_grid_dims_gpu,
                     col_dry_gpu,
                     sfc_alb_dir_gpu, sfc_alb_dif_gpu,
                     tsi_scaling_gpu, mu0_gpu, azi_gpu,
@@ -768,11 +755,10 @@ void solve_radiation(int argc, char** argv)
                     aermr01, aermr02, aermr03, aermr04, aermr05,
                     aermr06, aermr07, aermr08, aermr09, aermr10, aermr11,
                     sw_tau, ssa, g,
-                    toa_source,
                     sw_flux_up, sw_flux_dn,
                     sw_flux_dn_dir, sw_flux_net,
-                    sw_bnd_flux_up, sw_bnd_flux_dn,
-                    sw_bnd_flux_dn_dir, sw_bnd_flux_net,
+                    sw_gpt_flux_up, sw_gpt_flux_dn,
+                    sw_gpt_flux_dn_dir, sw_gpt_flux_net,
                     rt_flux_tod_up,
                     rt_flux_sfc_dir,
                     rt_flux_sfc_dif,
@@ -830,7 +816,7 @@ void solve_radiation(int argc, char** argv)
         auto nc_sw_band_lims_wvn = output_nc.add_variable<Float>("sw_band_lims_wvn", {"band_sw", "pair"});
         nc_sw_band_lims_wvn.insert(rad_sw.get_band_lims_wavenumber_gpu().v(), {0, 0});
 
-        if (switch_output_optical)
+        if (switch_single_gpt)
         {
             auto nc_sw_band_lims_gpt = output_nc.add_variable<int>("sw_band_lims_gpt", {"band_sw", "pair"});
             nc_sw_band_lims_gpt.insert(rad_sw.get_band_lims_gpoint_gpu().v(), {0, 0});
@@ -877,7 +863,7 @@ void solve_radiation(int argc, char** argv)
             }
 
 
-            if (switch_output_bnd_fluxes)
+            if (switch_single_gpt)
             {
                 auto nc_sw_bnd_flux_up     = output_nc.add_variable<Float>("sw_bnd_flux_up"    , {"band_sw", "lev", "y", "x"});
                 auto nc_sw_bnd_flux_dn     = output_nc.add_variable<Float>("sw_bnd_flux_dn"    , {"band_sw", "lev", "y", "x"});

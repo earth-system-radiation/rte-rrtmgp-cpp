@@ -450,8 +450,8 @@ Radiation_solver_longwave::Radiation_solver_longwave(
 void Radiation_solver_longwave::solve_gpu(
         const bool switch_fluxes,
         const bool switch_cloud_optics,
-        const bool switch_output_optical,
-        const bool switch_output_bnd_fluxes,
+        const bool switch_single_gpt,
+        const int single_gpt,
         const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
@@ -534,7 +534,7 @@ void Radiation_solver_longwave::solve_gpu(
         }
 
         // Store the optical properties, if desired.
-        if (switch_output_optical)
+        if (switch_single_gpt && igpt == single_gpt)
         {
             gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
                     n_col, n_lay, igpt-1, tau.ptr(), lay_source.ptr(), lev_source_inc.ptr(), lev_source_dec.ptr(),
@@ -570,7 +570,7 @@ void Radiation_solver_longwave::solve_gpu(
                     n_col, n_lev, lw_flux_up.ptr(), lw_flux_dn.ptr(), lw_flux_net.ptr(),
                     (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
 
-            if (switch_output_bnd_fluxes)
+            if (switch_single_gpt && igpt == single_gpt)
             {
                 gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
                         n_col, n_lev, igpt-1, lw_bnd_flux_up.ptr(), lw_bnd_flux_dn.ptr(), lw_bnd_flux_net.ptr(),
@@ -604,14 +604,15 @@ void Radiation_solver_shortwave::solve_gpu(
         const bool switch_raytracing,
         const bool switch_cloud_optics,
         const bool switch_aerosol_optics,
-        const bool switch_output_optical,
-        const bool switch_output_bnd_fluxes,
+        const bool switch_single_gpt,
+        const int single_gpt,
         const Int ray_count,
+        const Vector<int> grid_cells,
+        const Vector<Float> grid_d,
+        const Vector<int> kn_grid,
         const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
-        const Array_gpu<Float,1>& grid_dims,
-        const Array_gpu<int,1>& kn_grid_dims,
         Array_gpu<Float,2>& col_dry,
         const Array_gpu<Float,2>& sfc_alb_dir, const Array_gpu<Float,2>& sfc_alb_dif,
         const Array_gpu<Float,1>& tsi_scaling,
@@ -645,16 +646,6 @@ void Radiation_solver_shortwave::solve_gpu(
     const int n_gpt = this->kdist_gpu->get_ngpt();
     const int n_bnd = this->kdist_gpu->get_nband();
 
-    const int n_col_x = (switch_raytracing) ? rt_flux_sfc_dir.dim(1) : n_col;
-    const int n_col_y = (switch_raytracing) ? rt_flux_sfc_dir.dim(2) : 1;
-    const Float dx_grid = (switch_raytracing) ? grid_dims({1}) : 0;
-    const Float dy_grid = (switch_raytracing) ? grid_dims({2}) : 0;
-    const Float dz_grid = (switch_raytracing) ? grid_dims({3}) : 0;
-    const int n_z     = (switch_raytracing) ? grid_dims({4}) : 0;
-    const int ngrid_x = (switch_raytracing) ? kn_grid_dims({1}) : 0;
-    const int ngrid_y = (switch_raytracing) ? kn_grid_dims({2}) : 0;
-    const int ngrid_z = (switch_raytracing) ? kn_grid_dims({3}) : 0;
-
     const Bool top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
     optical_props = std::make_unique<Optical_props_2str_rt>(n_col, n_lay, *kdist_gpu);
@@ -674,18 +665,18 @@ void Radiation_solver_shortwave::solve_gpu(
 
     if (switch_fluxes)
     {
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_up.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_dn.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_dn_dir.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, sw_flux_net.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_up.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_dn.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_dn_dir.ptr());
+        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_net.ptr());
         if (switch_raytracing)
         {
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_tod_up.ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_sfc_dir.ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_sfc_dif.ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col_y, n_col_x, rt_flux_sfc_up.ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_z, n_col_y, n_col_x, rt_flux_abs_dir.ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_z, n_col_y, n_col_x, rt_flux_abs_dif.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_tod_up.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_sfc_dir.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_sfc_dif.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_sfc_up.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.z, grid_cells.y, grid_cells.x, rt_flux_abs_dir.ptr());
+            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.z, grid_cells.y, grid_cells.x, rt_flux_abs_dif.ptr());
         }
     }
 
@@ -804,19 +795,16 @@ void Radiation_solver_shortwave::solve_gpu(
         }
 
         // Store the optical properties, if desired
-        if (switch_output_optical)
+        if (switch_single_gpt && igpt == single_gpt)
         {
             gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
                     n_col, n_lay, igpt-1, tau.ptr(), ssa.ptr(), g.ptr(), optical_props->get_tau().ptr(),
                      optical_props->get_ssa().ptr(),  optical_props->get_g().ptr());
-
-            gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                    n_col, igpt-1, toa_source.ptr(), toa_src.ptr());
         }
         if (switch_fluxes)
         {
             std::unique_ptr<Fluxes_broadband_rt> fluxes =
-                    std::make_unique<Fluxes_broadband_rt>(n_col_x, n_col_y, n_lev);
+                    std::make_unique<Fluxes_broadband_rt>(grid_cells.x, grid_cells.y, n_lev);
 
             rte_sw.rte_sw(
                     optical_props,
@@ -836,13 +824,14 @@ void Radiation_solver_shortwave::solve_gpu(
                 Float azimuth_angle = azi({1}); // sun approximately from south
 
                 Array<Float,1> tod_dir_diff({2});
-                compute_tod_flux(n_col, n_z, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
+                compute_tod_flux(n_col, grid_cells.z, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
+
                 raytracer.trace_rays(
-                        ray_count,
                         igpt-1,
-                        n_col_x, n_col_y, n_z,
-                        dx_grid, dy_grid, dz_grid,
-                        ngrid_x, ngrid_y, ngrid_z,
+                        ray_count,
+                        grid_cells,
+                        grid_d,
+                        kn_grid,
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
                         dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
@@ -872,15 +861,15 @@ void Radiation_solver_shortwave::solve_gpu(
             if (switch_raytracing)
             {
                 gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-                        n_col_x, n_col_y, rt_flux_tod_up.ptr(), rt_flux_sfc_dir.ptr(), rt_flux_sfc_dif.ptr(), rt_flux_sfc_up.ptr(),
+                        grid_cells.x, grid_cells.y, rt_flux_tod_up.ptr(), rt_flux_sfc_dir.ptr(), rt_flux_sfc_dif.ptr(), rt_flux_sfc_up.ptr(),
                         (*fluxes).get_flux_tod_up().ptr(), (*fluxes).get_flux_sfc_dir().ptr(), (*fluxes).get_flux_sfc_dif().ptr(), (*fluxes).get_flux_sfc_up().ptr());
 
                 gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
-                        n_col, n_z, rt_flux_abs_dir.ptr(), rt_flux_abs_dif.ptr(),
+                        n_col, grid_cells.z, rt_flux_abs_dir.ptr(), rt_flux_abs_dif.ptr(),
                         (*fluxes).get_flux_abs_dir().ptr(), (*fluxes).get_flux_abs_dif().ptr());
             }
 
-            if (switch_output_bnd_fluxes)
+            if (switch_single_gpt && igpt == single_gpt)
             {
                 gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
                         n_col, n_lev, igpt-1, sw_bnd_flux_up.ptr(), sw_bnd_flux_dn.ptr(), sw_bnd_flux_dn_dir.ptr(), sw_bnd_flux_net.ptr(),

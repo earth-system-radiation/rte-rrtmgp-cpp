@@ -263,7 +263,9 @@ void solve_radiation(int argc, char** argv)
 
     const Vector<int> grid_cells = {n_col_x, n_col_y, n_z};
     const Vector<Float> grid_d = {grid_x({2}) - grid_x({1}), grid_y({2}) - grid_y({1}), grid_z({2}) - grid_z({1})};
-    const Vector<int> kn_grid = {input_nc.get_variable<int>("ngrid_x"), input_nc.get_variable<int>("ngrid_y"),input_nc.get_variable<int>("ngrid_z")};
+    const Vector<int> kn_grid = {input_nc.get_variable<int>("ngrid_x"),
+                                 input_nc.get_variable<int>("ngrid_y"),
+                                 input_nc.get_variable<int>("ngrid_z")};
 
     // Reading camera data
     Netcdf_group cam_in = input_nc.get_group("camera-settings");

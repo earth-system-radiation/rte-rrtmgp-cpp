@@ -333,9 +333,6 @@ void ray_tracer_kernel_bw(
     const Float bg_transmissivity = exp(-bg_tau_cum[0]);
 
     const Vector<Float> kn_grid_d = grid_size / kn_grid;
-    //const Float kgrid_x = x_size/Float(ngrid_x);
-    //const Float kgrid_y = y_size/Float(ngrid_y);
-    //const Float kgrid_z = z_size/Float(ngrid_z);
     const Float z_top = z_lev_bg[kbg];
 
     Random_number_generator<Float> rng(n);
