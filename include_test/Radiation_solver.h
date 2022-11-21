@@ -24,6 +24,7 @@
 #include "Gas_concs.h"
 #include "Gas_optics_rrtmgp.h"
 #include "Cloud_optics.h"
+#include "Aerosol_optics.h"
 #include "Rte_lw.h"
 #include "Rte_sw.h"
 #include "Source_functions.h"
@@ -58,7 +59,7 @@ class Radiation_solver_longwave
                 Array<Float,3>& lev_source_inc, Array<Float,3>& lev_source_dec, Array<Float,2>& sfc_source,
                 Array<Float,2>& lw_flux_up, Array<Float,2>& lw_flux_dn, Array<Float,2>& lw_flux_net,
                 Array<Float,3>& lw_bnd_flux_up, Array<Float,3>& lw_bnd_flux_dn, Array<Float,3>& lw_bnd_flux_net) const;
-        
+
         int get_n_gpt() const { return this->kdist->get_ngpt(); };
         int get_n_bnd() const { return this->kdist->get_nband(); };
 
@@ -88,7 +89,7 @@ class Radiation_solver_longwave
 
         int get_n_gpt_gpu() const { return this->kdist_gpu->get_ngpt(); };
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
-        
+
         Array<int,2> get_band_lims_gpoint_gpu() const
         { return this->kdist_gpu->get_band_lims_gpoint(); }
 
@@ -126,8 +127,11 @@ class Radiation_solver_shortwave
                 const std::string& file_name_cloud);
         Radiation_solver_shortwave(
                 const Gas_concs_gpu& gas_concs,
+                const bool switch_cloud_optics,
+                const bool switch_aerosol_optics,
                 const std::string& file_name_gas,
-                const std::string& file_name_cloud);
+                const std::string& file_name_cloud,
+                const std::string& file_name_aerosol);
 
         void solve(
                 const bool switch_fluxes,
@@ -164,6 +168,7 @@ class Radiation_solver_shortwave
         void solve_gpu(
                 const bool switch_fluxes,
                 const bool switch_cloud_optics,
+                const bool switch_aerosol_optics,
                 const bool switch_output_optical,
                 const bool switch_output_bnd_fluxes,
                 const Gas_concs_gpu& gas_concs,
@@ -174,6 +179,8 @@ class Radiation_solver_shortwave
                 const Array_gpu<Float,1>& tsi_scaling, const Array_gpu<Float,1>& mu0,
                 const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
                 const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
+                const Array_gpu<Float,2>& rh,
+                const Gas_concs_gpu& aerosol_concs,
                 Array_gpu<Float,3>& tau, Array_gpu<Float,3>& ssa, Array_gpu<Float,3>& g,
                 Array_gpu<Float,2>& toa_src,
                 Array_gpu<Float,2>& sw_flux_up, Array_gpu<Float,2>& sw_flux_dn,
@@ -185,7 +192,7 @@ class Radiation_solver_shortwave
         int get_n_bnd_gpu() const { return this->kdist_gpu->get_nband(); };
 
         Float get_tsi_gpu() const { return this->kdist_gpu->get_tsi(); };
-        
+
         Array<int,2> get_band_lims_gpoint_gpu() const
         { return this->kdist_gpu->get_band_lims_gpoint(); }
 
@@ -200,6 +207,7 @@ class Radiation_solver_shortwave
         #ifdef __CUDACC__
         std::unique_ptr<Gas_optics_gpu> kdist_gpu;
         std::unique_ptr<Cloud_optics_gpu> cloud_optics_gpu;
+        std::unique_ptr<Aerosol_optics_gpu> aerosol_optics_gpu;
         Rte_sw_gpu rte_sw;
 
         std::unique_ptr<Optical_props_arry_gpu> optical_props_subset;
@@ -207,6 +215,9 @@ class Radiation_solver_shortwave
 
         std::unique_ptr<Optical_props_2str_gpu> cloud_optical_props_subset;
         std::unique_ptr<Optical_props_2str_gpu> cloud_optical_props_residual;
+
+        std::unique_ptr<Optical_props_2str_gpu> aerosol_optical_props_subset;
+        std::unique_ptr<Optical_props_2str_gpu> aerosol_optical_props_residual;
         #endif
 };
 #endif
