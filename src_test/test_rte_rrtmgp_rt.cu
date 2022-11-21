@@ -69,6 +69,32 @@ void read_and_set_vmr(
     }
 }
 
+void read_and_set_aer(
+        const std::string& aerosol_name, const int n_lay,
+        const Netcdf_handle& input_nc, Gas_concs& aerosol_concs)
+{
+    if (input_nc.variable_exists(aerosol_name))
+    {
+        std::map<std::string, int> dims = input_nc.get_variable_dimensions(aerosol_name);
+        const int n_dims = dims.size();
+
+        if (n_dims == 1)
+        {
+            if (dims.at("lay") == n_lay)
+                aerosol_concs.set_vmr(aerosol_name,
+                        Array<Float,1>(input_nc.get_variable<Float>(aerosol_name, {n_lay}), {n_lay}));
+            else
+                throw std::runtime_error("Illegal dimensions of gas \"" + aerosol_name + "\" in input");
+        }
+        else
+            throw std::runtime_error("Illegal dimensions of gas \"" + aerosol_name + "\" in input");
+    }
+    else
+    {
+        throw std::runtime_error("Aerosol type \"" + aerosol_name + "\" not available in input file.");
+    }
+}
+
 void configure_memory_pool(int nlays, int ncols, int nchunks, int ngpts, int nbnds)
 {
     /* Heuristic way to set up memory pool queues */
@@ -309,55 +335,24 @@ void solve_radiation(int argc, char** argv)
     }
 
     Array<Float,2> rh;
-    Array<Float,1> aermr01;
-    Array<Float,1> aermr02;
-    Array<Float,1> aermr03;
-    Array<Float,1> aermr04;
-    Array<Float,1> aermr05;
-    Array<Float,1> aermr06;
-    Array<Float,1> aermr07;
-    Array<Float,1> aermr08;
-    Array<Float,1> aermr09;
-    Array<Float,1> aermr10;
-    Array<Float,1> aermr11;
+    Gas_concs aerosol_concs;
 
     if (switch_aerosol_optics)
     {
         rh.set_dims({n_col, n_lay});
         rh = std::move(input_nc.get_variable<Float>("rh", {n_lay, n_col_y, n_col_x}));
 
-        aermr01.set_dims({n_lay});
-        aermr01 = std::move(input_nc.get_variable<Float>("aermr01", {n_lay}));
-
-        aermr02.set_dims({n_lay});
-        aermr02 = std::move(input_nc.get_variable<Float>("aermr02", {n_lay}));
-
-        aermr03.set_dims({n_lay});
-        aermr03 = std::move(input_nc.get_variable<Float>("aermr03", {n_lay}));
-
-        aermr04.set_dims({n_lay});
-        aermr04 = std::move(input_nc.get_variable<Float>("aermr04", {n_lay}));
-
-        aermr05.set_dims({n_lay});
-        aermr05 = std::move(input_nc.get_variable<Float>("aermr05", {n_lay}));
-
-        aermr06.set_dims({n_lay});
-        aermr06 = std::move(input_nc.get_variable<Float>("aermr06", {n_lay}));
-
-        aermr07.set_dims({n_lay});
-        aermr07 = std::move(input_nc.get_variable<Float>("aermr07", {n_lay}));
-
-        aermr08.set_dims({n_lay});
-        aermr08 = std::move(input_nc.get_variable<Float>("aermr08", {n_lay}));
-
-        aermr09.set_dims({n_lay});
-        aermr09 = std::move(input_nc.get_variable<Float>("aermr09", {n_lay}));
-
-        aermr10.set_dims({n_lay});
-        aermr10 = std::move(input_nc.get_variable<Float>("aermr10", {n_lay}));
-
-        aermr11.set_dims({n_lay});
-        aermr11 = std::move(input_nc.get_variable<Float>("aermr11", {n_lay}));
+        read_and_set_aer("aermr01", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr02", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr03", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr04", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr05", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr06", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr07", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr08", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr09", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr10", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr11", n_lay, input_nc, aerosol_concs);
     }
 
 
@@ -710,17 +705,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> rei_gpu(rei);
 
             Array_gpu<Float,2> rh_gpu(rh);
-            Array_gpu<Float,1> aermr01_gpu(aermr01);
-            Array_gpu<Float,1> aermr02_gpu(aermr02);
-            Array_gpu<Float,1> aermr03_gpu(aermr03);
-            Array_gpu<Float,1> aermr04_gpu(aermr04);
-            Array_gpu<Float,1> aermr05_gpu(aermr05);
-            Array_gpu<Float,1> aermr06_gpu(aermr06);
-            Array_gpu<Float,1> aermr07_gpu(aermr07);
-            Array_gpu<Float,1> aermr08_gpu(aermr08);
-            Array_gpu<Float,1> aermr09_gpu(aermr09);
-            Array_gpu<Float,1> aermr10_gpu(aermr10);
-            Array_gpu<Float,1> aermr11_gpu(aermr11);
+            Gas_concs_gpu aerosol_concs_gpu(aerosol_concs);
 
             cudaDeviceSynchronize();
             cudaEvent_t start;
@@ -750,8 +735,7 @@ void solve_radiation(int argc, char** argv)
                     lwp_gpu, iwp_gpu,
                     rel_gpu, rei_gpu,
                     rh,
-                    aermr01, aermr02, aermr03, aermr04, aermr05,
-                    aermr06, aermr07, aermr08, aermr09, aermr10, aermr11,
+                    aerosol_concs,
                     sw_tau, ssa, g,
                     sw_flux_up, sw_flux_dn,
                     sw_flux_dn_dir, sw_flux_net,

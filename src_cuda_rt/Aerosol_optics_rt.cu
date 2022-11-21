@@ -143,7 +143,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr04[ilay];
+            mmr = aermr08[ilay];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // OM2
@@ -207,10 +207,7 @@ Aerosol_optics_rt::Aerosol_optics_rt(
 
 void Aerosol_optics_rt::aerosol_optics(
         const int ibnd,
-        const Array_gpu<Float,1>& aermr01, const Array_gpu<Float,1>& aermr02, const Array_gpu<Float,1>& aermr03,
-        const Array_gpu<Float,1>& aermr04, const Array_gpu<Float,1>& aermr05, const Array_gpu<Float,1>& aermr06,
-        const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08, const Array_gpu<Float,1>& aermr09,
-        const Array_gpu<Float,1>& aermr10, const Array_gpu<Float,1>& aermr11,
+        const Gas_concs_gpu& aerosol_concs,
         const Array_gpu<Float,2>& rh, const Array_gpu<Float,2>& plev,
         Optical_props_2str_rt& optical_props)
 {
@@ -237,7 +234,17 @@ void Aerosol_optics_rt::aerosol_optics(
 
     compute_from_table_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nlay, ibnd, nbnd, nhum,
-            aermr01.ptr(), aermr02.ptr(), aermr03.ptr(), aermr04.ptr(), aermr05.ptr(), aermr06.ptr(), aermr07.ptr(), aermr08.ptr(), aermr09.ptr(), aermr10.ptr(), aermr11.ptr(),
+            aerosol_concs.get_vmr("aermr01").ptr(),
+            aerosol_concs.get_vmr("aermr02").ptr(),
+            aerosol_concs.get_vmr("aermr03").ptr(),
+            aerosol_concs.get_vmr("aermr04").ptr(),
+            aerosol_concs.get_vmr("aermr05").ptr(),
+            aerosol_concs.get_vmr("aermr06").ptr(),
+            aerosol_concs.get_vmr("aermr07").ptr(),
+            aerosol_concs.get_vmr("aermr08").ptr(),
+            aerosol_concs.get_vmr("aermr09").ptr(),
+            aerosol_concs.get_vmr("aermr10").ptr(),
+            aerosol_concs.get_vmr("aermr11").ptr(),
             rh.ptr(), plev.ptr(),
             this->rh_upper_gpu.ptr(),
             this->mext_phobic_gpu.ptr(), this->ssa_phobic_gpu.ptr(), this->g_phobic_gpu.ptr(),

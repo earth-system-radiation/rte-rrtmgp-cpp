@@ -7,6 +7,7 @@
 
 #include "Array.h"
 #include "Optical_props_rt.h"
+#include "Gas_concs_rt.h"
 #include "Types.h"
 
 
@@ -25,10 +26,7 @@ class Aerosol_optics_rt : public Optical_props_rt
 
         void aerosol_optics(
                 const int ibnd,
-                const Array_gpu<Float,1>& aermr01, const Array_gpu<Float,1>& aermr02, const Array_gpu<Float,1>& aermr03,
-                const Array_gpu<Float,1>& aermr04, const Array_gpu<Float,1>& aermr05, const Array_gpu<Float,1>& aermr06,
-                const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08, const Array_gpu<Float,1>& aermr09,
-                const Array_gpu<Float,1>& aermr10, const Array_gpu<Float,1>& aermr11,
+                const Gas_concs_gpu& aerosol_concs,
                 const Array_gpu<Float,2>& rh, const Array_gpu<Float,2>& plev,
                 Optical_props_2str_rt& optical_props);
 

@@ -628,12 +628,7 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         const Array_gpu<Float,2>& rh,
-        const Array_gpu<Float,1>& aermr01, const Array_gpu<Float,1>& aermr02,
-        const Array_gpu<Float,1>& aermr03, const Array_gpu<Float,1>& aermr04,
-        const Array_gpu<Float,1>& aermr05, const Array_gpu<Float,1>& aermr06,
-        const Array_gpu<Float,1>& aermr07, const Array_gpu<Float,1>& aermr08,
-        const Array_gpu<Float,1>& aermr09, const Array_gpu<Float,1>& aermr10,
-        const Array_gpu<Float,1>& aermr11,
+        const Gas_concs_gpu& aerosol_concs,
         Array_gpu<Float,2>& tau, Array_gpu<Float,2>& ssa, Array_gpu<Float,2>& g,
         Array_gpu<Float,2>& sw_flux_up, Array_gpu<Float,2>& sw_flux_dn,
         Array_gpu<Float,2>& sw_flux_dn_dir, Array_gpu<Float,2>& sw_flux_net,
@@ -783,8 +778,7 @@ void Radiation_solver_shortwave::solve_gpu(
         {
             aerosol_optics_gpu->aerosol_optics(
                     band-1,
-                    aermr01, aermr02, aermr03, aermr04, aermr05,
-                    aermr06, aermr07, aermr08, aermr09, aermr10, aermr11,
+                    aerosol_concs,
                     rh, p_lev,
                     *aerosol_optical_props);
             //aerosol_optical_props->delta_scale();
