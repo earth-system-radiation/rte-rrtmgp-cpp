@@ -120,7 +120,9 @@ namespace Raytracer_functions
     __device__
     inline void write_photon_out(Float* field_out, const Float w)
     {
+        #ifdef __CUDACC__
         atomicAdd(field_out, w);
+        #endif
     }
 
 
