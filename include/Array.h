@@ -361,8 +361,8 @@ class Array_gpu
         #ifdef __CUDACC__
         Array_gpu& operator=(const Array_gpu<T, N>& array)
         {
-            if ( !(this->ncells == array.size()) )
-                throw std::runtime_error("Initialised arrayscan not be resized");
+            if ( !(this->ncells == array.size() || (this->ncells == 0 && data_ptr == nullptr)) )
+                throw std::runtime_error("Initialised arrays can not be resized");
 
             dims = array.dims;
             ncells = array.ncells;
@@ -374,13 +374,16 @@ class Array_gpu
                 is_view = true;
                 data_ptr = array.data_ptr;
             }
-            else
+            else if (this->ncells == 0)
             {
                 is_view = false;
                 data_ptr = Tools_gpu::allocate_gpu<T>(ncells);
                 cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
             }
-
+            else
+            {
+                cuda_safe_call(cudaMemcpy(data_ptr, array.ptr(), ncells*sizeof(T), cudaMemcpyDeviceToDevice));
+            }
             return (*this);
         }
         #endif
