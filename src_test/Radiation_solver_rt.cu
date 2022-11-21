@@ -536,13 +536,19 @@ void Radiation_solver_longwave::solve_gpu(
         // Store the optical properties, if desired.
         if (switch_single_gpt && igpt == single_gpt)
         {
-            gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                    n_col, n_lay, igpt-1, tau.ptr(), lay_source.ptr(), lev_source_inc.ptr(), lev_source_dec.ptr(),
-                    optical_props->get_tau().ptr(), (*sources).get_lay_source().ptr(),
-                    (*sources).get_lev_source_inc().ptr(), (*sources).get_lev_source_dec().ptr());
+            lay_source = (*sources).get_lay_source();
+            lev_source_inc = (*sources).get_lev_source_inc();
+            lev_source_dec = (*sources).get_lev_source_dec();
+            sfc_source = (*sources).get_sfc_source();
 
-            gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                    n_col, igpt-1, sfc_source.ptr(), (*sources).get_sfc_source().ptr());
+
+            //gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
+            //        n_col, n_lay, igpt-1, tau.ptr(), lay_source.ptr(), lev_source_inc.ptr(), lev_source_dec.ptr(),
+            //        optical_props->get_tau().ptr(), (*sources).get_lay_source().ptr(),
+            //        (*sources).get_lev_source_inc().ptr(), (*sources).get_lev_source_dec().ptr());
+
+            //gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
+            //        n_col, igpt-1, sfc_source.ptr(), (*sources).get_sfc_source().ptr());
         }
 
 
@@ -572,10 +578,12 @@ void Radiation_solver_longwave::solve_gpu(
 
             if (switch_single_gpt && igpt == single_gpt)
             {
-                gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                        n_col, n_lev, igpt-1, lw_gpt_flux_up.ptr(), lw_gpt_flux_dn.ptr(), lw_gpt_flux_net.ptr(),
-                        (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
-
+                lw_gpt_flux_up = (*fluxes).get_flux_up();
+                lw_gpt_flux_dn = (*fluxes).get_flux_dn();
+                lw_gpt_flux_net = (*fluxes).get_flux_net();
+                //gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
+                //        n_col, n_lev, igpt-1, lw_gpt_flux_up.ptr(), lw_gpt_flux_dn.ptr(), lw_gpt_flux_net.ptr(),
+                //        (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
             }
         }
     }
@@ -796,9 +804,12 @@ void Radiation_solver_shortwave::solve_gpu(
         // Store the optical properties, if desired
         if (switch_single_gpt && igpt == single_gpt)
         {
-            gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                    n_col, n_lay, igpt-1, tau.ptr(), ssa.ptr(), g.ptr(), optical_props->get_tau().ptr(),
-                     optical_props->get_ssa().ptr(),  optical_props->get_g().ptr());
+            tau = optical_props->get_tau();
+            ssa = optical_props->get_ssa();
+            g = optical_props->get_g();
+            //gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
+            //        n_col, n_lay, igpt-1, tau.ptr(), ssa.ptr(), g.ptr(), optical_props->get_tau().ptr(),
+            //         optical_props->get_ssa().ptr(),  optical_props->get_g().ptr());
         }
         if (switch_fluxes)
         {
@@ -834,10 +845,10 @@ void Radiation_solver_shortwave::solve_gpu(
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
                         dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
-                        dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
+                        dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_ssa(),
                         dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_g(),
                         dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props).get_tau(),
-                        dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props).get_tau(),
+                        dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props).get_ssa(),
                         dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props).get_g(),
                         sfc_alb_dir, zenith_angle,
                         azimuth_angle,
@@ -857,6 +868,7 @@ void Radiation_solver_shortwave::solve_gpu(
             gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
                     n_col, n_lev, sw_flux_up.ptr(), sw_flux_dn.ptr(), sw_flux_dn_dir.ptr(), sw_flux_net.ptr(),
                     (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
+
             if (switch_raytracing)
             {
                 gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
@@ -870,9 +882,13 @@ void Radiation_solver_shortwave::solve_gpu(
 
             if (switch_single_gpt && igpt == single_gpt)
             {
-                gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                        n_col, n_lev, igpt-1, sw_gpt_flux_up.ptr(), sw_gpt_flux_dn.ptr(), sw_gpt_flux_dn_dir.ptr(), sw_gpt_flux_net.ptr(),
-                        (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
+                sw_gpt_flux_up = (*fluxes).get_flux_up();
+                sw_gpt_flux_dn = (*fluxes).get_flux_dn();
+                sw_gpt_flux_dn_dir = (*fluxes).get_flux_dn_dir();
+                sw_gpt_flux_net = (*fluxes).get_flux_net();
+                //gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
+                //        n_col, n_lev, igpt-1, sw_gpt_flux_up.ptr(), sw_gpt_flux_dn.ptr(), sw_gpt_flux_dn_dir.ptr(), sw_gpt_flux_net.ptr(),
+                //        (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
             }
         }
     }
