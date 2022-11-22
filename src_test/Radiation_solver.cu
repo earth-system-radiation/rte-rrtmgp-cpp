@@ -789,11 +789,12 @@ void Radiation_solver_shortwave::solve_gpu(
 
         if (switch_aerosol_optics)
         {
+            Gas_concs_gpu aerosol_concs_subset(aerosol_concs, col_s_in, n_col_in);
             aerosol_optics_gpu->aerosol_optics(
-                    aerosol_concs,
-                    rh, p_lev,
+                    aerosol_concs_subset,
+                    rh.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                    p_lev_subset,
                     *aerosol_optical_props_subset_in);
-
             //aerosol_optical_props_subset_in->delta_scale();
 
             // Add the aerosol optical props to the gas optical properties.

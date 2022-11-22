@@ -405,6 +405,12 @@ void solve_radiation(int argc, char** argv)
             for (int icol=1; icol<=n_col; ++icol)
                 tsi_scaling({icol}) = tsi({icol}) / tsi_ref;
         }
+        else if (input_nc.variable_exists("tsi_scaling"))
+        {
+            Float tsi_scaling_in = input_nc.get_variable<Float>("tsi_scaling");
+            for (int icol=1; icol<=n_col; ++icol)
+                tsi_scaling({icol}) = tsi_scaling_in;
+        }
         else
         {
             for (int icol=1; icol<=n_col; ++icol)
