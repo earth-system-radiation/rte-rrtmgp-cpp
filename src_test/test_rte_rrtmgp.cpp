@@ -65,6 +65,33 @@ void read_and_set_vmr(
     }
 }
 
+void read_and_set_aer(
+        const std::string& aerosol_name, const int n_lay,
+        const Netcdf_handle& input_nc, Gas_concs& aerosol_concs)
+{
+    if (input_nc.variable_exists(aerosol_name))
+    {
+        std::map<std::string, int> dims = input_nc.get_variable_dimensions(aerosol_name);
+        const int n_dims = dims.size();
+
+        if (n_dims == 1)
+        {
+            if (dims.at("lay") == n_lay)
+                aerosol_concs.set_vmr(aerosol_name,
+                        Array<Float,1>(input_nc.get_variable<Float>(aerosol_name, {n_lay}), {n_lay}));
+            else
+                throw std::runtime_error("Illegal dimensions of gas \"" + aerosol_name + "\" in input");
+        }
+        else
+            throw std::runtime_error("Illegal dimensions of gas \"" + aerosol_name + "\" in input");
+    }
+    else
+    {
+        throw std::runtime_error("Aerosol type \"" + aerosol_name + "\" not available in input file.");
+    }
+}
+
+
 
 bool parse_command_line_options(
         std::map<std::string, std::pair<bool, std::string>>& command_line_options,
@@ -143,6 +170,7 @@ void solve_radiation(int argc, char** argv)
         {"longwave"         , { true,  "Enable computation of longwave radiation." }},
         {"fluxes"           , { true,  "Enable computation of fluxes."             }},
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
+        {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
         {"output-optical"   , { false, "Enable output of optical properties."      }},
         {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }} };
 
@@ -153,6 +181,7 @@ void solve_radiation(int argc, char** argv)
     const bool switch_longwave          = command_line_options.at("longwave"         ).first;
     const bool switch_fluxes            = command_line_options.at("fluxes"           ).first;
     const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
+    const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
 
@@ -216,17 +245,38 @@ void solve_radiation(int argc, char** argv)
 
     if (switch_cloud_optics)
     {
-        lwp.set_dims({n_col_x, n_col});
+        lwp.set_dims({n_col, n_lay});
         lwp = std::move(input_nc.get_variable<Float>("lwp", {n_lay, n_col_y, n_col_x}));
 
-        iwp.set_dims({n_col_x, n_col});
+        iwp.set_dims({n_col, n_lay});
         iwp = std::move(input_nc.get_variable<Float>("iwp", {n_lay, n_col_y, n_col_x}));
 
-        rel.set_dims({n_col_x, n_col});
+        rel.set_dims({n_col, n_lay});
         rel = std::move(input_nc.get_variable<Float>("rel", {n_lay, n_col_y, n_col_x}));
 
-        rei.set_dims({n_col_x, n_col});
+        rei.set_dims({n_col, n_lay});
         rei = std::move(input_nc.get_variable<Float>("rei", {n_lay, n_col_y, n_col_x}));
+    }
+
+    Array<Float,2> rh;
+    Gas_concs aerosol_concs;
+
+    if (switch_aerosol_optics)
+    {
+        rh.set_dims({n_col, n_lay});
+        rh = std::move(input_nc.get_variable<Float>("rh", {n_lay, n_col_y, n_col_x}));
+
+        read_and_set_aer("aermr01", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr02", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr03", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr04", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr05", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr06", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr07", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr08", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr09", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr10", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr11", n_lay, input_nc, aerosol_concs);
     }
 
 
@@ -387,7 +437,7 @@ void solve_radiation(int argc, char** argv)
         // Initialize the solver.
         Status::print_message("Initializing the shortwave solver.");
 
-        Radiation_solver_shortwave rad_sw(gas_concs, "coefficients_sw.nc", "cloud_coefficients_sw.nc");
+        Radiation_solver_shortwave rad_sw(gas_concs, switch_cloud_optics, switch_aerosol_optics, "coefficients_sw.nc", "cloud_coefficients_sw.nc", "aerosol_optics.nc");
 
         // Read the boundary conditions.
         const int n_bnd_sw = rad_sw.get_n_bnd();
@@ -466,6 +516,7 @@ void solve_radiation(int argc, char** argv)
         rad_sw.solve(
                 switch_fluxes,
                 switch_cloud_optics,
+                switch_aerosol_optics,
                 switch_output_optical,
                 switch_output_bnd_fluxes,
                 gas_concs,
@@ -476,6 +527,8 @@ void solve_radiation(int argc, char** argv)
                 tsi_scaling, mu0,
                 lwp, iwp,
                 rel, rei,
+                rh,
+                aerosol_concs,
                 sw_tau, ssa, g,
                 toa_source,
                 sw_flux_up, sw_flux_dn,

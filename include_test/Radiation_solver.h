@@ -123,8 +123,11 @@ class Radiation_solver_shortwave
     public:
         Radiation_solver_shortwave(
                 const Gas_concs& gas_concs,
+                const bool switch_cloud_optics,
+                const bool switch_aerosol_optics,
                 const std::string& file_name_gas,
-                const std::string& file_name_cloud);
+                const std::string& file_name_cloud,
+                const std::string& file_name_aerosol);
         Radiation_solver_shortwave(
                 const Gas_concs_gpu& gas_concs,
                 const bool switch_cloud_optics,
@@ -136,6 +139,7 @@ class Radiation_solver_shortwave
         void solve(
                 const bool switch_fluxes,
                 const bool switch_cloud_optics,
+                const bool switch_aerosol_optics,
                 const bool switch_output_optical,
                 const bool switch_output_bnd_fluxes,
                 const Gas_concs& gas_concs,
@@ -146,6 +150,8 @@ class Radiation_solver_shortwave
                 const Array<Float,1>& tsi_scaling, const Array<Float,1>& mu0,
                 const Array<Float,2>& lwp, const Array<Float,2>& iwp,
                 const Array<Float,2>& rel, const Array<Float,2>& rei,
+                const Array<Float,2>& rh,
+                const Gas_concs& aerosol_concs,
                 Array<Float,3>& tau, Array<Float,3>& ssa, Array<Float,3>& g,
                 Array<Float,2>& toa_src,
                 Array<Float,2>& sw_flux_up, Array<Float,2>& sw_flux_dn,
@@ -203,6 +209,7 @@ class Radiation_solver_shortwave
     private:
         std::unique_ptr<Gas_optics> kdist;
         std::unique_ptr<Cloud_optics> cloud_optics;
+        std::unique_ptr<Aerosol_optics> aerosol_optics;
 
         #ifdef __CUDACC__
         std::unique_ptr<Gas_optics_gpu> kdist_gpu;

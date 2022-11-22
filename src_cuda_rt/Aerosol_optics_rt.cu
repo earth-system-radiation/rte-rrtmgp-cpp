@@ -59,7 +59,7 @@ namespace
             const int idx = icol + ilay * ncol;
             const int ihum = find_rh_class(rh[idx], rh_classes);
 
-            const Float dpg = abs(plev[idx] - plev[idx + ncol]) / Float(9.80665);
+            const Float dpg = abs(plev[idx] - plev[idx + ncol]) / Float(9.81);
 
             // set to zero
             tau[idx] = Float(0.);
