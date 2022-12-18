@@ -220,6 +220,7 @@ void solve_radiation(int argc, char** argv)
         {"fluxes"           , { true,  "Enable computation of fluxes."             }},
         {"raytracing"       , { true,  "Use raytracing for flux computation. '--raytracing 256': use 256 rays per pixel" }},
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
+        {"cloud-mie"        , { false, "Use Mie tables for cloud scattering in ray tracer"  }},
         {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
         {"single-gpt"       , { false, "Output optical properties and fluxes for a single g-point. '--single-gpt 100': output 100th g-point" }},
         {"profiling"        , { false, "Perform additional profiling run."         }} };
@@ -236,6 +237,7 @@ void solve_radiation(int argc, char** argv)
     const bool switch_fluxes            = command_line_switches.at("fluxes"           ).first;
     const bool switch_raytracing        = command_line_switches.at("raytracing"       ).first;
     const bool switch_cloud_optics      = command_line_switches.at("cloud-optics"     ).first;
+    const bool switch_cloud_mie         = command_line_switches.at("cloud-mie"        ).first;
     const bool switch_aerosol_optics    = command_line_switches.at("aerosol-optics"   ).first;
     const bool switch_single_gpt        = command_line_switches.at("single-gpt"       ).first;
     const bool switch_profiling         = command_line_switches.at("profiling"        ).first;
@@ -601,6 +603,13 @@ void solve_radiation(int argc, char** argv)
         const int n_bnd_sw = rad_sw.get_n_bnd_gpu();
         const int n_gpt_sw = rad_sw.get_n_gpt_gpu();
 
+        //load Mie LUT first
+        if (switch_cloud_mie)
+        {
+            rad_sw.load_mie_tables("mie_lut.nc");
+        }
+
+
         Array<Float,1> mu0(input_nc.get_variable<Float>("mu0", {n_col_y, n_col_x}), {n_col});
         Array<Float,1> azi(input_nc.get_variable<Float>("azi", {n_col_y, n_col_x}), {n_col});
         Array<Float,2> sfc_alb_dir(input_nc.get_variable<Float>("sfc_alb_dir", {n_col_y, n_col_x, n_bnd_sw}), {n_bnd_sw, n_col});
@@ -719,6 +728,7 @@ void solve_radiation(int argc, char** argv)
                     switch_fluxes,
                     switch_raytracing,
                     switch_cloud_optics,
+                    switch_cloud_mie,
                     switch_aerosol_optics,
                     switch_single_gpt,
                     single_gpt,

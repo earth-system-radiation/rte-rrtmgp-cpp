@@ -606,11 +606,27 @@ Radiation_solver_shortwave::Radiation_solver_shortwave(
             load_and_init_aerosol_optics(file_name_aerosol));
 }
 
+void Radiation_solver_shortwave::load_mie_tables(
+        const std::string& file_name_mie)
+{
+    Netcdf_file mie_nc(file_name_mie, Netcdf_mode::Read);
+    const int n_re  = mie_nc.get_dimension_size("n_reff");
+    const int n_mie = mie_nc.get_dimension_size("n_ang");
+
+    const int n_bnd_sw = this->get_n_bnd_gpu();
+    Array<Float,2> mie_cdf(mie_nc.get_variable<Float>("cdf", {n_bnd_sw, n_mie}), {n_mie, n_bnd_sw});
+    Array<Float,3> mie_ang(mie_nc.get_variable<Float>("ang", {n_bnd_sw, n_re, n_mie}), {n_mie, n_re, n_bnd_sw});
+
+    this->mie_cdfs = mie_cdf;
+    this->mie_angs = mie_ang;
+
+}
 
 void Radiation_solver_shortwave::solve_gpu(
         const bool switch_fluxes,
         const bool switch_raytracing,
         const bool switch_cloud_optics,
+        const bool switch_cloud_mie,
         const bool switch_aerosol_optics,
         const bool switch_single_gpt,
         const int single_gpt,
@@ -648,6 +664,9 @@ void Radiation_solver_shortwave::solve_gpu(
     const int n_gpt = this->kdist_gpu->get_ngpt();
     const int n_bnd = this->kdist_gpu->get_nband();
 
+    const int n_mie = (switch_cloud_mie) ? this->mie_angs.dim(1) : 0;
+    const int n_re = (switch_cloud_mie) ? this->mie_angs.dim(2) : 0;
+
     const Bool top_at_1 = p_lay({1, 1}) < p_lay({1, n_lay});
 
     optical_props = std::make_unique<Optical_props_2str_rt>(n_col, n_lay, *kdist_gpu);
@@ -664,6 +683,9 @@ void Radiation_solver_shortwave::solve_gpu(
 
     Array<int,2> cld_mask_liq({n_col, n_lay});
     Array<int,2> cld_mask_ice({n_col, n_lay});
+
+    Array_gpu<Float,2> mie_cdfs_sub;
+    Array_gpu<Float,3> mie_angs_sub;
 
     if (switch_fluxes)
     {
@@ -830,12 +852,20 @@ void Radiation_solver_shortwave::solve_gpu(
                 Array<Float,1> tod_dir_diff({2});
                 compute_tod_flux(n_col, grid_cells.z, (*fluxes).get_flux_dn(), (*fluxes).get_flux_dn_dir(), tod_dir_diff);
 
+                if (switch_cloud_mie)
+                {
+                    mie_cdfs_sub = mie_cdfs.subset({{ {1, n_mie}, {band, band} }});
+                    mie_angs_sub = mie_angs.subset({{ {1, n_mie}, {1, n_re}, {band, band} }});
+                }
+
                 raytracer.trace_rays(
                         igpt-1,
                         ray_count,
                         grid_cells,
                         grid_d,
                         kn_grid,
+                        mie_cdfs_sub,
+                        mie_angs_sub,
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
                         dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
                         dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
@@ -844,6 +874,7 @@ void Radiation_solver_shortwave::solve_gpu(
                         dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props).get_tau(),
                         dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props).get_ssa(),
                         dynamic_cast<Optical_props_2str_rt&>(*aerosol_optical_props).get_g(),
+                        rel,
                         sfc_alb_dir, zenith_angle,
                         azimuth_angle,
                         tod_dir_diff({1}),

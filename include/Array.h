@@ -391,8 +391,8 @@ class Array_gpu
         #ifdef __CUDACC__
         Array_gpu& operator=(Array_gpu<T, N>&& array)
         {
-            if ( !(this->ncells == 0 && data_ptr == nullptr) )
-                throw std::runtime_error("Only arrays with uninitialized pointers can be resized");
+            if ( !(this->ncells == array.size() || (this->ncells == 0 && data_ptr == nullptr)) )
+                throw std::runtime_error("initialised arrays can not be resized");
 
             dims = std::exchange(array.dims, {});
             ncells = std::exchange(array.ncells, 0);

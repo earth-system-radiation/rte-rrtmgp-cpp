@@ -94,7 +94,6 @@ namespace Raytracer_functions
         return u - Float(1.)/u;
     }
 
-
     __device__
     inline Float henyey(const Float g, const Float random_number)
     {
@@ -102,6 +101,37 @@ namespace Raytracer_functions
         const Float b = Float(2.)*g*pow2(Float(2.)*random_number*g + Float(1.) - g);
         const Float c = -g/Float(2.) - Float(1.)/(Float(2.)*g);
         return Float(-1.)*(a/b) - c;
+    }
+
+    __device__
+    inline Float mie(const Float* mie_cdf, const Float* mie_ang, const Float random_number, const Float r_eff, const int n_mie)
+    {
+        const Float r_rest = fmod(r_eff-Float(2.5),1.);
+        const int r_idx = min(max(int(r_eff-2.5), 0), 19);
+
+        int i = 0;
+        while (random_number < mie_cdf[i])
+        {
+            ++i;
+        }
+        if (i==0)
+        {
+            const Float ang_lwr = mie_ang[r_idx*n_mie]*(1-r_rest);
+            const Float ang_upr = mie_ang[(r_idx+1)*n_mie]*r_rest;
+            return cos(ang_lwr + ang_upr);
+        }
+        else
+        {
+            const int midx_lwr = r_idx*n_mie;
+            const int midx_upr = (r_idx+1)*n_mie;
+            const Float dr = mie_cdf[i] - mie_cdf[i-1];
+
+            const Float ang_lwr = (abs(random_number - mie_cdf[i])*mie_ang[(i-1)+midx_lwr] + abs(mie_cdf[i-1]-random_number)*mie_ang[i+midx_lwr]) / dr;
+            const Float ang_upr = (abs(random_number - mie_cdf[i])*mie_ang[(i-1)+midx_upr] + abs(mie_cdf[i-1]-random_number)*mie_ang[i+midx_upr]) / dr;
+            const Float ang_tot = ang_lwr * (1-r_rest) + ang_upr * r_rest;
+
+            return cos(ang_tot);
+        }
     }
 
     __device__
@@ -117,6 +147,7 @@ namespace Raytracer_functions
         const int ntot = static_cast<int>(s_size / ds);
         return ntot < ntot_max ? ntot : ntot_max-1;
     }
+
     __device__
     inline void write_photon_out(Float* field_out, const Float w)
     {
@@ -152,6 +183,9 @@ namespace Raytracer_functions
     {
         return 1.f - curand_uniform(&state);
     }
+
+
+
 
 }
 

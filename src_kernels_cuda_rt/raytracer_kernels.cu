@@ -96,7 +96,7 @@ namespace
             const int ij = i + j*grid_cells.x;
 
             #ifndef NDEBUG
-            if (ij < 0 || ij >=grid_cells.x*grid_cells.y) printf("outofbounds 3");
+            if (ij < 0 || ij >=grid_cells.x*grid_cells.y) printf("outofbounds in reset \n");
             #endif
 
             atomicAdd(&toa_down_count[ij], Float(1.));
@@ -131,6 +131,7 @@ void ray_tracer_kernel(
         Float* __restrict__ atmos_diffuse_count,
         const Float* __restrict__ k_ext,
         const Optics_scat* __restrict__ scat_asy,
+        const Float* __restrict__ r_eff,
         const Float tod_inc_direct,
         const Float tod_inc_diffuse,
         const Float* __restrict__ surface_albedo,
@@ -139,8 +140,22 @@ void ray_tracer_kernel(
         const Vector<int> grid_cells,
         const Vector<int> kn_grid,
         const Vector<Float> sun_direction,
-        curandDirectionVectors32_t* qrng_vectors, unsigned int* qrng_constants) // const Float* __restrict__ cloud_dims)
+        curandDirectionVectors32_t* qrng_vectors, unsigned int* qrng_constants, // const Float* __restrict__ cloud_dims)
+        const Float* __restrict__ mie_cdf,
+        const Float* __restrict__ mie_ang,
+        const int mie_table_size)
 {
+    extern __shared__ Float mie_cdf_shared[];
+    if (threadIdx.x==0 && mie_table_size > 0)
+    {
+        for (int mie_i=0; mie_i<mie_table_size; ++mie_i)
+        {
+            mie_cdf_shared[mie_i] = mie_cdf[mie_i];
+        }
+    }
+
+    __syncthreads();
+
     const Vector<Float> kn_grid_d = grid_size / kn_grid;
 
     const int n = blockDim.x * blockIdx.x + threadIdx.x;
@@ -214,7 +229,10 @@ void ray_tracer_kernel(
                 d_max = Float(0.);
 
                 #ifndef NDEBUG
-                if (ij < 0 || ij >=grid_cells.x*grid_cells.y) printf("outofbounds 1");
+                if (ij < 0 || ij >=grid_cells.x*grid_cells.y)
+                {
+                    printf("outofbounds 1 \n");
+                }
                 #endif
 
                 // // Add surface irradiance
@@ -374,7 +392,10 @@ void ray_tracer_kernel(
                             break;
                     }
 
-                    const Float cos_scat = scatter_type == 0 ? rayleigh(rng()) : henyey(g, rng());
+                    // 0 (gas): rayleigh, 1 (cloud): mie if mie_table_size>0 else HG, 2 (aerosols) HG
+                    const Float cos_scat = scatter_type == 0 ? rayleigh(rng()) : // gases -> rayleigh,
+                                                           1 ? ( (mie_table_size > 0) ? mie(mie_cdf_shared, mie_ang, rng(), r_eff[ijk], mie_table_size) :  henyey(g, rng())) // clouds: mie or HG
+                                                           : henyey(g, rng()); //aerosols
                     const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));
 
                     Vector<Float> t1{Float(0.), Float(0.), Float(0.)};

@@ -93,11 +93,15 @@ class Radiation_solver_shortwave
                 const std::string& file_name_cloud,
                 const std::string& file_name_aerosol);
 
+        void load_mie_tables(
+                const std::string& file_name_mie);
+
         #ifdef __CUDACC__
         void solve_gpu(
                 const bool switch_fluxes,
                 const bool switch_raytracing,
                 const bool switch_cloud_optics,
+                const bool switch_cloud_mie,
                 const bool switch_aerosol_optics,
                 const bool switch_single_gpt,
                 const int single_gpt,
@@ -152,6 +156,9 @@ class Radiation_solver_shortwave
 
         std::unique_ptr<Optical_props_2str_rt> cloud_optical_props;
         std::unique_ptr<Optical_props_2str_rt> aerosol_optical_props;
+
+        Array_gpu<Float,2> mie_cdfs;
+        Array_gpu<Float,3> mie_angs;
         #endif
 };
 #endif
