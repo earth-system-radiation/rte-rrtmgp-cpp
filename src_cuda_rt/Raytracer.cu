@@ -274,7 +274,7 @@ void Raytracer::trace_rays(
     // number of photons per thread, this should a power of 2 and nonzero
     Float photons_per_thread_tmp = std::max(Float(1), static_cast<Float>(photons_total) / (rt_kernel_grid * rt_kernel_block));
     Int photons_per_thread = pow(Float(2.), std::floor(std::log2(Float(photons_per_thread_tmp))));
-    printf(" raytracing \n");
+
     ray_tracer_kernel<<<grid, block>>>(
             photons_per_thread,
             qrng_grid_x,

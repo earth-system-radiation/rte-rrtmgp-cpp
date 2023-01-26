@@ -801,9 +801,6 @@ void Radiation_solver_shortwave::solve_gpu(
             tau = optical_props->get_tau();
             ssa = optical_props->get_ssa();
             g = optical_props->get_g();
-            //gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-            //        n_col, n_lay, igpt-1, tau.ptr(), ssa.ptr(), g.ptr(), optical_props->get_tau().ptr(),
-            //         optical_props->get_ssa().ptr(),  optical_props->get_g().ptr());
         }
         if (switch_fluxes)
         {
@@ -880,9 +877,6 @@ void Radiation_solver_shortwave::solve_gpu(
                 sw_gpt_flux_dn = (*fluxes).get_flux_dn();
                 sw_gpt_flux_dn_dir = (*fluxes).get_flux_dn_dir();
                 sw_gpt_flux_net = (*fluxes).get_flux_net();
-                //gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
-                //        n_col, n_lev, igpt-1, sw_gpt_flux_up.ptr(), sw_gpt_flux_dn.ptr(), sw_gpt_flux_dn_dir.ptr(), sw_gpt_flux_net.ptr(),
-                //        (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
             }
         }
     }

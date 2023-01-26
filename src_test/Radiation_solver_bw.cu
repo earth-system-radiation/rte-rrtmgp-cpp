@@ -916,8 +916,6 @@ void Radiation_solver_shortwave::solve_gpu(
 
         const Float solar_source_band = kdist_gpu->band_source(band_limits_gpt({1,band}), band_limits_gpt({2,band}));
 
-        printf("-> %d %f \n", band, solar_source_band);
-
         constexpr int n_col_block = 1<<13; // 2^14
 
         Array_gpu<Float,1> toa_src_temp({n_col_block});
@@ -1162,7 +1160,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                 break;
             }
         }
-        printf("running g-point %d \n",igpt);
+
         constexpr int n_col_block = 1<<13; // 2^14
 
         Array_gpu<Float,1> toa_src_temp({n_col_block});
