@@ -32,6 +32,9 @@ In case you had already checked out the repository, use:
 
 
 # Basic instructions
+For building from source, create a build directory, for instance `build`.
+From `build`, trigger `cmake .. -DSYST=config_file`, where `config_file` should be replaced by one of the configuration files in the `config` folder, for instance `-DSYST=macbook_brew`.
+
 Building the source creates an executable `test_rte_rrtmgp`.
 Three test cases are provided in directories `rfmip`, `allsky`, and `rcemip`.
 In order to run those cases follow the instructions in the `README.md` of those respective directories.
