@@ -144,17 +144,20 @@ namespace
         if ( (icol_x < grid_cells.x) && (icol_y < grid_cells.y) && (iz < grid_cells.z) )
         {
             const int idx = icol_x + icol_y*grid_cells.x + iz*grid_cells.y*grid_cells.x;
-            const Float ksca_gas = rayleigh * (1 + vmr_h2o[idx]) * col_dry[idx] / grid_dz;
+
             const Float kext_cld = tau_cld[idx] / grid_dz;
             const Float kext_aer = tau_aer[idx] / grid_dz;
             const Float ksca_cld = kext_cld * ssa_cld[idx];
             const Float ksca_aer = kext_aer * ssa_aer[idx];
+            const Float ksca_gas = (rayleigh > 0) ? rayleigh * (1 + vmr_h2o[idx]) * col_dry[idx] / grid_dz :
+                                                    tau_tot[idx] / grid_dz * ssa_tot[idx] - ksca_cld - ksca_aer;
+
             const Float kext_tot_old = tau_tot[idx] / grid_dz;
             const Float kext_gas_old = kext_tot_old - kext_cld - kext_aer;
             const Float kabs_gas = kext_gas_old - (kext_tot_old * ssa_tot[idx] - ksca_cld - ksca_aer);
             const Float kext_gas = kabs_gas + ksca_gas;
 
-            k_ext[idx] = tau_tot[idx] / grid_dz;
+            k_ext[idx] = kext_cld + kext_gas + kext_aer;
             scat_asy[idx].k_sca_gas = ksca_gas;
             scat_asy[idx].k_sca_cld = ksca_cld;
             scat_asy[idx].k_sca_aer = ksca_aer;
@@ -211,17 +214,19 @@ namespace
             const int idx = (i+grid_cells.z)*grid_cells.y*grid_cells.x;
             const Float dz = abs(z_lev[i+grid_cells.z+1] - z_lev[i+grid_cells.z]);
 
-            const Float ksca_gas = rayleigh * (1 + vmr_h2o[idx]) * col_dry[idx] / dz;
             const Float kext_cld = tau_cld[idx] / dz;
             const Float kext_aer = tau_aer[idx] / dz;
             const Float ksca_cld = kext_cld * ssa_cld[idx];
             const Float ksca_aer = kext_aer * ssa_aer[idx];
+            const Float ksca_gas = (rayleigh > 0) ? rayleigh * (1 + vmr_h2o[idx]) * col_dry[idx] / dz :
+                                                    tau_tot[idx] / dz * ssa_tot[idx] - ksca_cld - ksca_aer;
+
             const Float kext_tot_old = tau_tot[idx] / dz;
             const Float kext_gas_old = kext_tot_old - kext_cld  - kext_aer;
             const Float kabs_gas = kext_gas_old - (kext_tot_old * ssa_tot[idx] - ksca_cld - ksca_aer);
             const Float kext_gas = kabs_gas + ksca_gas;
 
-            k_ext_bg[i] = tau_tot[idx] / dz;
+            k_ext_bg[i] = kext_cld + kext_gas + kext_aer;
             scat_asy_bg[i].k_sca_gas = ksca_gas;
             scat_asy_bg[i].k_sca_cld = ksca_cld;
             scat_asy_bg[i].k_sca_aer = ksca_aer;

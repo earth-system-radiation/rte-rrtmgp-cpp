@@ -1090,7 +1090,8 @@ void Radiation_solver_shortwave::solve_gpu(
             const Float wv2_sub = wv1 + (iwv+1)*dwv;
             const Float wv_mid = (wv1_sub + wv2_sub)/2;
             const Float local_planck = Planck_integrator(wv1_sub,wv2_sub);
-            const Float rayleigh = rayleigh_mean(wv1_sub, wv2_sub);
+            // use RRTMGPs scattering coefficients if solving per band instead of subbands
+            const Float rayleigh = (nwv==1) ? 0 : rayleigh_mean(wv1_sub, wv2_sub);
             const Float toa_factor = local_planck / total_planck * Float(1.)/solar_source_band;
 
             // XYZ factors
