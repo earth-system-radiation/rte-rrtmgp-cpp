@@ -157,7 +157,7 @@ namespace Raytracer_functions
     }
 
     __device__
-    inline Float mie_interpolate_phase_func(const Float* mie_phase, const Float* mie_lut, const Float scat_ang, const Float r_eff, const int n_mie)
+    inline Float mie_interpolate_phase_table(const Float* mie_phase, const Float* mie_lut, const Float scat_ang, const Float r_eff, const int n_mie)
     {
         // interpolation over effective radius. Currently, r_eff should range between 2.5 and 21.5 (similar to RRTMGP) OR
         // be exactly 100 micrometer for optical effects such as rainbows
@@ -186,14 +186,14 @@ namespace Raytracer_functions
 
                 const Float prob_lwr = (abs(scat_ang - mie_phase[i])*mie_lut[(i-1)+midx_lwr] + abs(mie_phase[i-1]-scat_ang)*mie_lut[i+midx_lwr]) / dr;
                 const Float prob_upr = (abs(scat_ang - mie_phase[i])*mie_lut[(i-1)+midx_upr] + abs(mie_phase[i-1]-scat_ang)*mie_lut[i+midx_upr]) / dr;
-                prob_tot = prob_lwr * (1-r_rest) + prob_upr * r_rest;
+                prob = prob_lwr * (1-r_rest) + prob_upr * r_rest;
             }
         }
         else
         {
             if (i==0)
             {
-                const Float prob = mie_lut[r_idx*n_mie];
+                prob = mie_lut[r_idx*n_mie];
             }
             else
             {

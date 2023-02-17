@@ -287,7 +287,7 @@ namespace
         else if (kind == Phase_kind::Mie)
         {
             // return interpolate_mie_phase_table(mie_phase_ang, mie_phase, max(0.05, acos(cos_angle)), r_eff, mie_table_size) * solid_angle;
-            return interpolate_mie_phase_table(mie_phase_ang, mie_phase, acos(cos_angle), r_eff, mie_table_size) * solid_angle;
+            return mie_interpolate_phase_table(mie_phase_ang, mie_phase, acos(cos_angle), r_eff, mie_table_size) * solid_angle;
         }
         else if (kind == Phase_kind::Rayleigh)
         {
@@ -751,7 +751,7 @@ void ray_tracer_kernel_bw(
                             }
                             const Float cos_scat = scatter_type == 0 ? rayleigh(rng()) : // gases -> rayleigh,
                                                                    1 ? ( (mie_table_size > 0) //clouds: Mie or HG
-                                                                            ? cos( interpolate_mie_table(mie_cdf_shared, mie_ang, rng(), r_eff[ijk], mie_table_size) )
+                                                                            ? cos( mie_sample_angle(mie_cdf_shared, mie_ang, rng(), r_eff[ijk], mie_table_size) )
                                                                             :  henyey(g, rng()))
                                                                    : henyey(g, rng()); //aerosols
                             const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));
