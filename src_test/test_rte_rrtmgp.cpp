@@ -172,7 +172,9 @@ void solve_radiation(int argc, char** argv)
         {"cloud-optics"     , { false, "Enable cloud optics."                      }},
         {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
         {"output-optical"   , { false, "Enable output of optical properties."      }},
-        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }} };
+        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
+        {"delta-cloud"      , { false, "delta-scaling of cloud optical properties"   }},
+        {"delta-aerosol"    , { false, "delta-scaling of aerosol optical properties" }}};
 
     if (parse_command_line_options(command_line_options, argc, argv))
         return;
@@ -184,6 +186,8 @@ void solve_radiation(int argc, char** argv)
     const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
+    const bool switch_delta_cloud       = command_line_options.at("delta-cloud"      ).first;
+    const bool switch_delta_aerosol     = command_line_options.at("delta-aerosol"    ).first;
 
     // Print the options to the screen.
     print_command_line_options(command_line_options);
@@ -519,6 +523,8 @@ void solve_radiation(int argc, char** argv)
                 switch_aerosol_optics,
                 switch_output_optical,
                 switch_output_bnd_fluxes,
+                switch_delta_cloud,
+                switch_delta_aerosol,
                 gas_concs,
                 p_lay, p_lev,
                 t_lay, t_lev,

@@ -127,6 +127,8 @@ class Radiation_solver_shortwave
                 const bool switch_cloud_optics,
                 const bool switch_output_optical,
                 const bool switch_output_bnd_fluxes,
+                const bool switch_delta_cloud,
+                const bool switch_delta_aerosol,
                 const Gas_concs& gas_concs,
                 const Array<Float,2>& p_lay, const Array<Float,2>& p_lev,
                 const Array<Float,2>& t_lay, const Array<Float,2>& t_lev,
@@ -142,13 +144,19 @@ class Radiation_solver_shortwave
                 Array<Float,3>& sw_bnd_flux_up, Array<Float,3>& sw_bnd_flux_dn,
                 Array<Float,3>& sw_bnd_flux_dn_dir, Array<Float,3>& sw_bnd_flux_net) const;
 
+        void load_mie_tables(
+                const std::string& file_name_mie,
+                const bool switch_broadband);
 
         #ifdef __CUDACC__
         void solve_gpu(
                 const bool tune_step,
                 const bool switch_cloud_optics,
+                const bool switch_cloud_mie,
                 const bool switch_aerosol_optics,
                 const bool switch_lu_albedo,
+                const bool switch_delta_cloud,
+                const bool switch_delta_aerosol,
                 const Vector<int>& grid_cells,
                 const Vector<Float>& grid_d,
                 const Vector<int>& kn_grid,
@@ -173,8 +181,11 @@ class Radiation_solver_shortwave
         #ifdef __CUDACC__
         void solve_gpu_bb(
                 const bool switch_cloud_optics,
+                const bool switch_cloud_mie,
                 const bool switch_aerosol_optics,
                 const bool switch_lu_albedo,
+                const bool switch_delta_cloud,
+                const bool switch_delta_aerosol,
                 const Vector<int>& grid_cells,
                 const Vector<Float>& grid_d,
                 const Vector<int>& kn_grid,
@@ -220,6 +231,11 @@ class Radiation_solver_shortwave
 
         std::unique_ptr<Optical_props_2str_rt> cloud_optical_props;
         std::unique_ptr<Optical_props_2str_rt> aerosol_optical_props;
+
+        Array_gpu<Float,3> mie_cdfs;
+        Array_gpu<Float,4> mie_angs;
+        Array_gpu<Float,4> mie_phase;
+        Array_gpu<Float,3> mie_phase_angs;
         #endif
 };
 #endif

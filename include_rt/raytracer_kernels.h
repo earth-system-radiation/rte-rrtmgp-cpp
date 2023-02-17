@@ -41,7 +41,7 @@ void ray_tracer_kernel(
         const Vector<int> kn_grid,
         const Vector<Float> sun_direction,
         curandDirectionVectors32_t* qrng_vectors, unsigned int* qrng_constants,
-        const Float* __restrict__ mie_r,
-        const Float* __restrict__ mie_rad,
+        const Float* __restrict__ mie_cdf,
+        const Float* __restrict__ mie_ang,
         const int mie_table_size);
 #endif

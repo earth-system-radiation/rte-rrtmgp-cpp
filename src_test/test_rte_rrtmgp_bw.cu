@@ -226,17 +226,20 @@ void solve_radiation(int argc, char** argv)
     ////// FLOW CONTROL SWITCHES //////
     // Parse the command line options.
     std::map<std::string, std::pair<bool, std::string>> command_line_options {
-        {"shortwave"        , { true,  "Enable computation of shortwave radiation."}},
-        {"longwave"         , { false, "Enable computation of longwave radiation." }},
-        {"fluxes"           , { true,  "Enable computation of fluxes."             }},
-        {"raytracing"       , { false, "Use raytracing for flux computation."      }},
-        {"cloud-optics"     , { false, "Enable cloud optics."                      }},
-        {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
-        {"output-optical"   , { false, "Enable output of optical properties."      }},
-        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
-        {"lu-albedo"        , { false, "Compute spectral albedo from land use map" }},
-        {"broadband"        , { false, "Compute broadband fluxes"                  }},
-        {"profiling"        , { false, "Perform additional profiling run."         }} };
+        {"shortwave"        , { true,  "Enable computation of shortwave radiation."  }},
+        {"longwave"         , { false, "Enable computation of longwave radiation."   }},
+        {"fluxes"           , { true,  "Enable computation of fluxes."               }},
+        {"raytracing"       , { false, "Use raytracing for flux computation."        }},
+        {"cloud-optics"     , { false, "Enable cloud optics."                        }},
+        {"cloud-mie"        , { false, "mie cloud droplet scattering."               }},
+        {"aerosol-optics"   , { false, "Enable aerosol optics."                      }},
+        {"output-optical"   , { false, "Enable output of optical properties."        }},
+        {"output-bnd-fluxes", { false, "Enable output of band fluxes."               }},
+        {"lu-albedo"        , { false, "Compute spectral albedo from land use map"   }},
+        {"broadband"        , { false, "Compute broadband fluxes"                    }},
+        {"profiling"        , { false, "Perform additional profiling run."           }},
+        {"delta-cloud"      , { false, "delta-scaling of cloud optical properties"   }},
+        {"delta-aerosol"    , { false, "delta-scaling of aerosol optical properties" }}};
     Int ray_count_exponent = 22;
 
     if (parse_command_line_options(command_line_options, ray_count_exponent, argc, argv))
@@ -247,12 +250,15 @@ void solve_radiation(int argc, char** argv)
     const bool switch_longwave          = command_line_options.at("longwave"         ).first;
     const bool switch_fluxes            = command_line_options.at("fluxes"           ).first;
     const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
+    const bool switch_cloud_mie         = command_line_options.at("cloud-mie"        ).first;
     const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
     const bool switch_lu_albedo         = command_line_options.at("lu-albedo"        ).first;
     const bool switch_broadband         = command_line_options.at("broadband"        ).first;
     const bool switch_profiling         = command_line_options.at("profiling"        ).first;
+    const bool switch_delta_cloud       = command_line_options.at("delta-cloud"      ).first;
+    const bool switch_delta_aerosol     = command_line_options.at("delta-aerosol"    ).first;
 
     // Print the options to the screen.
     print_command_line_options(command_line_options);
@@ -295,6 +301,9 @@ void solve_radiation(int argc, char** argv)
     // Reading camera data
     Netcdf_group cam_in = input_nc.get_group("camera-settings");
     Camera camera;
+    camera.f_zoom = cam_in.get_variable<Float>("f_zoom");
+    camera.fov    = cam_in.get_variable<Float>("fov");
+    camera.fisheye= int(cam_in.get_variable<Float>("fisheye"));
     camera.position = {cam_in.get_variable<Float>("px"),
                        cam_in.get_variable<Float>("py"),
                        cam_in.get_variable<Float>("pz")};
@@ -302,8 +311,7 @@ void solve_radiation(int argc, char** argv)
     camera.setup_rotation_matrix(cam_in.get_variable<Float>("yaw"),
                                  cam_in.get_variable<Float>("pitch"),
                                  cam_in.get_variable<Float>("roll"));
-
-    camera.f_zoom = cam_in.get_variable<Float>("f_zoom");
+    camera.setup_normal_camera(camera);
 
     // Read the atmospheric fields.
     Array<Float,2> p_lay(input_nc.get_variable<Float>("p_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
@@ -375,7 +383,11 @@ void solve_radiation(int argc, char** argv)
         rei.set_dims({n_col, n_lay});
         rei = std::move(input_nc.get_variable<Float>("rei", {n_lay, n_col_y, n_col_x}));
     }
-
+    else
+    {
+        rel.set_dims({n_col, n_lay});
+        rel.fill(Float(0.));
+    }
     Array<Float,2> rh;
     Gas_concs aerosol_concs;
 
@@ -624,6 +636,12 @@ void solve_radiation(int argc, char** argv)
         const int n_bnd_sw = rad_sw.get_n_bnd_gpu();
         const int n_gpt_sw = rad_sw.get_n_gpt_gpu();
 
+        //load Mie LUT first
+        if (switch_cloud_mie)
+        {
+            rad_sw.load_mie_tables("mie_lut.nc", switch_broadband);
+        }
+
         Array<Float,1> mu0(input_nc.get_variable<Float>("mu0", {n_col_y, n_col_x}), {n_col});
         Array<Float,1> azi(input_nc.get_variable<Float>("azi", {n_col_y, n_col_x}), {n_col});
 
@@ -692,8 +710,11 @@ void solve_radiation(int argc, char** argv)
 
             rad_sw.solve_gpu_bb(
                     switch_cloud_optics,
+                    switch_cloud_mie,
                     switch_aerosol_optics,
                     switch_lu_albedo,
+                    switch_delta_cloud,
+                    switch_delta_aerosol,
                     grid_cells,
                     grid_d,
                     kn_grid,
@@ -758,8 +779,11 @@ void solve_radiation(int argc, char** argv)
             rad_sw.solve_gpu(
                     tune_step,
                     switch_cloud_optics,
+                    switch_cloud_mie,
                     switch_aerosol_optics,
                     switch_lu_albedo,
+                    switch_delta_cloud,
+                    switch_delta_aerosol,
                     grid_cells,
                     grid_d,
                     kn_grid,

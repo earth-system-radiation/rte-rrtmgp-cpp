@@ -1,6 +1,7 @@
 #ifndef RAYTRACER_FUNCTIONS_H
 #define RAYTRACER_FUNCTIONS_H
 #include "Types.h"
+#include <iostream>
 #include <curand_kernel.h>
 
 namespace Raytracer_functions
@@ -56,7 +57,7 @@ namespace Raytracer_functions
         Photon_kind kind;
     };
 
-    template<typename T> __device__
+    template<typename T> __host__ __device__
     Vector<T> cross(const Vector<T> v1, const Vector<T> v2)
     {
         return Vector<T>{
@@ -65,17 +66,17 @@ namespace Raytracer_functions
                 v1.x*v2.y - v1.y*v2.x};
     }
 
-    template<typename T> __device__
+    template<typename T> __host__ __device__
     Float dot(const Vector<T>& v1, const Vector<T>& v2)
     {
         return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
     }
 
-    template<typename T> __device__
+    template<typename T> __host__ __device__
     Float norm(const Vector<T> v) { return sqrt(v.x*v.x + v.y*v.y + v.z*v.z); }
 
 
-    template<typename T> __device__
+    template<typename T> __host__ __device__
     Vector<T> normalize(const Vector<T> v)
     {
         const Float length = norm(v);
@@ -104,34 +105,105 @@ namespace Raytracer_functions
     }
 
     __device__
-    inline Float mie(const Float* mie_cdf, const Float* mie_ang, const Float random_number, const Float r_eff, const int n_mie)
+    inline Float mie_sample_angle(const Float* mie_cdf, const Float* mie_lut, const Float random_number, const Float r_eff, const int n_mie)
     {
+        // interpolation over effective radius. Currently, r_eff should range between 2.5 and 21.5 (similar to RRTMGP) OR
+        // be exactly 100 micrometer for optical effects such as rainbows
+        const int r_idx = (r_eff == Float(100.)) ? 20 : min(max(int(r_eff-2.5), 0), 18);
         const Float r_rest = fmod(r_eff-Float(2.5),1.);
-        const int r_idx = min(max(int(r_eff-2.5), 0), 19);
 
         int i = 0;
         while (random_number < mie_cdf[i])
         {
             ++i;
         }
-        if (i==0)
+
+        // sampled scattering angle
+        Float ang;
+        if (r_idx < 20)
         {
-            const Float ang_lwr = mie_ang[r_idx*n_mie]*(1-r_rest);
-            const Float ang_upr = mie_ang[(r_idx+1)*n_mie]*r_rest;
-            return cos(ang_lwr + ang_upr);
+            if (i==0)
+            {
+                const Float ang_lwr = mie_lut[r_idx*n_mie]*(1-r_rest);
+                const Float ang_upr = mie_lut[(r_idx+1)*n_mie]*r_rest;
+                ang = ang_lwr + ang_upr;
+            }
+            else
+            {
+                const int midx_lwr = r_idx*n_mie;
+                const int midx_upr = (r_idx+1)*n_mie;
+                const Float dr = abs(mie_cdf[i] - mie_cdf[i-1]);
+
+                const Float ang_lwr = (abs(random_number - mie_cdf[i])*mie_lut[(i-1)+midx_lwr] + abs(mie_cdf[i-1]-random_number)*mie_lut[i+midx_lwr]) / dr;
+                const Float ang_upr = (abs(random_number - mie_cdf[i])*mie_lut[(i-1)+midx_upr] + abs(mie_cdf[i-1]-random_number)*mie_lut[i+midx_upr]) / dr;
+                ang = ang_lwr * (1-r_rest) + ang_upr * r_rest;
+            }
         }
         else
         {
-            const int midx_lwr = r_idx*n_mie;
-            const int midx_upr = (r_idx+1)*n_mie;
-            const Float dr = mie_cdf[i] - mie_cdf[i-1];
+            if (i==0)
+            {
+                ang = mie_lut[r_idx*n_mie];
+            }
+            else
+            {
+                const int midx = r_idx*n_mie;
+                const Float dr = abs(mie_cdf[i] - mie_cdf[i-1]);
 
-            const Float ang_lwr = (abs(random_number - mie_cdf[i])*mie_ang[(i-1)+midx_lwr] + abs(mie_cdf[i-1]-random_number)*mie_ang[i+midx_lwr]) / dr;
-            const Float ang_upr = (abs(random_number - mie_cdf[i])*mie_ang[(i-1)+midx_upr] + abs(mie_cdf[i-1]-random_number)*mie_ang[i+midx_upr]) / dr;
-            const Float ang_tot = ang_lwr * (1-r_rest) + ang_upr * r_rest;
-
-            return cos(ang_tot);
+                ang = (abs(random_number - mie_cdf[i])*mie_lut[(i-1)+midx] + abs(mie_cdf[i-1]-random_number)*mie_lut[i+midx]) / dr;
+            }
         }
+        return ang;
+    }
+
+    __device__
+    inline Float mie_interpolate_phase_func(const Float* mie_phase, const Float* mie_lut, const Float scat_ang, const Float r_eff, const int n_mie)
+    {
+        // interpolation over effective radius. Currently, r_eff should range between 2.5 and 21.5 (similar to RRTMGP) OR
+        // be exactly 100 micrometer for optical effects such as rainbows
+        const int r_idx = (r_eff == Float(100.)) ? 20 : min(max(int(r_eff-2.5), 0), 18);
+        const Float r_rest = fmod(r_eff-Float(2.5),1.);
+
+        // interpolation between 1800 equally spaced scattering angles between 0 and PI (both inclusive).
+        const Float d_pi = Float(1.74629942e-03);
+        const int i = min(max(0, int(1800-(scat_ang/d_pi+1))), 1798);
+
+        // probability (of scattering at angle scat_ang)
+        Float prob;
+        if (r_idx < 20)
+        {
+            if (i==0)
+            {
+                const Float prob_lwr = mie_lut[r_idx*n_mie]*(1-r_rest);
+                const Float prob_upr = mie_lut[(r_idx+1)*n_mie]*r_rest;
+                prob = prob_lwr + prob_upr;
+            }
+            else
+            {
+                const int midx_lwr = r_idx*n_mie;
+                const int midx_upr = (r_idx+1)*n_mie;
+                const Float dr = abs(mie_phase[i] - mie_phase[i-1]);
+
+                const Float prob_lwr = (abs(scat_ang - mie_phase[i])*mie_lut[(i-1)+midx_lwr] + abs(mie_phase[i-1]-scat_ang)*mie_lut[i+midx_lwr]) / dr;
+                const Float prob_upr = (abs(scat_ang - mie_phase[i])*mie_lut[(i-1)+midx_upr] + abs(mie_phase[i-1]-scat_ang)*mie_lut[i+midx_upr]) / dr;
+                prob_tot = prob_lwr * (1-r_rest) + prob_upr * r_rest;
+            }
+        }
+        else
+        {
+            if (i==0)
+            {
+                const Float prob = mie_lut[r_idx*n_mie];
+            }
+            else
+            {
+                const int midx = r_idx*n_mie;
+                const Float dr = abs(mie_phase[i] - mie_phase[i-1]);
+
+                prob = (abs(scat_ang - mie_phase[i])*mie_lut[(i-1)+midx] + abs(mie_phase[i-1]-scat_ang)*mie_lut[i+midx]) / dr;
+            }
+        }
+        return prob;
     }
 
     __device__

@@ -291,7 +291,6 @@ void interpolation_kernel(
         jtemp[idx] = int((tlay[idx] - (temp_ref_min-temp_ref_delta)) / temp_ref_delta);
         jtemp[idx] = min(ntemp-1, max(1, jtemp[idx]));
         const Float ftemp = (tlay[idx] - temp_ref[jtemp[idx]-1]) / temp_ref_delta;
-
         const Float locpress = Float(1.) + (log(play[idx]) - press_ref_log[0]) / press_ref_log_delta;
         jpress[idx] = min(npres-1, max(1, int(locpress)));
         const Float fpress = locpress - Float(jpress[idx]);
@@ -490,7 +489,6 @@ void gas_optical_depths_minor_kernel(
             const int j0 = jeta[idx_fcl1];
             const int j1 = jeta[idx_fcl1+1];
             const int kjtemp = jtemp[idx_collay];
-
             const int idx_out = icol + ilay*ncol;
             for (int imnr=minor_start; imnr<=minor_end; ++imnr)
             {

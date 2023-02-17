@@ -223,7 +223,9 @@ void solve_radiation(int argc, char** argv)
         {"cloud-mie"        , { false, "Use Mie tables for cloud scattering in ray tracer"  }},
         {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
         {"single-gpt"       , { false, "Output optical properties and fluxes for a single g-point. '--single-gpt 100': output 100th g-point" }},
-        {"profiling"        , { false, "Perform additional profiling run."         }} };
+        {"profiling"        , { false, "Perform additional profiling run."         }},
+        {"delta-cloud"      , { false, "delta-scaling of cloud optical properties"   }},
+        {"delta-aerosol"    , { false, "delta-scaling of aerosol optical properties"   }} };
 
     std::map<std::string, std::pair<int, std::string>> command_line_ints {
         {"raytracing", {32, "Number of rays initialised at TOD per pixel per quadraute."}},
@@ -241,6 +243,8 @@ void solve_radiation(int argc, char** argv)
     const bool switch_aerosol_optics    = command_line_switches.at("aerosol-optics"   ).first;
     const bool switch_single_gpt        = command_line_switches.at("single-gpt"       ).first;
     const bool switch_profiling         = command_line_switches.at("profiling"        ).first;
+    const bool switch_delta_cloud       = command_line_switches.at("delta-cloud"      ).first;
+    const bool switch_delta_aerosol     = command_line_switches.at("delta-aerosol"    ).first;
 
     // Print the options to the screen.
     print_command_line_options(command_line_switches, command_line_ints);
@@ -731,6 +735,8 @@ void solve_radiation(int argc, char** argv)
                     switch_cloud_mie,
                     switch_aerosol_optics,
                     switch_single_gpt,
+                    switch_delta_cloud,
+                    switch_delta_aerosol,
                     single_gpt,
                     photons_per_pixel,
                     grid_cells,

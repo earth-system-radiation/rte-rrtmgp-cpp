@@ -104,6 +104,8 @@ class Radiation_solver_shortwave
                 const bool switch_cloud_mie,
                 const bool switch_aerosol_optics,
                 const bool switch_single_gpt,
+                const bool switch_delta_cloud,
+                const bool switch_delta_aerosol,
                 const int single_gpt,
                 const Int ray_count,
                 const Vector<int> grid_cells,

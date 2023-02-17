@@ -96,7 +96,7 @@ namespace
             const int ij = i + j*grid_cells.x;
 
             #ifndef NDEBUG
-            if (ij < 0 || ij >=grid_cells.x*grid_cells.y) printf("outofbounds in reset \n");
+            if (ij < 0 || ij >=grid_cells.x*grid_cells.y) printf("Out of Bounds in reset photon \n");
             #endif
 
             atomicAdd(&toa_down_count[ij], Float(1.));
@@ -288,7 +288,7 @@ void ray_tracer_kernel(
                 const int ij = i + j*grid_cells.x;
 
                 #ifndef NDEBUG
-                if (ij < 0 || ij >=grid_cells.x*grid_cells.y) printf("outofbounds 2");
+                if (ij < 0 || ij >=grid_cells.x*grid_cells.y) printf("Out of bounds at TOD \n");
                 #endif
 
                 write_photon_out(&tod_up_count[ij], weight);
@@ -349,7 +349,7 @@ void ray_tracer_kernel(
             const Float f_no_abs = Float(1.) - (Float(1.) - ssa_tot) * (k_ext[ijk]/k_ext_null);
 
             #ifndef NDEBUG
-            if (ijk < 0 || ijk >= grid_cells.x*grid_cells.y*grid_cells.z) printf("oufofbounds hr \n");
+            if (ijk < 0 || ijk >= grid_cells.x*grid_cells.y*grid_cells.z) printf("Out of Bounds at Heating Rates \n");
             #endif
 
             if (photon.kind == Photon_kind::Direct)
@@ -394,7 +394,9 @@ void ray_tracer_kernel(
 
                     // 0 (gas): rayleigh, 1 (cloud): mie if mie_table_size>0 else HG, 2 (aerosols) HG
                     const Float cos_scat = scatter_type == 0 ? rayleigh(rng()) : // gases -> rayleigh,
-                                                           1 ? ( (mie_table_size > 0) ? mie(mie_cdf_shared, mie_ang, rng(), r_eff[ijk], mie_table_size) :  henyey(g, rng())) // clouds: mie or HG
+                                                           1 ? ( (mie_table_size > 0) //clouds: Mie or HG
+                                                                    ? cos( mie_sample_angle(mie_cdf_shared, mie_ang, rng(), r_eff[ijk], mie_table_size) )
+                                                                    :  henyey(g, rng()))
                                                            : henyey(g, rng()); //aerosols
                     const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));
 

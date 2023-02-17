@@ -505,7 +505,7 @@ void Radiation_solver_longwave::solve_gpu(
                     rei.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     *cloud_optical_props_subset_in);
 
-            // cloud->delta_scale();
+            //cloud->delta_scale();
 
             // Add the cloud optical props to the gas optical properties.
             add_to(
@@ -685,6 +685,8 @@ void Radiation_solver_shortwave::solve_gpu(
         const bool switch_aerosol_optics,
         const bool switch_output_optical,
         const bool switch_output_bnd_fluxes,
+        const bool switch_delta_cloud,
+        const bool switch_delta_aerosol,
         const Gas_concs_gpu& gas_concs,
         const Array_gpu<Float,2>& p_lay, const Array_gpu<Float,2>& p_lev,
         const Array_gpu<Float,2>& t_lay, const Array_gpu<Float,2>& t_lev,
@@ -779,7 +781,8 @@ void Radiation_solver_shortwave::solve_gpu(
                     rei.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     *cloud_optical_props_subset_in);
 
-            // cloud_optical_props_subset_in->delta_scale();
+            if (switch_delta_cloud)
+                cloud_optical_props_subset_in->delta_scale();
 
             // Add the cloud optical props to the gas optical properties.
             add_to(
@@ -795,7 +798,9 @@ void Radiation_solver_shortwave::solve_gpu(
                     rh.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     p_lev_subset,
                     *aerosol_optical_props_subset_in);
-            //aerosol_optical_props_subset_in->delta_scale();
+
+            if (switch_delta_aerosol)
+                aerosol_optical_props_subset_in->delta_scale();
 
             // Add the aerosol optical props to the gas optical properties.
             add_to(

@@ -629,6 +629,8 @@ void Radiation_solver_shortwave::solve_gpu(
         const bool switch_cloud_mie,
         const bool switch_aerosol_optics,
         const bool switch_single_gpt,
+        const bool switch_delta_cloud,
+        const bool switch_delta_aerosol,
         const int single_gpt,
         const Int ray_count,
         const Vector<int> grid_cells,
@@ -656,7 +658,6 @@ void Radiation_solver_shortwave::solve_gpu(
         Array_gpu<Float,2>& rt_flux_sfc_up,
         Array_gpu<Float,3>& rt_flux_abs_dir,
         Array_gpu<Float,3>& rt_flux_abs_dif)
-
 {
     const int n_col = p_lay.dim(1);
     const int n_lay = p_lay.dim(2);
@@ -782,7 +783,9 @@ void Radiation_solver_shortwave::solve_gpu(
                     rel,
                     rei,
                     *cloud_optical_props);
-            //cloud_optical_props->delta_scale();
+
+            if (switch_delta_cloud)
+                cloud_optical_props->delta_scale();
 
             // Add the cloud optical props to the gas optical properties.
             add_to(
@@ -803,8 +806,8 @@ void Radiation_solver_shortwave::solve_gpu(
                     aerosol_concs,
                     rh, p_lev,
                     *aerosol_optical_props);
-            //aerosol_optical_props->delta_scale();
-
+            if (switch_delta_aerosol)
+                aerosol_optical_props->delta_scale();
             // Add the cloud optical props to the gas optical properties.
             add_to(
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props),
