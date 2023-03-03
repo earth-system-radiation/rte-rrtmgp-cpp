@@ -97,6 +97,8 @@ namespace
         dim3 block_gpu(block_col, 1);
 
         Array_gpu<Float,1> tod_dir_diff_g({2});
+        tod_dir_diff_g.fill(Float(0.));
+
         compute_tod_flux_kernel<<<grid_gpu, block_gpu>>>(
             ncol, nlay, col_per_thread, flux_dn.ptr(), flux_dn_dir.ptr(), tod_dir_diff_g.ptr());
         Array<Float,1> tod_dir_diff_c(tod_dir_diff_g);
@@ -808,6 +810,7 @@ void Radiation_solver_shortwave::solve_gpu(
                     *aerosol_optical_props);
             if (switch_delta_aerosol)
                 aerosol_optical_props->delta_scale();
+
             // Add the cloud optical props to the gas optical properties.
             add_to(
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props),

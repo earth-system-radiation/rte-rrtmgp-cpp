@@ -394,6 +394,9 @@ class Array_gpu
             if ( !(this->ncells == array.size() || (this->ncells == 0 && data_ptr == nullptr)) )
                 throw std::runtime_error("initialised arrays can not be resized");
 
+            if (this->ncells > 0)
+                Tools_gpu::free_gpu(data_ptr);
+
             dims = std::exchange(array.dims, {});
             ncells = std::exchange(array.ncells, 0);
             data_ptr = std::exchange(array.data_ptr, nullptr);
