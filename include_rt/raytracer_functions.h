@@ -110,7 +110,7 @@ namespace Raytracer_functions
         // interpolation over effective radius. Currently, r_eff should range between 2.5 and 21.5 (similar to RRTMGP) OR
         // be exactly 100 micrometer for optical effects such as rainbows
         const int r_idx = (r_eff == Float(100.)) ? 20 : min(max(int(r_eff-2.5), 0), 18);
-        const Float r_rest = fmod(r_eff-Float(2.5),1.);
+        const Float r_rest = fmod(r_eff-Float(2.5),Float(1.));
 
         int i = 0;
         while (random_number < mie_cdf[i])
@@ -162,7 +162,7 @@ namespace Raytracer_functions
         // interpolation over effective radius. Currently, r_eff should range between 2.5 and 21.5 (similar to RRTMGP) OR
         // be exactly 100 micrometer for optical effects such as rainbows
         const int r_idx = (r_eff == Float(100.)) ? 20 : min(max(int(r_eff-2.5), 0), 18);
-        const Float r_rest = fmod(r_eff-Float(2.5),1.);
+        const Float r_rest = fmod(r_eff-Float(2.5),Float(1.));
 
         // interpolation between 1800 equally spaced scattering angles between 0 and PI (both inclusive).
         const Float d_pi = Float(1.74629942e-03);
