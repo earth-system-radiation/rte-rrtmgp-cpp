@@ -26,9 +26,10 @@ set(LIBS ${FFTW_LIB} ${FFTWF_LIB} ${NETCDF_LIB_C} ${HDF5_LIB_2} ${HDF5_LIB_1} ${
 set(INCLUDE_DIRS ${FFTW_INCLUDE_DIR} ${NETCDF_INCLUDE_DIR})
 
 if(USECUDA)
-  set(USER_CUDA_FLAGS "-arch=sm_70 -std=c++17")
-  set(USER_CUDA_FLAGS_RELEASE "-Xptxas -O3")
-  set(USER_CUDA_FLAGS_DEBUG "-Xptxas -O3 -DCUDACHECKS")
+  set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+  set(USER_CUDA_FLAGS "-arch=sm_70 -std=c++17 -expt-relaxed-constexpr")
+  set(USER_CUDA_FLAGS_RELEASE "-Xptxas -O3 -DNDEBUG")
+  set(USER_CUDA_FLAGS_DEBUG "-Xptxas -O0 -g -G -DCUDACHECKS")
   #add_definitions(-DRTE_RRTMGP_GPU_MEMPOOL_OWN)
  add_definitions(-DRTE_RRTMGP_GPU_MEMPOOL_CUDA)
 endif()
