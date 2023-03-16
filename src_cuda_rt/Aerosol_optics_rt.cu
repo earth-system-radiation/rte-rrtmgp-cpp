@@ -71,7 +71,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr04[ilay];
+            mmr = aermr04[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // DU2
@@ -79,7 +79,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr05[ilay];
+            mmr = aermr05[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // DU3
@@ -87,7 +87,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr06[ilay];
+            mmr = aermr06[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // BC1
@@ -95,7 +95,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr09[ilay];
+            mmr = aermr09[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // BC2
@@ -103,7 +103,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr10[ilay];
+            mmr = aermr10[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // SS1
@@ -111,7 +111,7 @@ namespace
             mext = mext_philic[species_idx];
             ssa = ssa_philic[species_idx];
             g = g_philic[species_idx];
-            mmr = aermr01[ilay];
+            mmr = aermr01[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // SS2
@@ -119,7 +119,7 @@ namespace
             mext = mext_philic[species_idx];
             ssa = ssa_philic[species_idx];
             g = g_philic[species_idx];
-            mmr = aermr02[ilay];
+            mmr = aermr02[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // SS3
@@ -127,7 +127,7 @@ namespace
             mext = mext_philic[species_idx];
             ssa = ssa_philic[species_idx];
             g = g_philic[species_idx];
-            mmr = aermr03[ilay];
+            mmr = aermr03[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // SU
@@ -135,7 +135,7 @@ namespace
             mext = mext_philic[species_idx];
             ssa = ssa_philic[species_idx];
             g = g_philic[species_idx];
-            mmr = aermr11[ilay];
+            mmr = aermr11[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // OM1
@@ -143,7 +143,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr08[ilay];
+            mmr = aermr08[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
 
             // OM2
@@ -151,7 +151,7 @@ namespace
             mext = mext_philic[species_idx];
             ssa = ssa_philic[species_idx];
             g = g_philic[species_idx];
-            mmr = aermr07[ilay];
+            mmr = aermr07[idx];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx], taussa[idx], taussag[idx]);
         }
     }
@@ -173,7 +173,7 @@ namespace
         }
     }
     
-    void fill_aerosols_3d(const int ncol, const int nlay, Gas_concs_gpu& aerosol_concs)
+    void fill_aerosols_3d(const int ncol, const int nlay, Aerosol_concs_gpu& aerosol_concs)
     {
         for (int i=1; i<=11; ++i)
         {
@@ -185,7 +185,7 @@ namespace
 }
 
 Aerosol_optics_rt::Aerosol_optics_rt(
-        Array<Float,2>& band_lims_wvn, const Array<Float,1>& rh_upper,
+        const Array<Float,2>& band_lims_wvn, const Array<Float,1>& rh_upper,
         const Array<Float,2>& mext_phobic, const Array<Float,2>& ssa_phobic, const Array<Float,2>& g_phobic,
         const Array<Float,3>& mext_philic, const Array<Float,3>& ssa_philic, const Array<Float,3>& g_philic) :
         Optical_props_rt(band_lims_wvn)
@@ -217,7 +217,7 @@ Aerosol_optics_rt::Aerosol_optics_rt(
 
 void Aerosol_optics_rt::aerosol_optics(
         const int ibnd,
-        Gas_concs_gpu& aerosol_concs,
+        Aerosol_concs_gpu& aerosol_concs,
         const Array_gpu<Float,2>& rh, const Array_gpu<Float,2>& plev,
         Optical_props_2str_rt& optical_props)
 {

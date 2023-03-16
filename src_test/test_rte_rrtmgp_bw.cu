@@ -26,6 +26,7 @@
 #include "Array.h"
 #include "raytracer_kernels_bw.h"
 #include "Radiation_solver_bw.h"
+#include "Aerosol_optics_rt.h"
 #include "Gas_concs.h"
 #include "Types.h"
 #include "Mem_pool_gpu.h"
@@ -71,7 +72,7 @@ void read_and_set_vmr(
 
 void read_and_set_aer(
         const std::string& aerosol_name, const int n_col_x, const int n_col_y, const int n_lay,
-        const Netcdf_handle& input_nc, Gas_concs& aerosol_concs)
+        const Netcdf_handle& input_nc, Aerosol_concs& aerosol_concs)
 {
     if (input_nc.variable_exists(aerosol_name))
     {
@@ -397,7 +398,7 @@ void solve_radiation(int argc, char** argv)
         rel.fill(Float(0.));
     }
     Array<Float,2> rh;
-    Gas_concs aerosol_concs;
+    Aerosol_concs aerosol_concs;
 
     if (switch_aerosol_optics)
     {
@@ -704,7 +705,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> rei_gpu(rei);
 
             Array_gpu<Float,2> rh_gpu(rh);
-            Gas_concs_gpu aerosol_concs_gpu(aerosol_concs);
+            Aerosol_concs_gpu aerosol_concs_gpu(aerosol_concs);
 
             Array_gpu<Float,1> land_use_map_gpu(land_use_map);
 
@@ -772,7 +773,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> rei_gpu(rei);
 
             Array_gpu<Float,2> rh_gpu(rh);
-            Gas_concs_gpu aerosol_concs_gpu(aerosol_concs);
+            Aerosol_concs_gpu aerosol_concs_gpu(aerosol_concs);
 
             Array_gpu<Float,1> land_use_map_gpu(land_use_map);
 

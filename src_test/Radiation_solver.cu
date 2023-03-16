@@ -696,7 +696,7 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         const Array_gpu<Float,2>& rh,
-        const Gas_concs_gpu& aerosol_concs,
+        const Aerosol_concs_gpu& aerosol_concs,
         Array_gpu<Float,3>& tau, Array_gpu<Float,3>& ssa, Array_gpu<Float,3>& g,
         Array_gpu<Float,2>& toa_src,
         Array_gpu<Float,2>& sw_flux_up, Array_gpu<Float,2>& sw_flux_dn,
@@ -792,7 +792,7 @@ void Radiation_solver_shortwave::solve_gpu(
 
         if (switch_aerosol_optics)
         {
-            Gas_concs_gpu aerosol_concs_subset(aerosol_concs, 1, n_col);
+            Aerosol_concs_gpu aerosol_concs_subset(aerosol_concs, 1, n_col);
             aerosol_optics_gpu->aerosol_optics(
                     aerosol_concs_subset,
                     rh.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
