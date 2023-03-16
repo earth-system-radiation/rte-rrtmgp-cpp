@@ -648,7 +648,7 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,2>& lwp, const Array_gpu<Float,2>& iwp,
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         const Array_gpu<Float,2>& rh,
-        const Gas_concs_gpu& aerosol_concs,
+        const Aerosol_concs_gpu& aerosol_concs,
         Array_gpu<Float,2>& tau, Array_gpu<Float,2>& ssa, Array_gpu<Float,2>& g,
         Array_gpu<Float,2>& sw_flux_up, Array_gpu<Float,2>& sw_flux_dn,
         Array_gpu<Float,2>& sw_flux_dn_dir, Array_gpu<Float,2>& sw_flux_net,
@@ -808,14 +808,16 @@ void Radiation_solver_shortwave::solve_gpu(
         {
             if (band > previous_band)
             {
+                Aerosol_concs_gpu aerosol_concs_subset(aerosol_concs, 1, n_col);
                 aerosol_optics_gpu->aerosol_optics(
                         band-1,
-                        aerosol_concs,
+                        aerosol_concs_subset,
                         rh, p_lev,
                         *aerosol_optical_props);
                 if (switch_delta_aerosol)
                     aerosol_optical_props->delta_scale();
             }
+
             // Add the cloud optical props to the gas optical properties.
             add_to(
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props),

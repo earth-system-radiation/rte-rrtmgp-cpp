@@ -70,77 +70,77 @@ void compute_all_from_table(
                         mext = mext_phobic({ibnd, 1});
                         ssa = ssa_phobic({ibnd, 1});
                         g = g_phobic({ibnd, 1});
-                        mmr = aermr04({ilay});
+                        mmr = aermr04({icol,ilay});
                     }
                     else if (aerosol_class == "DU2")
                     {
                         mext = mext_phobic({ibnd, 8});
                         ssa = ssa_phobic({ibnd,8});
                         g = g_phobic({ibnd, 8});
-                        mmr = aermr05({ilay});
+                        mmr = aermr05({icol,ilay});
                     }
                     else if (aerosol_class == "DU3")
                     {
                         mext = mext_phobic({ibnd, 6});
                         ssa = ssa_phobic({ibnd, 6});
                         g = g_phobic({ibnd, 6});
-                        mmr = aermr06({ilay});
+                        mmr = aermr06({icol,ilay});
                     }
                     else if (aerosol_class == "BC1")
                     {
                         mext = mext_phobic({ibnd, 11});
                         ssa = ssa_phobic({ibnd, 11});
                         g = g_phobic({ibnd, 11});
-                        mmr = aermr09({ilay});
+                        mmr = aermr09({icol,ilay});
                     }
                     else if (aerosol_class == "BC2")
                     {
                         mext = mext_phobic({ibnd, 11});
                         ssa = ssa_phobic({ibnd, 11});
                         g = g_phobic({ibnd, 11});
-                        mmr = aermr10({ilay});
+                        mmr = aermr10({icol,ilay});
                     }
                     else if (aerosol_class == "SS1")
                     {
                         mext = mext_philic({ibnd, ihum, 1});
                         ssa = ssa_philic({ibnd, ihum, 1});
                         g = g_philic({ibnd, ihum, 1});
-                        mmr = aermr01({ilay});
+                        mmr = aermr01({icol,ilay});
                     }
                     else if (aerosol_class == "SS2")
                     {
                         mext = mext_philic({ibnd, ihum, 2});
                         ssa = ssa_philic({ibnd, ihum, 2});
                         g = g_philic({ibnd, ihum, 2});
-                        mmr = aermr02({ilay});
+                        mmr = aermr02({icol,ilay});
                     }
                     else if (aerosol_class == "SS3")
                     {
                         mext = mext_philic({ibnd, ihum, 3});
                         ssa = ssa_philic({ibnd, ihum, 3});
                         g = g_philic({ibnd, ihum, 3});
-                        mmr = aermr03({ilay});
+                        mmr = aermr03({icol,ilay});
                     }
                     else if (aerosol_class == "SU")
                     {
                         mext = mext_philic({ibnd, ihum, 5});
                         ssa = ssa_philic({ibnd, ihum, 5});
                         g = g_philic({ibnd, ihum, 5});
-                        mmr = aermr11({ilay});
+                        mmr = aermr11({icol,ilay});
                     }
                     else if (aerosol_class == "OM1")
                     {
                         mext = mext_phobic({ibnd, 10});
                         ssa = ssa_phobic({ibnd, 10});
                         g = g_phobic({ibnd, 10});
-                        mmr = aermr08({ilay});
+                        mmr = aermr08({icol,ilay});
                     }
                     else if (aerosol_class == "OM2")
                     {
                         mext = mext_philic({ibnd, ihum, 4});
                         ssa = ssa_philic({ibnd, ihum, 4});
                         g = g_philic({ibnd, ihum, 4});
-                        mmr = aermr07({ilay});
+                        mmr = aermr07({icol,ilay});
                     }
 
                     Float local_od = mmr * dpg * mext;
@@ -155,16 +155,31 @@ void compute_all_from_table(
                 taussag({icol, ilay, ibnd}) = taussag_local;
             }
 }
+void fill_aerosols_3d(const int ncol, const int nlay, Aerosol_concs& aerosol_concs)
+{
+    for (int i=1; i<=11; ++i)
+    {
+        std::string name = i<10 ? "aermr0"+std::to_string(i) : "aermr"+std::to_string(i);
+        if (aerosol_concs.get_vmr(name).dim(1) == 1)
+        {
+            aerosol_concs.set_vmr(name, aerosol_concs.get_vmr(name).subset({ {{1,ncol}, {1,nlay}}} ));
+        }
+
+    }
+
+}
 
 // Two-stream variant of aerosol optics.
-void Aerosol_optics::aerosol_optics(const Gas_concs& aerosol_concs,
+void Aerosol_optics::aerosol_optics(Aerosol_concs& aerosol_concs,
                                     const Array<Float,2>& rh, const Array<Float,2>& plev,
                                     Optical_props_2str &optical_props)
 {
     const int ncol = rh.dim(1);
     const int nlay = rh.dim(2);
     const int nbnd = this->get_nband();
-
+    
+    fill_aerosols_3d(ncol, nlay, aerosol_concs);
+    
     // Temporary arrays for storage.
     Array<Float,3> ltau    ({ncol, nlay, nbnd});
     Array<Float,3> ltaussa ({ncol, nlay, nbnd});

@@ -904,7 +904,7 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         const Array_gpu<Float,1>& land_use_map,
         const Array_gpu<Float,2>& rh,
-        const Gas_concs_gpu& aerosol_concs,
+        const Aerosol_concs_gpu& aerosol_concs,
         const Camera& camera,
         Array_gpu<Float,3>& XYZ)
 
@@ -1057,9 +1057,10 @@ void Radiation_solver_shortwave::solve_gpu(
         {
             if (band > previous_band)
             {
+                Aerosol_concs_gpu aerosol_concs_subset(aerosol_concs, 1, n_col);
                 aerosol_optics_gpu->aerosol_optics(
                         band-1,
-                        aerosol_concs,
+                        aerosol_concs_subset,
                         rh, p_lev,
                         *aerosol_optical_props);
 
@@ -1198,7 +1199,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         const Array_gpu<Float,1>& land_use_map,
         const Array_gpu<Float,2>& rh,
-        const Gas_concs_gpu& aerosol_concs,
+        const Aerosol_concs_gpu& aerosol_concs,
         const Camera& camera,
         Array_gpu<Float,2>& radiance)
 
@@ -1341,9 +1342,10 @@ void Radiation_solver_shortwave::solve_gpu_bb(
         {
             if (band > previous_band)
             {
+                Aerosol_concs_gpu aerosol_concs_subset(aerosol_concs, 1, n_col);
                 aerosol_optics_gpu->aerosol_optics(
                         band-1,
-                        aerosol_concs,
+                        aerosol_concs_subset,
                         rh, p_lev,
                         *aerosol_optical_props);
 

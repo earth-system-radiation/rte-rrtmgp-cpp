@@ -73,7 +73,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr04[ilay];
+            mmr = aermr04[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
 
             // DU2
@@ -81,7 +81,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr05[ilay];
+            mmr = aermr05[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
 
             // DU3
@@ -89,7 +89,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr06[ilay];
+            mmr = aermr06[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
 
             // BC1
@@ -97,7 +97,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr09[ilay];
+            mmr = aermr09[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
 
             // BC2
@@ -105,7 +105,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr10[ilay];
+            mmr = aermr10[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
 
             // SS1
@@ -113,7 +113,7 @@ namespace
             mext = mext_philic[species_idx];
             ssa = ssa_philic[species_idx];
             g = g_philic[species_idx];
-            mmr = aermr01[ilay];
+            mmr = aermr01[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
 
             // SS2
@@ -121,7 +121,7 @@ namespace
             mext = mext_philic[species_idx];
             ssa = ssa_philic[species_idx];
             g = g_philic[species_idx];
-            mmr = aermr02[ilay];
+            mmr = aermr02[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
 
             // SS3
@@ -129,7 +129,7 @@ namespace
             mext = mext_philic[species_idx];
             ssa = ssa_philic[species_idx];
             g = g_philic[species_idx];
-            mmr = aermr03[ilay];
+            mmr = aermr03[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
 
             // SU
@@ -137,7 +137,7 @@ namespace
             mext = mext_philic[species_idx];
             ssa = ssa_philic[species_idx];
             g = g_philic[species_idx];
-            mmr = aermr11[ilay];
+            mmr = aermr11[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
 
             // OM1
@@ -145,7 +145,7 @@ namespace
             mext = mext_phobic[species_idx];
             ssa = ssa_phobic[species_idx];
             g = g_phobic[species_idx];
-            mmr = aermr08[ilay];
+            mmr = aermr08[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
 
             // OM2
@@ -153,7 +153,7 @@ namespace
             mext = mext_philic[species_idx];
             ssa = ssa_philic[species_idx];
             g = g_philic[species_idx];
-            mmr = aermr07[ilay];
+            mmr = aermr07[idx_2d];
             add_species_optics(mmr, dpg, mext, ssa, g, tau[idx_3d], taussa[idx_3d], taussag[idx_3d]);
         }
     }
@@ -175,10 +175,20 @@ namespace
             g[idx]   = ltaussag[idx] / max(ltaussa[idx], tmin);
         }
     }
+
+    void fill_aerosols_3d(const int ncol, const int nlay, Aerosol_concs_gpu& aerosol_concs)
+    {
+        for (int i=1; i<=11; ++i)
+        {
+            std::string name = i<10 ? "aermr0"+std::to_string(i) : "aermr"+std::to_string(i);
+            if (aerosol_concs.get_vmr(name).dim(1) == 1)
+                aerosol_concs.set_vmr(name, aerosol_concs.get_vmr(name).subset({ {{1, ncol}, {1, nlay}}} ));
+        }
+    }
 }
 
 Aerosol_optics_gpu::Aerosol_optics_gpu(
-        Array<Float,2>& band_lims_wvn, const Array<Float,1>& rh_upper,
+        const Array<Float,2>& band_lims_wvn, const Array<Float,1>& rh_upper,
         const Array<Float,2>& mext_phobic, const Array<Float,2>& ssa_phobic, const Array<Float,2>& g_phobic,
         const Array<Float,3>& mext_philic, const Array<Float,3>& ssa_philic, const Array<Float,3>& g_philic) :
         Optical_props_gpu(band_lims_wvn)
@@ -209,7 +219,7 @@ Aerosol_optics_gpu::Aerosol_optics_gpu(
 
 
 void Aerosol_optics_gpu::aerosol_optics(
-        const Gas_concs_gpu& aerosol_concs,
+        Aerosol_concs_gpu& aerosol_concs,
         const Array_gpu<Float,2>& rh, const Array_gpu<Float,2>& plev,
         Optical_props_2str_gpu& optical_props)
 {
@@ -218,6 +228,8 @@ void Aerosol_optics_gpu::aerosol_optics(
     const int nbnd = this->get_nband();
     const int nhum = this->rh_upper.dim(1);
 
+    fill_aerosols_3d(ncol, nlay, aerosol_concs);
+    
     // Temporary arrays for storage.
     Array_gpu<Float,3> ltau    ({ncol, nlay, nbnd});
     Array_gpu<Float,3> ltaussa ({ncol, nlay, nbnd});
