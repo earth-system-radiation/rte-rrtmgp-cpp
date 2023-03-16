@@ -708,6 +708,7 @@ void Radiation_solver_shortwave::solve_gpu(
     }
 
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
+    int previous_band = 0;
     for (int igpt=1; igpt<=n_gpt; ++igpt)
     {
         int band = 0;
@@ -778,17 +779,19 @@ void Radiation_solver_shortwave::solve_gpu(
 
         if (switch_cloud_optics)
         {
-            cloud_optics_gpu->cloud_optics(
-                    band-1,
-                    lwp,
-                    iwp,
-                    rel,
-                    rei,
-                    *cloud_optical_props);
+            if (band > previous_band)
+            {
+                cloud_optics_gpu->cloud_optics(
+                        band-1,
+                        lwp,
+                        iwp,
+                        rel,
+                        rei,
+                        *cloud_optical_props);
 
-            if (switch_delta_cloud)
-                cloud_optical_props->delta_scale();
-
+                if (switch_delta_cloud)
+                    cloud_optical_props->delta_scale();
+            }
             // Add the cloud optical props to the gas optical properties.
             add_to(
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props),
@@ -803,14 +806,16 @@ void Radiation_solver_shortwave::solve_gpu(
 
         if (switch_aerosol_optics)
         {
-            aerosol_optics_gpu->aerosol_optics(
-                    band-1,
-                    aerosol_concs,
-                    rh, p_lev,
-                    *aerosol_optical_props);
-            if (switch_delta_aerosol)
-                aerosol_optical_props->delta_scale();
-
+            if (band > previous_band)
+            {
+                aerosol_optics_gpu->aerosol_optics(
+                        band-1,
+                        aerosol_concs,
+                        rh, p_lev,
+                        *aerosol_optical_props);
+                if (switch_delta_aerosol)
+                    aerosol_optical_props->delta_scale();
+            }
             // Add the cloud optical props to the gas optical properties.
             add_to(
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props),
@@ -922,5 +927,6 @@ void Radiation_solver_shortwave::solve_gpu(
                 //        (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
             }
         }
+        previous_band = band;
     }
 }
