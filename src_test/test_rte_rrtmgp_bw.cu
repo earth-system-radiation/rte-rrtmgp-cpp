@@ -313,6 +313,9 @@ void solve_radiation(int argc, char** argv)
                                  cam_in.get_variable<Float>("roll"));
     camera.setup_normal_camera(camera);
 
+    printf("width:  %f %f %f ",camera.cam_width.x,camera.cam_width.y,camera.cam_width.z);
+    printf("height: %f %f %f ",camera.cam_height.x,camera.cam_height.y,camera.cam_height.z);
+    printf("depth:  %f %f %f ",camera.cam_depth.x,camera.cam_depth.y,camera.cam_depth.z);
     // Read the atmospheric fields.
     Array<Float,2> p_lay(input_nc.get_variable<Float>("p_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
     Array<Float,2> t_lay(input_nc.get_variable<Float>("t_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
@@ -636,12 +639,6 @@ void solve_radiation(int argc, char** argv)
         const int n_bnd_sw = rad_sw.get_n_bnd_gpu();
         const int n_gpt_sw = rad_sw.get_n_gpt_gpu();
 
-        //load Mie LUT first
-        if (switch_cloud_mie)
-        {
-            rad_sw.load_mie_tables("mie_lut.nc", switch_broadband);
-        }
-
         Array<Float,1> mu0(input_nc.get_variable<Float>("mu0", {n_col_y, n_col_x}), {n_col});
         Array<Float,1> azi(input_nc.get_variable<Float>("azi", {n_col_y, n_col_x}), {n_col});
 
@@ -671,10 +668,19 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<Float,2> radiance;
 
         if (switch_broadband)
+        {
             radiance.set_dims({camera.nx, camera.ny});
+
+            if (switch_cloud_mie)
+                rad_sw.load_mie_tables("mie_lut.nc", switch_broadband);
+        }
         else
+        {
             XYZ.set_dims({camera.nx, camera.ny, 3});
 
+            if (switch_cloud_mie)
+                rad_sw.load_mie_tables("mie_lut_vis.nc", switch_broadband);
+        }
         // Solve the radiation.
         Status::print_message("Solving the shortwave radiation.");
 
