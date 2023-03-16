@@ -792,7 +792,7 @@ void Radiation_solver_shortwave::solve_gpu(
 
         if (switch_aerosol_optics)
         {
-            Gas_concs_gpu aerosol_concs_subset(aerosol_concs, col_s_in, n_col_in);
+            Gas_concs_gpu aerosol_concs_subset(aerosol_concs, 1, n_col);
             aerosol_optics_gpu->aerosol_optics(
                     aerosol_concs_subset,
                     rh.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),

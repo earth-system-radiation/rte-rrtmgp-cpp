@@ -1042,9 +1042,10 @@ void Radiation_solver_shortwave::solve_gpu(
 
         if (switch_aerosol_optics)
         {
+            Gas_concs_gpu aerosol_concs_subset(aerosol_concs, 1, n_col);
             aerosol_optics_gpu->aerosol_optics(
                     band-1,
-                    aerosol_concs,
+                    aerosol_concs_subset,
                     rh, p_lev,
                     *aerosol_optical_props);
 
@@ -1319,9 +1320,10 @@ void Radiation_solver_shortwave::solve_gpu_bb(
 
         if (switch_aerosol_optics)
         {
+            Gas_concs_gpu aerosol_concs_subset(aerosol_concs, 1, n_col);
             aerosol_optics_gpu->aerosol_optics(
                     band-1,
-                    aerosol_concs,
+                    aerosol_concs_subset,
                     rh, p_lev,
                     *aerosol_optical_props);
 

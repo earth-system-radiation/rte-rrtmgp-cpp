@@ -26,7 +26,7 @@ class Aerosol_optics : public Optical_props
                 const Array<Float,3>& mext_philic, const Array<Float,3>& ssa_philic, const Array<Float,3>& g_philic);
 
         void aerosol_optics(
-                const Gas_concs& aerosol_concs,
+                Gas_concs& aerosol_concs,
                 const Array<Float,2>& rh, const Array<Float,2>& plev,
                 Optical_props_2str& optical_props);
 
@@ -54,7 +54,7 @@ class Aerosol_optics_gpu : public Optical_props_gpu
                 const Array<Float,3>& mext_philic, const Array<Float,3>& ssa_philic, const Array<Float,3>& g_philic);
 
         void aerosol_optics(
-                const Gas_concs_gpu& aerosol_concs,
+                Gas_concs_gpu& aerosol_concs,
                 const Array_gpu<Float,2>& rh, const Array_gpu<Float,2>& plev,
                 Optical_props_2str_gpu& optical_props);
 

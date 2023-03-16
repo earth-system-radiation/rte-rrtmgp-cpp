@@ -155,16 +155,31 @@ void compute_all_from_table(
                 taussag({icol, ilay, ibnd}) = taussag_local;
             }
 }
+void fill_aerosols_3d(const int ncol, const int nlay, Gas_concs& aerosol_concs)
+{
+    for (int i=1; i<=11; ++i)
+    {
+        std::string name = i<10 ? "aermr0"+std::to_string(i) : "aermr"+std::to_string(i);
+        if (aerosol_concs.get_vmr(name).dim(1) == 1)
+        {
+            aerosol_concs.set_vmr(name, aerosol_concs.get_vmr(name).subset({ {{1,ncol}, {1,nlay}}} ));
+        }
+
+    }
+
+}
 
 // Two-stream variant of aerosol optics.
-void Aerosol_optics::aerosol_optics(const Gas_concs& aerosol_concs,
+void Aerosol_optics::aerosol_optics(Gas_concs& aerosol_concs,
                                     const Array<Float,2>& rh, const Array<Float,2>& plev,
                                     Optical_props_2str &optical_props)
 {
     const int ncol = rh.dim(1);
     const int nlay = rh.dim(2);
     const int nbnd = this->get_nband();
-
+    
+    fill_aerosols_3d(ncol, nlay, aerosol_concs);
+    
     // Temporary arrays for storage.
     Array<Float,3> ltau    ({ncol, nlay, nbnd});
     Array<Float,3> ltaussa ({ncol, nlay, nbnd});

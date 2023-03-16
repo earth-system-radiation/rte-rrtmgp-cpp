@@ -26,7 +26,7 @@ class Aerosol_optics_rt : public Optical_props_rt
 
         void aerosol_optics(
                 const int ibnd,
-                const Gas_concs_gpu& aerosol_concs,
+                Gas_concs_gpu& aerosol_concs,
                 const Array_gpu<Float,2>& rh, const Array_gpu<Float,2>& plev,
                 Optical_props_2str_rt& optical_props);
 

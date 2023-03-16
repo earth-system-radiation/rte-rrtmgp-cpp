@@ -172,6 +172,16 @@ namespace
             g[idx]   = ltaussag[idx] / max(ltaussa[idx], tmin);
         }
     }
+    
+    void fill_aerosols_3d(const int ncol, const int nlay, Gas_concs_gpu& aerosol_concs)
+    {
+        for (int i=1; i<=11; ++i)
+        {
+            std::string name = i<10 ? "aermr0"+std::to_string(i) : "aermr"+std::to_string(i);
+            if (aerosol_concs.get_vmr(name).dim(1) == 1)
+                aerosol_concs.set_vmr(name, aerosol_concs.get_vmr(name).subset({ {{1, ncol}, {1, nlay}}} ));
+        }
+    }
 }
 
 Aerosol_optics_rt::Aerosol_optics_rt(
@@ -207,7 +217,7 @@ Aerosol_optics_rt::Aerosol_optics_rt(
 
 void Aerosol_optics_rt::aerosol_optics(
         const int ibnd,
-        const Gas_concs_gpu& aerosol_concs,
+        Gas_concs_gpu& aerosol_concs,
         const Array_gpu<Float,2>& rh, const Array_gpu<Float,2>& plev,
         Optical_props_2str_rt& optical_props)
 {
@@ -215,7 +225,9 @@ void Aerosol_optics_rt::aerosol_optics(
     const int nlay = rh.dim(2);
     const int nbnd = this->get_nband();
     const int nhum = this->rh_upper.dim(1);
-
+    
+    fill_aerosols_3d(ncol, nlay, aerosol_concs);
+    
     // Temporary arrays for storage.
     Array_gpu<Float,2> ltau    ({ncol, nlay});
     Array_gpu<Float,2> ltaussa ({ncol, nlay});
