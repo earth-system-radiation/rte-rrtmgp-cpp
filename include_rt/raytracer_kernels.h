@@ -31,6 +31,7 @@ void ray_tracer_kernel(
         Float* __restrict__ atmos_diffuse_count,
         const Float* __restrict__ k_ext,
         const Optics_scat* __restrict__ scat_asy,
+        const Float* __restrict__ r_eff,
         const Float tod_inc_direct,
         const Float tod_inc_diffuse,
         const Float* __restrict__ surface_albedo,
@@ -39,5 +40,8 @@ void ray_tracer_kernel(
         const Vector<int> grid_cells,
         const Vector<int> kn_grid,
         const Vector<Float> sun_direction,
-        curandDirectionVectors32_t* qrng_vectors, unsigned int* qrng_constants);
+        curandDirectionVectors32_t* qrng_vectors, unsigned int* qrng_constants,
+        const Float* __restrict__ mie_cdf,
+        const Float* __restrict__ mie_ang,
+        const int mie_table_size);
 #endif

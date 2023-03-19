@@ -26,6 +26,7 @@
 #include "Array.h"
 #include "raytracer_kernels_bw.h"
 #include "Radiation_solver_bw.h"
+#include "Aerosol_optics_rt.h"
 #include "Gas_concs.h"
 #include "Types.h"
 #include "Mem_pool_gpu.h"
@@ -70,8 +71,8 @@ void read_and_set_vmr(
 }
 
 void read_and_set_aer(
-        const std::string& aerosol_name, const int n_lay,
-        const Netcdf_handle& input_nc, Gas_concs& aerosol_concs)
+        const std::string& aerosol_name, const int n_col_x, const int n_col_y, const int n_lay,
+        const Netcdf_handle& input_nc, Aerosol_concs& aerosol_concs)
 {
     if (input_nc.variable_exists(aerosol_name))
     {
@@ -84,10 +85,18 @@ void read_and_set_aer(
                 aerosol_concs.set_vmr(aerosol_name,
                         Array<Float,1>(input_nc.get_variable<Float>(aerosol_name, {n_lay}), {n_lay}));
             else
-                throw std::runtime_error("Illegal dimensions of gas \"" + aerosol_name + "\" in input");
+                throw std::runtime_error("Illegal dimensions of \"" + aerosol_name + "\" in input");
+        }
+        else if (n_dims == 3)
+        {
+            if (dims.at("lay") == n_lay && dims.at("y") == n_col_y && dims.at("x") == n_col_x)
+                aerosol_concs.set_vmr(aerosol_name,
+                        Array<Float,2>(input_nc.get_variable<Float>(aerosol_name, {n_lay, n_col_y, n_col_x}), {n_col_x * n_col_y, n_lay}));
+            else
+                throw std::runtime_error("Illegal dimensions of \"" + aerosol_name + "\" in input");
         }
         else
-            throw std::runtime_error("Illegal dimensions of gas \"" + aerosol_name + "\" in input");
+            throw std::runtime_error("Illegal dimensions of \"" + aerosol_name + "\" in input");
     }
     else
     {
@@ -226,17 +235,20 @@ void solve_radiation(int argc, char** argv)
     ////// FLOW CONTROL SWITCHES //////
     // Parse the command line options.
     std::map<std::string, std::pair<bool, std::string>> command_line_options {
-        {"shortwave"        , { true,  "Enable computation of shortwave radiation."}},
-        {"longwave"         , { false, "Enable computation of longwave radiation." }},
-        {"fluxes"           , { true,  "Enable computation of fluxes."             }},
-        {"raytracing"       , { false, "Use raytracing for flux computation."      }},
-        {"cloud-optics"     , { false, "Enable cloud optics."                      }},
-        {"aerosol-optics"   , { false, "Enable aerosol optics."                    }},
-        {"output-optical"   , { false, "Enable output of optical properties."      }},
-        {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
-        {"lu-albedo"        , { false, "Compute spectral albedo from land use map" }},
-        {"broadband"        , { false, "Compute broadband fluxes"                  }},
-        {"profiling"        , { false, "Perform additional profiling run."         }} };
+        {"shortwave"        , { true,  "Enable computation of shortwave radiation."  }},
+        {"longwave"         , { false, "Enable computation of longwave radiation."   }},
+        {"fluxes"           , { true,  "Enable computation of fluxes."               }},
+        {"raytracing"       , { false, "Use raytracing for flux computation."        }},
+        {"cloud-optics"     , { false, "Enable cloud optics."                        }},
+        {"cloud-mie"        , { false, "mie cloud droplet scattering."               }},
+        {"aerosol-optics"   , { false, "Enable aerosol optics."                      }},
+        {"output-optical"   , { false, "Enable output of optical properties."        }},
+        {"output-bnd-fluxes", { false, "Enable output of band fluxes."               }},
+        {"lu-albedo"        , { false, "Compute spectral albedo from land use map"   }},
+        {"broadband"        , { false, "Compute broadband fluxes"                    }},
+        {"profiling"        , { false, "Perform additional profiling run."           }},
+        {"delta-cloud"      , { false, "delta-scaling of cloud optical properties"   }},
+        {"delta-aerosol"    , { false, "delta-scaling of aerosol optical properties" }}};
     Int ray_count_exponent = 22;
 
     if (parse_command_line_options(command_line_options, ray_count_exponent, argc, argv))
@@ -247,12 +259,15 @@ void solve_radiation(int argc, char** argv)
     const bool switch_longwave          = command_line_options.at("longwave"         ).first;
     const bool switch_fluxes            = command_line_options.at("fluxes"           ).first;
     const bool switch_cloud_optics      = command_line_options.at("cloud-optics"     ).first;
+    const bool switch_cloud_mie         = command_line_options.at("cloud-mie"        ).first;
     const bool switch_aerosol_optics    = command_line_options.at("aerosol-optics"   ).first;
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
     const bool switch_lu_albedo         = command_line_options.at("lu-albedo"        ).first;
     const bool switch_broadband         = command_line_options.at("broadband"        ).first;
     const bool switch_profiling         = command_line_options.at("profiling"        ).first;
+    const bool switch_delta_cloud       = command_line_options.at("delta-cloud"      ).first;
+    const bool switch_delta_aerosol     = command_line_options.at("delta-aerosol"    ).first;
 
     // Print the options to the screen.
     print_command_line_options(command_line_options);
@@ -295,6 +310,9 @@ void solve_radiation(int argc, char** argv)
     // Reading camera data
     Netcdf_group cam_in = input_nc.get_group("camera-settings");
     Camera camera;
+    camera.f_zoom = cam_in.get_variable<Float>("f_zoom");
+    camera.fov    = cam_in.get_variable<Float>("fov");
+    camera.fisheye= int(cam_in.get_variable<Float>("fisheye"));
     camera.position = {cam_in.get_variable<Float>("px"),
                        cam_in.get_variable<Float>("py"),
                        cam_in.get_variable<Float>("pz")};
@@ -302,9 +320,11 @@ void solve_radiation(int argc, char** argv)
     camera.setup_rotation_matrix(cam_in.get_variable<Float>("yaw"),
                                  cam_in.get_variable<Float>("pitch"),
                                  cam_in.get_variable<Float>("roll"));
+    camera.setup_normal_camera(camera);
 
-    camera.f_zoom = cam_in.get_variable<Float>("f_zoom");
-
+    printf("width:  %f %f %f ",camera.cam_width.x,camera.cam_width.y,camera.cam_width.z);
+    printf("height: %f %f %f ",camera.cam_height.x,camera.cam_height.y,camera.cam_height.z);
+    printf("depth:  %f %f %f ",camera.cam_depth.x,camera.cam_depth.y,camera.cam_depth.z);
     // Read the atmospheric fields.
     Array<Float,2> p_lay(input_nc.get_variable<Float>("p_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
     Array<Float,2> t_lay(input_nc.get_variable<Float>("t_lay", {n_lay, n_col_y, n_col_x}), {n_col, n_lay});
@@ -375,26 +395,30 @@ void solve_radiation(int argc, char** argv)
         rei.set_dims({n_col, n_lay});
         rei = std::move(input_nc.get_variable<Float>("rei", {n_lay, n_col_y, n_col_x}));
     }
-
+    else
+    {
+        rel.set_dims({n_col, n_lay});
+        rel.fill(Float(0.));
+    }
     Array<Float,2> rh;
-    Gas_concs aerosol_concs;
+    Aerosol_concs aerosol_concs;
 
     if (switch_aerosol_optics)
     {
         rh.set_dims({n_col, n_lay});
         rh = std::move(input_nc.get_variable<Float>("rh", {n_lay, n_col_y, n_col_x}));
 
-        read_and_set_aer("aermr01", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr02", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr03", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr04", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr05", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr06", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr07", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr08", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr09", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr10", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr11", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr01", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr02", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr03", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr04", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr05", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr06", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr07", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr08", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr09", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr10", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr11", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
     }
 
     ////// CREATE THE OUTPUT FILE //////
@@ -653,10 +677,19 @@ void solve_radiation(int argc, char** argv)
         Array_gpu<Float,2> radiance;
 
         if (switch_broadband)
+        {
             radiance.set_dims({camera.nx, camera.ny});
+
+            if (switch_cloud_mie)
+                rad_sw.load_mie_tables("mie_lut.nc", switch_broadband);
+        }
         else
+        {
             XYZ.set_dims({camera.nx, camera.ny, 3});
 
+            if (switch_cloud_mie)
+                rad_sw.load_mie_tables("mie_lut_vis.nc", switch_broadband);
+        }
         // Solve the radiation.
         Status::print_message("Solving the shortwave radiation.");
 
@@ -678,7 +711,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> rei_gpu(rei);
 
             Array_gpu<Float,2> rh_gpu(rh);
-            Gas_concs_gpu aerosol_concs_gpu(aerosol_concs);
+            Aerosol_concs_gpu aerosol_concs_gpu(aerosol_concs);
 
             Array_gpu<Float,1> land_use_map_gpu(land_use_map);
 
@@ -692,8 +725,11 @@ void solve_radiation(int argc, char** argv)
 
             rad_sw.solve_gpu_bb(
                     switch_cloud_optics,
+                    switch_cloud_mie,
                     switch_aerosol_optics,
                     switch_lu_albedo,
+                    switch_delta_cloud,
+                    switch_delta_aerosol,
                     grid_cells,
                     grid_d,
                     kn_grid,
@@ -743,7 +779,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> rei_gpu(rei);
 
             Array_gpu<Float,2> rh_gpu(rh);
-            Gas_concs_gpu aerosol_concs_gpu(aerosol_concs);
+            Aerosol_concs_gpu aerosol_concs_gpu(aerosol_concs);
 
             Array_gpu<Float,1> land_use_map_gpu(land_use_map);
 
@@ -758,8 +794,11 @@ void solve_radiation(int argc, char** argv)
             rad_sw.solve_gpu(
                     tune_step,
                     switch_cloud_optics,
+                    switch_cloud_mie,
                     switch_aerosol_optics,
                     switch_lu_albedo,
+                    switch_delta_cloud,
+                    switch_delta_aerosol,
                     grid_cells,
                     grid_d,
                     kn_grid,

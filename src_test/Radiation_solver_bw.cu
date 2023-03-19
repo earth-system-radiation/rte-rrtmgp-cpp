@@ -782,6 +782,7 @@ Float Planck_integrator(
 }
 
 
+// Following bodhaine 1999: https://doi.org/10.1175/1520-0426(1999)016%3C1854:ORODC%3E2.0.CO;2
 Float rayleigh_mean(
     const Float wv1, const Float wv2)
 {
@@ -837,13 +838,56 @@ Radiation_solver_shortwave::Radiation_solver_shortwave(
             load_and_init_aerosol_optics(file_name_aerosol));
 }
 
+void Radiation_solver_shortwave::load_mie_tables(
+        const std::string& file_name_mie,
+        const bool switch_broadband)
+{
+    Netcdf_file mie_nc(file_name_mie, Netcdf_mode::Read);
+    const int n_bnd_sw = this->get_n_bnd_gpu();
+    const int n_re  = mie_nc.get_dimension_size("n_reff");
+    const int n_mie = mie_nc.get_dimension_size("n_ang");
+
+    if (switch_broadband)
+    {
+        Array<Float,2> mie_cdf(mie_nc.get_variable<Float>("cdf", {n_bnd_sw, n_mie}), {n_mie, n_bnd_sw});
+        Array<Float,3> mie_ang(mie_nc.get_variable<Float>("ang", {n_bnd_sw, n_re, n_mie}), {n_mie, n_re, n_bnd_sw});
+
+        Array<Float,3> mie_phase(mie_nc.get_variable<Float>("phase", {n_bnd_sw, n_re, n_mie}), {n_mie, n_re, n_bnd_sw});
+        Array<Float,2> mie_phase_ang(mie_nc.get_variable<Float>("phase_ang", {n_bnd_sw, n_mie}), {n_mie, n_bnd_sw});
+
+        this->mie_cdfs = mie_cdf;
+        this->mie_angs = mie_ang;
+
+        this->mie_phase = mie_phase;
+        this->mie_phase_angs = mie_phase_ang;
+    }
+    else
+    {
+        const int n_sub = mie_nc.get_dimension_size("n_subband");
+        Array<Float,3> mie_cdf(mie_nc.get_variable<Float>("cdf", {n_bnd_sw, n_sub, n_mie}), {n_mie, n_sub, n_bnd_sw});
+        Array<Float,4> mie_ang(mie_nc.get_variable<Float>("ang", {n_bnd_sw, n_sub, n_re, n_mie}), {n_mie, n_re, n_sub, n_bnd_sw});
+
+        Array<Float,4> mie_phase(mie_nc.get_variable<Float>("phase", {n_bnd_sw, n_sub, n_re, n_mie}), {n_mie, n_re, n_sub, n_bnd_sw});
+        Array<Float,3> mie_phase_ang(mie_nc.get_variable<Float>("phase_ang", {n_bnd_sw, n_sub, n_mie}), {n_mie, n_sub, n_bnd_sw});
+
+        this->mie_cdfs_vis = mie_cdf;
+        this->mie_angs_vis = mie_ang;
+
+        this->mie_phase_vis = mie_phase;
+        this->mie_phase_angs_vis = mie_phase_ang;
+    }
+
+}
 
 
 void Radiation_solver_shortwave::solve_gpu(
         const bool tune_step,
         const bool switch_cloud_optics,
+        const bool switch_cloud_mie,
         const bool switch_aerosol_optics,
         const bool switch_lu_albedo,
+        const bool switch_delta_cloud,
+        const bool switch_delta_aerosol,
         const Vector<int>& grid_cells,
         const Vector<Float>& grid_d,
         const Vector<int>& kn_grid,
@@ -860,7 +904,7 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         const Array_gpu<Float,1>& land_use_map,
         const Array_gpu<Float,2>& rh,
-        const Gas_concs_gpu& aerosol_concs,
+        const Aerosol_concs_gpu& aerosol_concs,
         const Camera& camera,
         Array_gpu<Float,3>& XYZ)
 
@@ -870,6 +914,10 @@ void Radiation_solver_shortwave::solve_gpu(
     const int n_lev = p_lev.dim(2);
     const int n_gpt = this->kdist_gpu->get_ngpt();
     const int n_bnd = this->kdist_gpu->get_nband();
+
+    const int n_mie = (switch_cloud_mie) ? this->mie_angs.dim(1) : 0;
+    const int n_re = (switch_cloud_mie) ? this->mie_angs.dim(2) : 0;
+    const int n_sub = (switch_cloud_mie) ? this->mie_angs.dim(3) : 3;
 
     const int cam_nx = XYZ.dim(1);
     const int cam_ny = XYZ.dim(2);
@@ -893,11 +941,17 @@ void Radiation_solver_shortwave::solve_gpu(
     Array<int,2> cld_mask_liq({n_col, n_lay});
     Array<int,2> cld_mask_ice({n_col, n_lay});
 
+    Array_gpu<Float,3> mie_cdfs_sub;
+    Array_gpu<Float,4> mie_angs_sub;
+    Array_gpu<Float,4> mie_phase_sub;
+    Array_gpu<Float,3> mie_phase_angs_sub;
+
     rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_ns, cam_nx, cam_ny, XYZ.ptr());
 
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
     Float total_source = 0.;
 
+    int previous_band = 0;
     for (int igpt=1; igpt<=n_gpt; ++igpt)
     {
         int band = 0;
@@ -955,7 +1009,6 @@ void Radiation_solver_shortwave::solve_gpu(
 
             gas_optics_subset(col_s, col_e, n_col_block, optical_props_block);
         }
-        if (tune_step) return;
 
         optical_props_block.reset();
 
@@ -969,17 +1022,24 @@ void Radiation_solver_shortwave::solve_gpu(
             gas_optics_subset(col_s, col_e, n_col_residual, optical_props_residual);
         }
 
+        if (tune_step) return;
+
         toa_src.fill(toa_src_temp({1}) * tsi_scaling({1}));
         if (switch_cloud_optics)
         {
-            cloud_optics_gpu->cloud_optics(
-                    band-1,
-                    lwp,
-                    iwp,
-                    rel,
-                    rei,
-                    *cloud_optical_props);
-            //cloud_optical_props->delta_scale();
+            if (band > previous_band)
+            {
+                cloud_optics_gpu->cloud_optics(
+                        band-1,
+                        lwp,
+                        iwp,
+                        rel,
+                        rei,
+                        *cloud_optical_props);
+
+                if (switch_delta_cloud)
+                    cloud_optical_props->delta_scale();
+            }
 
             // Add the cloud optical props to the gas optical properties.
             add_to(
@@ -995,12 +1055,18 @@ void Radiation_solver_shortwave::solve_gpu(
 
         if (switch_aerosol_optics)
         {
-            aerosol_optics_gpu->aerosol_optics(
-                    band-1,
-                    aerosol_concs,
-                    rh, p_lev,
-                    *aerosol_optical_props);
-            //aerosol_optical_props->delta_scale();
+            if (band > previous_band)
+            {
+                Aerosol_concs_gpu aerosol_concs_subset(aerosol_concs, 1, n_col);
+                aerosol_optics_gpu->aerosol_optics(
+                        band-1,
+                        aerosol_concs_subset,
+                        rh, p_lev,
+                        *aerosol_optical_props);
+
+                if (switch_delta_aerosol)
+                    aerosol_optical_props->delta_scale();
+            }
 
             // Add the aerosol optical props to the gas optical properties.
             add_to(
@@ -1026,7 +1092,8 @@ void Radiation_solver_shortwave::solve_gpu(
 
         // number of intervals
         const Array<Float, 2>& band_limits_wn(this->kdist_gpu->get_band_lims_wavenumber());
-        const int nwv = 3;
+        const int nwv = n_sub;
+
         const Float wv1 = 1. / band_limits_wn({2,band}) * Float(1.e7);
         const Float wv2 = 1. / band_limits_wn({1,band}) * Float(1.e7);
         const Float dwv = (wv2-wv1)/Float(nwv);
@@ -1038,9 +1105,10 @@ void Radiation_solver_shortwave::solve_gpu(
         {
             const Float wv1_sub = wv1 + iwv*dwv;
             const Float wv2_sub = wv1 + (iwv+1)*dwv;
-            const Float wv_mid = (wv1_sub + wv2_sub)/2;
             const Float local_planck = Planck_integrator(wv1_sub,wv2_sub);
-            const Float rayleigh = rayleigh_mean(wv1_sub, wv2_sub);
+
+            // use RRTMGPs scattering coefficients if solving per band instead of subbands
+            const Float rayleigh = (nwv==1) ? 0 : rayleigh_mean(wv1_sub, wv2_sub);
             const Float toa_factor = local_planck / total_planck * Float(1.)/solar_source_band;
 
             // XYZ factors
@@ -1059,10 +1127,24 @@ void Radiation_solver_shortwave::solve_gpu(
             const Float zenith_angle = std::acos(mu0({1}));
             const Float azimuth_angle = azi({1});
 
+            if (switch_cloud_mie)
+            {
+                mie_cdfs_sub = mie_cdfs_vis.subset({{ {1, n_mie}, {iwv+1,iwv+1}, {band, band} }});
+                mie_angs_sub = mie_angs_vis.subset({{ {1, n_mie}, {1, n_re}, {iwv+1,iwv+1}, {band, band} }});
+                mie_phase_sub = mie_phase_vis.subset({{ {1, n_mie}, {1, n_re}, {iwv+1,iwv+1}, {band, band} }});
+                mie_phase_angs_sub = mie_phase_angs_vis.subset({{ {1, n_mie}, {iwv+1,iwv+1}, {band, band} }});
+            }
+
             raytracer.trace_rays(
+                    igpt-1,
                     ray_count, n_lay,
                     grid_cells, grid_d, kn_grid,
                     z_lev,
+                    mie_cdfs_sub,
+                    mie_angs_sub,
+                    mie_phase_sub,
+                    mie_phase_angs_sub,
+                    rel,
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
                     dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
@@ -1090,13 +1172,17 @@ void Radiation_solver_shortwave::solve_gpu(
                     XYZ);
 
         }
+        previous_band = band;
     }
 }
 
 void Radiation_solver_shortwave::solve_gpu_bb(
         const bool switch_cloud_optics,
+        const bool switch_cloud_mie,
         const bool switch_aerosol_optics,
         const bool switch_lu_albedo,
+        const bool switch_delta_cloud,
+        const bool switch_delta_aerosol,
         const Vector<int>& grid_cells,
         const Vector<Float>& grid_d,
         const Vector<int>& kn_grid,
@@ -1113,7 +1199,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         const Array_gpu<Float,1>& land_use_map,
         const Array_gpu<Float,2>& rh,
-        const Gas_concs_gpu& aerosol_concs,
+        const Aerosol_concs_gpu& aerosol_concs,
         const Camera& camera,
         Array_gpu<Float,2>& radiance)
 
@@ -1123,6 +1209,9 @@ void Radiation_solver_shortwave::solve_gpu_bb(
     const int n_lev = p_lev.dim(2);
     const int n_gpt = this->kdist_gpu->get_ngpt();
     const int n_bnd = this->kdist_gpu->get_nband();
+
+    const int n_mie = (switch_cloud_mie) ? this->mie_angs.dim(1) : 0;
+    const int n_re = (switch_cloud_mie) ? this->mie_angs.dim(2) : 0;
 
     const int cam_nx = radiance.dim(1);
     const int cam_ny = radiance.dim(2);
@@ -1144,11 +1233,17 @@ void Radiation_solver_shortwave::solve_gpu_bb(
     Array<int,2> cld_mask_liq({n_col, n_lay});
     Array<int,2> cld_mask_ice({n_col, n_lay});
 
+    Array_gpu<Float,2> mie_cdfs_sub;
+    Array_gpu<Float,3> mie_angs_sub;
+    Array_gpu<Float,3> mie_phase_sub;
+    Array_gpu<Float,2> mie_phase_angs_sub;
+
     rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, radiance.ptr());
 
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
     Float total_source = 0.;
 
+    int previous_band = 0;
     for (int igpt=1; igpt<=n_gpt; ++igpt)
     {
         int band = 0;
@@ -1218,15 +1313,19 @@ void Radiation_solver_shortwave::solve_gpu_bb(
 
         if (switch_cloud_optics)
         {
-            cloud_optics_gpu->cloud_optics(
-                    band-1,
-                    lwp,
-                    iwp,
-                    rel,
-                    rei,
-                    *cloud_optical_props);
-            //cloud_optical_props->delta_scale();
+            if (band > previous_band)
+            {
+                cloud_optics_gpu->cloud_optics(
+                        band-1,
+                        lwp,
+                        iwp,
+                        rel,
+                        rei,
+                        *cloud_optical_props);
 
+                if (switch_delta_cloud)
+                    cloud_optical_props->delta_scale();
+            }
             // Add the cloud optical props to the gas optical properties.
             add_to(
                     dynamic_cast<Optical_props_2str_rt&>(*optical_props),
@@ -1241,12 +1340,18 @@ void Radiation_solver_shortwave::solve_gpu_bb(
 
         if (switch_aerosol_optics)
         {
-            aerosol_optics_gpu->aerosol_optics(
-                    band-1,
-                    aerosol_concs,
-                    rh, p_lev,
-                    *aerosol_optical_props);
-            //aerosol_optical_props->delta_scale();
+            if (band > previous_band)
+            {
+                Aerosol_concs_gpu aerosol_concs_subset(aerosol_concs, 1, n_col);
+                aerosol_optics_gpu->aerosol_optics(
+                        band-1,
+                        aerosol_concs_subset,
+                        rh, p_lev,
+                        *aerosol_optical_props);
+
+                if (switch_delta_aerosol)
+                    aerosol_optical_props->delta_scale();
+            }
 
             // Add the aerosol optical props to the gas optical properties.
             add_to(
@@ -1278,10 +1383,24 @@ void Radiation_solver_shortwave::solve_gpu_bb(
             albedo = sfc_alb.subset({{ {band, band}, {1, n_col}}});
         }
 
+        if (switch_cloud_mie)
+        {
+            mie_cdfs_sub = mie_cdfs.subset({{ {1, n_mie}, {band, band} }});
+            mie_angs_sub = mie_angs.subset({{ {1, n_mie}, {1, n_re}, {band, band} }});
+            mie_phase_sub = mie_phase.subset({{ {1, n_mie}, {1, n_re}, {band, band} }});
+            mie_phase_angs_sub = mie_phase_angs.subset({{ {1, n_mie}, {band, band} }});
+        }
+
         raytracer.trace_rays_bb(
+                igpt-1,
                 ray_count, n_lay,
                 grid_cells, grid_d, kn_grid,
                 z_lev,
+                mie_cdfs_sub,
+                mie_angs_sub,
+                mie_phase_sub,
+                mie_phase_angs_sub,
+                rel,
                 dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_tau(),
                 dynamic_cast<Optical_props_2str_rt&>(*optical_props).get_ssa(),
                 dynamic_cast<Optical_props_2str_rt&>(*cloud_optical_props).get_tau(),
@@ -1302,5 +1421,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
                 camera,
                 flux_camera,
                 radiance);
+
+        previous_band = band;
     }
 }

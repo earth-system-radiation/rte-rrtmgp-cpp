@@ -171,6 +171,8 @@ void Raytracer::trace_rays(
         const Vector<int> grid_cells,
         const Vector<Float> grid_d,
         const Vector<int> kn_grid,
+        const Array_gpu<Float,2>& mie_cdf,
+        const Array_gpu<Float,3>& mie_ang,
         const Array_gpu<Float,2>& tau_total,
         const Array_gpu<Float,2>& ssa_total,
         const Array_gpu<Float,2>& tau_cloud,
@@ -179,6 +181,7 @@ void Raytracer::trace_rays(
         const Array_gpu<Float,2>& tau_aeros,
         const Array_gpu<Float,2>& ssa_aeros,
         const Array_gpu<Float,2>& asy_aeros,
+        const Array_gpu<Float,2>& r_eff,
         const Array_gpu<Float,2>& surface_albedo,
         const Float zenith_angle,
         const Float azimuth_angle,
@@ -264,7 +267,7 @@ void Raytracer::trace_rays(
 
     dim3 grid{rt_kernel_grid}, block{rt_kernel_block};
 
-//    // smallest two power that is larger than grid dimension
+    // smallest two power that is larger than grid dimension
     const Int qrng_grid_x = pow(Float(2.), int(std::log2(Float(grid_cells.x))) + Float(1.));
     const Int qrng_grid_y = pow(Float(2.), int(std::log2(Float(grid_cells.y))) + Float(1.));
 
@@ -275,7 +278,10 @@ void Raytracer::trace_rays(
     Float photons_per_thread_tmp = std::max(Float(1), static_cast<Float>(photons_total) / (rt_kernel_grid * rt_kernel_block));
     Int photons_per_thread = pow(Float(2.), std::floor(std::log2(Float(photons_per_thread_tmp))));
 
-    ray_tracer_kernel<<<grid, block>>>(
+    // size of mie table, will be zero if HG is used for cloud scattering
+    const int mie_table_size = mie_cdf.size();
+
+    ray_tracer_kernel<<<grid, block,sizeof(Float)*mie_table_size>>>(
             photons_per_thread,
             qrng_grid_x,
             qrng_grid_y,
@@ -289,12 +295,14 @@ void Raytracer::trace_rays(
             atmos_direct_count.ptr(),
             atmos_diffuse_count.ptr(),
             k_ext.ptr(), scat_asy.ptr(),
+            r_eff.ptr(),
             tod_inc_direct,
             tod_inc_diffuse,
             surface_albedo.ptr(),
             grid_size, grid_d, grid_cells, kn_grid,
             sun_direction,
-            this->qrng_vectors_gpu, this->qrng_constants_gpu);
+            this->qrng_vectors_gpu, this->qrng_constants_gpu,
+            mie_cdf.ptr(), mie_ang.ptr(), mie_table_size);
 
     // convert counts to fluxes
 

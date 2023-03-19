@@ -327,6 +327,43 @@ namespace
                 lut_extliq, lut_ssaliq, lut_asyliq,
                 lut_extice, lut_ssaice, lut_asyice);
     }
+
+    Aerosol_optics load_and_init_aerosol_optics(
+            const std::string& coef_file)
+    {
+        // READ THE COEFFICIENTS FOR THE OPTICAL SOLVER.
+        Netcdf_file coef_nc(coef_file, Netcdf_mode::Read);
+
+        // Read look-up table coefficient dimensions
+        int n_band     = coef_nc.get_dimension_size("band_sw");
+        int n_hum      = coef_nc.get_dimension_size("relative_humidity");
+        int n_philic = coef_nc.get_dimension_size("hydrophilic");
+        int n_phobic = coef_nc.get_dimension_size("hydrophobic");
+
+        Array<Float,2> band_lims_wvn({2, n_band});
+
+        Array<Float,2> mext_phobic(
+                coef_nc.get_variable<Float>("mass_ext_sw_hydrophobic", {n_phobic, n_band}), {n_band, n_phobic});
+        Array<Float,2> ssa_phobic(
+                coef_nc.get_variable<Float>("ssa_sw_hydrophobic", {n_phobic, n_band}), {n_band, n_phobic});
+        Array<Float,2> g_phobic(
+                coef_nc.get_variable<Float>("asymmetry_sw_hydrophobic", {n_phobic, n_band}), {n_band, n_phobic});
+
+        Array<Float,3> mext_philic(
+                coef_nc.get_variable<Float>("mass_ext_sw_hydrophilic", {n_philic, n_hum, n_band}), {n_band, n_hum, n_philic});
+        Array<Float,3> ssa_philic(
+                coef_nc.get_variable<Float>("ssa_sw_hydrophilic", {n_philic, n_hum, n_band}), {n_band, n_hum, n_philic});
+        Array<Float,3> g_philic(
+                coef_nc.get_variable<Float>("asymmetry_sw_hydrophilic", {n_philic, n_hum, n_band}), {n_band, n_hum, n_philic});
+
+        Array<Float,1> rh_upper(
+                coef_nc.get_variable<Float>("relative_humidity2", {n_hum}), {n_hum});
+
+        return Aerosol_optics(
+                band_lims_wvn, rh_upper,
+                mext_phobic, ssa_phobic, g_phobic,
+                mext_philic, ssa_philic, g_philic);
+    }
 }
 
 
@@ -582,23 +619,34 @@ void Radiation_solver_longwave::solve(
 
 Radiation_solver_shortwave::Radiation_solver_shortwave(
         const Gas_concs& gas_concs,
+        const bool switch_cloud_optics,
+        const bool switch_aerosol_optics,
         const std::string& file_name_gas,
-        const std::string& file_name_cloud)
+        const std::string& file_name_cloud,
+        const std::string& file_name_aerosol)
 {
     // Construct the gas optics classes for the solver.
     this->kdist = std::make_unique<Gas_optics_rrtmgp>(
             load_and_init_gas_optics(gas_concs, file_name_gas));
 
-    this->cloud_optics = std::make_unique<Cloud_optics>(
-            load_and_init_cloud_optics(file_name_cloud));
+    if (switch_cloud_optics)
+        this->cloud_optics = std::make_unique<Cloud_optics>(
+                load_and_init_cloud_optics(file_name_cloud));
+
+    if (switch_aerosol_optics)
+        this->aerosol_optics = std::make_unique<Aerosol_optics>(
+                load_and_init_aerosol_optics(file_name_aerosol));
 }
 
 
 void Radiation_solver_shortwave::solve(
         const bool switch_fluxes,
         const bool switch_cloud_optics,
+        const bool switch_aerosol_optics,
         const bool switch_output_optical,
         const bool switch_output_bnd_fluxes,
+        const bool switch_delta_cloud,
+        const bool switch_delta_aerosol,
         const Gas_concs& gas_concs,
         const Array<Float,2>& p_lay, const Array<Float,2>& p_lev,
         const Array<Float,2>& t_lay, const Array<Float,2>& t_lev,
@@ -607,6 +655,8 @@ void Radiation_solver_shortwave::solve(
         const Array<Float,1>& tsi_scaling, const Array<Float,1>& mu0,
         const Array<Float,2>& lwp, const Array<Float,2>& iwp,
         const Array<Float,2>& rel, const Array<Float,2>& rei,
+        const Array<Float,2>& rh,
+        const Aerosol_concs& aerosol_concs,
         Array<Float,3>& tau, Array<Float,3>& ssa, Array<Float,3>& g,
         Array<Float,2>& toa_src,
         Array<Float,2>& sw_flux_up, Array<Float,2>& sw_flux_dn,
@@ -638,6 +688,9 @@ void Radiation_solver_shortwave::solve(
     std::unique_ptr<Optical_props_2str> cloud_optical_props_subset;
     std::unique_ptr<Optical_props_2str> cloud_optical_props_residual;
 
+    std::unique_ptr<Optical_props_2str> aerosol_optical_props_subset;
+    std::unique_ptr<Optical_props_2str> aerosol_optical_props_residual;
+
     if (switch_cloud_optics)
     {
         cloud_optical_props_subset = std::make_unique<Optical_props_2str>(n_col_block, n_lay, *cloud_optics);
@@ -645,11 +698,19 @@ void Radiation_solver_shortwave::solve(
             cloud_optical_props_residual = std::make_unique<Optical_props_2str>(n_col_block_residual, n_lay, *cloud_optics);
     }
 
+    if (switch_aerosol_optics)
+    {
+        aerosol_optical_props_subset = std::make_unique<Optical_props_2str>(n_col_block, n_lay, *aerosol_optics);
+        if (n_col_block_residual > 0)
+            aerosol_optical_props_residual = std::make_unique<Optical_props_2str>(n_col_block_residual, n_lay, *aerosol_optics);
+    }
+
     // Lambda function for solving optical properties subset.
     auto call_kernels = [&](
             const int col_s_in, const int col_e_in,
             std::unique_ptr<Optical_props_arry>& optical_props_subset_in,
             std::unique_ptr<Optical_props_2str>& cloud_optical_props_subset_in,
+            std::unique_ptr<Optical_props_2str>& aerosol_optical_props_subset_in,
             Fluxes_broadband& fluxes,
             Fluxes_broadband& bnd_fluxes)
     {
@@ -694,13 +755,33 @@ void Radiation_solver_shortwave::solve(
                     rei.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
                     *cloud_optical_props_subset_in);
 
-            cloud_optical_props_subset_in->delta_scale();
+            if (switch_delta_cloud)
+                cloud_optical_props_subset_in->delta_scale();
 
             // Add the cloud optical props to the gas optical properties.
             add_to(
                     dynamic_cast<Optical_props_2str&>(*optical_props_subset_in),
                     dynamic_cast<Optical_props_2str&>(*cloud_optical_props_subset_in));
         }
+
+        if (switch_aerosol_optics)
+        {
+            Aerosol_concs aerosol_concs_subset(aerosol_concs, 1, n_col_in);
+            aerosol_optics->aerosol_optics(
+                    aerosol_concs_subset,
+                    rh.subset({{ {col_s_in, col_e_in}, {1, n_lay} }}),
+                    p_lev_subset,
+                    *aerosol_optical_props_subset_in);
+
+            if (switch_delta_aerosol)
+                aerosol_optical_props_subset_in->delta_scale();
+
+            // Add the aerosol optical props to the gas optical properties.
+            add_to(
+                    dynamic_cast<Optical_props_2str&>(*optical_props_subset_in),
+                    dynamic_cast<Optical_props_2str&>(*aerosol_optical_props_subset_in));
+        }
+
 
         // Store the optical properties, if desired.
         if (switch_output_optical)
@@ -806,6 +887,7 @@ void Radiation_solver_shortwave::solve(
                 col_s, col_e,
                 optical_props_subset,
                 cloud_optical_props_subset,
+                aerosol_optical_props_subset,
                 *fluxes_subset,
                 *bnd_fluxes_subset);
     }
@@ -824,6 +906,7 @@ void Radiation_solver_shortwave::solve(
                 col_s, col_e,
                 optical_props_residual,
                 cloud_optical_props_residual,
+                aerosol_optical_props_residual,
                 *fluxes_residual,
                 *bnd_fluxes_residual);
     }

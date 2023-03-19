@@ -27,15 +27,15 @@
 
 #include "Array.h"
 #include "Types.h"
-#include "Gas_concs_rt.h"
+#include "Gas_concs.h"
 
 namespace rte_kernel_launcher_cuda_rt
 {
     void apply_BC(const int ncol, const int nlay, const int ngpt, const Bool top_at_1,
                   const Float* inc_flux_dir, const Float* mu0, Float* gpt_flux_dir);
-    
+
     void apply_BC(const int ncol, const int nlay, const int ngpt, const Bool top_at_1, Float* gpt_flux_dn);
-    
+
     void apply_BC(const int ncol, const int nlay, const int ngpt, const Bool top_at_1, const Float* inc_flux_dif, Float* gpt_flux_dn);
 
     void sw_solver_2stream(const int ncol, const int nlay, const int ngpt, const Bool top_at_1,

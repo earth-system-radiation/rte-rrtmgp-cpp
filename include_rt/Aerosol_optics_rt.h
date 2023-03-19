@@ -7,9 +7,11 @@
 
 #include "Array.h"
 #include "Optical_props_rt.h"
-#include "Gas_concs_rt.h"
+#include "Gas_concs.h"
 #include "Types.h"
 
+using Aerosol_concs_gpu = Gas_concs_gpu;
+using Aerosol_concs = Gas_concs;
 
 // Forward declarations.
 class Optical_props_rt;
@@ -19,14 +21,14 @@ class Aerosol_optics_rt : public Optical_props_rt
 {
     public:
         Aerosol_optics_rt(
-                Array<Float,2>& band_lims_wvn, const Array<Float,1>& rh_upper,
+                const Array<Float,2>& band_lims_wvn, const Array<Float,1>& rh_upper,
                 const Array<Float,2>& mext_phobic, const Array<Float,2>& ssa_phobic, const Array<Float,2>& g_phobic,
                 const Array<Float,3>& mext_philic, const Array<Float,3>& ssa_philic, const Array<Float,3>& g_philic);
 
 
         void aerosol_optics(
                 const int ibnd,
-                const Gas_concs_gpu& aerosol_concs,
+                Aerosol_concs_gpu& aerosol_concs,
                 const Array_gpu<Float,2>& rh, const Array_gpu<Float,2>& plev,
                 Optical_props_2str_rt& optical_props);
 

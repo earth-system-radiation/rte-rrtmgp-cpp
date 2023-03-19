@@ -27,6 +27,7 @@
 #include "Array.h"
 #include "Radiation_solver.h"
 #include "Gas_concs.h"
+#include "Aerosol_optics.h"
 #include "Types.h"
 #include "Mem_pool_gpu.h"
 
@@ -70,8 +71,8 @@ void read_and_set_vmr(
 }
 
 void read_and_set_aer(
-        const std::string& aerosol_name, const int n_lay,
-        const Netcdf_handle& input_nc, Gas_concs& aerosol_concs)
+        const std::string& aerosol_name, const int n_col_x, const int n_col_y, const int n_lay,
+        const Netcdf_handle& input_nc, Aerosol_concs& aerosol_concs)
 {
     if (input_nc.variable_exists(aerosol_name))
     {
@@ -86,8 +87,16 @@ void read_and_set_aer(
             else
                 throw std::runtime_error("Illegal dimensions of gas \"" + aerosol_name + "\" in input");
         }
+        else if (n_dims == 3)
+        {
+            if (dims.at("lay") == n_lay && dims.at("y") == n_col_y && dims.at("x") == n_col_x)
+                aerosol_concs.set_vmr(aerosol_name,
+                        Array<Float,2>(input_nc.get_variable<Float>(aerosol_name, {n_lay, n_col_y, n_col_x}), {n_col_x * n_col_y, n_lay}));
+            else
+                throw std::runtime_error("Illegal dimensions of \"" + aerosol_name + "\" in input");
+        }
         else
-            throw std::runtime_error("Illegal dimensions of gas \"" + aerosol_name + "\" in input");
+            throw std::runtime_error("Illegal dimensions of \"" + aerosol_name + "\" in input");
     }
     else
     {
@@ -200,7 +209,9 @@ void solve_radiation(int argc, char** argv)
         {"aerosol-optics"   , { false, "Enable aerosol optics."                      }},
         {"output-optical"   , { false, "Enable output of optical properties."      }},
         {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
-        {"timings"          , { false, "Repeat computation 10x for run times."     }} };
+        {"timings"          , { false, "Repeat computation 10x for run times."     }},
+        {"delta-cloud"      , { false, "delta-scaling of cloud optical properties"   }},
+        {"delta-aerosol"    , { false, "delta-scaling of aerosol optical properties" }}};
 
     if (parse_command_line_options(command_line_options, argc, argv))
         return;
@@ -213,6 +224,8 @@ void solve_radiation(int argc, char** argv)
     const bool switch_output_optical    = command_line_options.at("output-optical"   ).first;
     const bool switch_output_bnd_fluxes = command_line_options.at("output-bnd-fluxes").first;
     const bool switch_timings           = command_line_options.at("timings"          ).first;
+    const bool switch_delta_cloud       = command_line_options.at("delta-cloud"      ).first;
+    const bool switch_delta_aerosol     = command_line_options.at("delta-aerosol"    ).first;
 
     // Print the options to the screen.
     print_command_line_options(command_line_options);
@@ -287,24 +300,24 @@ void solve_radiation(int argc, char** argv)
     }
 
     Array<Float,2> rh;
-    Gas_concs aerosol_concs;
+    Aerosol_concs aerosol_concs;
 
     if (switch_aerosol_optics)
     {
         rh.set_dims({n_col, n_lay});
         rh = std::move(input_nc.get_variable<Float>("rh", {n_lay, n_col_y, n_col_x}));
 
-        read_and_set_aer("aermr01", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr02", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr03", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr04", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr05", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr06", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr07", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr08", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr09", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr10", n_lay, input_nc, aerosol_concs);
-        read_and_set_aer("aermr11", n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr01", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr02", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr03", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr04", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr05", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr06", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr07", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr08", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr09", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr10", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
+        read_and_set_aer("aermr11", n_col_x, n_col_y, n_lay, input_nc, aerosol_concs);
     }
 
 
@@ -631,7 +644,7 @@ void solve_radiation(int argc, char** argv)
             Array_gpu<Float,2> rei_gpu(rei);
 
             Array_gpu<Float,2> rh_gpu(rh);
-            Gas_concs_gpu aerosol_concs_gpu(aerosol_concs);
+            Aerosol_concs_gpu aerosol_concs_gpu(aerosol_concs);
 
             cudaDeviceSynchronize();
             cudaEvent_t start;
@@ -647,6 +660,8 @@ void solve_radiation(int argc, char** argv)
                     switch_aerosol_optics,
                     switch_output_optical,
                     switch_output_bnd_fluxes,
+                    switch_delta_cloud,
+                    switch_delta_aerosol,
                     gas_concs_gpu,
                     p_lay_gpu, p_lev_gpu,
                     t_lay_gpu, t_lev_gpu,

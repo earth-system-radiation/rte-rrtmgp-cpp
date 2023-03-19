@@ -19,12 +19,18 @@ class Raytracer_bw
         Raytracer_bw();
 
         void trace_rays(
+                const int igpt,
                 const Int photons_to_shoot,
                 const int nlay,
                 const Vector<int>& grid_cells,
                 const Vector<Float>& grid_d,
                 const Vector<int>& kn_grid,
                 const Array_gpu<Float,1>& z_lev,
+                const Array_gpu<Float,3>& mie_cdf,
+                const Array_gpu<Float,4>& mie_ang,
+                const Array_gpu<Float,4>& mie_phase,
+                const Array_gpu<Float,3>& mie_phase_ang,
+                const Array_gpu<Float,2>& r_eff,
                 const Array_gpu<Float,2>& tau_total,
                 const Array_gpu<Float,2>& ssa_total,
                 const Array_gpu<Float,2>& tau_cloud,
@@ -46,12 +52,18 @@ class Raytracer_bw
                 Array_gpu<Float,2>& flux_camera);
 
         void trace_rays_bb(
+                const int igpt,
                 const Int photons_to_shoot,
                 const int nlay,
                 const Vector<int>& grid_cells,
                 const Vector<Float>& grid_d,
                 const Vector<int>& kn_grid,
                 const Array_gpu<Float,1>& z_lev,
+                const Array_gpu<Float,2>& mie_cdf,
+                const Array_gpu<Float,3>& mie_ang,
+                const Array_gpu<Float,3>& mie_phase,
+                const Array_gpu<Float,2>& mie_phase_ang,
+                const Array_gpu<Float,2>& r_eff,
                 const Array_gpu<Float,2>& tau_total,
                 const Array_gpu<Float,2>& ssa_total,
                 const Array_gpu<Float,2>& tau_cloud,

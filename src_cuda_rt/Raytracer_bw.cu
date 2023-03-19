@@ -144,17 +144,20 @@ namespace
         if ( (icol_x < grid_cells.x) && (icol_y < grid_cells.y) && (iz < grid_cells.z) )
         {
             const int idx = icol_x + icol_y*grid_cells.x + iz*grid_cells.y*grid_cells.x;
-            const Float ksca_gas = rayleigh * (1 + vmr_h2o[idx]) * col_dry[idx] / grid_dz;
+
             const Float kext_cld = tau_cld[idx] / grid_dz;
             const Float kext_aer = tau_aer[idx] / grid_dz;
             const Float ksca_cld = kext_cld * ssa_cld[idx];
             const Float ksca_aer = kext_aer * ssa_aer[idx];
+            const Float ksca_gas = (rayleigh > 0) ? rayleigh * (1 + vmr_h2o[idx]) * col_dry[idx] / grid_dz :
+                                                    tau_tot[idx] / grid_dz * ssa_tot[idx] - ksca_cld - ksca_aer;
+
             const Float kext_tot_old = tau_tot[idx] / grid_dz;
             const Float kext_gas_old = kext_tot_old - kext_cld - kext_aer;
             const Float kabs_gas = kext_gas_old - (kext_tot_old * ssa_tot[idx] - ksca_cld - ksca_aer);
             const Float kext_gas = kabs_gas + ksca_gas;
 
-            k_ext[idx] = tau_tot[idx] / grid_dz;
+            k_ext[idx] = kext_cld + kext_gas + kext_aer;
             scat_asy[idx].k_sca_gas = ksca_gas;
             scat_asy[idx].k_sca_cld = ksca_cld;
             scat_asy[idx].k_sca_aer = ksca_aer;
@@ -211,17 +214,19 @@ namespace
             const int idx = (i+grid_cells.z)*grid_cells.y*grid_cells.x;
             const Float dz = abs(z_lev[i+grid_cells.z+1] - z_lev[i+grid_cells.z]);
 
-            const Float ksca_gas = rayleigh * (1 + vmr_h2o[idx]) * col_dry[idx] / dz;
             const Float kext_cld = tau_cld[idx] / dz;
             const Float kext_aer = tau_aer[idx] / dz;
             const Float ksca_cld = kext_cld * ssa_cld[idx];
             const Float ksca_aer = kext_aer * ssa_aer[idx];
+            const Float ksca_gas = (rayleigh > 0) ? rayleigh * (1 + vmr_h2o[idx]) * col_dry[idx] / dz :
+                                                    tau_tot[idx] / dz * ssa_tot[idx] - ksca_cld - ksca_aer;
+
             const Float kext_tot_old = tau_tot[idx] / dz;
             const Float kext_gas_old = kext_tot_old - kext_cld  - kext_aer;
             const Float kabs_gas = kext_gas_old - (kext_tot_old * ssa_tot[idx] - ksca_cld - ksca_aer);
             const Float kext_gas = kabs_gas + ksca_gas;
 
-            k_ext_bg[i] = tau_tot[idx] / dz;
+            k_ext_bg[i] = kext_cld + kext_gas + kext_aer;
             scat_asy_bg[i].k_sca_gas = ksca_gas;
             scat_asy_bg[i].k_sca_cld = ksca_cld;
             scat_asy_bg[i].k_sca_aer = ksca_aer;
@@ -374,12 +379,18 @@ void Raytracer_bw::normalize_xyz_camera(
 
 
 void Raytracer_bw::trace_rays(
+        const int igpt,
         const Int photons_to_shoot,
         const int nlay,
         const Vector<int>& grid_cells,
         const Vector<Float>& grid_d,
         const Vector<int>& kn_grid,
         const Array_gpu<Float,1>& z_lev,
+        const Array_gpu<Float,3>& mie_cdf,
+        const Array_gpu<Float,4>& mie_ang,
+        const Array_gpu<Float,4>& mie_phase,
+        const Array_gpu<Float,3>& mie_phase_ang,
+        const Array_gpu<Float,2>& r_eff,
         const Array_gpu<Float,2>& tau_total,
         const Array_gpu<Float,2>& ssa_total,
         const Array_gpu<Float,2>& tau_cloud,
@@ -484,7 +495,10 @@ void Raytracer_bw::trace_rays(
     dim3 grid{bw_kernel_grid}, block{bw_kernel_block};
     Int photons_per_thread = photons_to_shoot / (bw_kernel_grid * bw_kernel_block);
 
-    ray_tracer_kernel_bw<<<grid, block, nbg*sizeof(Float)>>>(
+    const int mie_table_size = mie_cdf.size();
+
+    ray_tracer_kernel_bw<<<grid, block, nbg*sizeof(Float) + 2 * sizeof(Float)*mie_table_size>>>(
+            igpt,
             photons_per_thread, k_null_grid.ptr(),
             camera_count.ptr(),
             shot_count.ptr(),
@@ -492,11 +506,14 @@ void Raytracer_bw::trace_rays(
             k_ext.ptr(), ssa_asy.ptr(),
             k_ext_bg.ptr(), ssa_asy_bg.ptr(),
             z_lev_bg.ptr(),
+            r_eff.ptr(),
             surface_albedo.ptr(),
             land_use_map.ptr(),
             mu,
             grid_size, grid_d, grid_cells, kn_grid,
-            sun_direction, camera, nbg);
+            sun_direction, camera, nbg,
+            mie_cdf.ptr(), mie_ang.ptr(),
+            mie_phase.ptr(), mie_phase_ang.ptr(), mie_table_size);
 
     //// convert counts to fluxes
     const int block_cam_x = 8;
@@ -519,12 +536,18 @@ void Raytracer_bw::trace_rays(
 }
 
 void Raytracer_bw::trace_rays_bb(
+        const int igpt,
         const Int photons_to_shoot,
         const int nlay,
         const Vector<int>& grid_cells,
         const Vector<Float>& grid_d,
         const Vector<int>& kn_grid,
         const Array_gpu<Float,1>& z_lev,
+        const Array_gpu<Float,2>& mie_cdf,
+        const Array_gpu<Float,3>& mie_ang,
+        const Array_gpu<Float,3>& mie_phase,
+        const Array_gpu<Float,2>& mie_phase_ang,
+        const Array_gpu<Float,2>& r_eff,
         const Array_gpu<Float,2>& tau_total,
         const Array_gpu<Float,2>& ssa_total,
         const Array_gpu<Float,2>& tau_cloud,
@@ -624,7 +647,10 @@ void Raytracer_bw::trace_rays_bb(
     dim3 grid{bw_kernel_grid}, block{bw_kernel_block};
     Int photons_per_thread = photons_to_shoot / (bw_kernel_grid * bw_kernel_block);
 
-    ray_tracer_kernel_bw<<<grid, block, nbg*sizeof(Float)>>>(
+    const int mie_table_size = mie_cdf.size();
+
+    ray_tracer_kernel_bw<<<grid, block, nbg*sizeof(Float)+ 2 * sizeof(Float)*mie_table_size>>>(
+            igpt,
             photons_per_thread, k_null_grid.ptr(),
             camera_count.ptr(),
             shot_count.ptr(),
@@ -632,11 +658,15 @@ void Raytracer_bw::trace_rays_bb(
             k_ext.ptr(), ssa_asy.ptr(),
             k_ext_bg.ptr(), ssa_asy_bg.ptr(),
             z_lev_bg.ptr(),
+            r_eff.ptr(),
             surface_albedo.ptr(),
             land_use_map.ptr(),
             mu,
             grid_size, grid_d, grid_cells, kn_grid,
-            sun_direction, camera, nbg);
+            sun_direction, camera, nbg,
+            mie_cdf.ptr(), mie_ang.ptr(),
+            mie_phase.ptr(), mie_phase_ang.ptr(),
+            mie_table_size);
 
     //// convert counts to fluxes
     const int block_cam_x = 8;

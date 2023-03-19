@@ -50,7 +50,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 ni, nj, nk, arr_in, arr_out);
     }
 
-    
+
     void reorder12x21(const int ni, const int nj,
                       const Float* arr_in, Float* arr_out)
     {
@@ -67,7 +67,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 ni, nj, arr_in, arr_out);
     }
 
-    
+
     void zero_array(const int ni, const int nj, const int nk, const int nn, Float* arr)
     {
         const int block_i = 32;
@@ -85,7 +85,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 ni, nj, nk, nn, arr);
     }
 
-    
+
     void zero_array(const int ni, const int nj, const int nk, Float* arr)
     {
         const int block_i = 32;
@@ -103,8 +103,8 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 ni, nj, nk, arr);
 
     }
-    
-    
+
+
     void zero_array(const int ni, const int nj, Float* arr)
     {
         const int block_i = 32;
@@ -133,7 +133,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         zero_array_kernel<<<grid_gpu, block_gpu>>>(
                 ni, arr);
     }
-    
+
     void interpolation(
             const int ncol, const int nlay,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
@@ -157,13 +157,13 @@ namespace rrtmgp_kernel_launcher_cuda_rt
     {
         Tuner_map& tunings = Tuner::get_map();
         Float tmin = std::numeric_limits<Float>::min();
-        
+
         dim3 grid(ncol, nlay, nflav), block;
         if (tunings.count("interpolation_kernel_rt") == 0)
         {
             std::tie(grid, block) = tune_kernel(
                     "interpolation_kernel_rt",
-                    dim3{ncol, nlay, nflav}, 
+                    dim3{ncol, nlay, nflav},
                     {1, 2, 4, 8, 16, 32, 64, 128, 256}, {1}, {1, 2, 4, 8, 16, 32, 64, 128, 256},
                     interpolation_kernel,
                     ncol, nlay, ngas, nflav, neta, npres, ntemp, tmin,
@@ -191,11 +191,11 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 vmr_ref, play, tlay,
                 col_gas, jtemp, fmajor,
                 fminor, col_mix, tropo,
-                jeta, jpress); 
+                jeta, jpress);
 
     }
 
-    
+
     void minor_scalings(
             const int ncol, const int nlay, const int nflav, const int ngpt,
             const int nminorlower, const int nminorupper,
@@ -219,7 +219,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             Float* scalings_upper)
     {
         Tuner_map& tunings = Tuner::get_map();
-        
+
         // lower atmosphere
         int idx_tropo=1;
 
@@ -228,7 +228,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         {
             std::tie(grid_1, block_1) = tune_kernel(
                     "minor_scalings_lower_kernel_rt",
-                    dim3{ncol, nlay, nminorlower}, 
+                    dim3{ncol, nlay, nminorlower},
                     {8, 16, 24, 32, 48, 64, 128}, {1}, {1, 2, 4, 8, 16, 32},
                     scaling_kernel,
                     ncol, nlay, nflav, nminorlower,
@@ -271,7 +271,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         {
             std::tie(grid_2, block_2) = tune_kernel(
                     "minor_scalings_upper_kernel_rt",
-                    dim3{ncol, nlay, nminorupper}, 
+                    dim3{ncol, nlay, nminorupper},
                     {8, 16, 24, 32, 48, 64, 128}, {1}, {1, 2, 4, 8, 16, 32},
                     scaling_kernel,
                     ncol, nlay, nflav, nminorupper,
@@ -307,14 +307,14 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 tropo, scalings_upper);
     }
 
-    
+
     void combine_abs_and_rayleigh(
             const int ncol, const int nlay,
             const Float* tau_abs, const Float* tau_rayleigh,
             Float* tau, Float* ssa, Float* g)
     {
         Tuner_map& tunings = Tuner::get_map();
-        
+
         Float tmin = std::numeric_limits<Float>::epsilon();
 
         dim3 grid{ncol, nlay, 1}, block;
@@ -344,7 +344,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 tau, ssa, g);
     }
 
-    
+
     void compute_tau_rayleigh(
             const int ncol, const int nlay, const int nbnd, const int ngpt, const int igpt,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
@@ -387,7 +387,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             grid = tunings["compute_tau_rayleigh_kernel_rt"].first;
             block = tunings["compute_tau_rayleigh_kernel_rt"].second;
         }
-        
+
         compute_tau_rayleigh_kernel<<<grid, block>>>(
                 ncol, nlay, nbnd, ngpt,
                 ngas, nflav, neta, npres, ntemp,
@@ -402,7 +402,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 tau_rayleigh);
     }
 
-    
+
     void compute_tau_absorption(
             const int ncol, const int nlay, const int nband, const int ngpt, const int igpt,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
@@ -439,17 +439,17 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             Float* tau)
     {
         Tuner_map& tunings = Tuner::get_map();
-        
+
         dim3 grid_maj{nlay, ncol, 1};
         dim3 block_maj;
 
         if (tunings.count("gas_optical_depths_major_kernel_rt") == 0)
         {
             Float* tau_tmp = Tools_gpu::allocate_gpu<Float>(nlay*ncol);
-            
+
             std::tie(grid_maj, block_maj) = tune_kernel(
                     "gas_optical_depths_major_kernel_rt",
-                    dim3{nlay, ncol, 1}, 
+                    dim3{nlay, ncol, 1},
                     {1, 2}, {64, 96, 128, 256, 512, 768, 1024}, {1},
                     gas_optical_depths_major_kernel,
                     ncol, nlay, nband, ngpt,
@@ -459,9 +459,9 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                     kmajor, col_mix, fmajor, jeta,
                     tropo, jtemp, jpress,
                     tau_tmp);
-                    
+
             Tools_gpu::free_gpu<Float>(tau_tmp);
-            
+
             tunings["gas_optical_depths_major_kernel_rt"].first = grid_maj;
             tunings["gas_optical_depths_major_kernel_rt"].second = block_maj;
         }
@@ -470,7 +470,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             grid_maj = tunings["gas_optical_depths_major_kernel_rt"].first;
             block_maj = tunings["gas_optical_depths_major_kernel_rt"].second;
         }
-        
+
         gas_optical_depths_major_kernel<<<grid_maj, block_maj>>>(
             ncol, nlay, nband, ngpt,
             nflav, neta, npres, ntemp,
@@ -479,7 +479,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             kmajor, col_mix, fmajor, jeta,
             tropo, jtemp, jpress,
             tau);
-        
+
 
         const int nscale_lower = nminorlower;
         const int nscale_upper = nminorupper;
@@ -491,7 +491,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         if (tunings.count("gas_optical_depths_minor_kernel_lower_rt") == 0)
         {
             Float* tau_tmp = Tools_gpu::allocate_gpu<Float>(nlay*ncol);
-            
+
             std::tie(grid_min_1, block_min_1) = tune_kernel(
                         "gas_optical_depths_minor_kernel_lower_rt",
                         dim3{nlay, ncol, 1},
@@ -526,7 +526,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
             grid_min_1 = tunings["gas_optical_depths_minor_kernel_lower_rt"].first;
             block_min_1 = tunings["gas_optical_depths_minor_kernel_lower_rt"].second;
         }
-        
+
         gas_optical_depths_minor_kernel<<<grid_min_1, block_min_1>>>(
                 ncol, nlay, ngpt, igpt,
                 ngas, nflav, ntemp, neta,
@@ -576,10 +576,10 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                    kminor_start_upper,
                    play, tlay, col_gas,
                    fminor, jeta, jtemp,
-                   tropo, scalings_upper, 
+                   tropo, scalings_upper,
                    tau_tmp);
             Tools_gpu::free_gpu<Float>(tau_tmp);
-            
+
             tunings["gas_optical_depths_minor_kernel_upper_rt"].first = grid_min_2;
             tunings["gas_optical_depths_minor_kernel_upper_rt"].second = block_min_2;
         }
@@ -608,11 +608,11 @@ namespace rrtmgp_kernel_launcher_cuda_rt
                 play, tlay, col_gas,
                 fminor, jeta, jtemp,
                 tropo, scalings_upper, tau);
-        
+
     }
 
 
-    
+
     void Planck_source(
             const int ncol, const int nlay, const int nbnd, const int ngpt, const int igpt,
             const int nflav, const int neta, const int npres, const int ntemp,
@@ -641,7 +641,7 @@ namespace rrtmgp_kernel_launcher_cuda_rt
         Tuner_map& tunings = Tuner::get_map();
 
         const Float delta_Tsurf = Float(1.);
-        
+
         dim3 grid(ncol, nlay, 1), block;
         if (tunings.count("Planck_source_kernel_rt") == 0)
         {
