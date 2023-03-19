@@ -172,7 +172,7 @@ namespace
             g[idx]   = ltaussag[idx] / max(ltaussa[idx], tmin);
         }
     }
-    
+
     void fill_aerosols_3d(const int ncol, const int nlay, Aerosol_concs_gpu& aerosol_concs)
     {
         for (int i=1; i<=11; ++i)
@@ -225,9 +225,9 @@ void Aerosol_optics_rt::aerosol_optics(
     const int nlay = rh.dim(2);
     const int nbnd = this->get_nband();
     const int nhum = this->rh_upper.dim(1);
-    
+
     fill_aerosols_3d(ncol, nlay, aerosol_concs);
-    
+
     // Temporary arrays for storage.
     Array_gpu<Float,2> ltau    ({ncol, nlay});
     Array_gpu<Float,2> ltaussa ({ncol, nlay});

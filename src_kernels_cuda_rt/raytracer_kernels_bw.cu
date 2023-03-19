@@ -8,12 +8,6 @@ namespace
     using namespace Raytracer_functions;
 
     constexpr Float w_thres = 0.5;
-    // constexpr Float fov = 160./180.*M_PI;
-    // angle w.r.t. vertical: 0 degrees is looking up, 180 degrees down
-    // constexpr Float zenith_cam = 0./180.*M_PI; //60./180.*M_PI;
-    // angle w.r.t. north,: 0 degrees is looking north
-    //constexpr Float azimuth_cam = 0./180*M_PI;
-    // constexpr Vector<Float> upward_cam = {0, 1, 0};
 
     constexpr Float half_angle = .26656288/180. * M_PI; // sun has a half angle of .266 degrees
     constexpr Float cos_half_angle = Float(0.9999891776066407); // cos(half_angle);

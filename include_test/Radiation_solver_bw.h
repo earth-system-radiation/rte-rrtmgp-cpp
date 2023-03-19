@@ -173,7 +173,7 @@ class Radiation_solver_shortwave
                 const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
                 const Array_gpu<Float,1>& land_use_map,
                 const Array_gpu<Float,2>& rh,
-                const Gas_concs_gpu& aerosol_concs,
+                const Aerosol_concs_gpu& aerosol_concs,
                 const Camera& camera,
                 Array_gpu<Float,3>& XYZ);
         #endif
@@ -202,7 +202,7 @@ class Radiation_solver_shortwave
                 const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
                 const Array_gpu<Float,1>& land_use_map,
                 const Array_gpu<Float,2>& rh,
-                const Gas_concs_gpu& aerosol_concs,
+                const Aerosol_concs_gpu& aerosol_concs,
                 const Camera& camera,
                 Array_gpu<Float,2>& radiance);
 
@@ -232,10 +232,15 @@ class Radiation_solver_shortwave
         std::unique_ptr<Optical_props_2str_rt> cloud_optical_props;
         std::unique_ptr<Optical_props_2str_rt> aerosol_optical_props;
 
-        Array_gpu<Float,3> mie_cdfs;
-        Array_gpu<Float,4> mie_angs;
-        Array_gpu<Float,4> mie_phase;
-        Array_gpu<Float,3> mie_phase_angs;
+        Array_gpu<Float,2> mie_cdfs;
+        Array_gpu<Float,3> mie_angs;
+        Array_gpu<Float,3> mie_phase;
+        Array_gpu<Float,2> mie_phase_angs;
+
+        Array_gpu<Float,3> mie_cdfs_vis;
+        Array_gpu<Float,4> mie_angs_vis;
+        Array_gpu<Float,4> mie_phase_vis;
+        Array_gpu<Float,3> mie_phase_angs_vis;
         #endif
 };
 #endif
