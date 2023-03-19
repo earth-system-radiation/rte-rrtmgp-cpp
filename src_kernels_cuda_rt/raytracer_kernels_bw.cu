@@ -95,7 +95,7 @@ namespace
                     d_max = min(sx, min(sy, sz));
                     const int ijk = i_n + j_n*kn_grid.x + k_n*kn_grid.x*kn_grid.y;
 
-                    // decomposition tracking: minimum k_ext is used to integrate transmissivity, difference max-min as k_null
+                    // decomposition tracking, following Villefranque et al. 2019: minimum k_ext is used to integrate transmissivity, difference max-min as k_null
                     k_ext_min  = k_null_grid[ijk].k_min;
                     k_ext_null = k_null_grid[ijk].k_max - k_ext_min;
                 }
@@ -117,7 +117,6 @@ namespace
                     if (photon.position.z >= grid_size.z - s_min)
                     {
                         photon.position.z = grid_size.z + s_min_bg;
-                        //return exp(-tau_min);
                     }
                     // regular cell crossing: adjust tau and apply periodic BC
                     else
@@ -161,6 +160,7 @@ namespace
 
                     // Handle the action.
                     const Float k_ext_tot = k_ext[ijk] - k_ext_min;
+
                     // Compute probability not being absorbed and store weighted absorption probability
                     if (rng() < k_ext_tot/k_ext_null) return 0;
 
@@ -170,21 +170,6 @@ namespace
             }
         }
     }
-
-// // camera settings used to be hardcoded, the ones below gave nice renderings, so I keep them in the code for now as backup!
-// sunset
-// photon.position = {Float(1510.) + s_min,  Float(4710.) + s_min, Float(500.)+ s_min};
-// const Float photon_zenith = i * Float(.20) * M_PI;
-// const Float photon_azimuth = j * Float(2.) * M_PI;
-// const Float yaw = Float(-100.) / Float(180) * M_PI;
-// const Float pitch = Float(-25.) / Float(180) * M_PI;
-// const Float roll = Float(0.) / Float(180) * M_PI;
-
-// photon.position.x = Float(12004.) + s_min;
-// photon.position.y = Float(04.) + s_min; //Float4710);
-// photon.position.z = Float(54.)+ s_min;
-//photon.position.z = cam_data[1] + s_min; //Float(500.)+ s_min;
-
 
     __device__
     inline void reset_photon(
@@ -214,10 +199,8 @@ namespace
         if (!generation_completed)
         {
 
-            //const Float i = (ij_cam % camera.nx) / Float(camera.nx) + Float(0.5) / Float(camera.nx);//(Float(0.5) * Float(camera.nx)) - Float(1.) + Float(0.5) / Float(camera.nx);
-            //const Float j = Float(ij_cam/camera.nx) / (Float(0.5) * Float(camera.nx)) - Float(1.) + Float(0.5) / Float(camera.nx);
-            const Float i = (Float(ij_cam % camera.nx) + rng())/ Float(camera.nx);//(Float(0.5) * Float(camera.nx)) - Float(1.) + Float(0.5) / Float(camera.nx);
-            const Float j = (Float(ij_cam / camera.nx) + rng())/ Float(camera.nx);//(Float(0.5) * Float(camera.nx)) - Float(1.) + Float(0.5) / Float(camera.nx);
+            const Float i = (Float(ij_cam % camera.nx) + rng())/ Float(camera.nx);
+            const Float j = (Float(ij_cam / camera.nx) + rng())/ Float(camera.nx);
 
             if (camera.fisheye)
             {
@@ -479,7 +462,7 @@ void ray_tracer_kernel_bw(
                     // only with nonzero weight continue ray tracing, else start new ray
                     if (weight > Float(0.))
                     {
-                        // find scatter type: 0 = gas, 1 = cloud, 2 = aerosol
+                        // find scatter type: 0 = gas, 1 = cloud, 2 = aerosol (although we assume clear sky bg profile, so no option for Mie scattering
                         const Float scatter_rng = rng();
                         const int scatter_type = scatter_rng < (scat_asy_bg[bg_idx].k_sca_aer/k_sca_bg_tot) ? 2 :
                                                  scatter_rng < ((scat_asy_bg[bg_idx].k_sca_aer+scat_asy_bg[bg_idx].k_sca_cld)/k_sca_bg_tot) ? 1 : 0;
@@ -497,21 +480,10 @@ void ray_tracer_kernel_bw(
                                 break;
                         }
                         const Float cos_scat = (scatter_type == 0) ? rayleigh(rng()) : henyey(g, rng());
-                        // 0 (gas): rayleigh, 1 (cloud): mie if mie_table_size>0 else HG, 2 (aerosols) HG
-                        // const Float cos_scat = scatter_type == 0 ? rayleigh(rng()) : // gases -> rayleigh,
-                        //                                        1 ? ( (mie_table_size > 0) //clouds: Mie or HG
-                        //                                                 ? interpolate_mie_table(mie_cdf_shared, mie_ang, rng(), r_eff[ijk], mie_table_size)
-                        //                                                 :  henyey(g, rng()))
-                        //                                        : henyey(g, rng()); //aerosols
                         const Float sin_scat = max(Float(0.), sqrt(Float(1.) - cos_scat*cos_scat + Float_epsilon));
 
                         // direct contribution
                         const Phase_kind kind = (scatter_type==0) ? Phase_kind::Rayleigh : Phase_kind::HG;
-                        //const Phase_kind kind = scatter_type == 0 ? Phase_kind::Rayleigh :
-                        //                                        1 ? (mie_table_size > 0)
-                        //                                            ? Phase_kind::Mie
-                        //                                            : Phase_kind::HG
-                        //                                        : Phase_kind::HG;
                         const Float p_sun = probability_from_sun(photon, sun_direction, solid_angle, g, mie_phase_ang_shared, mie_phase, Float(0.), 0, surface_normal, kind);
                         const Float trans_sun = transmission_direct_sun(photon,n,rng,sun_direction,
                                                     k_null_grid,k_ext,
