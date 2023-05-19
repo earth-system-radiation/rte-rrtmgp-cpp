@@ -1,6 +1,6 @@
 # C++ interface of RTE+RRTMGP
 
-[![Build Status](https://travis-ci.org/earth-system-radiation/rte-rrtmgp-cpp.svg?branch=master)](https://travis-ci.org/earth-system-radiation/rte-rrtmgp-cpp)
+![Current build status](https://github.com/earth-system-radiation/rte-rrtmgp-cpp/actions/workflows/continuous-integration.yml/badge.svg?branch=feature-add-github-ci-to-develop)
 
 This is a C++ interface to the Radiative Transfer for Energetics (RTE)
 and Rapid Radiative Transfer Model for GCM applications Parallel (RRTMGP).
