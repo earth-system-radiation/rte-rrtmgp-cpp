@@ -26,7 +26,6 @@ plt.pcolormesh(rld_run_2d - rld_ref_2d)
 plt.tight_layout()
 plt.colorbar()
 plt.tight_layout()
-plt.show()
 
 
 nc_file_run = nc.Dataset('rlu_Efx_RTE-RRTMGP-181204_rad-irf_r1i1p1f1_gn.nc', mode='r')
@@ -49,7 +48,6 @@ plt.pcolormesh(rlu_run_2d - rlu_ref_2d)
 plt.tight_layout()
 plt.colorbar()
 plt.tight_layout()
-plt.show()
 
 
 nc_file_run = nc.Dataset('rsd_Efx_RTE-RRTMGP-181204_rad-irf_r1i1p1f1_gn.nc', mode='r')
@@ -72,7 +70,6 @@ plt.pcolormesh(rsd_run_2d - rsd_ref_2d)
 plt.tight_layout()
 plt.colorbar()
 plt.tight_layout()
-plt.show()
 
 
 nc_file_run = nc.Dataset('rsu_Efx_RTE-RRTMGP-181204_rad-irf_r1i1p1f1_gn.nc', mode='r')
