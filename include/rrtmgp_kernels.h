@@ -31,11 +31,11 @@
 // Kernels of fluxes.
 namespace rrtmgp_kernels
 {
-    extern "C" void sum_broadband(
+    extern "C" void rte_sum_broadband(
             int* ncol, int* nlev, int* ngpt,
             Float* spectral_flux, Float* broadband_flux);
 
-    extern "C" void net_broadband_precalc(
+    extern "C" void rte_net_broadband_precalc(
             int* ncol, int* nlev,
             Float* broadband_flux_dn, Float* broadband_flux_up,
             Float* broadband_flux_net);

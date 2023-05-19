@@ -36,7 +36,7 @@ namespace rrtmgp_kernel_launcher
             int ncol, int nlev, int ngpt,
             const Array<Float,3>& spectral_flux, Array<Float,2>& broadband_flux)
     {
-        rrtmgp_kernels::sum_broadband(
+        rrtmgp_kernels::rte_sum_broadband(
                 &ncol, &nlev, &ngpt,
                 const_cast<Float*>(spectral_flux.ptr()),
                 broadband_flux.ptr());
@@ -48,7 +48,7 @@ namespace rrtmgp_kernel_launcher
             const Array<Float,2>& broadband_flux_dn, const Array<Float,2>& broadband_flux_up,
             Array<Float,2>& broadband_flux_net)
     {
-        rrtmgp_kernels::net_broadband_precalc(
+        rrtmgp_kernels::rte_net_broadband_precalc(
                 &ncol, &nlev,
                 const_cast<Float*>(broadband_flux_dn.ptr()),
                 const_cast<Float*>(broadband_flux_up.ptr()),
