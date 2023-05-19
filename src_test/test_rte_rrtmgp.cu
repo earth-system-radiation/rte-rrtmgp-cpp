@@ -210,7 +210,7 @@ void solve_radiation(int argc, char** argv)
         {"output-optical"   , { false, "Enable output of optical properties."      }},
         {"output-bnd-fluxes", { false, "Enable output of band fluxes."             }},
         {"timings"          , { false, "Repeat computation 10x for run times."     }},
-        {"delta-cloud"      , { false, "delta-scaling of cloud optical properties"   }},
+        {"delta-cloud"      , { true,  "delta-scaling of cloud optical properties"   }},
         {"delta-aerosol"    , { false, "delta-scaling of aerosol optical properties" }}};
 
     if (parse_command_line_options(command_line_options, argc, argv))
