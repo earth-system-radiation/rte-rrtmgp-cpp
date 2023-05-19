@@ -8,7 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 # Set the precision of the build.
 if(USESP)
   message(STATUS "Precision: Single (32-bits floats)")
-  add_compile_definitions(RTE_RRTMGP_SINGLE_PRECISION)
+  add_compile_definitions(RTE_USE_SP)
 else()
   message(STATUS "Precision: Double (64-bits floats)")
 endif()

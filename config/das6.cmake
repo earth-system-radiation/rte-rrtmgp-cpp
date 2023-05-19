@@ -29,4 +29,4 @@ if(USECUDA)
     list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
 endif()
 
-add_definitions(-DRTE_RRTMGP_USE_CBOOL)
+add_definitions(-DRTE_USE_CBOOL)
