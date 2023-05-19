@@ -78,7 +78,7 @@ namespace rrtmgp_kernel_launcher
             Bool has_dif_bc, const Array<Float,2>& inc_flux_dif,
             Bool do_broadband, Array<Float,3>& flux_up_loc, Array<Float,3>& flux_dn_loc, Array<Float,3>& flux_dir_loc)
     {
-        rrtmgp_kernels::sw_solver_2stream(
+        rrtmgp_kernels::rte_sw_solver_2stream(
                 &ncol, &nlay, &ngpt, &top_at_1,
                 const_cast<Float*>(tau.ptr()),
                 const_cast<Float*>(ssa.ptr()),

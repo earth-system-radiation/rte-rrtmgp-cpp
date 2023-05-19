@@ -67,7 +67,7 @@ namespace rrtmgp_kernel_launcher
             Bool do_jacobians, const Array<Float,2>& sfc_source_jac, Array<Float,3>& gpt_flux_up_jac,
             Bool do_rescaling, const Array<Float,3>& ssa, const Array<Float,3>& g)
     {
-        rrtmgp_kernels::lw_solver_noscat_GaussQuad(
+        rrtmgp_kernels::rte_lw_solver_noscat(
                 &ncol, &nlay, &ngpt, &top_at_1, &n_quad_angs,
                 const_cast<Float*>(secants.ptr()),
                 const_cast<Float*>(gauss_wts_subset.ptr()),

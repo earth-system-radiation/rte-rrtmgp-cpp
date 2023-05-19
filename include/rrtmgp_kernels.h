@@ -145,7 +145,7 @@ namespace rrtmgp_kernels
             int* ncol, int* nlay, int* ngpt,
             Bool* top_at_1, Float* inc_flux, Float* gpt_flux_dn);
 
-    extern "C" void lw_solver_noscat_GaussQuad(
+    extern "C" void rte_lw_solver_noscat(
             int* ncol, int* nlay, int* ngpt, Bool* top_at_1, int* n_quad_angs,
             Float* secants, Float* gauss_wts_subset,
             Float* tau,
@@ -162,7 +162,7 @@ namespace rrtmgp_kernels
             Bool* top_at_1, Float* inc_flux,
             Float* factor, Float* flux_dn);
 
-    extern "C" void sw_solver_2stream(
+    extern "C" void rte_sw_solver_2stream(
             int* ncol, int* nlay, int* ngpt, Bool* top_at_1,
             Float* tau,
             Float* ssa,
