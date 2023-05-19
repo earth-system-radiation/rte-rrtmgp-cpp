@@ -1067,7 +1067,7 @@ namespace rrtmgp_kernel_launcher
             Array<Float,2>& sfc_src, Array<Float,3>& lay_src, Array<Float,3>& lev_src_inc, Array<Float,3>& lev_src_dec,
             Array<Float,2>& sfc_src_jac)
     {
-        rrtmgp_kernels::compute_Planck_source(
+        rrtmgp_kernels::rrtmgp_compute_Planck_source(
                 &ncol, &nlay, &nbnd, &ngpt,
                 &nflav, &neta, &npres, &ntemp, &nPlanckTemp,
                 const_cast<Float*>(tlay.ptr()),

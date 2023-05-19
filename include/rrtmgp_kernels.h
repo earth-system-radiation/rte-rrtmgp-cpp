@@ -116,7 +116,7 @@ namespace rrtmgp_kernels
             Float* tau_local, Float* tau_rayleigh,
             Float* tau, Float* ssa, Float* g);
 
-    extern "C" void compute_Planck_source(
+    extern "C" void rrtmgp_compute_Planck_source(
             int* ncol, int* nlay, int* nbnd, int* ngpt,
             int* nflav, int* neta, int* npres, int* ntemp, int* nPlanckTemp,
             Float* tlay, Float* tlev, Float* tsfc, int* sfc_lay,
@@ -174,27 +174,27 @@ namespace rrtmgp_kernels
             Bool* has_dif_bc, Float* inc_flux_dif,
             Bool* do_broadband, Float* flux_up_loc, Float* flux_dn_loc, Float* flux_dir_loc);
 
-    extern "C" void increment_2stream_by_2stream(
+    extern "C" void rte_increment_2stream_by_2stream(
             int* ncol, int* nlev, int* ngpt,
             Float* tau_inout, Float* ssa_inout, Float* g_inout,
             Float* tau_in, Float* ssa_in, Float* g_in);
 
-    extern "C" void increment_1scalar_by_1scalar(
+    extern "C" void rte_increment_1scalar_by_1scalar(
             int* ncol, int* nlev, int* ngpt,
             Float* tau_inout, Float* tau_in);
 
-    extern "C" void inc_2stream_by_2stream_bybnd(
+    extern "C" void rte_inc_2stream_by_2stream_bybnd(
             int* ncol, int* nlev, int* ngpt,
             Float* tau_inout, Float* ssa_inout, Float* g_inout,
             Float* tau_in, Float* ssa_in, Float* g_in,
             int* nbnd, int* band_lims_gpoint);
 
-    extern "C" void inc_1scalar_by_1scalar_bybnd(
+    extern "C" void rte_inc_1scalar_by_1scalar_bybnd(
             int* ncol, int* nlev, int* ngpt,
             Float* tau_inout, Float* tau_in,
             int* nbnd, int* band_lims_gpoint);
 
-    extern "C" void delta_scale_2str_k(
+    extern "C" void rte_delta_scale_2str_k(
             int* ncol, int* nlev, int* ngpt,
             Float* tau_inout, Float* ssa_inout, Float* g_inout);
 }

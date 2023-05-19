@@ -151,7 +151,7 @@ namespace rrtmgp_kernel_launcher
             Array<Float,3>& tau_inout, const Array<Float,3>& tau_in)
 
     {
-        rrtmgp_kernels::increment_1scalar_by_1scalar(
+        rrtmgp_kernels::rte_increment_1scalar_by_1scalar(
                 &ncol, &nlay, &ngpt,
                 tau_inout.ptr(), const_cast<Float*>(tau_in.ptr()));
     }
@@ -161,7 +161,7 @@ namespace rrtmgp_kernel_launcher
             Array<Float,3>& tau_inout, Array<Float,3>& ssa_inout, Array<Float,3>& g_inout,
             const Array<Float,3>& tau_in, const Array<Float,3>& ssa_in, const Array<Float,3>& g_in)
     {
-        rrtmgp_kernels::increment_2stream_by_2stream(
+        rrtmgp_kernels::rte_increment_2stream_by_2stream(
                 &ncol, &nlay, &ngpt,
                 tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr(),
                 const_cast<Float*>(tau_in.ptr()), const_cast<Float*>(ssa_in.ptr()), const_cast<Float*>(g_in.ptr()));
@@ -173,7 +173,7 @@ namespace rrtmgp_kernel_launcher
             int nbnd, const Array<int,2>& band_lims_gpoint)
 
     {
-        rrtmgp_kernels::inc_1scalar_by_1scalar_bybnd(
+        rrtmgp_kernels::rte_inc_1scalar_by_1scalar_bybnd(
                 &ncol, &nlay, &ngpt,
                 tau_inout.ptr(), const_cast<Float*>(tau_in.ptr()),
                 &nbnd, const_cast<int*>(band_lims_gpoint.ptr()));
@@ -186,7 +186,7 @@ namespace rrtmgp_kernel_launcher
             int nbnd, const Array<int,2>& band_lims_gpoint)
 
     {
-        rrtmgp_kernels::inc_2stream_by_2stream_bybnd(
+        rrtmgp_kernels::rte_inc_2stream_by_2stream_bybnd(
                 &ncol, &nlay, &ngpt,
                 tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr(),
                 const_cast<Float*>(tau_in.ptr()), const_cast<Float*>(ssa_in.ptr()), const_cast<Float*>(g_in.ptr()),
@@ -197,7 +197,7 @@ namespace rrtmgp_kernel_launcher
             int ncol, int nlay, int ngpt,
             Array<Float,3>& tau_inout, Array<Float,3>& ssa_inout, Array<Float,3>& g_inout)
     {
-        rrtmgp_kernels::delta_scale_2str_k(
+        rrtmgp_kernels::rte_delta_scale_2str_k(
                 &ncol, &nlay, &ngpt,
                 tau_inout.ptr(), ssa_inout.ptr(), g_inout.ptr());
     }
