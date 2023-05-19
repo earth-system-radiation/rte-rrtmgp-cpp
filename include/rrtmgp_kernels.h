@@ -57,7 +57,7 @@ namespace rrtmgp_kernels
     extern "C" void zero_array_4D(
              int* ni, int* nj, int* nk, int* nl, Float* array);
 
-    extern "C" void interpolation(
+    extern "C" void rrtmgp_interpolation(
                 int* ncol, int* nlay,
                 int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
                 int* flavor,
@@ -78,7 +78,7 @@ namespace rrtmgp_kernels
                 int* jeta,
                 int* jpress);
 
-    extern "C" void compute_tau_absorption(
+    extern "C" void rrtmgp_compute_tau_absorption(
             int* ncol, int* nlay, int* nband, int* ngpt,
             int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
             int* nminorlower, int* nminorklower,
@@ -126,7 +126,7 @@ namespace rrtmgp_kernels
             Float* sfc_src, Float* lay_src, Float* lev_src, Float* lev_source_dec,
             Float* sfc_src_jac);
 
-    extern "C" void compute_tau_rayleigh(
+    extern "C" void rrtmgp_compute_tau_rayleigh(
             int* ncol, int* nlay, int* nband, int* ngpt,
             int* ngas, int* nflav, int* neta, int* npres, int* ntemp,
             int* gpoint_flavor,

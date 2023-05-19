@@ -934,7 +934,7 @@ namespace rrtmgp_kernel_launcher
             Array<int,4>& jeta,
             Array<int,2>& jpress)
     {
-        rrtmgp_kernels::interpolation(
+        rrtmgp_kernels::rrtmgp_interpolation(
                 &ncol, &nlay,
                 &ngas, &nflav, &neta, &npres, &ntemp,
                 const_cast<int*>(flavor.ptr()),
@@ -987,7 +987,7 @@ namespace rrtmgp_kernel_launcher
             const Array<int,4>& jeta, const Array<int,2>& jtemp,
             const Array<int,2>& jpress, Array<Float,3>& tau)
     {
-        rrtmgp_kernels::compute_tau_absorption(
+        rrtmgp_kernels::rrtmgp_compute_tau_absorption(
             &ncol, &nlay, &nband, &ngpt,
             &ngas, &nflav, &neta, &npres, &ntemp,
             &nminorlower, &nminorklower,
@@ -1029,7 +1029,7 @@ namespace rrtmgp_kernel_launcher
             const Array<Bool,2>& tropo, const Array<int,2>& jtemp,
             Array<Float,3>& tau_rayleigh)
     {
-        rrtmgp_kernels::compute_tau_rayleigh(
+        rrtmgp_kernels::rrtmgp_compute_tau_rayleigh(
                 &ncol, &nlay, &nband, &ngpt,
                 &ngas, &nflav, &neta, &npres, &ntemp,
                 const_cast<int*>(gpoint_flavor.ptr()),
