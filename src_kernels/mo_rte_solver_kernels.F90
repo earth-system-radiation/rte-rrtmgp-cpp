@@ -37,7 +37,7 @@ module mo_rte_solver_kernels
 
   real(wp), parameter :: pi = acos(-1._wp)
 
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
+#ifdef RTE_USE_SP
   real(wp), parameter :: k_min = 1.e-4_wp
 #else
   real(wp), parameter :: k_min = 1.e-12_wp

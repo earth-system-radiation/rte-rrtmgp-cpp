@@ -1,11 +1,12 @@
 #ifndef RAYTRACER_KERNELS_H
 #define RAYTRACER_KERNELS_H
+
 #include "raytracer_functions.h"
 
 using Raytracer_functions::Vector;
 using Raytracer_functions::Optics_scat;
 
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
+#ifdef RTE_USE_SP
 constexpr int rt_kernel_block = 512;
 constexpr int rt_kernel_grid = 1024;
 #else
