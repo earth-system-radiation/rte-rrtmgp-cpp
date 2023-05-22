@@ -14,16 +14,13 @@ set(USER_FC_FLAGS "-fdefault-real-8 -fdefault-double-8 -fPIC -ffixed-line-length
 set(USER_FC_FLAGS_RELEASE "-DNDEBUG -O3 -march=native")
 set(USER_FC_FLAGS_DEBUG "-O0 -g -Wall -Wno-unknown-pragmas")
 
-set(FFTW_INCLUDE_DIR   "/usr/include")
-set(FFTW_LIB           "/usr/lib/x86_64-linux-gnu/libfftw3.so")
-set(FFTWF_LIB          "/usr/lib/x86_64-linux-gnu/libfftw3f.so")
 set(NETCDF_INCLUDE_DIR "/usr/include")
 set(NETCDF_LIB_C       "/usr/lib/x86_64-linux-gnu/libnetcdf.so")
 set(HDF5_LIB_1         "/usr/lib/x86_64-linux-gnu/libhdf5_serial.so")
 set(HDF5_LIB_2         "/usr/lib/x86_64-linux-gnu/libhdf5_serial_hl.so")
 set(SZIP_LIB           "")
-set(LIBS ${FFTW_LIB} ${FFTWF_LIB} ${NETCDF_LIB_C} ${HDF5_LIB_2} ${HDF5_LIB_1} ${SZIP_LIB} m z curl)
-set(INCLUDE_DIRS ${FFTW_INCLUDE_DIR} ${NETCDF_INCLUDE_DIR})
+set(LIBS ${NETCDF_LIB_C} ${HDF5_LIB_2} ${HDF5_LIB_1} ${SZIP_LIB} m z curl)
+set(INCLUDE_DIRS ${NETCDF_INCLUDE_DIR})
 
 if(USECUDA)
   set(CUDA_PROPAGATE_HOST_FLAGS OFF)
