@@ -34,7 +34,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake -DSYST=ubuntu -DCMAKE_CXX_COMPILER=${{ matrix.cxx-compiler }} ..
+        cmake -DSYST=ubuntu_20lts ..
         make
 
     - name: Run tests
