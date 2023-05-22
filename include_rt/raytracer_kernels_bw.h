@@ -7,7 +7,7 @@
 using Raytracer_functions::Vector;
 using Raytracer_functions::Optics_scat;
 
-#ifdef RTE_RRTMGP_SINGLE_PRECISION
+#ifdef RTE_USE_SP
 constexpr int bw_kernel_block= 256;
 constexpr int bw_kernel_grid = 1024;
 #else

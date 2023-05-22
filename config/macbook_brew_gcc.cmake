@@ -28,5 +28,5 @@ set(INCLUDE_DIRS ${FFTW_INCLUDE_DIR} ${NETCDF_INCLUDE_DIR})
 
 add_definitions(-DRESTRICTKEYWORD=__restrict__)
 add_definitions(-DRTE_USE_CBOOL)
-#add_definitions(-DRTE_GPU_MEMPOOL_OWN)
-#add_definitions(-DRTE_GPU_MEMPOOL_CUDA)
+#add_definitions(-DRRTMGP_RTE_GPU_MEMPOOL_OWN)
+#add_definitions(-DRRTMGP_RTE_GPU_MEMPOOL_CUDA)
