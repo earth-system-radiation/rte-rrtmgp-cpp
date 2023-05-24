@@ -71,7 +71,7 @@ namespace rrtmgp_kernel_launcher
             const Array<Float,3>& tau,
             const Array<Float,3>& ssa,
             const Array<Float,3>& g,
-            const Array<Float,1>& mu0,
+            const Array<Float,2>& mu0,
             const Array<Float,2>& sfc_alb_dir_gpt, const Array<Float,2>& sfc_alb_dif_gpt,
             const Array<Float,2>& inc_flux,
             Array<Float,3>& gpt_flux_up, Array<Float,3>& gpt_flux_dn, Array<Float,3>& gpt_flux_dir,
@@ -116,6 +116,13 @@ void Rte_sw::rte_sw(
     expand_and_transpose(optical_props, sfc_alb_dir, sfc_alb_dir_gpt);
     expand_and_transpose(optical_props, sfc_alb_dif, sfc_alb_dif_gpt);
 
+
+    // CvH: first, we only run with constant mu0 with height, thus we copy into height.
+    Array<Float,2> mu0_2d({ncol, nlay});
+    for (int j=1; j<=nlay; ++j)
+        for (int i=1; i<=ncol; ++i)
+            mu0_2d({i, j}) = mu0({i});
+
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat
     const Bool has_dif_bc = (inc_flux_dif.size() > 0);
@@ -126,7 +133,7 @@ void Rte_sw::rte_sw(
             optical_props->get_tau(),
             optical_props->get_ssa(),
             optical_props->get_g  (),
-            mu0,
+            mu0_2d,
             sfc_alb_dir_gpt, sfc_alb_dif_gpt,
             inc_flux_dir,
             gpt_flux_up, gpt_flux_dn, gpt_flux_dir,
@@ -145,6 +152,7 @@ void Rte_sw::expand_and_transpose(
 {
     const int ncol = arr_in.dim(2);
     const int nband = ops->get_nband();
+
     Array<int,2> limits = ops->get_band_lims_gpoint();
 
     for (int iband=1; iband<=nband; ++iband)
