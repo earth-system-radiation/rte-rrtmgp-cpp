@@ -56,5 +56,5 @@ jobs:
         cd rfmip
         python3 compare-to-reference.py --fail=7.e-4
         cd ../allsky
-        python3 compare-to-reference.py
+        python3 allsky_check.py
 
