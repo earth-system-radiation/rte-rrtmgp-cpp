@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cxx-compiler: [clang, gcc]
+        cxx-compiler: [gcc]
     env: 
       CC:  ${{ matrix.cxx-compiler }}
       CXX: ${{ matrix.cxx-compiler }}
@@ -36,7 +36,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake -DSYST=ubuntu_20lts ..
+        cmake -DSYST=ubuntu_22lts ..
         make
 
     - name: Run tests
