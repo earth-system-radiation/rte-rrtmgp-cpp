@@ -1108,7 +1108,6 @@ void Gas_optics_rrtmgp_gpu::compute_gas_taus(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
                 gpoint_flavor_gpu.ptr(),
-                this->get_gpoint_bands_gpu().ptr(),
                 this->get_band_lims_gpoint_gpu().ptr(),
                 krayl_gpu.ptr(),
                 idx_h2o, col_dry.ptr(), col_gas.ptr(),
