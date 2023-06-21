@@ -322,6 +322,7 @@ void sw_source_kernel(
     }
 }
 
+
 __global__
 void apply_BC_kernel_lw(const int isfc, int ncol, const int nlay, const int ngpt, const Bool top_at_1, const Float* __restrict__ inc_flux, Float* __restrict__ flux_dn)
 {
@@ -336,6 +337,7 @@ void apply_BC_kernel_lw(const int isfc, int ncol, const int nlay, const int ngpt
     }
 }
 
+
 __global__
 void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const Bool top_at_1, const Float* __restrict__ inc_flux, Float* __restrict__ flux_dn)
 {
@@ -348,6 +350,7 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const Bool 
         flux_dn[idx_out] = inc_flux[idx_in];
     }
 }
+
 
 __global__
 void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const Bool top_at_1, const Float* __restrict__ inc_flux, const Float* __restrict__ factor, Float* __restrict__ flux_dn)
@@ -363,6 +366,7 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const Bool 
     }
 }
 
+
 __global__
 void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const Bool top_at_1, Float* __restrict__ flux_dn)
 {
@@ -374,133 +378,6 @@ void apply_BC_kernel(const int ncol, const int nlay, const int ngpt, const Bool 
         flux_dn[idx_out] = Float(0.);
     }
 }
-
-__global__
-void sw_2stream_kernel(
-        const int ncol, const int nlay, const int ngpt, const Float tmin,
-        const Float* __restrict__ tau, const Float* __restrict__ ssa,
-        const Float* __restrict__ g, const Float* __restrict__ mu0,
-        Float* __restrict__ r_dif, Float* __restrict__ t_dif,
-        Float* __restrict__ r_dir, Float* __restrict__ t_dir,
-        Float* __restrict__ t_noscat)
-{
-    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-    const int ilay = blockIdx.y*blockDim.y + threadIdx.y;
-    const int igpt = blockIdx.z*blockDim.z + threadIdx.z;
-
-    if ( (icol < ncol) && (ilay < nlay) && (igpt < ngpt) )
-    {
-        const int idx = icol + ilay*ncol + igpt*nlay*ncol;
-        const Float mu0_inv = Float(1.)/mu0[icol];
-        const Float gamma1 = (Float(8.) - ssa[idx] * (Float(5.) + Float(3.) * g[idx])) * Float(.25);
-        const Float gamma2 = Float(3.) * (ssa[idx] * (Float(1.) -          g[idx])) * Float(.25);
-        const Float gamma3 = (Float(2.) - Float(3.) * mu0[icol] *          g[idx])  * Float(.25);
-        const Float gamma4 = Float(1.) - gamma3;
-
-        const Float alpha1 = gamma1 * gamma4 + gamma2 * gamma3;
-        const Float alpha2 = gamma1 * gamma3 + gamma2 * gamma4;
-
-        const Float k = sqrt(max((gamma1 - gamma2) * (gamma1 + gamma2), k_min<Float>()));
-        const Float exp_minusktau = exp(-tau[idx] * k);
-        const Float exp_minus2ktau = exp_minusktau * exp_minusktau;
-
-        const Float rt_term = Float(1.) / (k      * (Float(1.) + exp_minus2ktau) +
-                                     gamma1 * (Float(1.) - exp_minus2ktau));
-        r_dif[idx] = rt_term * gamma2 * (Float(1.) - exp_minus2ktau);
-        t_dif[idx] = rt_term * Float(2.) * k * exp_minusktau;
-        t_noscat[idx] = exp(-tau[idx] * mu0_inv);
-
-        const Float k_mu     = k * mu0[icol];
-        const Float k_gamma3 = k * gamma3;
-        const Float k_gamma4 = k * gamma4;
-
-        const Float fact = (abs(Float(1.) - k_mu*k_mu) > tmin) ? Float(1.) - k_mu*k_mu : tmin;
-        const Float rt_term2 = ssa[idx] * rt_term / fact;
-
-        r_dir[idx] = rt_term2  * ((Float(1.) - k_mu) * (alpha2 + k_gamma3)   -
-                                  (Float(1.) + k_mu) * (alpha2 - k_gamma3) * exp_minus2ktau -
-                                   Float(2.) * (k_gamma3 - alpha2 * k_mu)  * exp_minusktau * t_noscat[idx]);
-
-        t_dir[idx] = -rt_term2 * ((Float(1.) + k_mu) * (alpha1 + k_gamma4) * t_noscat[idx]   -
-                                  (Float(1.) - k_mu) * (alpha1 - k_gamma4) * exp_minus2ktau * t_noscat[idx] -
-                                   Float(2.) * (k_gamma4 + alpha1 * k_mu)  * exp_minusktau);
-    }
-}
-
-/*
-template<typename Float>__global__
-void sw_source_adding_kernel(const int ncol, const int nlay, const int ngpt, const Bool top_at_1,
-                             const Float* __restrict__ sfc_alb_dir, const Float* __restrict__ sfc_alb_dif,
-                             Float* __restrict__ r_dif, Float* __restrict__ t_dif,
-                             Float* __restrict__ r_dir, Float* __restrict__ t_dir, Float* __restrict__ t_noscat,
-                             Float* __restrict__ flux_up, Float* __restrict__ flux_dn, Float* __restrict__ flux_dir,
-                             Float* __restrict__ source_up, Float* __restrict__ source_dn, Float* __restrict__ source_sfc,
-                             Float* __restrict__ albedo, Float* __restrict__ src, Float* __restrict__ denom)
-{
-    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-    const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
-
-    if ( (icol < ncol) && (igpt < ngpt) )
-    {
-        sw_source_kernel(icol, igpt, ncol, nlay, top_at_1, r_dir, t_dir,
-                         t_noscat, sfc_alb_dir, source_up, source_dn, source_sfc, flux_dir);
-
-        sw_adding_kernel(icol, igpt, ncol, nlay, top_at_1, sfc_alb_dif,
-                         r_dif, t_dif, source_dn, source_up, source_sfc,
-                         flux_up, flux_dn, flux_dir, albedo, src, denom);
-    }
-}
-
-
-__global__
-void lw_solver_noscat_gaussquad_kernel(
-        const int ncol, const int nlay, const int ngpt, const Float eps, const Bool top_at_1, const int nmus,
-        const Float* __restrict__ secants, const Float* __restrict__ weights,
-        const Float* __restrict__ tau, const Float* __restrict__ lay_source,
-        const Float* __restrict__ lev_source_inc, const Float* __restrict__ lev_source_dec, const Float* __restrict__ sfc_emis,
-        const Float* __restrict__ sfc_src, Float* __restrict__ radn_up, Float* __restrict__ radn_dn,
-        const Float* __restrict__ sfc_src_jac, Float* __restrict__ radn_up_jac, Float* __restrict__ tau_loc,
-        Float* __restrict__ trans, Float* __restrict__ source_dn, Float* __restrict__ source_up,
-        Float* __restrict__ source_sfc, Float* __restrict__ sfc_albedo, Float* __restrict__ source_sfc_jac,
-        Float* __restrict__ flux_up, Float* __restrict__ flux_dn, Float* __restrict__ flux_up_jac)
-{
-    const int icol = blockIdx.x*blockDim.x + threadIdx.x;
-    const int igpt = blockIdx.y*blockDim.y + threadIdx.y;
-
-    // CvH ONLY TO MAKE IT COMPILE. REMOVE !!!!
-    Float* ds = secants;
-
-    if ( (icol < ncol) && (igpt < ngpt) )
-    {
-        lw_solver_noscat_kernel(
-                icol, igpt, ncol, nlay, ngpt, eps, top_at_1, ds[0], weights[0], tau, lay_source,
-                lev_source_inc, lev_source_dec, sfc_emis, sfc_src, flux_up, flux_dn, sfc_src_jac,
-                flux_up_jac, tau_loc, trans, source_dn, source_up, source_sfc, sfc_albedo, source_sfc_jac);
-
-        const int top_level = top_at_1 ? 0 : nlay;
-        apply_BC_kernel_lw(icol, igpt, top_level, ncol, nlay, ngpt, top_at_1, flux_dn, radn_dn);
-
-        if (nmus > 1)
-        {
-            for (int imu=1; imu<nmus; ++imu)
-            {
-                lw_solver_noscat_kernel(
-                        icol, igpt, ncol, nlay, ngpt, eps, top_at_1, ds[imu], weights[imu], tau, lay_source,
-                        lev_source_inc, lev_source_dec, sfc_emis, sfc_src, radn_up, radn_dn, sfc_src_jac,
-                        radn_up_jac, tau_loc, trans, source_dn, source_up, source_sfc, sfc_albedo, source_sfc_jac);
-
-                for (int ilev=0; ilev<(nlay+1); ++ilev)
-                {
-                    const int idx = icol + ilev*ncol + igpt*ncol*(nlay+1);
-                    flux_up[idx] += radn_up[idx];
-                    flux_dn[idx] += radn_dn[idx];
-                    flux_up_jac[idx] += radn_up_jac[idx];
-                }
-            }
-        }
-    }
-}
-*/
 
 
 __global__
@@ -540,11 +417,13 @@ void sw_2stream_function(
         Float* __restrict__ t_noscat)
 {
         const int idx = icol + ilay*ncol + igpt*nlay*ncol;
+        // const Float mu0_loc = mu0[icol + ilay*ncol];
+        const Float mu0_loc = mu0[icol];
 
-        const Float mu0_inv = Float(1.)/mu0[icol];
+        const Float mu0_inv = Float(1.)/mu0_loc;
         const Float gamma1 = (Float(8.) - ssa[idx] * (Float(5.) + Float(3.) * g[idx])) * Float(.25);
         const Float gamma2 = Float(3.) * (ssa[idx] * (Float(1.) - g[idx])) * Float(.25);
-        const Float gamma3 = (Float(2.) - Float(3.) * mu0[icol] * g[idx])  * Float(.25);
+        const Float gamma3 = (Float(2.) - Float(3.) * mu0_loc * g[idx])  * Float(.25);
         const Float gamma4 = Float(1.) - gamma3;
 
         const Float alpha1 = gamma1 * gamma4 + gamma2 * gamma3;
@@ -560,7 +439,7 @@ void sw_2stream_function(
         t_dif[idx] = rt_term * Float(2.) * k * exp_minusktau;
         *t_noscat = exp(-tau[idx] * mu0_inv);
 
-        const Float k_mu     = k * mu0[icol];
+        const Float k_mu     = k * mu0_loc;
         const Float k_gamma3 = k * gamma3;
         const Float k_gamma4 = k * gamma4;
 
@@ -568,12 +447,12 @@ void sw_2stream_function(
         const Float rt_term2 = ssa[idx] * rt_term / fact;
 
         *r_dir = rt_term2  * ((Float(1.) - k_mu) * (alpha2 + k_gamma3)   -
-                                  (Float(1.) + k_mu) * (alpha2 - k_gamma3) * exp_minus2ktau -
-                                   Float(2.) * (k_gamma3 - alpha2 * k_mu)  * exp_minusktau * t_noscat[0]);
+                              (Float(1.) + k_mu) * (alpha2 - k_gamma3) * exp_minus2ktau -
+                              Float(2.) * (k_gamma3 - alpha2 * k_mu)  * exp_minusktau * t_noscat[0]);
 
         *t_dir = -rt_term2 * ((Float(1.) + k_mu) * (alpha1 + k_gamma4) * t_noscat[0]   -
-                                  (Float(1.) - k_mu) * (alpha1 - k_gamma4) * exp_minus2ktau * t_noscat[0] -
-                                   Float(2.) * (k_gamma4 + alpha1 * k_mu)  * exp_minusktau);
+                              (Float(1.) - k_mu) * (alpha1 - k_gamma4) * exp_minus2ktau * t_noscat[0] -
+                              Float(2.) * (k_gamma4 + alpha1 * k_mu)  * exp_minusktau);
         
         // fix thanks to peter ukkonen (see https://github.com/earth-system-radiation/rte-rrtmgp/pull/39#issuecomment-1026698541)
         *r_dir = max(tmin<Float>(), min(*r_dir, Float(1.0) - *t_noscat));
@@ -595,7 +474,7 @@ void sw_source_2stream_kernel(
 
     if ( (icol < ncol) && (igpt < ngpt) )
     {
-        if (top_at_1)
+        if constexpr (top_at_1)
         {
             for (int ilay=0; ilay<nlay; ++ilay)
             {

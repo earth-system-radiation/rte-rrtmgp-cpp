@@ -37,6 +37,8 @@ namespace rrtmgp_kernel_launcher_cuda
 
     void reorder12x21(const int ni, const int nj, const Float* arr_in, Float* arr_out);
 
+    void zero_array(const int ni, Float* arr);
+    void zero_array(const int ni, const int nj, Float* arr);
     void zero_array(const int ni, const int nj, const int nk, Float* arr);
 
     void interpolation(
@@ -69,6 +71,7 @@ namespace rrtmgp_kernel_launcher_cuda
             const int ncol, const int nlay, const int nband, const int ngpt,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,
             const int* gpoint_flavor,
+            // const int* gpoint_bands,
             const int* band_lims_gpt,
             const Float* krayl,
             int idx_h2o, const Float* col_dry, const Float* col_gas,

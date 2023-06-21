@@ -1,7 +1,7 @@
 #! /bin/sh
-ln -sf ../rte-rrtmgp/rrtmgp-data/rrtmgp-cloud-optics-coeffs-reordered-sw.nc cloud_coefficients_sw.nc
-ln -sf ../rte-rrtmgp/rrtmgp-data/rrtmgp-cloud-optics-coeffs-lw.nc cloud_coefficients_lw.nc
-ln -sf ../rte-rrtmgp/rrtmgp-data/rrtmgp-data-sw-g224-2018-12-04.nc coefficients_sw.nc
-ln -sf ../rte-rrtmgp/rrtmgp-data/rrtmgp-data-lw-g256-2018-12-04.nc coefficients_lw.nc
-ln -sf ../rte-rrtmgp/examples/all-sky/garand-atmos-1.nc .
+ln -sf ../rrtmgp-data/rrtmgp-clouds-sw.nc cloud_coefficients_sw.nc
+ln -sf ../rrtmgp-data/rrtmgp-clouds-lw.nc cloud_coefficients_lw.nc
+ln -sf ../rrtmgp-data/rrtmgp-gas-sw-g224.nc coefficients_sw.nc
+ln -sf ../rrtmgp-data/rrtmgp-gas-lw-g256.nc coefficients_lw.nc
+ln -sf ../rrtmgp-data/examples/all-sky/inputs/garand-atmos-1.nc .
 ln -sf ../build/test_rte_rrtmgp .
