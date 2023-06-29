@@ -1,7 +1,10 @@
 #include <curand_kernel.h>
-#include "raytracer_kernels_bw.h"
 #include <iomanip>
 #include <iostream>
+
+#include "raytracer_kernels_bw.h"
+#include "raytracer_definitions.h"
+
 
 namespace
 {

@@ -2,9 +2,11 @@
 #define RAYTRACER_KERNELS_H
 
 #include "raytracer_functions.h"
+#include "raytracer_definitions.h"
 
-using Raytracer_functions::Vector;
-using Raytracer_functions::Optics_scat;
+using Raytracer_definitions::Vector;
+using Raytracer_definitions::Optics_scat;
+
 
 #ifdef RTE_USE_SP
 constexpr int rt_kernel_block = 512;

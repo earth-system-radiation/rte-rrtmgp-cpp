@@ -1,11 +1,18 @@
 #ifndef RAYTRACER_KERNELS_BW_H
 #define RAYTRACER_KERNELS_BW_H
+
 #include <curand_kernel.h>
+
 #include "Types.h"
+#include "raytracer_definitions.h"
 #include "raytracer_functions.h"
 
-using Raytracer_functions::Vector;
-using Raytracer_functions::Optics_scat;
+
+using Raytracer_definitions::Vector;
+using Raytracer_definitions::Optics_scat;
+using namespace Raytracer_functions;
+
+
 
 #ifdef RTE_USE_SP
 constexpr int bw_kernel_block= 256;
@@ -15,6 +22,7 @@ constexpr int bw_kernel_block = 256;
 constexpr int bw_kernel_grid = 256;
 #endif
 constexpr Float k_null_gas_min = Float(1.e-3);
+
 
 struct Grid_knull
 {

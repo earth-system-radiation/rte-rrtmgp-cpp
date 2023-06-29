@@ -1,11 +1,18 @@
+#include <curand_kernel.h>
+
 #include "Raytracer.h"
 #include "Array.h"
-#include <curand_kernel.h>
 #include "rrtmgp_kernel_launcher_cuda_rt.h"
 #include "Optical_props_rt.h"
 
+#include "raytracer_definitions.h"
+#include "raytracer_functions.h"
+
+
 namespace
 {
+    using namespace Raytracer_functions;
+
     inline void gpu_assert(cudaError_t code, const char *file, int line, bool abort=true)
     {
         if (code != cudaSuccess)

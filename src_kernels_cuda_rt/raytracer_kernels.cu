@@ -1,6 +1,8 @@
 #include <curand_kernel.h>
-#include "raytracer_kernels.h"
 #include <iostream>
+
+#include "raytracer_kernels.h"
+#include "raytracer_definitions.h"
 
 namespace
 {

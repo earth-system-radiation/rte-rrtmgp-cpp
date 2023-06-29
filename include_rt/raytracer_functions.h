@@ -1,19 +1,17 @@
 #ifndef RAYTRACER_FUNCTIONS_H
 #define RAYTRACER_FUNCTIONS_H
-#include "Types.h"
+
 #include <iostream>
 #include <curand_kernel.h>
 
+#include "Types.h"
+#include "raytracer_definitions.h"
+#include "raytracer_functions.h"
+
+
 namespace Raytracer_functions
 {
-
-    template<typename T>
-    struct Vector
-    {
-        T x;
-        T y;
-        T z;
-    };
+    using namespace Raytracer_definitions;
 
     template<typename T> static inline __host__ __device__
     Vector<T> operator*(const Vector<T> v, const Float s) { return Vector<T>{s*v.x, s*v.y, s*v.z}; }
@@ -38,24 +36,6 @@ namespace Raytracer_functions
     Vector<Float> operator/(const Vector<Float> v1, const Vector<int> v2) { return Vector<Float>{v1.x/v2.x, v1.y/v2.y, v1.z/v2.z}; }
     static inline __host__ __device__
     Vector<Float> operator*(const Vector<Float> v1, const Vector<int> v2) { return Vector<Float>{v1.x*v2.x, v1.y*v2.y, v1.z*v2.z}; }
-
-    struct Optics_scat
-    {
-        Float k_sca_gas;
-        Float k_sca_cld;
-        Float k_sca_aer;
-        Float asy_cld;
-        Float asy_aer;
-    };
-
-    enum class Photon_kind { Direct, Diffuse };
-
-    struct Photon
-    {
-        Vector<Float>position;
-        Vector<Float>direction;
-        Photon_kind kind;
-    };
 
     template<typename T> __host__ __device__
     Vector<T> cross(const Vector<T> v1, const Vector<T> v2)
@@ -255,10 +235,5 @@ namespace Raytracer_functions
     {
         return 1.f - curand_uniform(&state);
     }
-
-
-
-
 }
-
 #endif
