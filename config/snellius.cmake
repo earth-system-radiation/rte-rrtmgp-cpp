@@ -71,7 +71,7 @@ if(USECUDA)
     set(LIBS ${LIBS} -rdynamic $ENV{EBROOTCUDA}/lib64/libcufft.so)
     set(USER_CUDA_FLAGS "-arch=sm_80 -std=c++14 --expt-relaxed-constexpr")
     set(USER_CUDA_FLAGS_RELEASE "-DNDEBUG")
-    add_definitions(-DRRTMGP_RTE_GPU_MEMPOOL_CUDA)
+    add_definitions(-DRTE_RRTMGP_GPU_MEMPOOL_CUDA)
 endif()
 
 add_definitions(-DRTE_USE_CBOOL)
