@@ -29,7 +29,7 @@
 #include <stdexcept>
 
 #include "Array.h"
-#include "Types.h"
+#include "types.h"
 
 // Forward declarations.
 class Optical_props_arry;

@@ -28,7 +28,7 @@
 #include <map>
 #include <string>
 
-#include "Types.h"
+#include "types.h"
 
 template<typename, int> class Array;
 

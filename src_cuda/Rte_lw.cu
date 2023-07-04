@@ -27,8 +27,8 @@
 #include "Optical_props.h"
 #include "Source_functions.h"
 
-#include "rrtmgp_kernels.h"
-#include "rte_kernel_launcher_cuda.h"
+// #include "rrtmgp_kernels.h"
+#include "rte_solver_kernels_cuda.h"
 
 
 namespace
@@ -117,7 +117,7 @@ void Rte_lw_gpu::rte_lw(
             {{ {1, n_quad_angs}, {n_quad_angs, n_quad_angs} }});
 
     Array_gpu<Float,3> secants({ncol, ngpt, n_quad_angs});
-    rte_kernel_launcher_cuda::lw_secants_array(
+    Rte_solver_kernels_cuda::lw_secants_array(
             ncol, ngpt, n_quad_angs, max_gauss_pts,
             gauss_Ds.ptr(), secants.ptr());
 
@@ -135,7 +135,7 @@ void Rte_lw_gpu::rte_lw(
     // pass null ptr if size of inc_flux is zero
     const Float* inc_flux_ptr = (inc_flux.size() == 0) ? nullptr : inc_flux.ptr();
     
-    rte_kernel_launcher_cuda::lw_solver_noscat_gaussquad(
+    Rte_solver_kernels_cuda::lw_solver_noscat(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,
             secants.ptr(), gauss_wts_subset.ptr(),
             optical_props->get_tau().ptr(),

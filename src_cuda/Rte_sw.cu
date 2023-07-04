@@ -26,8 +26,7 @@
 #include "Array.h"
 #include "Optical_props.h"
 
-// #include "rrtmgp_kernels.h"
-#include "rte_kernel_launcher_cuda.h"
+#include "rte_solver_kernels_cuda.h"
 
 namespace
 {
@@ -147,7 +146,7 @@ void Rte_sw_gpu::rte_sw(
 
     // Run the radiative transfer solver
     // CvH: only two-stream solutions, I skipped the sw_solver_noscat.
-    rte_kernel_launcher_cuda::sw_solver_2stream(
+    Rte_solver_kernels_cuda::sw_solver_2stream(
             ncol, nlay, ngpt, top_at_1,
             optical_props->get_tau().ptr(), optical_props->get_ssa().ptr(), optical_props->get_g().ptr(),
             mu0.ptr(),

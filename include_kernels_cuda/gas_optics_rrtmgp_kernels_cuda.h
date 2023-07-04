@@ -22,15 +22,13 @@
  *
  */
 
-#ifndef RRTMGP_KERNELS_CUDA_H
-#define RRTMGP_KERNELS_CUDA_H
+#ifndef GAS_OPTICS_RRTMGP_KERNELS_CUDA_H
+#define GAS_OPTICS_RRTMGP_KERNELS_CUDA_H
 
-#include "Array.h"
-#include "Types.h"
-// #include "Gas_concs.h"
+#include "types.h"
 
 
-namespace rrtmgp_kernel_launcher_cuda
+namespace Gas_optics_rrtmgp_kernels_cuda
 {
     void reorder123x321(const int ni, const int nj, const int nk,
             const Float* arr_in,  Float* arr_out);
@@ -109,7 +107,7 @@ namespace rrtmgp_kernel_launcher_cuda
             const int* jeta, const int* jtemp,
             const int* jpress, Float* tau);
 
-    void Planck_source(
+    void compute_planck_source(
             const int ncol, const int nlay, const int nbnd, const int ngpt,
             const int nflav, const int neta, const int npres, const int ntemp,
             const int nPlanckTemp,

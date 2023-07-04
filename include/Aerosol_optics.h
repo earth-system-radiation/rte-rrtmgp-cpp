@@ -7,7 +7,7 @@
 #include "Array.h"
 #include "Optical_props.h"
 #include "Gas_concs.h"
-#include "Types.h"
+#include "types.h"
 
 
 // Forward declarations.

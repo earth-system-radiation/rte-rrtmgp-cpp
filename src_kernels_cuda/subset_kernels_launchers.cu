@@ -1,16 +1,14 @@
-#include <chrono>
-#include <iomanip>
-
-#include "subset_kernel_launcher_cuda.h"
+#include "subset_kernels_cuda.h"
 #include "tools_gpu.h"
-#include "Array.h"
+
 
 namespace
 {
     #include "subset_kernels.cu"
 }
 
-namespace subset_kernel_launcher_cuda
+
+namespace Subset_kernels_cuda
 {
     void get_from_subset(const int ncol, const int nlay, const int ncol_in, const int col_s_in,
                   Float* var1_full, Float* var2_full, Float* var3_full,  Float* var4_full,

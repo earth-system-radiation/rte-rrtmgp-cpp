@@ -3,19 +3,18 @@
 #include <iostream>
 #include <iomanip>
 
-#include "rrtmgp_kernel_launcher_cuda.h"
+#include "gas_optics_rrtmgp_kernels_cuda.h"
 #include "tools_gpu.h"
-#include "Array.h"
 #include "tuner.h"
 
 
 namespace
 {
-    #include "gas_optics_kernels.cu"
+    #include "gas_optics_rrtmgp_kernels.cu"
 }
 
 
-namespace rrtmgp_kernel_launcher_cuda
+namespace Gas_optics_rrtmgp_kernels_cuda
 {
     void reorder123x321(
             const int ni, const int nj, const int nk,
@@ -239,16 +238,6 @@ namespace rrtmgp_kernel_launcher_cuda
     }
 
 
-    struct Gas_optical_depths_major_kernel
-    {
-        template<unsigned int I, unsigned int J, unsigned int K, class... Args>
-        static void launch(dim3 grid, dim3 block, Args... args)
-        {
-            gas_optical_depths_major_kernel<I, J, K><<<grid, block>>>(args...);
-        }
-    };
-
-
     struct Gas_optical_depths_minor_kernel
     {
         template<unsigned int I, unsigned int J, unsigned int K, class... Args>
@@ -298,13 +287,12 @@ namespace rrtmgp_kernel_launcher_cuda
         if (tunings.count("gas_optical_depths_major_kernel") == 0)
         {
             Float* tau_tmp = Tools_gpu::allocate_gpu<Float>(ngpt*nlay*ncol);
-            std::tie(grid_gpu_maj, block_gpu_maj) =
-                tune_kernel_compile_time<Gas_optical_depths_major_kernel>(
+
+            std::tie(grid_gpu_maj, block_gpu_maj) = tune_kernel(
                     "gas_optical_depths_major_kernel",
                     dim3(ngpt, nlay, ncol),
-                    std::integer_sequence<unsigned int, 1, 2, 4, 8, 16, 24, 32, 48, 64>{},
-                    std::integer_sequence<unsigned int, 1, 2, 4>{},
-                    std::integer_sequence<unsigned int, 8, 16, 24, 32, 48, 64, 96, 128, 256>{},
+                    {1, 2, 4, 8, 16, 24, 32, 48, 64}, {1, 2, 4}, {8, 16, 24, 32, 48, 64, 96, 128, 256},
+                    gas_optical_depths_major_kernel,
                     ncol, nlay, nband, ngpt,
                     nflav, neta, npres, ntemp,
                     gpoint_flavor, band_lims_gpt,
@@ -323,11 +311,7 @@ namespace rrtmgp_kernel_launcher_cuda
             block_gpu_maj = tunings["gas_optical_depths_major_kernel"].second;
         }
 
-        run_kernel_compile_time<Gas_optical_depths_major_kernel>(
-                std::integer_sequence<unsigned int, 1, 2, 4, 8, 16, 24, 32, 48, 64>{},
-                std::integer_sequence<unsigned int, 1, 2, 4>{},
-                std::integer_sequence<unsigned int, 8, 16, 24, 32, 48, 64, 96, 128, 256>{},
-                grid_gpu_maj, block_gpu_maj,
+        gas_optical_depths_major_kernel<<<grid_gpu_maj, block_gpu_maj>>>(
                 ncol, nlay, nband, ngpt,
                 nflav, neta, npres, ntemp,
                 gpoint_flavor, band_lims_gpt,
@@ -468,7 +452,7 @@ namespace rrtmgp_kernel_launcher_cuda
     }
 
 
-    void Planck_source(
+    void compute_planck_source(
             const int ncol, const int nlay, const int nbnd, const int ngpt,
             const int nflav, const int neta, const int npres, const int ntemp,
             const int nPlanckTemp,
@@ -497,25 +481,23 @@ namespace rrtmgp_kernel_launcher_cuda
 
         const Float delta_Tsurf = Float(1.);
 
-        const int block_gpt = 16;
+        const int block_col = 32;
         const int block_lay = 4;
-        const int block_col = 2;
 
-        const int grid_gpt = ngpt/block_gpt + (ngpt%block_gpt > 0);
-        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
         const int grid_col = ncol/block_col + (ncol%block_col > 0);
+        const int grid_lay = nlay/block_lay + (nlay%block_lay > 0);
 
-        dim3 grid_gpu(grid_gpt, grid_lay, grid_col);
-        dim3 block_gpu(block_gpt, block_lay, block_col);
+        dim3 grid_gpu(grid_col, grid_lay);
+        dim3 block_gpu(block_col, block_lay);
         
         if (tunings.count("Planck_source_kernel") == 0)
         {
             std::tie(grid_gpu, block_gpu) = tune_kernel(
                     "Planck_source_kernel",
-                    dim3(ngpt, nlay, ncol),
-                    {1, 2, 4},
-                    {1, 2},
-                    {1, 2, 4, 8, 16, 32, 48, 64, 96, 128, 256},
+                    dim3(ncol, nlay),
+                    {1, 2, 4, 8, 16, 32, 48, 64, 96, 128, 256, 512},
+                    {1, 2, 4, 8, 16, 32, 48, 64, 96, 128, 256, 512},
+                    {1},
                     Planck_source_kernel,
                     ncol, nlay, nbnd, ngpt,
                     nflav, neta, npres, ntemp, nPlanckTemp,

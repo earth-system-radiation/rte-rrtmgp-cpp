@@ -25,11 +25,10 @@
 #ifndef RTE_KERNELS_CUDA_H
 #define RTE_KERNELS_CUDA_H
 
-#include "Array.h"
-#include "Types.h"
+#include "types.h"
 
 
-namespace subset_kernel_launcher_cuda
+namespace Subset_kernels_cuda
 {
     void get_from_subset(
             const int ncol, const int nbnd, const int ncol_in, const int col_s_in,

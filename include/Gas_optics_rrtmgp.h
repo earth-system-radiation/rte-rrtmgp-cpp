@@ -29,7 +29,7 @@
 
 #include "Array.h"
 #include "Gas_optics.h"
-#include "Types.h"
+#include "types.h"
 
 
 // Forward declarations.

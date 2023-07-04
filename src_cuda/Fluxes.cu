@@ -25,7 +25,7 @@
 #include "Fluxes.h"
 #include "Array.h"
 #include "Optical_props.h"
-#include "fluxes_kernel_launcher_cuda.h"
+#include "fluxes_kernels_cuda.h"
 
 
 Fluxes_broadband_gpu::Fluxes_broadband_gpu(const int ncol, const int nlev) :
@@ -45,10 +45,10 @@ void Fluxes_broadband_gpu::reduce(
     const int nlev = gpt_flux_up.dim(2);
     const int ngpt = gpt_flux_up.dim(3);
 
-    fluxes_kernel_launcher_cuda::sum_broadband(ncol, nlev, ngpt, gpt_flux_up.ptr(), this->flux_up.ptr());
-    fluxes_kernel_launcher_cuda::sum_broadband(ncol, nlev, ngpt, gpt_flux_dn.ptr(), this->flux_dn.ptr());
+    Fluxes_kernels_cuda::sum_broadband(ncol, nlev, ngpt, gpt_flux_up.ptr(), this->flux_up.ptr());
+    Fluxes_kernels_cuda::sum_broadband(ncol, nlev, ngpt, gpt_flux_dn.ptr(), this->flux_dn.ptr());
 
-    fluxes_kernel_launcher_cuda::net_broadband_precalc(
+    Fluxes_kernels_cuda::net_broadband_precalc(
             ncol, nlev, this->flux_dn.ptr(), this->flux_up.ptr(), this->flux_net.ptr());
 }
 
@@ -65,7 +65,7 @@ void Fluxes_broadband_gpu::reduce(
 
     reduce(gpt_flux_up, gpt_flux_dn, spectral_disc, top_at_1);
 
-    fluxes_kernel_launcher_cuda::sum_broadband(ncol, nlev, ngpt, gpt_flux_dn_dir.ptr(), this->flux_dn_dir.ptr());
+    Fluxes_kernels_cuda::sum_broadband(ncol, nlev, ngpt, gpt_flux_dn_dir.ptr(), this->flux_dn_dir.ptr());
 }
 
 
@@ -95,15 +95,15 @@ void Fluxes_byband_gpu::reduce(
             gpt_flux_up, gpt_flux_dn,
             spectral_disc, top_at_1);
 
-    fluxes_kernel_launcher_cuda::sum_byband(
+    Fluxes_kernels_cuda::sum_byband(
             ncol, nlev, ngpt, nbnd, band_lims.ptr(),
             gpt_flux_up.ptr(), this->bnd_flux_up.ptr());
 
-    fluxes_kernel_launcher_cuda::sum_byband(
+    Fluxes_kernels_cuda::sum_byband(
             ncol, nlev, ngpt, nbnd, band_lims.ptr(),
             gpt_flux_dn.ptr(), this->bnd_flux_dn.ptr());
 
-    fluxes_kernel_launcher_cuda::net_byband_full(
+    Fluxes_kernels_cuda::net_byband_full(
             ncol, nlev, ngpt, nbnd, band_lims.ptr(),
             this->bnd_flux_dn.ptr(), this->bnd_flux_up.ptr(), this->bnd_flux_net.ptr());
 }
@@ -130,7 +130,7 @@ void Fluxes_byband_gpu::reduce(
 
     reduce(gpt_flux_up, gpt_flux_dn, spectral_disc, top_at_1);
 
-    fluxes_kernel_launcher_cuda::sum_byband(
+    Fluxes_kernels_cuda::sum_byband(
             ncol, nlev, ngpt, nbnd, band_lims.ptr(),
             gpt_flux_dn_dir.ptr(), this->bnd_flux_dn_dir.ptr());
 }

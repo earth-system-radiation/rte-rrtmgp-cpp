@@ -22,10 +22,7 @@
  *
  */
 
-#include <chrono>
 #include <numeric>
-#include <iomanip>
-#include <cmath>
 #include <boost/algorithm/string.hpp>
 
 #include "Optical_props.h"
@@ -34,9 +31,8 @@
 #include "Gas_concs.h"
 #include "Gas_optics_rrtmgp.h"
 #include "Array.h"
-#include "iostream"
 
-#include "rrtmgp_kernel_launcher_cuda.h"
+#include "gas_optics_rrtmgp_kernels_cuda.h"
 
 
 namespace
@@ -1031,9 +1027,9 @@ void Gas_optics_rrtmgp_gpu::compute_gas_taus(
             ncol, nlay, vmr_2d.dim(1), vmr_2d.dim(2), ngas, igas, vmr.ptr(), vmr_2d.ptr(), col_gas.ptr(), col_dry.ptr());
     }
 
-    // rrtmgp_kernel_launcher_cuda::zero_array(ngpt, nlay, ncol, tau);
+    // Gas_optics_rrtmgp_kernels_cuda::zero_array(ngpt, nlay, ncol, tau);
 
-    rrtmgp_kernel_launcher_cuda::interpolation(
+    Gas_optics_rrtmgp_kernels_cuda::interpolation(
             ncol, nlay,
             ngas, nflav, neta, npres, ntemp,
             flavor_gpu.ptr(),
@@ -1070,12 +1066,12 @@ void Gas_optics_rrtmgp_gpu::compute_gas_taus(
     {
         Array_gpu<Float,3> tau({ncol, nlay, ngpt});
         Array_gpu<Float,3> tau_rayleigh({ncol, nlay, ngpt});
-        rrtmgp_kernel_launcher_cuda::zero_array(ngpt, nlay, ncol, tau.ptr());
+        Gas_optics_rrtmgp_kernels_cuda::zero_array(ngpt, nlay, ncol, tau.ptr());
 
-        rrtmgp_kernel_launcher_cuda::zero_array(ncol, nlay, ngpt, tau.ptr());
-        rrtmgp_kernel_launcher_cuda::zero_array(ncol, nlay, ngpt, tau_rayleigh.ptr());
+        Gas_optics_rrtmgp_kernels_cuda::zero_array(ncol, nlay, ngpt, tau.ptr());
+        Gas_optics_rrtmgp_kernels_cuda::zero_array(ncol, nlay, ngpt, tau_rayleigh.ptr());
 
-        rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
+        Gas_optics_rrtmgp_kernels_cuda::compute_tau_absorption(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
                 nminorlower, nminorklower,
@@ -1104,7 +1100,7 @@ void Gas_optics_rrtmgp_gpu::compute_gas_taus(
                 jeta.ptr(), jtemp.ptr(), jpress.ptr(),
                 tau.ptr());
 
-        rrtmgp_kernel_launcher_cuda::compute_tau_rayleigh(
+        Gas_optics_rrtmgp_kernels_cuda::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
                 gpoint_flavor_gpu.ptr(),
@@ -1118,9 +1114,9 @@ void Gas_optics_rrtmgp_gpu::compute_gas_taus(
     }
     else
     {
-        rrtmgp_kernel_launcher_cuda::zero_array(ncol, nlay, ngpt, optical_props->get_tau().ptr());
+        Gas_optics_rrtmgp_kernels_cuda::zero_array(ncol, nlay, ngpt, optical_props->get_tau().ptr());
 
-        rrtmgp_kernel_launcher_cuda::compute_tau_absorption(
+        Gas_optics_rrtmgp_kernels_cuda::compute_tau_absorption(
                 ncol, nlay, nband, ngpt,
                 ngas, nflav, neta, npres, ntemp,
                 nminorlower, nminorklower,
@@ -1161,7 +1157,7 @@ void Gas_optics_rrtmgp_gpu::combine_abs_and_rayleigh(
     int nlay = tau.dim(2);
     int ngpt = tau.dim(3);
 
-    rrtmgp_kernel_launcher_cuda::combine_abs_and_rayleigh(
+    Gas_optics_rrtmgp_kernels_cuda::combine_abs_and_rayleigh(
             ncol, nlay, ngpt,
             tau.ptr(), tau_rayleigh.ptr(),
             optical_props->get_tau().ptr(), optical_props->get_ssa().ptr(), optical_props->get_g().ptr());
@@ -1194,7 +1190,7 @@ void Gas_optics_rrtmgp_gpu::source(
 
     int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
 
-    rrtmgp_kernel_launcher_cuda::Planck_source(
+    Gas_optics_rrtmgp_kernels_cuda::compute_planck_source(
             ncol, nlay, nbnd, ngpt,
             nflav, neta, npres, ntemp, nPlanckTemp,
             tlay.ptr(), tlev.ptr(), tsfc.ptr(), sfc_lay,

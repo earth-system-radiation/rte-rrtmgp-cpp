@@ -27,7 +27,7 @@
 
 #include "Array.h"
 #include "Optical_props.h"
-#include "Types.h"
+#include "types.h"
 
 
 // Forward declarations.

@@ -26,7 +26,7 @@
 #define RTE_SW_H
 
 #include <memory>
-#include "Types.h"
+#include "types.h"
 
 
 // Forward declarations.
