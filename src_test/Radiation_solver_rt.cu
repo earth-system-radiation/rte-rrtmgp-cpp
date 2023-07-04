@@ -34,7 +34,8 @@
 #include "Fluxes_rt.h"
 #include "Rte_lw_rt.h"
 #include "Rte_sw_rt.h"
-#include "subset_kernel_launcher_cuda.h"
+
+#include "subset_kernels_cuda.h"
 #include "rrtmgp_kernel_launcher_cuda_rt.h"
 #include "gpt_combine_kernel_launcher_cuda_rt.h"
 
@@ -741,7 +742,7 @@ void Radiation_solver_shortwave::solve_gpu(
                     optical_props_subset,
                     toa_src_temp,
                     col_dry.subset({{ {col_s, col_e}, {1, n_lay} }}));
-            subset_kernel_launcher_cuda::get_from_subset(
+            Subset_kernels_cuda::get_from_subset(
                     n_col, n_lay, n_col_subset, col_s,
                     optical_props->get_tau().ptr(), optical_props->get_ssa().ptr(), optical_props->get_g().ptr(),
                     optical_props_subset->get_tau().ptr(), optical_props_subset->get_ssa().ptr(), optical_props_subset->get_g().ptr());

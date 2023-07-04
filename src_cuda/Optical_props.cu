@@ -26,7 +26,7 @@
 #include "Array.h"
 
 
-#include "optical_props_kernel_launcher_cuda.h"
+#include "optical_props_kernels_cuda.h"
 
 
 // Optical properties per gpoint.
@@ -107,7 +107,7 @@ void Optical_props_2str_gpu::delta_scale(const Array_gpu<Float,3>& forward_frac)
     const int nlay = this->get_nlay();
     const int ngpt = this->get_ngpt();
 
-    optical_props_kernel_launcher_cuda::delta_scale_2str_k(
+    Optical_props_kernels_cuda::delta_scale_2str_k(
             ncol, nlay, ngpt,
             this->get_tau().ptr(), this->get_ssa().ptr(), this->get_g().ptr());
 }
@@ -121,7 +121,7 @@ void add_to(Optical_props_1scl_gpu& op_inout, const Optical_props_1scl_gpu& op_i
 
     if (ngpt == op_in.get_ngpt())
     {
-        optical_props_kernel_launcher_cuda::increment_1scalar_by_1scalar(
+        Optical_props_kernels_cuda::increment_1scalar_by_1scalar(
                 ncol, nlay, ngpt,
                 op_inout.get_tau().ptr(), op_in.get_tau().ptr());
     }
@@ -130,7 +130,7 @@ void add_to(Optical_props_1scl_gpu& op_inout, const Optical_props_1scl_gpu& op_i
         if (op_in.get_ngpt() != op_inout.get_nband())
             throw std::runtime_error("Cannot add optical properties with incompatible band - gpoint combination");
 
-        optical_props_kernel_launcher_cuda::inc_1scalar_by_1scalar_bybnd(
+        Optical_props_kernels_cuda::inc_1scalar_by_1scalar_bybnd(
                 ncol, nlay, ngpt,
                 op_inout.get_tau().ptr(), op_in.get_tau().ptr(),
                 op_inout.get_nband(), op_inout.get_band_lims_gpoint_gpu().ptr());
@@ -146,7 +146,7 @@ void add_to(Optical_props_2str_gpu& op_inout, const Optical_props_2str_gpu& op_i
 
     if (ngpt == op_in.get_ngpt())
     {
-        optical_props_kernel_launcher_cuda::increment_2stream_by_2stream(
+        Optical_props_kernels_cuda::increment_2stream_by_2stream(
                 ncol, nlay, ngpt,
                 op_inout.get_tau().ptr(), op_inout.get_ssa().ptr(), op_inout.get_g().ptr(),
                 op_in   .get_tau().ptr(), op_in   .get_ssa().ptr(), op_in   .get_g().ptr());
@@ -156,7 +156,7 @@ void add_to(Optical_props_2str_gpu& op_inout, const Optical_props_2str_gpu& op_i
         if (op_in.get_ngpt() != op_inout.get_nband())
             throw std::runtime_error("Cannot add optical properties with incompatible band - gpoint combination");
 
-        optical_props_kernel_launcher_cuda::inc_2stream_by_2stream_bybnd(
+        Optical_props_kernels_cuda::inc_2stream_by_2stream_bybnd(
                 ncol, nlay, ngpt,
                 op_inout.get_tau().ptr(), op_inout.get_ssa().ptr(), op_inout.get_g().ptr(),
                 op_in   .get_tau().ptr(), op_in   .get_ssa().ptr(), op_in   .get_g().ptr(),

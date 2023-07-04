@@ -1,7 +1,7 @@
 #
 # This file is part of a C++ interface to the Radiative Transfer for Energetics (RTE)
 #
-include_directories(${INCLUDE_DIRS} "../include" "../include_test" "../include_rt" "../include_kernels_cuda")
+include_directories(${INCLUDE_DIRS} "../include" "../include_test" "../include_rt" "../include_rt_kernels/" "../include_kernels_cuda")
 
 # retrieve the git hash from the current commit
 find_package(Git)

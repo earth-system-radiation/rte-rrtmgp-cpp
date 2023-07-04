@@ -25,7 +25,7 @@
 #include "Array.h"
 #include "Aerosol_optics.h"
 #include "Radiation_solver.h"
-#include "Types.h"
+#include "types.h"
 
 
 void read_and_set_vmr(
