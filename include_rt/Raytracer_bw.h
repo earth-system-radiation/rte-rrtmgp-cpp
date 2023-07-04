@@ -2,7 +2,7 @@
 #define RAYTRACER_BW_H
 
 #include <memory>
-#include "Types.h"
+#include "types.h"
 #include <curand_kernel.h>
 #include "raytracer_kernels_bw.h"
 #include "Optical_props_rt.h"

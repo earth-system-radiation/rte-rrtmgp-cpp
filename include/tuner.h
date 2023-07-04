@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <limits>
 #include <vector>
+#include <map>
 
 
 // #ifdef __CUDACC__

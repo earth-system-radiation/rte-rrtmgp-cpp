@@ -23,10 +23,9 @@
  */
 
 
-#include "Array.h"
-#include "Types.h"
 #include "tuner.h"
 
+#include "optical_props_kernel_launcher_cuda_rt.h"
 
 
 namespace

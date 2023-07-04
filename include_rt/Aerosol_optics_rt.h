@@ -8,7 +8,7 @@
 #include "Array.h"
 #include "Optical_props_rt.h"
 #include "Gas_concs.h"
-#include "Types.h"
+#include "types.h"
 
 using Aerosol_concs_gpu = Gas_concs_gpu;
 using Aerosol_concs = Gas_concs;

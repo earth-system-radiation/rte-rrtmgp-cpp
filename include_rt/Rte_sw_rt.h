@@ -26,7 +26,7 @@
 #define RTE_SW_RT_H
 
 #include <memory>
-#include "Types.h"
+#include "types.h"
 
 // Forward declarations.
 template<typename, int> class Array_gpu;

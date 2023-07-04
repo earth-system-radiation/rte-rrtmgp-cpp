@@ -27,7 +27,7 @@
 
 #include <memory>
 
-#include "Types.h"
+#include "types.h"
 
 // Forward declarations.
 template<typename, int> class Array_gpu;

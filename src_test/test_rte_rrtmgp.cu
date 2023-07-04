@@ -28,7 +28,7 @@
 #include "Radiation_solver.h"
 #include "Gas_concs.h"
 #include "Aerosol_optics.h"
-#include "Types.h"
+#include "types.h"
 #include "Mem_pool_gpu.h"
 
 

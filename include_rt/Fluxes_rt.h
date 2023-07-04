@@ -28,7 +28,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "Types.h"
+#include "types.h"
 #include "Array.h"
 
 // Forward declarations.

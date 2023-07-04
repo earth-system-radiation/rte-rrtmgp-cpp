@@ -1,7 +1,8 @@
 #ifndef RAYTRACER_DEFINITIONS_H
 #define RAYTRACER_DEFINITIONS_H
 
-#include "Types.h"
+#include "types.h"
+
 
 namespace Raytracer_definitions
 {

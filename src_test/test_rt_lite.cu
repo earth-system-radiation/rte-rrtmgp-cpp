@@ -26,7 +26,7 @@
 #include "Netcdf_interface.h"
 #include "Array.h"
 #include "Raytracer.h"
-#include "Types.h"
+#include "types.h"
 
 
 bool parse_command_line_options(

@@ -25,8 +25,9 @@
 #ifndef OPTICAL_PROPS_KERNEL_LAUNCHER_CUDA_RT_H
 #define OPTICAL_PROPS_KERNEL_LAUNCHER_CUDA_RT_H
 
-#include "Array.h"
-#include "Types.h"
+
+#include "types.h"
+
 
 namespace optical_props_kernel_launcher_cuda_rt
 {

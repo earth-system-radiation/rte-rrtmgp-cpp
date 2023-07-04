@@ -3,7 +3,7 @@
 
 #include <curand_kernel.h>
 
-#include "Types.h"
+#include "types.h"
 #include "raytracer_definitions.h"
 #include "raytracer_functions.h"
 

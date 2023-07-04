@@ -29,7 +29,7 @@
 #include <string>
 
 #include "Gas_concs.h" 
-#include "Types.h"
+#include "types.h"
 
 template<typename, int> class Array;
 

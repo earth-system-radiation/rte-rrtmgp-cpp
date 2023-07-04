@@ -1,5 +1,5 @@
 #include <float.h>
-#include "Types.h"
+
 
 #ifndef kernel_tuner
 const int loop_unroll_factor_nlay = 4;

@@ -26,7 +26,7 @@
 #define RTE_KERNELS_CUDA_RT_H
 
 #include "Array.h"
-#include "Types.h"
+#include "types.h"
 #include "Gas_concs.h"
 
 namespace rte_kernel_launcher_cuda_rt

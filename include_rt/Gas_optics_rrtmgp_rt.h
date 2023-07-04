@@ -29,7 +29,7 @@
 
 #include "Array.h"
 #include "Gas_optics_rt.h"
-#include "Types.h"
+#include "types.h"
 
 // Forward declarations.
 // template<typename Float> class Gas_optics;

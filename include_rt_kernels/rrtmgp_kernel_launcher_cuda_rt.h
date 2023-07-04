@@ -26,7 +26,7 @@
 #define RRTMGP_KERNELS_CUDA_RT_H
 
 #include "Array.h"
-#include "Types.h"
+#include "types.h"
 
 namespace rrtmgp_kernel_launcher_cuda_rt
 {

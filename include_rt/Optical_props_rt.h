@@ -28,7 +28,7 @@
 
 #include <memory>
 #include "Array.h"
-#include "Types.h"
+#include "types.h"
 
 // GPU version of optical props class
 #ifdef USECUDA
