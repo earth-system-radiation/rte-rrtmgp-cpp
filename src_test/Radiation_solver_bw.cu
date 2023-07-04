@@ -34,9 +34,10 @@
 #include "Fluxes_rt.h"
 #include "Rte_lw_rt.h"
 #include "Rte_sw_rt.h"
+
 #include "subset_kernels_cuda.h"
-#include "rrtmgp_kernel_launcher_cuda_rt.h"
-#include "gpt_combine_kernel_launcher_cuda_rt.h"
+#include "gas_optics_rrtmgp_kernels_cuda_rt.h"
+#include "gpt_combine_kernels_cuda_rt.h"
 
 
 namespace
@@ -635,9 +636,9 @@ void Radiation_solver_longwave::solve_gpu(
 
     if (switch_fluxes)
     {
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_up.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_dn.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_net.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_lev, n_col, lw_flux_up.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_lev, n_col, lw_flux_dn.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_lev, n_col, lw_flux_net.ptr());
     }
 
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
@@ -685,12 +686,12 @@ void Radiation_solver_longwave::solve_gpu(
         // Store the optical properties, if desired.
         if (switch_output_optical)
         {
-            gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
+            Gpt_combine_kernels_cuda_rt::get_from_gpoint(
                     n_col, n_lay, igpt-1, tau.ptr(), lay_source.ptr(), lev_source_inc.ptr(), lev_source_dec.ptr(),
                     optical_props->get_tau().ptr(), (*sources).get_lay_source().ptr(),
                     (*sources).get_lev_source_inc().ptr(), (*sources).get_lev_source_dec().ptr());
 
-            gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
+            Gpt_combine_kernels_cuda_rt::get_from_gpoint(
                     n_col, igpt-1, sfc_source.ptr(), (*sources).get_sfc_source().ptr());
         }
 
@@ -715,14 +716,14 @@ void Radiation_solver_longwave::solve_gpu(
             (*fluxes).net_flux();
 
             // Copy the data to the output.
-            gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
+            Gpt_combine_kernels_cuda_rt::add_from_gpoint(
                     n_col, n_lev, lw_flux_up.ptr(), lw_flux_dn.ptr(), lw_flux_net.ptr(),
                     (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
 
 
             if (switch_output_bnd_fluxes)
             {
-                gpt_combine_kernel_launcher_cuda_rt::get_from_gpoint(
+                Gpt_combine_kernels_cuda_rt::get_from_gpoint(
                         n_col, n_lev, igpt-1, lw_bnd_flux_up.ptr(), lw_bnd_flux_dn.ptr(), lw_bnd_flux_net.ptr(),
                         (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
 
@@ -946,7 +947,7 @@ void Radiation_solver_shortwave::solve_gpu(
     Array_gpu<Float,4> mie_phase_sub;
     Array_gpu<Float,3> mie_phase_angs_sub;
 
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_ns, cam_nx, cam_ny, XYZ.ptr());
+    Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(cam_ns, cam_nx, cam_ny, XYZ.ptr());
 
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
     Float total_source = 0.;
@@ -1048,9 +1049,9 @@ void Radiation_solver_shortwave::solve_gpu(
         }
         else
         {
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_g().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_g().ptr());
         }
 
         if (switch_aerosol_optics)
@@ -1075,9 +1076,9 @@ void Radiation_solver_shortwave::solve_gpu(
         }
         else
         {
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_tau().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_ssa().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_g().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_tau().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_ssa().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_g().ptr());
         }
 
 
@@ -1238,7 +1239,7 @@ void Radiation_solver_shortwave::solve_gpu_bb(
     Array_gpu<Float,3> mie_phase_sub;
     Array_gpu<Float,2> mie_phase_angs_sub;
 
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(cam_nx, cam_ny, radiance.ptr());
+    Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(cam_nx, cam_ny, radiance.ptr());
 
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
     Float total_source = 0.;
@@ -1333,9 +1334,9 @@ void Radiation_solver_shortwave::solve_gpu_bb(
         }
         else
         {
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_g().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_g().ptr());
         }
 
         if (switch_aerosol_optics)
@@ -1360,9 +1361,9 @@ void Radiation_solver_shortwave::solve_gpu_bb(
         }
         else
         {
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_tau().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_ssa().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_g().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_tau().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_ssa().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_g().ptr());
         }
 
         const Float zenith_angle = std::acos(mu0({1}));

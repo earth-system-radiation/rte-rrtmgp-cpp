@@ -1,16 +1,17 @@
 #include <chrono>
 #include <iomanip>
 
-#include "gpt_combine_kernel_launcher_cuda_rt.h"
+#include "gpt_combine_kernels_cuda_rt.h"
 #include "tools_gpu.h"
-#include "Array.h"
+
 
 namespace
 {
     #include "gpt_combine_kernels_rt.cu"
 }
 
-namespace gpt_combine_kernel_launcher_cuda_rt
+
+namespace Gpt_combine_kernels_cuda_rt
 {
 
     void add_from_gpoint(const int ncol, const int nlay,

@@ -24,8 +24,7 @@
 
 
 #include "tuner.h"
-
-#include "optical_props_kernel_launcher_cuda_rt.h"
+#include "optical_props_kernels_cuda_rt.h"
 
 
 namespace
@@ -33,7 +32,8 @@ namespace
     #include "optical_props_kernels_rt.cu"
 }
 
-namespace optical_props_kernel_launcher_cuda_rt
+
+namespace Optical_props_kernels_cuda_rt
 {
     void increment_1scalar_by_1scalar(
             int ncol, int nlay,

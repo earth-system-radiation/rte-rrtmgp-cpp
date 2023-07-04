@@ -36,8 +36,8 @@
 #include "Rte_sw_rt.h"
 
 #include "subset_kernels_cuda.h"
-#include "rrtmgp_kernel_launcher_cuda_rt.h"
-#include "gpt_combine_kernel_launcher_cuda_rt.h"
+#include "gas_optics_rrtmgp_kernels_cuda_rt.h"
+#include "gpt_combine_kernels_cuda_rt.h"
 
 
 namespace
@@ -489,9 +489,9 @@ void Radiation_solver_longwave::solve_gpu(
 
     if (switch_fluxes)
     {
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_up.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_dn.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, n_col, lw_flux_net.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_lev, n_col, lw_flux_up.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_lev, n_col, lw_flux_dn.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_lev, n_col, lw_flux_net.ptr());
     }
 
     const Array<int, 2>& band_limits_gpt(this->kdist_gpu->get_band_lims_gpoint());
@@ -575,7 +575,7 @@ void Radiation_solver_longwave::solve_gpu(
             (*fluxes).net_flux();
 
             // Copy the data to the output.
-            gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
+            Gpt_combine_kernels_cuda_rt::add_from_gpoint(
                     n_col, n_lev, lw_flux_up.ptr(), lw_flux_dn.ptr(), lw_flux_net.ptr(),
                     (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_net().ptr());
 
@@ -693,18 +693,18 @@ void Radiation_solver_shortwave::solve_gpu(
 
     if (switch_fluxes)
     {
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_up.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_dn.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_dn_dir.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_net.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_up.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_dn.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_dn_dir.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_lev, grid_cells.y, grid_cells.x, sw_flux_net.ptr());
         if (switch_raytracing)
         {
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_tod_up.ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_sfc_dir.ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_sfc_dif.ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_sfc_up.ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.z, grid_cells.y, grid_cells.x, rt_flux_abs_dir.ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.z, grid_cells.y, grid_cells.x, rt_flux_abs_dif.ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_tod_up.ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_sfc_dir.ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_sfc_dif.ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.y, grid_cells.x, rt_flux_sfc_up.ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.z, grid_cells.y, grid_cells.x, rt_flux_abs_dir.ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.z, grid_cells.y, grid_cells.x, rt_flux_abs_dif.ptr());
         }
     }
 
@@ -800,9 +800,9 @@ void Radiation_solver_shortwave::solve_gpu(
         }
         else
         {
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_g().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_tau().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_ssa().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, cloud_optical_props->get_g().ptr());
         }
 
         if (switch_aerosol_optics)
@@ -826,9 +826,9 @@ void Radiation_solver_shortwave::solve_gpu(
         }
         else
         {
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_tau().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_ssa().ptr());
-            rrtmgp_kernel_launcher_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_g().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_tau().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_ssa().ptr());
+            Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(n_col, n_lay, aerosol_optical_props->get_g().ptr());
         }
 
         // Store the optical properties, if desired
@@ -901,17 +901,17 @@ void Radiation_solver_shortwave::solve_gpu(
 
             (*fluxes).net_flux();
 
-            gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
+            Gpt_combine_kernels_cuda_rt::add_from_gpoint(
                     n_col, n_lev, sw_flux_up.ptr(), sw_flux_dn.ptr(), sw_flux_dn_dir.ptr(), sw_flux_net.ptr(),
                     (*fluxes).get_flux_up().ptr(), (*fluxes).get_flux_dn().ptr(), (*fluxes).get_flux_dn_dir().ptr(), (*fluxes).get_flux_net().ptr());
 
             if (switch_raytracing)
             {
-                gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
+                Gpt_combine_kernels_cuda_rt::add_from_gpoint(
                         grid_cells.x, grid_cells.y, rt_flux_tod_up.ptr(), rt_flux_sfc_dir.ptr(), rt_flux_sfc_dif.ptr(), rt_flux_sfc_up.ptr(),
                         (*fluxes).get_flux_tod_up().ptr(), (*fluxes).get_flux_sfc_dir().ptr(), (*fluxes).get_flux_sfc_dif().ptr(), (*fluxes).get_flux_sfc_up().ptr());
 
-                gpt_combine_kernel_launcher_cuda_rt::add_from_gpoint(
+                Gpt_combine_kernels_cuda_rt::add_from_gpoint(
                         n_col, grid_cells.z, rt_flux_abs_dir.ptr(), rt_flux_abs_dif.ptr(),
                         (*fluxes).get_flux_abs_dir().ptr(), (*fluxes).get_flux_abs_dif().ptr());
             }

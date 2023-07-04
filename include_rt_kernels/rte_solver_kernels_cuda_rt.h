@@ -25,23 +25,25 @@
 #ifndef RTE_KERNELS_CUDA_RT_H
 #define RTE_KERNELS_CUDA_RT_H
 
-#include "Array.h"
-#include "types.h"
-#include "Gas_concs.h"
 
-namespace rte_kernel_launcher_cuda_rt
+#include "types.h"
+
+
+namespace Rte_solver_kernels_cuda_rt
 {
-    void apply_BC(const int ncol, const int nlay, const int ngpt, const Bool top_at_1,
-                  const Float* inc_flux_dir, const Float* mu0, Float* gpt_flux_dir);
+    void apply_BC(
+            const int ncol, const int nlay, const int ngpt, const Bool top_at_1,
+            const Float* inc_flux_dir, const Float* mu0, Float* gpt_flux_dir);
 
     void apply_BC(const int ncol, const int nlay, const int ngpt, const Bool top_at_1, Float* gpt_flux_dn);
 
     void apply_BC(const int ncol, const int nlay, const int ngpt, const Bool top_at_1, const Float* inc_flux_dif, Float* gpt_flux_dn);
 
-    void sw_solver_2stream(const int ncol, const int nlay, const int ngpt, const Bool top_at_1,
-                           const Float* tau, const Float* ssa, const Float* g,
-                           const Float* mu0, const Float* sfc_alb_dir, const Float* sfc_alb_dif,
-                           Float* flux_up, Float* flux_dn, Float* flux_dir);
+    void sw_solver_2stream(
+            const int ncol, const int nlay, const int ngpt, const Bool top_at_1,
+            const Float* tau, const Float* ssa, const Float* g,
+            const Float* mu0, const Float* sfc_alb_dir, const Float* sfc_alb_dif,
+            Float* flux_up, Float* flux_dn, Float* flux_dir);
 
     void lw_solver_noscat_gaussquad(
             const int ncol, const int nlay, const int ngpt, const Bool top_at_1, const int nmus,

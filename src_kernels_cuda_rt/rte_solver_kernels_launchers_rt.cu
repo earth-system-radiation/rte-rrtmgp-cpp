@@ -1,6 +1,6 @@
 #include <chrono>
 
-#include "rte_kernel_launcher_cuda_rt.h"
+#include "rte_solver_kernels_cuda_rt.h"
 #include "tools_gpu.h"
 #include "Array.h"
 #include "tuner.h"
@@ -14,7 +14,7 @@ namespace
 }
 
 
-namespace rte_kernel_launcher_cuda_rt
+namespace Rte_solver_kernels_cuda_rt
 {
     void apply_BC(const int ncol, const int nlay, const int ngpt, const Bool top_at_1,
                   const Float* inc_flux_dir, const Float* mu0, Float* gpt_flux_dir)

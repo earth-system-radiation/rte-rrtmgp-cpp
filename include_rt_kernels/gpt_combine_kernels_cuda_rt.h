@@ -22,14 +22,14 @@
  *
  */
 
-#ifndef GPT_KERNELS_CUDA_RT_H
-#define GPT_KERNELS_CUDA_RT_H
+#ifndef GPT_COMBINE_KERNELS_CUDA_RT_H
+#define GPT_COMBINE_KERNELS_CUDA_RT_H
 
-#include "Array.h"
 #include "types.h"
-#include "Gas_concs.h"
+// #include "Gas_concs.h"
 
-namespace gpt_combine_kernel_launcher_cuda_rt
+
+namespace Gpt_combine_kernels_cuda_rt
 {
 
     void get_from_gpoint(const int ncol, const int igpt,

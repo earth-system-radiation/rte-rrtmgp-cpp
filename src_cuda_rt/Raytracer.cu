@@ -2,11 +2,12 @@
 
 #include "Raytracer.h"
 #include "Array.h"
-#include "rrtmgp_kernel_launcher_cuda_rt.h"
 #include "Optical_props_rt.h"
 
 #include "raytracer_definitions.h"
 #include "raytracer_functions.h"
+
+#include "gas_optics_rrtmgp_kernels_cuda_rt.h"
 
 
 namespace
@@ -27,9 +28,9 @@ namespace
     T* allocate_gpu(const int length)
     {
         T* data_ptr = Tools_gpu::allocate_gpu<T>(length);
-
         return data_ptr;
     }
+
 
     template<typename T>
     void copy_to_gpu(T* gpu_data, const T* cpu_data, const int length)
@@ -43,6 +44,7 @@ namespace
     {
         cuda_safe_call(cudaMemcpy(cpu_data, gpu_data, length*sizeof(T), cudaMemcpyDeviceToHost));
     }
+
 
     __global__
     void create_knull_grid(
@@ -76,9 +78,11 @@ namespace
                         const int ijk_in = i + j*grid_cells.x + k*grid_cells.x*grid_cells.y;
                         k_null = max(k_null, k_ext[ijk_in]);
                     }
+
             k_null_grid[ijk_grid] = k_null;
         }
     }
+
 
     __global__
     void bundles_optical_props(
@@ -256,13 +260,13 @@ void Raytracer::trace_rays(
     Array_gpu<Float,3> atmos_direct_count({grid_cells.x, grid_cells.y, grid_cells.z});
     Array_gpu<Float,3> atmos_diffuse_count({grid_cells.x, grid_cells.y, grid_cells.z});
 
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.x, grid_cells.y, tod_dn_count.ptr());
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.x, grid_cells.y, tod_up_count.ptr());
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.x, grid_cells.y, surface_down_direct_count.ptr());
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.x, grid_cells.y, surface_down_diffuse_count.ptr());
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.x, grid_cells.y, surface_up_count.ptr());
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.x, grid_cells.y, grid_cells.z, atmos_direct_count.ptr());
-    rrtmgp_kernel_launcher_cuda_rt::zero_array(grid_cells.x, grid_cells.y, grid_cells.z, atmos_diffuse_count.ptr());
+    Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.x, grid_cells.y, tod_dn_count.ptr());
+    Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.x, grid_cells.y, tod_up_count.ptr());
+    Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.x, grid_cells.y, surface_down_direct_count.ptr());
+    Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.x, grid_cells.y, surface_down_diffuse_count.ptr());
+    Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.x, grid_cells.y, surface_up_count.ptr());
+    Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.x, grid_cells.y, grid_cells.z, atmos_direct_count.ptr());
+    Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(grid_cells.x, grid_cells.y, grid_cells.z, atmos_diffuse_count.ptr());
 
     // domain sizes
     const Vector<Float> grid_size = grid_d * grid_cells;

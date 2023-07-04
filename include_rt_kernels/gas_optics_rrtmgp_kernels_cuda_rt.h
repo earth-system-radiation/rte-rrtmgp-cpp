@@ -22,13 +22,13 @@
  *
  */
 
-#ifndef RRTMGP_KERNELS_CUDA_RT_H
-#define RRTMGP_KERNELS_CUDA_RT_H
+#ifndef GAS_OPTICS_RRTMGP_KERNELS_CUDA_RT_H
+#define GAS_OPTICS_RRTMGP_KERNELS_CUDA_RT_H
 
-#include "Array.h"
 #include "types.h"
 
-namespace rrtmgp_kernel_launcher_cuda_rt
+
+namespace Gas_optics_rrtmgp_kernels_cuda_rt
 {
     void reorder123x321(const int ni, const int nj, const int nk,
             const Float* arr_in, Float* arr_out);
@@ -38,15 +38,11 @@ namespace rrtmgp_kernel_launcher_cuda_rt
 
     
     void zero_array(const int ni, const int nj, const int nk, const int nn, Float* arr);
-
-    
     void zero_array(const int ni, const int nj, const int nk, Float* arr);
-    
-    
     void zero_array(const int ni, const int nj, Float* arr);
-
     void zero_array(const int ni, int* arr);
-    
+
+
     void interpolation(
             const int ncol, const int nlay,
             const int ngas, const int nflav, const int neta, const int npres, const int ntemp,

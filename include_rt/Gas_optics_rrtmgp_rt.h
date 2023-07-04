@@ -322,7 +322,6 @@ class Gas_optics_rrtmgp_rt : public Gas_optics_rt
                 const Array_gpu<Float,6>& fmajor,
                 Source_func_lw_rt& sources,
                 const Array_gpu<Float,2>& tlev);
-
 };
 #endif
 

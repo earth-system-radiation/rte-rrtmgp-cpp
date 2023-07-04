@@ -3,19 +3,18 @@
 #include <iostream>
 #include <iomanip>
 
-#include "rrtmgp_kernel_launcher_cuda_rt.h"
+#include "gas_optics_rrtmgp_kernels_cuda_rt.h"
 #include "tools_gpu.h"
-#include "Array.h"
 #include "tuner.h"
 
 
 namespace
 {
-    #include "gas_optics_kernels_rt.cu"
+    #include "gas_optics_rrtmgp_kernels_rt.cu"
 }
 
 
-namespace rrtmgp_kernel_launcher_cuda_rt
+namespace Gas_optics_rrtmgp_kernels_cuda_rt
 {
     void reorder123x321(
             const int ni, const int nj, const int nk,

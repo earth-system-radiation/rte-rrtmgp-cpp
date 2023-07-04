@@ -25,7 +25,8 @@
 #include "Optical_props_rt.h"
 #include "Array.h"
 
-#include "optical_props_kernel_launcher_cuda_rt.h"
+#include "optical_props_kernels_cuda_rt.h"
+
 
 // Optical properties per gpoint.
 Optical_props_rt::Optical_props_rt(
@@ -105,7 +106,7 @@ void Optical_props_2str_rt::delta_scale(const Array_gpu<Float,3>& forward_frac)
     const int nlay = this->get_nlay();
     const int ngpt = this->get_ngpt();
 
-    optical_props_kernel_launcher_cuda_rt::delta_scale_2str_k(
+    Optical_props_kernels_cuda_rt::delta_scale_2str_k(
             ncol, nlay, ngpt,
             this->get_tau().ptr(), this->get_ssa().ptr(), this->get_g().ptr());
 }
@@ -116,7 +117,7 @@ void add_to(Optical_props_1scl_rt& op_inout, const Optical_props_1scl_rt& op_in)
     const int ncol = op_inout.get_ncol();
     const int nlay = op_inout.get_nlay();
 
-    optical_props_kernel_launcher_cuda_rt::increment_1scalar_by_1scalar(
+    Optical_props_kernels_cuda_rt::increment_1scalar_by_1scalar(
             ncol, nlay,
             op_inout.get_tau().ptr(), op_in.get_tau().ptr());
 }
@@ -126,7 +127,7 @@ void add_to(Optical_props_2str_rt& op_inout, const Optical_props_2str_rt& op_in)
 {
     const int ncol = op_inout.get_ncol();
     const int nlay = op_inout.get_nlay();
-    optical_props_kernel_launcher_cuda_rt::increment_2stream_by_2stream(
+    Optical_props_kernels_cuda_rt::increment_2stream_by_2stream(
             ncol, nlay,
             op_inout.get_tau().ptr(), op_inout.get_ssa().ptr(), op_inout.get_g().ptr(),
             op_in   .get_tau().ptr(), op_in   .get_ssa().ptr(), op_in   .get_g().ptr());
@@ -136,7 +137,7 @@ void add_to(Optical_props_2str_rt& op_inout, const Optical_props_2str_rt& op_in)
 // {
 //     const int ncol = op_inout.get_ncol();
 //     const int nlay = op_inout.get_nlay();
-//     optical_props_kernel_launcher_cuda_rt::increment_2stream_by_2stream_1d(
+//     Optical_props_kernels_cuda_rt::increment_2stream_by_2stream_1d(
 //             ncol, nlay,
 //             op_inout.get_tau().ptr(), op_inout.get_ssa().ptr(), op_inout.get_g().ptr(),
 //             op_in   .get_tau().ptr(), op_in   .get_ssa().ptr(), op_in   .get_g().ptr());

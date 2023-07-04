@@ -22,14 +22,14 @@
  *
  */
 
-#ifndef OPTICAL_PROPS_KERNEL_LAUNCHER_CUDA_RT_H
-#define OPTICAL_PROPS_KERNEL_LAUNCHER_CUDA_RT_H
+#ifndef OPTICAL_PROPS_KERNELS_CUDA_RT_H
+#define OPTICAL_PROPS_KERNELS_CUDA_RT_H
 
 
 #include "types.h"
 
 
-namespace optical_props_kernel_launcher_cuda_rt
+namespace Optical_props_kernels_cuda_rt
 {
     void increment_1scalar_by_1scalar(
             int ncol, int nlay,

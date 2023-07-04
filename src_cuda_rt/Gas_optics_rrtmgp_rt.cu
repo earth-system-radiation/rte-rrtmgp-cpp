@@ -35,7 +35,8 @@
 #include "Array.h"
 #include "iostream"
 
-#include "rrtmgp_kernel_launcher_cuda_rt.h"
+#include "gas_optics_rrtmgp_kernels_cuda_rt.h"
+
 
 namespace
 {
@@ -64,6 +65,7 @@ namespace
         spread_col_kernel<<<grid_gpu, block_gpu>>>(
             ncol, igpt, src_out.ptr(), src_in.ptr());
     }
+
 
     int find_index(
             const Array<std::string,1>& data, const std::string& value)
@@ -1073,7 +1075,7 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
             ncol, nlay, vmr_2d.dim(1), vmr_2d.dim(2), ngas, igas, vmr.ptr(), vmr_2d.ptr(), col_gas.ptr(), col_dry.ptr());
     }
 
-    rrtmgp_kernel_launcher_cuda_rt::interpolation(
+    Gas_optics_rrtmgp_kernels_cuda_rt::interpolation(
             ncol, nlay,
             ngas, nflav, neta, npres, ntemp,
             flavor_gpu.ptr(),
@@ -1104,7 +1106,7 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
     if (this->idx_h2o == -1)
         throw std::runtime_error("idx_h2o cannot be found");
 
-    rrtmgp_kernel_launcher_cuda_rt::minor_scalings(
+    Gas_optics_rrtmgp_kernels_cuda_rt::minor_scalings(
             ncol, nlay, nflav, ngpt,
             nminorlower, nminorupper,
             idx_h2o,
@@ -1133,10 +1135,10 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
     {
         Array_gpu<Float,2> tau({ncol, nlay});
         Array_gpu<Float,2> tau_rayleigh({ncol, nlay});
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(nlay, ncol, tau.ptr());
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol, nlay, tau_rayleigh.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(nlay, ncol, tau.ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(ncol, nlay, tau_rayleigh.ptr());
 
-        rrtmgp_kernel_launcher_cuda_rt::compute_tau_absorption(
+        Gas_optics_rrtmgp_kernels_cuda_rt::compute_tau_absorption(
                 ncol, nlay, nband, ngpt, igpt,
                 ngas, nflav, neta, npres, ntemp,
                 nminorlower, nminorklower,
@@ -1169,7 +1171,7 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
                 scalings_upper.ptr(),
                 tau.ptr());
 
-        rrtmgp_kernel_launcher_cuda_rt::compute_tau_rayleigh(
+        Gas_optics_rrtmgp_kernels_cuda_rt::compute_tau_rayleigh(
                 ncol, nlay, nband, ngpt, igpt,
                 ngas, nflav, neta, npres, ntemp,
                 gpoint_flavor_gpu.ptr(),
@@ -1180,16 +1182,16 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
                 fminor.ptr(), jeta.ptr(), tropo.ptr(), jtemp.ptr(),
                 tau_rayleigh.ptr());
 
-        rrtmgp_kernel_launcher_cuda_rt::combine_abs_and_rayleigh(
+        Gas_optics_rrtmgp_kernels_cuda_rt::combine_abs_and_rayleigh(
                 ncol, nlay,
                 tau.ptr(), tau_rayleigh.ptr(),
                 optical_props->get_tau().ptr(), optical_props->get_ssa().ptr(), optical_props->get_g().ptr());
     }
     else
     {
-        rrtmgp_kernel_launcher_cuda_rt::zero_array(ncol, nlay, optical_props->get_tau().ptr());
+        Gas_optics_rrtmgp_kernels_cuda_rt::zero_array(ncol, nlay, optical_props->get_tau().ptr());
 
-        rrtmgp_kernel_launcher_cuda_rt::compute_tau_absorption(
+        Gas_optics_rrtmgp_kernels_cuda_rt::compute_tau_absorption(
                 ncol, nlay, nband, ngpt, igpt,
                 ngas, nflav, neta, npres, ntemp,
                 nminorlower, nminorklower,
@@ -1233,7 +1235,7 @@ void Gas_optics_rrtmgp_rt::compute_gas_taus(
 //     int ncol = tau.dim(1);
 //     int nlay = tau.dim(2);
 //
-//     rrtmgp_kernel_launcher_cuda_rt::combine_abs_and_rayleigh(
+//     Gas_optics_rrtmgp_kernels_cuda_rt::combine_abs_and_rayleigh(
 //             ncol, nlay,
 //             tau, tau_rayleigh,
 //             optical_props->get_tau(), optical_props->get_ssa(), optical_props->get_g());
@@ -1260,7 +1262,7 @@ void Gas_optics_rrtmgp_rt::source(
 
     int sfc_lay = play({1, 1}) > play({1, nlay}) ? 1 : nlay;
 
-    rrtmgp_kernel_launcher_cuda_rt::Planck_source(
+    Gas_optics_rrtmgp_kernels_cuda_rt::Planck_source(
             ncol, nlay, nbnd, ngpt, igpt,
             nflav, neta, npres, ntemp, nPlanckTemp,
             tlay.ptr(), tlev.ptr(), tsfc.ptr(), sfc_lay,

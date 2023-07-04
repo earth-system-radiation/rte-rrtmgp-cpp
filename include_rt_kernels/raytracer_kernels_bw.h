@@ -8,6 +8,8 @@
 #include "raytracer_functions.h"
 
 
+// CvH TODO THIS SHOULD GO IN A NAMESPACE, CHECK WITH MENNO.
+
 using Raytracer_definitions::Vector;
 using Raytracer_definitions::Optics_scat;
 using namespace Raytracer_functions;
@@ -29,6 +31,7 @@ struct Grid_knull
     Float k_max;
     Float k_min;
 };
+
 
 struct Camera
 {

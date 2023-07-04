@@ -28,8 +28,8 @@
 #include "Source_functions_rt.h"
 #include "Fluxes_rt.h"
 
-#include "rrtmgp_kernels.h"
-#include "rte_kernel_launcher_cuda_rt.h"
+// #include "rrtmgp_kernels.h"
+#include "rte_solver_kernels_cuda_rt.h"
 
 
 namespace
@@ -110,9 +110,9 @@ void Rte_lw_rt::rte_lw(
 
     // Upper boundary condition.
     if (inc_flux.size() == 0)
-        rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn.ptr());
+        Rte_solver_kernels_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, gpt_flux_dn.ptr());
     else
-        rte_kernel_launcher_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux.ptr(), gpt_flux_dn.ptr());
+        Rte_solver_kernels_cuda_rt::apply_BC(ncol, nlay, ngpt, top_at_1, inc_flux.ptr(), gpt_flux_dn.ptr());
 
     // Run the radiative transfer solver.
     const int n_quad_angs = n_gauss_angles;
@@ -126,7 +126,7 @@ void Rte_lw_rt::rte_lw(
     Array_gpu<Float,1> sfc_src_jac(sources.get_sfc_source().get_dims());
     Array_gpu<Float,2> gpt_flux_up_jac(gpt_flux_up.get_dims());
 
-    rte_kernel_launcher_cuda_rt::lw_solver_noscat_gaussquad(
+    Rte_solver_kernels_cuda_rt::lw_solver_noscat_gaussquad(
             ncol, nlay, ngpt, top_at_1, n_quad_angs,
             gauss_Ds_subset.ptr(), gauss_wts_subset.ptr(),
             optical_props->get_tau().ptr(),

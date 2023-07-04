@@ -22,16 +22,15 @@
  *
  */
 
-#ifndef RTE_KERNELS_CUDA_RT_H
-#define RTE_KERNELS_CUDA_RT_H
+#ifndef SUBSET_KERNELS_CUDA_RT_H
+#define SUBSET_KERNELS_CUDA_RT_H
 
-#include "Array.h"
+
 #include "types.h"
-#include "Gas_concs.h"
 
-namespace subset_kernel_launcher_cuda_rt
+
+namespace Subset_kernels_cuda_rt
 {
-    
     void get_from_subset(const int ncol, const int nbnd, const int ncol_in, const int col_s_in,
                   Float* var_full, const Float* var_sub);
 
