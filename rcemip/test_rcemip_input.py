@@ -4,6 +4,7 @@ import netCDF4 as nc
 float_type = "f8"
 n_col_y = 64
 n_col_x = 64
+n_lay = 256
 n_bnd_lw = 16
 n_bnd_sw = 14
 
@@ -11,7 +12,7 @@ nc_file = nc.Dataset("rte_rrtmgp_input.nc", mode="w", datamodel="NETCDF4", clobb
 
 # Radiation profiles.
 z_top = 70.e3
-dz = 500.
+dz = z_top / n_lay
 z  = np.arange(dz/2, z_top, dz)
 zh = np.arange(   0, z_top-dz/2, dz)
 zh = np.append(zh, z_top)
