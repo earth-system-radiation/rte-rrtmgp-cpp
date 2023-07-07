@@ -3,25 +3,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 nc_file_run = nc.Dataset('rrtmgp-allsky.nc', 'r')
-nc_file_ref = nc.Dataset('ref/rrtmgp-allsky.nc', 'r')
+nc_file_ref_lw = nc.Dataset('../rrtmgp-data/examples/all-sky/reference/rrtmgp-allsky-lw-no-aerosols.nc', 'r')
+nc_file_ref_sw = nc.Dataset('../rrtmgp-data/examples/all-sky/reference/rrtmgp-allsky-sw-no-aerosols.nc', 'r')
 
 p_lev = nc_file_run.variables['p_lev'][:,0] / 1e3
-cols = np.arange(128)
+cols = np.arange(24)
 
 sw_flux_dn_run = nc_file_run.variables['sw_flux_dn'][:,:]
-sw_flux_dn_ref = nc_file_ref.variables['sw_flux_dn'][:,:]
+sw_flux_dn_ref = nc_file_ref_sw.variables['sw_flux_dn'][:,:]
 
 sw_flux_dir_run = nc_file_run.variables['sw_flux_dir'][:,:]
-sw_flux_dir_ref = nc_file_ref.variables['sw_flux_dir'][:,:]
-
-lw_flux_dn_run = nc_file_run.variables['lw_flux_dn'][:,:]
-lw_flux_dn_ref = nc_file_ref.variables['lw_flux_dn'][:,:]
+sw_flux_dir_ref = nc_file_ref_sw.variables['sw_flux_dir'][:,:]
 
 sw_flux_up_run = nc_file_run.variables['sw_flux_up'][:,:]
-sw_flux_up_ref = nc_file_ref.variables['sw_flux_up'][:,:]
+sw_flux_up_ref = nc_file_ref_sw.variables['sw_flux_up'][:,:]
+
+lw_flux_dn_run = nc_file_run.variables['lw_flux_dn'][:,:]
+lw_flux_dn_ref = nc_file_ref_lw.variables['lw_flux_dn'][:,:]
 
 lw_flux_up_run = nc_file_run.variables['lw_flux_up'][:,:]
-lw_flux_up_ref = nc_file_ref.variables['lw_flux_up'][:,:]
+lw_flux_up_ref = nc_file_ref_lw.variables['lw_flux_up'][:,:]
 
 plt.figure(figsize=(10,6))
 plt.subplot(231)
