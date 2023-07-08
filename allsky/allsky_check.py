@@ -31,15 +31,14 @@ if __name__ == '__main__':
 
     tst_file = args.file
     ref_file = os.path.join(args.ref_dir, tst_file)
-    print(tst_file, ref_file)
     tst = xr.open_dataset(tst_file)
     ref = xr.open_dataset(ref_file)
 
     failed = False
     if args.file == "rrtmgp-allsky-lw-no-aerosols.nc":
-        vs = ['lw_flux_up', 'lw_flux_dn']
+        vs = ['p_lay', 'p_lev', 'lw_flux_up', 'lw_flux_dn']
     elif args.file == "rrtmgp-allsky-sw-no-aerosols.nc":
-        vs = ['sw_flux_up', 'sw_flux_dn', 'sw_flux_dir']
+        vs = ['p_lay', 'p_lev', 'sw_flux_up', 'sw_flux_dn', 'sw_flux_dir']
     else:
         raise RuntimeError("Not comparing agaist lw or sw file")
 
