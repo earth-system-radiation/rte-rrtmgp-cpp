@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Compares all-sky example output to file in reference "
                     "directory")
-    parser.add_argument("--allsky_file", type=str, default="rrtmgp-allsky-lw-no-aerosols.nc",
+    parser.add_argument("--allsky_file", type=str, default="rrtmgp-allsky-sw-no-aerosols.nc",
                         dest="file",
                         help="Name of file inputs and outputs for "
                              "all-sky problem (same for test and reference)")
