@@ -138,11 +138,10 @@ nc_emis_sfc[:,:,:] = emis_sfc
 nc_t_sfc[:,:] = t_sfc
 
 # Shortwave boundary conditions.
-solar_zenith_angle = np.deg2rad(42.05);
-mu0 = np.cos(solar_zenith_angle)
+mu0 = 0.86
 
-sfc_alb_dir = np.ones((n_col_y, n_col_x, n_bnd_sw))*0.07
-sfc_alb_dif = np.ones((n_col_y, n_col_x, n_bnd_sw))*0.07
+sfc_alb_dir = np.ones((n_col_y, n_col_x, n_bnd_sw))*0.06
+sfc_alb_dif = np.ones((n_col_y, n_col_x, n_bnd_sw))*0.06
 
 # total_solar_irradiance = 551.58
 
