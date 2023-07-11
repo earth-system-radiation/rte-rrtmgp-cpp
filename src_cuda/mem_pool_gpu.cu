@@ -1,4 +1,4 @@
-#include "Mem_pool_gpu.h"
+#include "mem_pool_gpu.h"
 
 
 Memory_pool_gpu::Memory_pool_gpu(const std::map<std::size_t, std::size_t>& block_sizes_) : alloc_counter(0), alloc_bytes(0)

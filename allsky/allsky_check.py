@@ -29,46 +29,48 @@ if __name__ == '__main__':
                              "(for continuous integration)")
     args = parser.parse_args()
 
-    tst_file = args.file
-    ref_file = os.path.join(args.ref_dir, tst_file)
-    tst = xr.open_dataset(tst_file)
-    ref = xr.open_dataset(ref_file)
-
+    tst_files = [ 'rrtmgp-allsky-sw-no-aerosols.nc', 'rrtmgp-allsky-lw-no-aerosols.nc' ]
     failed = False
-    if args.file == "rrtmgp-allsky-lw-no-aerosols.nc":
-        vs = ['p_lay', 'p_lev', 'lw_flux_up', 'lw_flux_dn']
-    elif args.file == "rrtmgp-allsky-sw-no-aerosols.nc":
-        vs = ['p_lay', 'p_lev', 'sw_flux_up', 'sw_flux_dn', 'sw_flux_dir']
-    else:
-        raise RuntimeError("Not comparing agaist lw or sw file")
 
-    for v in vs:
-        if np.any(np.isnan(ref.variables[v].values)):
-            raise Exception(v + ": some ref values are missing. Now that is strange.")
-        if np.all(np.isnan(tst.variables[v].values)):
-            raise Exception("All test values are missing. Were the tests run?")
-        if np.any(np.isnan(tst.variables[v].values)):
-            raise Exception(v + ":Some test values are missing. Now that is strange.")
+    for tst_file in tst_files:
+        ref_file = os.path.join(args.ref_dir, tst_file)
+        tst = xr.open_dataset(tst_file)
+        ref = xr.open_dataset(ref_file)
 
-        # express as (tst-ref).variables[v].values when replacing reference file
-        # to have same number of columns
-        diff = abs((tst.variables[v] - ref.variables[v]).values)
-        avg = 0.5 * (tst.variables[v] + ref.variables[v]).values
-        # Division raises a runtime warning when we divide by zero even if the
-        # values in those locations will be ignored.
-        with np.errstate(divide='ignore', invalid='ignore'):
-            frac_diff = np.abs(
-                np.where((avg > 2. * np.finfo(float).eps), diff / avg, 0))
-
-        if diff.max() > args.report_threshold:
-            print(
-                'Variable %s differs (max abs difference: %e; '
-                'max percent difference: %e%%)' % (
-                    v, diff.max(), 100.0 * frac_diff.max()))
+        if tst_file == "rrtmgp-allsky-lw-no-aerosols.nc":
+            vs = ['p_lay', 'p_lev', 'lw_flux_up', 'lw_flux_dn']
+        elif tst_file == "rrtmgp-allsky-sw-no-aerosols.nc":
+            vs = ['p_lay', 'p_lev', 'sw_flux_up', 'sw_flux_dn', 'sw_flux_dir']
         else:
-            print('Variable %s: No diffs' % v)
+            raise RuntimeError("Not comparing agaist lw or sw file")
 
-        if diff.max() > args.failure_threshold:
-            failed = True
+        for v in vs:
+            if np.any(np.isnan(ref.variables[v].values)):
+                raise Exception(v + ": some ref values are missing. Now that is strange.")
+            if np.all(np.isnan(tst.variables[v].values)):
+                raise Exception("All test values are missing. Were the tests run?")
+            if np.any(np.isnan(tst.variables[v].values)):
+                raise Exception(v + ":Some test values are missing. Now that is strange.")
+
+            # express as (tst-ref).variables[v].values when replacing reference file
+            # to have same number of columns
+            diff = abs((tst.variables[v] - ref.variables[v]).values)
+            avg = 0.5 * (tst.variables[v] + ref.variables[v]).values
+            # Division raises a runtime warning when we divide by zero even if the
+            # values in those locations will be ignored.
+            with np.errstate(divide='ignore', invalid='ignore'):
+                frac_diff = np.abs(
+                    np.where((avg > 2. * np.finfo(float).eps), diff / avg, 0))
+
+            if diff.max() > args.report_threshold:
+                print(
+                    'Variable %s differs (max abs difference: %e; '
+                    'max percent difference: %e%%)' % (
+                        v, diff.max(), 100.0 * frac_diff.max()))
+            else:
+                print('Variable %s: No diffs' % v)
+
+            if diff.max() > args.failure_threshold:
+                failed = True
 
     sys.exit(1) if failed else sys.exit(0)

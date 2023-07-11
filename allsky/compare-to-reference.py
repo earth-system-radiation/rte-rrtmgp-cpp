@@ -1,1 +1,1 @@
-../rte-rrtmgp/examples/all-sky/compare-to-reference.py
+../rte-rrtmgp/examples/rfmip-clear-sky/compare-to-reference.py

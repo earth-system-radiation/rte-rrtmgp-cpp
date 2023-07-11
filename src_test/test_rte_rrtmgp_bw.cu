@@ -29,7 +29,7 @@
 #include "Aerosol_optics_rt.h"
 #include "Gas_concs.h"
 #include "types.h"
-#include "Mem_pool_gpu.h"
+#include "mem_pool_gpu.h"
 
 
 void read_and_set_vmr(

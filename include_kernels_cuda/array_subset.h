@@ -1,6 +1,7 @@
 #ifndef ARRAY_SUBSET_H
 #define ARRAY_SUBSET_H
 
+
 #ifdef __CUDACC__
 template<int N>
 struct Subset_data
