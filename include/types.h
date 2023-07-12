@@ -6,7 +6,7 @@
 
 // CvH Temporary, crash on this flag to avoid trouble.
 #ifdef RTE_RRTMGP_USE_CBOOL
-#error "RTE_RRTMGP_USE_CBOOL is deprecated, use RTE_USE_CBOOL instead!
+#error "RTE_RRTMGP_USE_CBOOL is deprecated, use RTE_USE_CBOOL instead!"
 #endif
 // CvH End temporary
 
