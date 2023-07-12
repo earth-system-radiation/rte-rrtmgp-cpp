@@ -13,8 +13,10 @@ email: rrtmgp@aer.com
 This C++ implementation can be downloaded from https://github.com/earth-system-radiation/rte-rrtmgp-cpp
 
 Contacts: Chiel van Heerwaarden and Menno Veerman
-email: chiel.vanheerwaarden@wur.nl (question on the C++ implementation)
-email: menno.veerman@wur.nl (question on the ray tracer)
+
+email: chiel.vanheerwaarden@wur.nl (questions on the C++ implementation)
+
+email: menno.veerman@wur.nl (questions on the ray tracer)
 
 Use and duplication is permitted under the terms of the
 BSD 3-clause license, see http://opensource.org/licenses/BSD-3-Clause
