@@ -11,6 +11,8 @@ jobs:
     env: 
       CC:  ${{ matrix.cxx-compiler }}
       CXX: ${{ matrix.cxx-compiler }}
+      RRTMGP_ROOT: ${{ github.workspace }}
+      RRTMGP_DATA: ${{ github.workspace }}/rrtmgp-data
   
     steps:
     #
@@ -41,7 +43,6 @@ jobs:
 
     - name: Run tests
       run: |
-        export RRTMGP_DATA=rrtmgp-data
         cd rfmip
         ./make_links.sh
         ln -sf ../build/test_rte_rrtmgp .
@@ -56,7 +57,6 @@ jobs:
 
     - name: Check results
       run: |
-        export RRTMGP_DATA=rrtmgp-data
         cd rfmip
         python3 compare-to-reference.py --fail=7.e-4
         cd ../allsky
