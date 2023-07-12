@@ -1,6 +1,6 @@
 # C++/CUDA implementation of RTE+RRTMGP including ray tracer.
 
-![Current build status](https://github.com/earth-system-radiation/rte-rrtmgp-cpp/actions/workflows/continuous-integration.yml/badge.svg?branch=feature-add-github-ci-to-develop)
+![Current build status](https://github.com/earth-system-radiation/rte-rrtmgp-cpp/actions/workflows/continuous-integration.yml/badge.svg?branch=main)
 
 This is a C++ implementation (including a Monte Carlo ray tracer) of the Radiative Transfer for Energetics (RTE)
 and Rapid Radiative Transfer Model for GCM applications Parallel (RRTMGP).
