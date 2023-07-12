@@ -41,6 +41,7 @@ jobs:
 
     - name: Run tests
       run: |
+        export RRTMGP_DATA=rrtmgp-data
         cd rfmip
         ./make_links.sh
         ln -sf ../build/test_rte_rrtmgp .
