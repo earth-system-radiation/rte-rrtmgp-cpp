@@ -58,7 +58,7 @@ jobs:
     - name: Check results
       run: |
         cd rfmip
-        python3 compare-to-reference.py --fail=7.e-4
+        python3 compare-to-reference.py --ref_dir ../rrtmgp-data/examples/rfmip-clear-sky/reference --var rld rlu rsd rsu --file r??_Efx_RTE-RRTMGP-181204_rad-irf_r1i1p1f1_gn.nc
         cd ../allsky
         python3 allsky_check.py
 
