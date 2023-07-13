@@ -27,6 +27,7 @@
 #include "Array.h"
 #include "Raytracer.h"
 #include "types.h"
+#include "tools_gpu.h"
 
 
 bool parse_command_line_options(

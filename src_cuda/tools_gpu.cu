@@ -3,8 +3,11 @@
 #include <cstdio>
 
 static bool cuda_mempool_initialized = false;
-void prepare_cuda_mempool() {
-    if (cuda_mempool_initialized) return;
+
+void prepare_cuda_mempool()
+{
+    if (cuda_mempool_initialized)
+        return;
 
     printf("Setting up CUDA mempool.\n");
     cudaMemPool_t mempool;
