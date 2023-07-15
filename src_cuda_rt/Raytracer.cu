@@ -6,6 +6,7 @@
 
 #include "raytracer_definitions.h"
 #include "raytracer_functions.h"
+#include "raytracer_kernels.h"
 
 #include "gas_optics_rrtmgp_kernels_cuda_rt.h"
 

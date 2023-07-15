@@ -2,10 +2,11 @@
 #define RAYTRACER_RT_H
 
 #include <memory>
-#include "types.h"
 #include <curand_kernel.h>
-#include "raytracer_kernels.h"
+
+#include "types.h"
 #include "Optical_props_rt.h"
+#include "raytracer_definitions.h"
 
 // Forward declarations.
 template<typename, int> class Array_gpu;
@@ -21,9 +22,9 @@ class Raytracer
         void trace_rays(
                 const int qrng_gpt_offset,
                 const Int photons_per_pixel,
-                const Vector<int> grid_cells,
-                const Vector<Float> grid_d,
-                const Vector<int> kn_grid,
+                const Raytracer_definitions::Vector<int> grid_cells,
+                const Raytracer_definitions::Vector<Float> grid_d,
+                const Raytracer_definitions::Vector<int> kn_grid,
                 const Array_gpu<Float,2>& mie_cdf,
                 const Array_gpu<Float,3>& mie_ang,
                 const Array_gpu<Float,2>& tau_total,
