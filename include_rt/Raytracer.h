@@ -2,7 +2,9 @@
 #define RAYTRACER_RT_H
 
 #include <memory>
+#ifdef USECUDA
 #include <curand_kernel.h>
+#endif
 
 #include "types.h"
 #include "Optical_props_rt.h"
