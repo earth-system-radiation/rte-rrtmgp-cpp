@@ -26,60 +26,122 @@
 #include "Netcdf_interface.h"
 #include "Array.h"
 #include "Raytracer.h"
+#include "raytracer_kernels.h"
 #include "types.h"
 #include "tools_gpu.h"
 
 
 bool parse_command_line_options(
-        Int& photons_per_pixel,
+        std::map<std::string, std::pair<bool, std::string>>& command_line_switches,
+        std::map<std::string, std::pair<int, std::string>>& command_line_ints,
         int argc, char** argv)
 {
-    if (argc > 2)
+    for (int i=1; i<argc; ++i)
     {
-        std::string error = "Too many arguments, just give the number of rays per pixel (default: 1)";
-        throw std::runtime_error(error);
-    }
-    else if (argc == 2 )
-    {
-        std::string argument(argv[1]);
+        std::string argument(argv[i]);
         boost::trim(argument);
 
-        //check if option is integer n (rays per pixel)
-        if (std::isdigit(argument[0]))
+        if (argument == "-h" || argument == "--help")
         {
-            if (argument.size() > 1)
+            Status::print_message("Possible usage:");
+            for (const auto& clo : command_line_switches)
             {
-                for (int i=1; i<argument.size(); ++i)
-                {
-                    if (!std::isdigit(argument[1]))
-                    {
-                        std::string error = "Illegal command line option - give an integer!";
-                        throw std::runtime_error(error);
-                    }
-                }
+                std::ostringstream ss;
+                ss << std::left << std::setw(30) << ("--" + clo.first);
+                ss << clo.second.second << std::endl;
+                Status::print_message(ss);
             }
-            photons_per_pixel = Int(std::stoi(argv[1]));
+            return true;
+        }
+
+        // Check if option starts with --
+        if (argument[0] != '-' || argument[1] != '-')
+        {
+            std::string error = argument + " is an illegal command line option.";
+            throw std::runtime_error(error);
+        }
+        else
+            argument.erase(0, 2);
+
+        // Check if option has prefix no-
+        bool enable = true;
+        if (argument[0] == 'n' && argument[1] == 'o' && argument[2] == '-')
+        {
+            enable = false;
+            argument.erase(0, 3);
+        }
+
+        if (command_line_switches.find(argument) == command_line_switches.end())
+        {
+            std::string error = argument + " is an illegal command line option.";
+            throw std::runtime_error(error);
         }
         else
         {
-            std::string error = "Illegal command line option - give an integer!";
-            throw std::runtime_error(error);
+            command_line_switches.at(argument).first = enable;
+        }
 
+        // Check if a is integer is too be expect and if so, supplied
+        if (command_line_ints.find(argument) != command_line_ints.end() && i+1 < argc)
+        {
+            std::string next_argument(argv[i+1]);
+            boost::trim(next_argument);
+
+            bool arg_is_int = true;
+            for (int j=0; j<next_argument.size(); ++j)
+                arg_is_int *= std::isdigit(next_argument[j]);
+
+            if (arg_is_int)
+            {
+                command_line_ints.at(argument).first = std::stoi(argv[i+1]);
+                ++i;
+            }
         }
     }
 
     return false;
 }
 
+void print_command_line_options(
+        const std::map<std::string, std::pair<bool, std::string>>& command_line_switches,
+        const std::map<std::string, std::pair<int, std::string>>& command_line_ints)
+{
+    Status::print_message("Solver settings:");
+    for (const auto& option : command_line_switches)
+    {
+        std::ostringstream ss;
+        ss << std::left << std::setw(20) << (option.first);
+        if (command_line_ints.find(option.first) != command_line_ints.end() && option.second.first)
+            ss << " = " << std::boolalpha << command_line_ints.at(option.first).first << std::endl;
+        else
+            ss << " = " << std::boolalpha << option.second.first << std::endl;
+        Status::print_message(ss);
+   }
+}
+
 void solve_radiation(int argc, char** argv)
 {
     Status::print_message("###### Starting RTE+RRTMGP solver ######");
 
-    Int photons_per_pixel = 1;
+    ////// FLOW CONTROL SWITCHES //////
+    // Parse the command line options.
+    std::map<std::string, std::pair<bool, std::string>> command_line_switches {
+        {"raytracing"       , { true,  "Use raytracing for flux computation. '--raytracing 256': use 256 rays per pixel" }},
+        {"profiling"        , { false, "Perform additional profiling run."         }} };
 
-    if (parse_command_line_options(photons_per_pixel, argc, argv))
+    std::map<std::string, std::pair<int, std::string>> command_line_ints {
+        {"raytracing", {32, "Number of rays initialised at TOD per pixel per quadraute."}}} ;
+
+    if (parse_command_line_options(command_line_switches, command_line_ints, argc, argv))
         return;
 
+    const bool switch_raytracing        = command_line_switches.at("raytracing"       ).first;
+    const bool switch_profiling         = command_line_switches.at("profiling"        ).first;
+
+    // Print the options to the screen.
+    print_command_line_options(command_line_switches, command_line_ints);
+
+    Int photons_per_pixel = Int(command_line_ints.at("raytracing").first);
     if (Float(int(std::log2(Float(photons_per_pixel)))) != std::log2(Float(photons_per_pixel)))
     {
         std::string error = "number of photons per pixel should be a power of 2 ";
@@ -92,13 +154,13 @@ void solve_radiation(int argc, char** argv)
     ////// READ THE ATMOSPHERIC DATA //////
     Status::print_message("Reading atmospheric input data from NetCDF.");
 
-    Netcdf_file input_nc("rt_input.nc", Netcdf_mode::Read);
-
+    Netcdf_file input_nc("rt_lite_input.nc", Netcdf_mode::Read);
     const int nx = input_nc.get_dimension_size("x");
     const int ny = input_nc.get_dimension_size("y");
     const int nz = input_nc.get_dimension_size("z");
     const int ncol = nx*ny;
-
+    const Vector<int> grid_cells = {nx, ny, nz};
+    
     // Read the x,y,z dimensions if raytracing is enabled
     const Array<Float,1> grid_x(input_nc.get_variable<Float>("x", {nx}), {nx});
     const Array<Float,1> grid_y(input_nc.get_variable<Float>("y", {ny}), {ny});
@@ -107,20 +169,36 @@ void solve_radiation(int argc, char** argv)
     const Float dx = grid_x({2}) - grid_x({1});
     const Float dy = grid_y({2}) - grid_y({1});
     const Float dz = grid_z({2}) - grid_z({1});
+    const Vector<Float> grid_d = {dx, dy, dz};
 
     const int ngrid_x = input_nc.get_variable<Float>("ngrid_x");
     const int ngrid_y = input_nc.get_variable<Float>("ngrid_y");
     const int ngrid_z = input_nc.get_variable<Float>("ngrid_z");
+    const Vector<int> kn_grid = {ngrid_x, ngrid_y, ngrid_z};
 
     // Read the atmospheric fields.
-    const Array<Float,2> tau_tot(input_nc.get_variable<Float>("tau_tot", {nz, ny, nx}), {ncol, nz});
-    const Array<Float,2> tau_cld(input_nc.get_variable<Float>("tau_cld", {nz, ny, nx}), {ncol, nz});
-    const Array<Float,2> ssa(input_nc.get_variable<Float>("ssa", {nz, ny, nx}), {ncol, nz});
-    const Array<Float,2> asy(input_nc.get_variable<Float>("asy", {nz, ny, nx}), {ncol, nz});
+    const Array<Float,2> tot_tau(input_nc.get_variable<Float>("tot_tau", {nz, ny, nx}), {ncol, nz});
+    const Array<Float,2> tot_ssa(input_nc.get_variable<Float>("tot_ssa", {nz, ny, nx}), {ncol, nz});
 
-    // all below should be from netcdf in the end:
-    Array<Float,2> sfc_alb({1,ncol});
-    sfc_alb.fill(input_nc.get_variable<Float>("albedo"));
+    Array<Float,2> cld_tau({ncol, nz});	
+    Array<Float,2> cld_ssa({ncol, nz});	
+    Array<Float,2> cld_asy({ncol, nz});
+    
+    cld_tau = std::move(input_nc.get_variable<Float>("cld_tau", {nz, ny, nx}));
+    cld_ssa = std::move(input_nc.get_variable<Float>("cld_ssa", {nz, ny, nx}));
+    cld_asy = std::move(input_nc.get_variable<Float>("cld_asy", {nz, ny, nx}));
+    
+    Array<Float,2> aer_tau({ncol, nz});	
+    Array<Float,2> aer_ssa({ncol, nz});	
+    Array<Float,2> aer_asy({ncol, nz});
+    
+    aer_tau = std::move(input_nc.get_variable<Float>("aer_tau", {nz, ny, nx}));
+    aer_ssa = std::move(input_nc.get_variable<Float>("aer_ssa", {nz, ny, nx}));
+    aer_asy = std::move(input_nc.get_variable<Float>("aer_asy", {nz, ny, nx}));
+    
+    // read albedo, solar angles, and top-of-domain fluxes
+    Array<Float,2> sfc_albedo({1,ncol});
+    sfc_albedo.fill(input_nc.get_variable<Float>("albedo"));
     const Float zenith_angle = input_nc.get_variable<Float>("sza");
     const Float azimuth_angle = input_nc.get_variable<Float>("azi");
     const Float tod_dir = input_nc.get_variable<Float>("tod_direct");
@@ -135,21 +213,32 @@ void solve_radiation(int argc, char** argv)
     Array_gpu<Float,3> flux_abs_dir({nx, ny, nz});
     Array_gpu<Float,3> flux_abs_dif({nx, ny, nz});
 
+    
+    // empty arrays (mie scattering not supported in lite version)
+    Array_gpu<Float,2> mie_cdfs_sub;
+    Array_gpu<Float,3> mie_angs_sub;
+    Array_gpu<Float,2> rel;
+
     ////// CREATE THE OUTPUT FILE //////
     // Create the general dimensions and arrays.
     Status::print_message("Preparing NetCDF output file.");
 
-    Netcdf_file output_nc("rt_output.nc", Netcdf_mode::Create);
+    Netcdf_file output_nc("rt_lite_output.nc", Netcdf_mode::Create);
     output_nc.add_dimension("x", nx);
     output_nc.add_dimension("y", ny);
     output_nc.add_dimension("z", nz);
 
     //// GPU arrays
-    Array_gpu<Float,2> tau_tot_g(tau_tot);
-    Array_gpu<Float,2> tau_cld_g(tau_cld);
-    Array_gpu<Float,2> ssa_g(ssa);
-    Array_gpu<Float,2> asy_g(asy);
-    Array_gpu<Float,2> sfc_alb_g(sfc_alb);
+    Array_gpu<Float,2> tot_tau_g(tot_tau);
+    Array_gpu<Float,2> tot_ssa_g(tot_ssa);
+    Array_gpu<Float,2> cld_tau_g(cld_tau);
+    Array_gpu<Float,2> cld_ssa_g(cld_ssa);
+    Array_gpu<Float,2> cld_asy_g(cld_asy);
+    Array_gpu<Float,2> aer_tau_g(aer_tau);
+    Array_gpu<Float,2> aer_ssa_g(aer_ssa);
+    Array_gpu<Float,2> aer_asy_g(aer_asy);
+    Array_gpu<Float,2> sfc_albedo_g(sfc_albedo);
+    
     Raytracer raytracer;
 
     // Solve the radiation.
@@ -165,25 +254,36 @@ void solve_radiation(int argc, char** argv)
 
         cudaEventRecord(start, 0);
         // do something.
-
-//        raytracer.trace_rays(
-//                photons_per_pixel,
-//                0,
-//                nx, ny, nz,
-//                dx, dy, dz,
-//                ngrid_x, ngrid_y, ngrid_z,
-//                tau_tot_g, ssa_g, asy_g, tau_cld_g,
-//                sfc_alb_g, zenith_angle,
-//                azimuth_angle,
-//                tod_dir,
-//                tod_dif,
-//                flux_tod_dn,
-//                flux_tod_up,
-//                flux_sfc_dir,
-//                flux_sfc_dif,
-//                flux_sfc_up,
-//                flux_abs_dir,
-//                flux_abs_dif);
+        
+	    raytracer.trace_rays(
+               0,
+               photons_per_pixel,
+               grid_cells,
+               grid_d,
+               kn_grid,
+               mie_cdfs_sub,
+               mie_angs_sub,
+               tot_tau_g,
+               tot_ssa_g,
+               cld_tau_g,
+               cld_ssa_g,
+               cld_asy_g,
+               aer_tau_g,
+               aer_ssa_g,
+               aer_asy_g,
+               rel,
+               sfc_albedo_g, 
+               zenith_angle,
+               azimuth_angle,
+               tod_dir,
+               tod_dif,
+               flux_tod_dn,
+               flux_tod_up,
+               flux_sfc_dir,
+               flux_sfc_dif,
+               flux_sfc_up,
+               flux_abs_dir,
+               flux_abs_dif);
 
         cudaEventRecord(stop, 0);
         cudaEventSynchronize(stop);
@@ -199,11 +299,13 @@ void solve_radiation(int argc, char** argv)
     // Tuning step;
     run_solver();
 
-    // Profiling step;
-    cudaProfilerStart();
-    run_solver();
-    cudaProfilerStop();
-
+    //// Profiling step;
+    if (switch_profiling)
+    {
+        cudaProfilerStart();
+        run_solver();
+        cudaProfilerStop();
+    }
     // output arrays to cpu
     Array<Float,2> flux_tod_dn_c(flux_tod_dn);
     Array<Float,2> flux_tod_up_c(flux_tod_up);

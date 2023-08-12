@@ -648,17 +648,26 @@ void solve_radiation(int argc, char** argv)
                 tsi_scaling({icol}) = Float(1.);
         }
 
-        // Optional top of domain fluxes
         // Create output arrays.
-        Array_gpu<Float,2> sw_tau;
-        Array_gpu<Float,2> ssa;
-        Array_gpu<Float,2> g;
+        Array_gpu<Float,2> sw_tot_tau;
+        Array_gpu<Float,2> sw_tot_ssa;
+        Array_gpu<Float,2> sw_cld_tau;
+        Array_gpu<Float,2> sw_cld_ssa;
+        Array_gpu<Float,2> sw_cld_asy;
+        Array_gpu<Float,2> sw_aer_tau;
+        Array_gpu<Float,2> sw_aer_ssa;
+        Array_gpu<Float,2> sw_aer_asy;
 
         if (switch_single_gpt)
         {
-            sw_tau    .set_dims({n_col, n_lay});
-            ssa       .set_dims({n_col, n_lay});
-            g         .set_dims({n_col, n_lay});
+            sw_tot_tau    .set_dims({n_col, n_lay});
+            sw_tot_ssa    .set_dims({n_col, n_lay});
+            sw_cld_tau    .set_dims({n_col, n_lay});
+            sw_cld_ssa    .set_dims({n_col, n_lay});
+            sw_cld_asy    .set_dims({n_col, n_lay});
+            sw_aer_tau    .set_dims({n_col, n_lay});
+            sw_aer_ssa    .set_dims({n_col, n_lay});
+            sw_aer_asy    .set_dims({n_col, n_lay});
         }
 
         Array_gpu<Float,2> sw_flux_up;
@@ -761,7 +770,9 @@ void solve_radiation(int argc, char** argv)
                     rel_gpu, rei_gpu,
                     rh,
                     aerosol_concs,
-                    sw_tau, ssa, g,
+                    sw_tot_tau, sw_tot_ssa,
+                    sw_cld_tau, sw_cld_ssa, sw_cld_asy,
+                    sw_aer_tau, sw_aer_ssa, sw_aer_asy,
                     sw_flux_up, sw_flux_dn,
                     sw_flux_dn_dir, sw_flux_net,
                     sw_gpt_flux_up, sw_gpt_flux_dn,
@@ -797,9 +808,15 @@ void solve_radiation(int argc, char** argv)
 
         // Store the output.
         Status::print_message("Storing the shortwave output.");
-        Array<Float,2> sw_tau_cpu(sw_tau);
-        Array<Float,2> ssa_cpu(ssa);
-        Array<Float,2> g_cpu(g);
+        Array<Float,2> sw_tot_tau_cpu(sw_tot_tau);
+        Array<Float,2> sw_tot_ssa_cpu(sw_tot_ssa);
+        Array<Float,2> sw_cld_tau_cpu(sw_cld_tau);
+        Array<Float,2> sw_cld_ssa_cpu(sw_cld_ssa);
+        Array<Float,2> sw_cld_asy_cpu(sw_cld_asy);
+        Array<Float,2> sw_aer_tau_cpu(sw_aer_tau);
+        Array<Float,2> sw_aer_ssa_cpu(sw_aer_ssa);
+        Array<Float,2> sw_aer_asy_cpu(sw_aer_asy);
+
         Array<Float,2> sw_flux_up_cpu(sw_flux_up);
         Array<Float,2> sw_flux_dn_cpu(sw_flux_dn);
         Array<Float,2> sw_flux_dn_dir_cpu(sw_flux_dn_dir);
@@ -827,13 +844,23 @@ void solve_radiation(int argc, char** argv)
             auto nc_sw_band_lims_gpt = output_nc.add_variable<int>("sw_band_lims_gpt", {"band_sw", "pair"});
             nc_sw_band_lims_gpt.insert(rad_sw.get_band_lims_gpoint_gpu().v(), {0, 0});
 
-            auto nc_sw_tau = output_nc.add_variable<Float>("sw_tau"   , {"lay", "y", "x"});
-            auto nc_ssa    = output_nc.add_variable<Float>("sw_ssa"   , {"lay", "y", "x"});
-            auto nc_g      = output_nc.add_variable<Float>("sw_g"     , {"lay", "y", "x"});
+            auto nc_tot_tau = output_nc.add_variable<Float>("tot_tau"  , {"lay", "y", "x"});
+            auto nc_tot_ssa = output_nc.add_variable<Float>("tot_ssa"  , {"lay", "y", "x"});
+            auto nc_cld_tau = output_nc.add_variable<Float>("cld_tau"  , {"lay", "y", "x"});
+            auto nc_cld_ssa = output_nc.add_variable<Float>("cld_ssa"  , {"lay", "y", "x"});
+            auto nc_cld_asy = output_nc.add_variable<Float>("cld_asy"  , {"lay", "y", "x"});
+            auto nc_aer_tau = output_nc.add_variable<Float>("aer_tau"  , {"lay", "y", "x"});
+            auto nc_aer_ssa = output_nc.add_variable<Float>("aer_ssa"  , {"lay", "y", "x"});
+            auto nc_aer_asy = output_nc.add_variable<Float>("aer_asy"  , {"lay", "y", "x"});
 
-            nc_sw_tau.insert(sw_tau_cpu.v(), {0, 0, 0, 0});
-            nc_ssa   .insert(ssa_cpu   .v(), {0, 0, 0, 0});
-            nc_g     .insert(g_cpu     .v(), {0, 0, 0, 0});
+            nc_tot_tau.insert(sw_tot_tau_cpu.v(), {0, 0, 0});
+            nc_tot_ssa.insert(sw_tot_ssa_cpu.v(), {0, 0, 0});
+            nc_cld_tau.insert(sw_cld_tau_cpu.v(), {0, 0, 0});
+            nc_cld_ssa.insert(sw_cld_ssa_cpu.v(), {0, 0, 0});
+            nc_cld_asy.insert(sw_cld_asy_cpu.v(), {0, 0, 0});
+            nc_aer_tau.insert(sw_aer_tau_cpu.v(), {0, 0, 0});
+            nc_aer_ssa.insert(sw_aer_ssa_cpu.v(), {0, 0, 0});
+            nc_aer_asy.insert(sw_aer_asy_cpu.v(), {0, 0, 0});
         }
 
         if (switch_fluxes)

@@ -650,7 +650,9 @@ void Radiation_solver_shortwave::solve_gpu(
         const Array_gpu<Float,2>& rel, const Array_gpu<Float,2>& rei,
         const Array_gpu<Float,2>& rh,
         const Aerosol_concs_gpu& aerosol_concs,
-        Array_gpu<Float,2>& tau, Array_gpu<Float,2>& ssa, Array_gpu<Float,2>& g,
+        Array_gpu<Float,2>& tot_tau_out, Array_gpu<Float,2>& tot_ssa_out, 
+        Array_gpu<Float,2>& cld_tau_out, Array_gpu<Float,2>& cld_ssa_out, Array_gpu<Float,2>& cld_asy_out, 
+        Array_gpu<Float,2>& aer_tau_out, Array_gpu<Float,2>& aer_ssa_out, Array_gpu<Float,2>& aer_asy_out,
         Array_gpu<Float,2>& sw_flux_up, Array_gpu<Float,2>& sw_flux_dn,
         Array_gpu<Float,2>& sw_flux_dn_dir, Array_gpu<Float,2>& sw_flux_net,
         Array_gpu<Float,2>& sw_gpt_flux_up, Array_gpu<Float,2>& sw_gpt_flux_dn,
@@ -834,9 +836,14 @@ void Radiation_solver_shortwave::solve_gpu(
         // Store the optical properties, if desired
         if (switch_single_gpt && igpt == single_gpt)
         {
-            tau = optical_props->get_tau();
-            ssa = optical_props->get_ssa();
-            g = optical_props->get_g();
+            tot_tau_out = optical_props->get_tau();
+            tot_ssa_out = optical_props->get_ssa();
+            cld_tau_out = cloud_optical_props->get_tau();
+            cld_ssa_out = cloud_optical_props->get_ssa();
+            cld_asy_out = cloud_optical_props->get_g();
+            aer_tau_out = aerosol_optical_props->get_tau();
+            aer_ssa_out = aerosol_optical_props->get_ssa();
+            aer_asy_out = aerosol_optical_props->get_g();
         }
         if (switch_fluxes)
         {
