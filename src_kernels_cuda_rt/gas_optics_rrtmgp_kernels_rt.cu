@@ -407,7 +407,7 @@ void scaling_kernel(
         const int idx_collay = icol + ilay*ncol;
         if ((tropo[idx_collay] == idx_tropo) )
         {
-            const int gpt_offs = 1-idx_tropo;
+            // const int gpt_offs = 1-idx_tropo;
 
             const int idx_out = icol + ilay*ncol + imnr*ncol*nlay;
             const int ncl = ncol * nlay;

@@ -103,7 +103,7 @@ namespace Rte_solver_kernels_cuda_rt
  
             std::tie(grid_1, block_1) = tune_kernel(
                     "lw_step_1_rt",
-                    dim3{ncol, nlay, 1}, 
+                    dim3(ncol, nlay, 1), 
                     {8, 16, 24, 32, 48, 64, 96, 128, 256, 512, 1024}, {1}, {1},
                     lw_solver_noscat_step_1_kernel,
                     ncol, nlay, ngpt, eps, top_at_1, ds, weights, tau, lay_source,
@@ -141,7 +141,7 @@ namespace Rte_solver_kernels_cuda_rt
 
             std::tie(grid_2, block_2) = tune_kernel(
                     "lw_step_2_rt",
-                    dim3{ncol, 1, 1}, 
+                    dim3(ncol, 1, 1), 
                     {64, 128, 256, 384, 512, 768, 1024}, {1}, {1},
                     lw_solver_noscat_step_2_kernel,
                     ncol, nlay, ngpt, eps, top_at_1, ds, weights, tau, lay_source,
@@ -178,7 +178,7 @@ namespace Rte_solver_kernels_cuda_rt
             
             std::tie(grid_3, block_3) = tune_kernel(
                     "lw_step_3_rt",
-                    dim3{ncol, nlay+1, 1}, 
+                    dim3(ncol, nlay+1, 1), 
                     {8, 16, 24, 32, 48, 64, 96, 128, 256}, {1, 2, 4, 8}, {1},
                     lw_solver_noscat_step_3_kernel,
                     ncol, nlay, ngpt, eps, top_at_1, ds, weights, tau, lay_source,
@@ -280,7 +280,7 @@ namespace Rte_solver_kernels_cuda_rt
             {
                 std::tie(grid_source, block_source) = tune_kernel(
                         "sw_source_2stream_kernel_rt",
-                        dim3{ncol, 1}, 
+                        dim3(ncol, 1), 
                         {32, 64, 96, 128, 256, 384, 512, 768, 1024}, {1}, {1},
                         sw_source_2stream_kernel<1>,
                         ncol, nlay, ngpt, tau, ssa, g, mu0, r_dif, t_dif,
@@ -290,7 +290,7 @@ namespace Rte_solver_kernels_cuda_rt
             {
                 std::tie(grid_source, block_source) = tune_kernel(
                         "sw_source_2stream_kernel_rt",
-                        dim3{ncol, 1}, 
+                        dim3(ncol, 1), 
                         {32, 64, 96, 128, 256, 384, 512, 768, 1024}, {1}, {1},
                         sw_source_2stream_kernel<0>,
                         ncol, nlay, ngpt, tau, ssa, g, mu0, r_dif, t_dif,
@@ -333,7 +333,7 @@ namespace Rte_solver_kernels_cuda_rt
             {
                 std::tie(grid_adding, block_adding) = tune_kernel(
                         "sw_adding_rt",
-                        dim3{ncol, 1},
+                        dim3(ncol, 1),
                         {16, 32, 64, 96, 128, 256, 384, 512}, {1}, {1},
                         sw_adding_kernel<1>,
                         ncol, nlay, ngpt, top_at_1,
@@ -345,7 +345,7 @@ namespace Rte_solver_kernels_cuda_rt
             {
                 std::tie(grid_adding, block_adding) = tune_kernel(
                         "sw_adding_rt",
-                        dim3{ncol, 1}, 
+                        dim3(ncol, 1), 
                         {16, 32, 64, 96, 128, 256, 384, 512}, {1}, {1},
                         sw_adding_kernel<0>,
                         ncol, nlay, ngpt, top_at_1,

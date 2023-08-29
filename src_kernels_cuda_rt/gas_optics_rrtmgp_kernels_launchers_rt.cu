@@ -22,14 +22,14 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
     {
         Tuner_map& tunings = Tuner::get_map();
 
-        dim3 grid{ni, nj, nk};
+        dim3 grid(ni, nj, nk);
         dim3 block;
 
         if (tunings.count("reorder123x321_kernel_rt") == 0)
         {
             std::tie(grid, block) = tune_kernel(
                 "reorder123x321_kernel_rt",
-                dim3{ni, nj, nk},
+                dim3(ni, nj, nk),
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
                 {1, 2, 4, 8, 16, 24, 32, 48, 64, 96},
@@ -162,7 +162,7 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
         {
             std::tie(grid, block) = tune_kernel(
                     "interpolation_kernel_rt",
-                    dim3{ncol, nlay, nflav},
+                    dim3(ncol, nlay, nflav),
                     {1, 2, 4, 8, 16, 32, 64, 128, 256}, {1}, {1, 2, 4, 8, 16, 32, 64, 128, 256},
                     interpolation_kernel,
                     ncol, nlay, ngas, nflav, neta, npres, ntemp, tmin,
@@ -227,7 +227,7 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
         {
             std::tie(grid_1, block_1) = tune_kernel(
                     "minor_scalings_lower_kernel_rt",
-                    dim3{ncol, nlay, nminorlower},
+                    dim3(ncol, nlay, nminorlower),
                     {8, 16, 24, 32, 48, 64, 128}, {1}, {1, 2, 4, 8, 16, 32},
                     scaling_kernel,
                     ncol, nlay, nflav, nminorlower,
@@ -270,7 +270,7 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
         {
             std::tie(grid_2, block_2) = tune_kernel(
                     "minor_scalings_upper_kernel_rt",
-                    dim3{ncol, nlay, nminorupper},
+                    dim3(ncol, nlay, nminorupper),
                     {8, 16, 24, 32, 48, 64, 128}, {1}, {1, 2, 4, 8, 16, 32},
                     scaling_kernel,
                     ncol, nlay, nflav, nminorupper,
@@ -316,12 +316,14 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
 
         Float tmin = std::numeric_limits<Float>::epsilon();
 
-        dim3 grid{ncol, nlay, 1}, block;
+        dim3 grid(ncol, nlay, 1);
+        dim3 block;
+
         if (tunings.count("combine_abs_and_rayleigh_kernel_rt") == 0)
         {
             std::tie(grid, block) = tune_kernel(
                 "combine_abs_and_rayleigh_kernel_rt",
-                dim3{ncol, nlay, 1},
+                dim3(ncol, nlay, 1),
                 {24, 32, 48, 64, 96, 128, 256, 512}, {1, 2, 4}, {1},
                 combine_abs_and_rayleigh_kernel,
                 ncol, nlay, tmin,
@@ -358,12 +360,12 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
     {
         Tuner_map& tunings = Tuner::get_map();
 
-        dim3 grid{ncol, nlay, 1}, block;
+        dim3 grid(ncol, nlay, 1), block;
         if (tunings.count("compute_tau_rayleigh_kernel_rt") == 0)
         {
             std::tie(grid, block) = tune_kernel(
                 "compute_tau_rayleigh_kernel_rt",
-                dim3{ncol, nlay, 1},
+                dim3(ncol, nlay, 1),
                 {24, 32, 64, 128, 256, 512}, {1, 2}, {1},
                 compute_tau_rayleigh_kernel,
                 ncol, nlay, nbnd, ngpt,
@@ -439,7 +441,7 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
     {
         Tuner_map& tunings = Tuner::get_map();
 
-        dim3 grid_maj{nlay, ncol, 1};
+        dim3 grid_maj(nlay, ncol, 1);
         dim3 block_maj;
 
         if (tunings.count("gas_optical_depths_major_kernel_rt") == 0)
@@ -448,7 +450,7 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
 
             std::tie(grid_maj, block_maj) = tune_kernel(
                     "gas_optical_depths_major_kernel_rt",
-                    dim3{nlay, ncol, 1},
+                    dim3(nlay, ncol, 1),
                     {1, 2}, {64, 96, 128, 256, 512, 768, 1024}, {1},
                     gas_optical_depths_major_kernel,
                     ncol, nlay, nband, ngpt,
@@ -493,7 +495,7 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
 
             std::tie(grid_min_1, block_min_1) = tune_kernel(
                         "gas_optical_depths_minor_kernel_lower_rt",
-                        dim3{nlay, ncol, 1},
+                        dim3(nlay, ncol, 1),
                         {1}, {32, 48, 64, 96, 128, 256, 384, 512}, {1},
                         gas_optical_depths_minor_kernel,
                         ncol, nlay, ngpt, igpt,
@@ -555,7 +557,7 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
             Float* tau_tmp = Tools_gpu::allocate_gpu<Float>(nlay*ncol);
             std::tie(grid_min_2, block_min_2) = tune_kernel(
                    "gas_optical_depths_minor_kernel_upper_rt",
-                   dim3{nlay, ncol, 1},
+                   dim3(nlay, ncol, 1),
                    {1}, {32, 48, 64, 96, 128, 256, 384, 512}, {1},
                    gas_optical_depths_minor_kernel,
                    ncol, nlay, ngpt, igpt,
@@ -646,7 +648,7 @@ namespace Gas_optics_rrtmgp_kernels_cuda_rt
         {
             std::tie(grid, block) = tune_kernel(
                     "Planck_source_kernel_rt",
-                    dim3{ncol, nlay, 1},
+                    dim3(ncol, nlay, 1),
                     {16, 32, 48, 64, 96, 128, 256, 512}, {1, 2, 4, 8}, {1},
                     Planck_source_kernel,
                     ncol, nlay, nbnd, ngpt,
